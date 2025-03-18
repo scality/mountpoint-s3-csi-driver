@@ -71,7 +71,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - --endpoint=$(CSI_ENDPOINT)
-            - --v=4
+            - --v=5
           env:
             - name: CSI_ENDPOINT
               value: unix:/csi/csi.sock
