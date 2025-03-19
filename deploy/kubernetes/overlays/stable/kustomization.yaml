@@ -4,5 +4,5 @@ resources:
   - ../../base
 images:
   - name: csi-driver
-    newName: ghcr.io/scality/s3-csi-driver
-    newTag: 0.0.2
+    newName: ghcr.io/scality/playground/anurag4dsb
+    newTag: s3-csi-driver-0.0.4
