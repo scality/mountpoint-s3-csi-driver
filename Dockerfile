@@ -23,7 +23,8 @@ ARG MOUNTPOINT_VERSION
 ARG TARGETARCH
 ARG TARGETPLATFORM
 # We need the full version of GnuPG
-RUN yum install -y gzip wget gnupg2 tar fuse-libs binutils patchelf
+RUN yum clean all && \
+    yum install -y gzip wget gnupg2 tar fuse-libs binutils patchelf
 
 RUN MP_ARCH=`echo ${TARGETARCH} | sed s/amd64/x86_64/` && \
     wget -q "https://s3.amazonaws.com/mountpoint-s3-release/${MOUNTPOINT_VERSION}/$MP_ARCH/mount-s3-${MOUNTPOINT_VERSION}-$MP_ARCH.tar.gz" && \
