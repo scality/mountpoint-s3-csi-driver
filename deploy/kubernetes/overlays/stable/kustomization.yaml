@@ -5,4 +5,4 @@ resources:
 images:
   - name: csi-driver
     newName: ghcr.io/scality/s3-csi-driver
-    newTag: 0.0.1
+    newTag: 0.0.2
