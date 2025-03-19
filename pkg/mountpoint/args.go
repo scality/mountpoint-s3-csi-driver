@@ -20,6 +20,7 @@ const (
 	ArgGid             = "--gid"
 	ArgDirMode         = "--dir-mode"
 	ArgFileMode        = "--file-mode"
+	ArgS3EndpointURL   = "--endpoint-url"
 )
 
 // An ArgKey represents the key of an argument.

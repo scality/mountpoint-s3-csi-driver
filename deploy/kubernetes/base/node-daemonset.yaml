@@ -104,6 +104,12 @@ spec:
                   name: aws-secret
                   key: session_token
                   optional: true
+            - name: AWS_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: s3_endpoint
+                  optional: true
           volumeMounts:
             - name: kubelet-dir
               mountPath: /var/lib/kubelet
