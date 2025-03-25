@@ -5,6 +5,9 @@ const (
 	BucketName           = "bucketName"
 	AuthenticationSource = "authenticationSource"
 	STSRegion            = "stsRegion"
+	AccessKeyID          = "accessKeyId"
+	SecretAccessKey      = "secretAccessKey"
+	SessionToken         = "sessionToken"
 
 	MountpointPodServiceAccountName = "mountpointPodServiceAccountName"
 
