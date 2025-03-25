@@ -29,6 +29,7 @@ env:
   # TODO: S3CSI-1 enable IAM with VAULT for auth.
   AWS_ACCESS_KEY_ID: "accessKey1"
   AWS_SECRET_ACCESS_KEY: "verySecretKey1"
+  PLATFORM: "linux/amd64"
 
 
 jobs:
@@ -46,15 +47,6 @@ jobs:
         registry: ghcr.io
         username: "${{ github.repository_owner }}"
         password: "${{ github.token }}"
-
-    - name: Restore Cached Docker Images
-      id: cache_docker_images
-      uses: actions/cache@v4
-      with:
-        path: /tmp/.docker_cache
-        key: docker-${{ runner.os }}-vault-${{ env.VAULT_IMAGE }}-cloudserver-${{ env.CLOUDSERVER_IMAGE }}
-        restore-keys: |
-          docker-${{ runner.os }}-
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -81,17 +73,6 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
-    - name: Load S3 and IAM images
-      run: |
-        echo "=== Loading cached S3 and IAM Docker images ==="
-        if [ -d /tmp/.docker_cache ] && [ "$(ls -A /tmp/.docker_cache 2>/dev/null)" ]; then
-          for image in /tmp/.docker_cache/*.tar; do
-            docker load -i "$image" || true  # continue on failure
-          done
-        else
-          echo "No cached images found. Skipping load."
-        fi
-
     - name: "Debug: SSH to runner"
       uses: scality/actions/action-ssh-to-runner@v1
       with:
@@ -115,21 +96,18 @@ jobs:
         bash ../scripts/wait_for_local_port.bash 8000 30
       working-directory: .github/s3_and_iam_deployment
 
-    - name: Save Images to Cache if not present
-      if: steps.cache_docker_images.outputs.cache-hit != 'true'
-      run: |
-        echo "Vault Image: $VAULT_IMAGE"
-        echo "CloudServer Image: $CLOUDSERVER_IMAGE"
-        mkdir -p /tmp/.docker_cache
-        docker save "$VAULT_IMAGE" -o /tmp/.docker_cache/vault_image.tar
-        docker save "$CLOUDSERVER_IMAGE" -o /tmp/.docker_cache/cloudserver_image.tar
-      shell: bash
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@master
+      with: 
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws-region: "us-east-1"
 
     - name: Build, tag, and load docker image into Kind Registry
       env:
         REGISTRY: ${{ env.REGISTRY }}
         IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        PLATFORM: "linux/amd64"
+        PLATFORM: ${{ env.PLATFORM }}
         TAG: latest
       run: |
         make build_image
