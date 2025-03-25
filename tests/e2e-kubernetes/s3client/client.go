@@ -64,11 +64,6 @@ func NewWithRegion(region string) *Client {
 			DefaultSecretKey,
 			"",
 		)),
-		config.WithEndpointResolver(aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL: DefaultEndpoint,
-			}, nil
-		})),
 		config.WithRetryer(func() aws.Retryer {
 			return retry.NewStandard(func(opts *retry.StandardOptions) {
 				opts.MaxAttempts = 5
@@ -77,7 +72,10 @@ func NewWithRegion(region string) *Client {
 		}),
 	)
 	framework.ExpectNoError(err)
-	return &Client{region: region, client: s3.NewFromConfig(cfg)}
+	return &Client{region: region, client: s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+		o.BaseEndpoint = aws.String(DefaultEndpoint)
+	})}
 }
 
 // CreateStandardBucket creates a new standard S3 bucket with a random name,
