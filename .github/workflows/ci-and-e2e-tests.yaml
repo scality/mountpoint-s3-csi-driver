@@ -9,7 +9,6 @@ env:
   CLOUDSERVER_IMAGE: ${{ vars.CLOUDSERVER_IMAGE }}
   VAULT_IMAGE: ${{ vars.VAULT_IMAGE }}
   KUBECONFIG: "/home/runner/.kube/config"
-  HOST_IP: $(hostname -I | awk '{print $1}')
   AWS_ACCESS_KEY_ID: "accessKey1"
   AWS_SECRET_ACCESS_KEY: "verySecretKey1"
 
