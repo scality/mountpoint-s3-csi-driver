@@ -125,7 +125,7 @@ jobs:
       shell: bash
 
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@master
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         # TODO: S3CSI-1 enable IAM with VAULT for auth.
         aws-access-key-id: "accessKey1"
