@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -30,9 +31,10 @@ func init() {
 	flag.Parse()
 
 	// Set environment variables for S3 configuration
-	if os.Getenv("S3_ENDPOINT") != "" {
-		s3client.DefaultEndpoint = os.Getenv("S3_ENDPOINT")
-	}
+	// if os.Getenv("S3_ENDPOINT") != "" {
+	hostIP := os.Getenv("HOST_IP")
+	s3client.DefaultEndpoint = fmt.Sprintf("http://%s:8000", hostIP)
+	// }
 	if os.Getenv("AWS_ACCESS_KEY_ID") != "" {
 		s3client.DefaultAccessKey = os.Getenv("AWS_ACCESS_KEY_ID")
 	}
