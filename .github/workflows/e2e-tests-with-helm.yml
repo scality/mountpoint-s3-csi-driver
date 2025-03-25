@@ -51,7 +51,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: /tmp/.docker_cache
-        key: docker-${{ runner.os }}-${{ hashFiles('.github/s3_and_iam_deployment/.env') }}
+        key: docker-${{ runner.os }}-vault-${{ env.VAULT_IMAGE }}-cloudserver-${{ env.CLOUDSERVER_IMAGE }}
         restore-keys: |
           docker-${{ runner.os }}-
 
@@ -80,7 +80,7 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
-    - name: Setup CSI, S3 and IAM environments
+    - name: Load S3 and IAM images
       run: |
         echo "=== Loading cached S3 and IAM Docker images ==="
         if [ -d /tmp/.docker_cache ] && [ "$(ls -A /tmp/.docker_cache 2>/dev/null)" ]; then
@@ -117,7 +117,6 @@ jobs:
     - name: Save Images to Cache if not present
       if: steps.cache_docker_images.outputs.cache-hit != 'true'
       run: |
-        source .github/s3_and_iam_deployment/.env
         echo "Vault Image: $VAULT_IMAGE"
         echo "CloudServer Image: $CLOUDSERVER_IMAGE"
         mkdir -p /tmp/.docker_cache
