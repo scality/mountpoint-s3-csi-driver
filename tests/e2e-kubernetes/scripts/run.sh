@@ -47,11 +47,6 @@ function print_cluster_info() {
   $KUBECTL_BIN get nodes -o wide --kubeconfig ${KUBECONFIG}
 }
 
-function install_tools() {
-  helm_install "$BIN_DIR"
-
-  go install github.com/onsi/ginkgo/v2/ginkgo
-}
 
 function create_cluster() {
   if [[ "${CLUSTER_TYPE}" == "kops" ]]; then
@@ -133,9 +128,7 @@ function print_cluster_info() {
   $KUBECTL_BIN get nodes -o wide --kubeconfig ${KUBECONFIG}
 }
 
-if [[ "${ACTION}" == "install_tools" ]]; then
-  install_tools
-elif [[ "${ACTION}" == "create_cluster" ]]; then
+if [[ "${ACTION}" == "create_cluster" ]]; then
   create_cluster
 elif [[ "${ACTION}" == "update_kubeconfig" ]]; then
   update_kubeconfig
