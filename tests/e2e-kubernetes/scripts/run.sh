@@ -3,10 +3,10 @@
 set -euox pipefail
 
 ACTION=${ACTION:-}
-REGION=${AWS_REGION}
+REGION=${S3_REGION}
 
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-REGISTRY=${REGISTRY:-${AWS_ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com}
+# AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REGISTRY=${REGISTRY:-}
 IMAGE_NAME=${IMAGE_NAME:-}
 TAG=${TAG:-}
 
