@@ -5,6 +5,10 @@ on:
     branches:
       - '**'
 
+env:
+  CLOUDSERVER_IMAGE: ${{ vars.CLOUDSERVER_IMAGE }}
+  VAULT_IMAGE: ${{ vars.VAULT_IMAGE }}
+
 jobs:
   dev-image:
     name: Dev Image
