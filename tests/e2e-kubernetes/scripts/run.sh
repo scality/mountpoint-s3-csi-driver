@@ -24,66 +24,13 @@ KOPS_BIN=${BIN_DIR}/kops
 EKSCTL_BIN=${BIN_DIR}/eksctl
 KUBECTL_BIN=${KUBECTL_INSTALL_PATH}/kubectl
 
-CLUSTER_TYPE=${CLUSTER_TYPE:-kops}
 ARCH=${ARCH:-x86}
-AMI_FAMILY=${AMI_FAMILY:-AmazonLinux2}
 SELINUX_MODE=${SELINUX_MODE:-}
 
-# kops: must include patch version (e.g. 1.19.1)
-# eksctl: mustn't include patch version (e.g. 1.19)
-# 'K8S_VERSION' variable must be a full version (e.g. 1.19.1)
-K8S_VERSION=${K8S_VERSION:-1.30.4}
-K8S_VERSION_KOPS=${K8S_VERSION_KOPS:-${K8S_VERSION}}
-K8S_VERSION_EKSCTL=${K8S_VERSION_EKSCTL:-${K8S_VERSION%.*}}
+CLUSTER_NAME="helm-test-cluster"
 
-# We need to ensure that we're using all testing matrix variables in the cluster name
-# because they all run in parallel and conflicting name would break other tests.
-CLUSTER_NAME="s3-csi-cluster-${CLUSTER_TYPE}-${AMI_FAMILY,,}-${ARCH}"
-
-if [[ "${CLUSTER_TYPE}" == "eksctl" ]]; then
-    # EKS does not allow cluster names with ".", we're replacing them with "-".
-    CLUSTER_NAME="${CLUSTER_NAME}-${K8S_VERSION_EKSCTL/./-}"
-else
-    # In kops, cluster names must end with ".k8s.local" to use Gossip DNS.
-    # See https://kops.sigs.k8s.io/gossip/#configuring-a-cluster-to-use-gossip
-    # They also need to be valid domain names, that's why we're lowercasing "CLUSTER_NAME" and replacing "." with "-".
-    CLUSTER_NAME="${CLUSTER_NAME,,}-${K8S_VERSION_KOPS//./-}.k8s.local"
-fi
-
-KUBECONFIG=${KUBECONFIG:-"${TEST_DIR}/${CLUSTER_NAME}.kubeconfig"}
-
-KOPS_VERSION=1.28.5
-ZONES=${AWS_AVAILABILITY_ZONES:-$(aws ec2 describe-availability-zones --region ${REGION} | jq -c '.AvailabilityZones[].ZoneName' | grep -v "us-east-1e" | tr '\n' ',' | sed 's/"//g' | sed 's/.$//')} # excluding us-east-1e, see: https://github.com/eksctl-io/eksctl/issues/817
-NODE_COUNT=${NODE_COUNT:-3}
-if [[ "${ARCH}" == "x86" ]]; then
-  INSTANCE_TYPE_DEFAULT=c5.large
-  AMI_ID_DEFAULT=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --region ${REGION} --query 'Parameters[0].Value' --output text)
-else
-  INSTANCE_TYPE_DEFAULT=m7g.large
-  AMI_ID_DEFAULT=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64 --region ${REGION} --query 'Parameters[0].Value' --output text)
-fi
-INSTANCE_TYPE=${INSTANCE_TYPE:-$INSTANCE_TYPE_DEFAULT}
-AMI_ID=${AMI_ID:-$AMI_ID_DEFAULT}
-CLUSTER_FILE=${TEST_DIR}/${CLUSTER_NAME}.${CLUSTER_TYPE}.yaml
-KOPS_PATCH_FILE=${KOPS_PATCH_FILE:-${BASE_DIR}/kops-patch.yaml}
-KOPS_PATCH_NODE_FILE=${KOPS_PATCH_NODE_FILE:-${BASE_DIR}/kops-patch-node.yaml}
-KOPS_STATE_FILE=${KOPS_STATE_FILE:-"s3://mountpoint-s3-csi-driver-kops-state-store"}
-KOPS_PATCH_NODE_SELINUX_ENFORCING_FILE=${KOPS_PATCH_NODE_SELINUX_ENFORCING_FILE:-${BASE_DIR}/kops-patch-node-selinux-enforcing.yaml}
-if [[ "${SELINUX_MODE}" != "enforcing" ]]; then
-    KOPS_PATCH_NODE_SELINUX_ENFORCING_FILE=""
-fi
-
-SSH_KEY=${SSH_KEY:-""}
 HELM_RELEASE_NAME=mountpoint-s3-csi-driver
 
-EKSCTL_VERSION=${EKSCTL_VERSION:-0.202.0}
-EKSCTL_PATCH_FILE=${EKSCTL_PATCH_FILE:-${BASE_DIR}/eksctl-patch.json}
-EKSCTL_PATCH_SELINUX_ENFORCING_FILE=${EKSCTL_PATCH_SELINUX_ENFORCING_FILE:-${BASE_DIR}/eksctl-patch-selinux-enforcing.json}
-if [[ "${SELINUX_MODE}" != "enforcing" ]]; then
-    EKSCTL_PATCH_SELINUX_ENFORCING_FILE=""
-fi
-
-CI_ROLE_ARN=${CI_ROLE_ARN:-""}
 
 MOUNTER_KIND=${MOUNTER_KIND:-systemd}
 
@@ -91,12 +38,12 @@ mkdir -p ${TEST_DIR}
 mkdir -p ${BIN_DIR}
 export PATH="$PATH:${BIN_DIR}"
 
-function kubectl_install() {
-  curl -LO "https://dl.k8s.io/release/v$K8S_VERSION/bin/linux/amd64/kubectl"
-  curl -LO "https://dl.k8s.io/release/v$K8S_VERSION/bin/linux/amd64/kubectl.sha256"
-  echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
-  sudo install -o root -g root -m 0755 kubectl ${KUBECTL_INSTALL_PATH}/kubectl
-}
+# function kubectl_install() {
+#   curl -LO "https://dl.k8s.io/release/v$K8S_VERSION/bin/linux/amd64/kubectl"
+#   curl -LO "https://dl.k8s.io/release/v$K8S_VERSION/bin/linux/amd64/kubectl.sha256"
+#   echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+#   sudo install -o root -g root -m 0755 kubectl ${KUBECTL_INSTALL_PATH}/kubectl
+# }
 
 function print_cluster_info() {
   $KUBECTL_BIN logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
