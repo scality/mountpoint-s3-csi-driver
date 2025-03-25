@@ -81,8 +81,6 @@ jobs:
         working-directory: .github/s3_and_iam_deployment
 
       - name: Run E2E Tests (SystemdMounter)
-        env:
-          S3_ENDPOINT: "http://${{ env.HOST_IP }}:8000"
         run: |
           set +e
           pushd tests/e2e-kubernetes
