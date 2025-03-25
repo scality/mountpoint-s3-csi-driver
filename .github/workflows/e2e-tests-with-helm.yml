@@ -27,8 +27,8 @@ env:
   CLOUDSERVER_IMAGE: ${{ vars.CLOUDSERVER_IMAGE }}
   VAULT_IMAGE: ${{ vars.VAULT_IMAGE }}
   # TODO: S3CSI-1 enable IAM with VAULT for auth.
-  AWS_ACCESS_KEY_ID: "accessKey1"
-  AWS_SECRET_ACCESS_KEY: "verySecretKey1"
+  CS_ACCESS_KEY_ID: "accessKey1"
+  CS_SECRET_ACCESS_KEY: "verySecretKey1"
   PLATFORM: "linux/amd64"
   S3_REGION: "us-east-1"
 
@@ -99,8 +99,8 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@master
       with: 
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ env.CS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ env.CS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.S3_REGION }}
 
     - name: Build, tag, and load docker image into Kind Registry
