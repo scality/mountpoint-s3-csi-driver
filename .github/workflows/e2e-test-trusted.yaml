@@ -1,11 +1,11 @@
 name: "E2E Tests (Trusted)"
 
-on:
-  push:
-    branches: [ "main", "release-**", "workflow/**" ]
-  merge_group:
-    types: [ "checks_requested" ]
-  pull_request:
+# on:
+#   push:
+#     branches: [ "main", "release-**", "workflow/**" ]
+#   merge_group:
+#     types: [ "checks_requested" ]
+#   pull_request:
 
 permissions:
   id-token: write
