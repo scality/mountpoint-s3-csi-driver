@@ -1,4 +1,4 @@
-name: Unit tests
+name: CI Build and Unit Tests
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
       - '**'
 
 jobs:
-  build:
+  run-unit-tests:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -37,3 +38,15 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: scality/mountpoint-s3-csi-driver
+
+  dev-image:
+    name: Dev Image
+    permissions:
+      contents: read
+      packages: write
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
+    with:
+      context: .
+      name: mountpoint-s3-csi-driver
+      namespace: ${{ github.repository_owner }}
+      tag: ${{ github.sha }}
