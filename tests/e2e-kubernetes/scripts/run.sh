@@ -109,14 +109,6 @@ function install_tools() {
 
   helm_install "$BIN_DIR"
 
-  kops_install \
-    "${BIN_DIR}" \
-    "${KOPS_VERSION}"
-
-  eksctl_install \
-    "${BIN_DIR}" \
-    "${EKSCTL_VERSION}"
-
   go install github.com/onsi/ginkgo/v2/ginkgo
 }
 
