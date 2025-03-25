@@ -17,12 +17,8 @@ source "${BASE_DIR}"/helm.sh
 
 TEST_DIR=${BASE_DIR}/../csi-test-artifacts
 BIN_DIR=${TEST_DIR}/bin
-KUBECTL_INSTALL_PATH=/usr/local/bin
 
 HELM_BIN=${BIN_DIR}/helm
-KOPS_BIN=${BIN_DIR}/kops
-EKSCTL_BIN=${BIN_DIR}/eksctl
-KUBECTL_BIN=${KUBECTL_INSTALL_PATH}/kubectl
 
 ARCH=${ARCH:-x86}
 SELINUX_MODE=${SELINUX_MODE:-}
@@ -52,8 +48,6 @@ function print_cluster_info() {
 }
 
 function install_tools() {
-  kubectl_install
-
   helm_install "$BIN_DIR"
 
   go install github.com/onsi/ginkgo/v2/ginkgo
