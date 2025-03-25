@@ -106,17 +106,15 @@ jobs:
         make build_image
         kind load docker-image ghcr.io/scality/mountpoint-s3-csi-driver:latest --name helm-test-cluster
 
-    - name: Print all resources in all namespaces
-      run: |
-        kubectl get all --all-namespaces
-
     - name: Install tools
       env:
         ACTION: "install_tools"
       run: |
         tests/e2e-kubernetes/scripts/run.sh
 
-
+    - name: Print all resources in all namespaces
+      run: |
+        kubectl get all --all-namespaces
 
     # - name: Install Scality COSI Driver using Helm Chart
     #   run: |
