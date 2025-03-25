@@ -108,7 +108,7 @@ jobs:
 
     - name: Print all resources in all namespaces
       run: |
-        kubectl get all -n all-namespaces
+        kubectl get all --all-namespaces
 
     - name: Install tools
       env:
