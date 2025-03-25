@@ -61,5 +61,16 @@ jobs:
           kubectl get pods -A
           echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image}")"
 
-      - name: Run Systemd Mounter Tests
-        run: make e2e-systemd-mounter
+      - name: Run E2E Tests (SystemdMounter)
+        env:
+          ACTION: "run_tests"
+          KUBECONFIG: "/home/runner/.kube/config"
+        run: |
+          set +e
+          pushd tests/e2e-kubernetes
+          KUBECONFIG=/home/runner/.kube/config ginkgo -p -vv -timeout 60m -- --bucket-region=us-east-1 --commit-id=${{ github.sha }} --bucket-prefix=helm-test-cluster
+          EXIT_CODE=$?
+          print_cluster_info
+          popd
+          cat tests/e2e-kubernetes/csi-test-artifacts/output.json
+          exit $EXIT_CODE
