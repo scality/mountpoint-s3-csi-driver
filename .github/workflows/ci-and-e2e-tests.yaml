@@ -61,10 +61,24 @@ jobs:
           kubectl get pods -A
           echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image}")"
 
+      - name: Setup IAM and S3 Services
+        run: |-
+          set -e -o pipefail;
+          mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb
+          chown -R runner:docker logs data
+          chmod -R ugo+rwx logs data
+          docker compose --profile iam_s3 up -d --quiet-pull
+          bash ../scripts/wait_for_local_port.bash 8600 30
+          bash ../scripts/wait_for_local_port.bash 8000 30
+        working-directory: .github/s3_and_iam_deployment
+
       - name: Run E2E Tests (SystemdMounter)
         env:
           ACTION: "run_tests"
           KUBECONFIG: "/home/runner/.kube/config"
+          S3_ENDPOINT: "http://$(hostname -I | awk '{print $1}'):8000"
+          AWS_ACCESS_KEY_ID: "accessKey1"
+          AWS_SECRET_ACCESS_KEY: "verySecretKey1"
         run: |
           set +e
           pushd tests/e2e-kubernetes

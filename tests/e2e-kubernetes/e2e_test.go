@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"flag"
+	"os"
 	"testing"
 
 	"github.com/awslabs/aws-s3-csi-driver/tests/e2e-kubernetes/s3client"
@@ -27,6 +28,17 @@ func init() {
 	flag.BoolVar(&Performance, "performance", false, "run performance tests")
 	flag.BoolVar(&IMDSAvailable, "imds-available", false, "indicates whether instance metadata service is available")
 	flag.Parse()
+
+	// Set environment variables for S3 configuration
+	if os.Getenv("S3_ENDPOINT") != "" {
+		s3client.DefaultEndpoint = os.Getenv("S3_ENDPOINT")
+	}
+	if os.Getenv("AWS_ACCESS_KEY_ID") != "" {
+		s3client.DefaultAccessKey = os.Getenv("AWS_ACCESS_KEY_ID")
+	}
+	if os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+		s3client.DefaultSecretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	}
 
 	s3client.DefaultRegion = BucketRegion
 	custom_testsuites.DefaultRegion = BucketRegion
