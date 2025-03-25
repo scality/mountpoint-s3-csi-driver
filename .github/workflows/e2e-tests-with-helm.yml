@@ -53,6 +53,17 @@ jobs:
       with:
         go-version-file: "go.mod"
 
+    - uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with: 
+        aws-access-key-id: ${{ env.CS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ env.CS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.S3_REGION }}
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
@@ -95,13 +106,6 @@ jobs:
         bash ../scripts/wait_for_local_port.bash 8600 30
         bash ../scripts/wait_for_local_port.bash 8000 30
       working-directory: .github/s3_and_iam_deployment
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with: 
-        aws-access-key-id: ${{ env.CS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.CS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.S3_REGION }}
 
     - name: Build, tag, and load docker image into Kind Registry
       env:
