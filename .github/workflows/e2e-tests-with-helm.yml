@@ -124,14 +124,6 @@ jobs:
         docker save "$CLOUDSERVER_IMAGE" -o /tmp/.docker_cache/cloudserver_image.tar
       shell: bash
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        # TODO: S3CSI-1 enable IAM with VAULT for auth.
-        aws-access-key-id: "accessKey1"
-        aws-secret-access-key: "verySecretKey1"
-        aws-region: "us-east-1"
-
     - name: Build, tag, and load docker image into Kind Registry
       env:
         REGISTRY: ${{ env.REGISTRY }}
