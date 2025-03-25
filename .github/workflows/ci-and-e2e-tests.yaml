@@ -33,3 +33,33 @@ jobs:
 
       - name: Run Controller Tests
         run: make e2e-controller
+
+
+  systemd-mounter-e2e-tests:
+    name: E2E Systemd Mounter Tests
+    runs-on: ubuntu-22.04
+    needs: dev-image
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      
+      - name: Run Common Setup
+        uses: ./.github/actions/e2e-setup-common
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Install helm release
+        run: |
+          helm upgrade --install mountpoint-s3-csi-driver --namespace kube-system ./charts/scality-mountpoint-s3-csi-driver --values \
+            ./charts/scality-mountpoint-s3-csi-driver/values.yaml \
+            --set image.repository=ghcr.io/scality/mountpoint-s3-csi-driver \
+            --set image.tag=${{ github.sha }} \
+            --set node.serviceAccount.create=true \
+            --set node.podInfoOnMountCompat.enable=true \
+            --set experimental.podMounter=systemd
+          kubectl rollout status daemonset s3-csi-node -n kube-system --timeout=60s
+          kubectl get pods -A
+          echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image}")"
+
+      - name: Run Systemd Mounter Tests
+        run: make e2e-systemd-mounter
