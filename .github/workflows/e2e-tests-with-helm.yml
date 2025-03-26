@@ -32,7 +32,7 @@ env:
   PLATFORM: "linux/amd64"
   S3_REGION: "us-east-1"
   TAG: "latest"
-  KUBECONFIG: $HOME/.kube/config
+  KUBECONFIG: /home/runner/.kube/config
 
 jobs:
   e2e-tests-with-helm:
