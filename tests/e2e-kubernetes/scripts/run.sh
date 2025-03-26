@@ -64,7 +64,7 @@ elif [[ "${ACTION}" == "update_kubeconfig" ]]; then
   update_kubeconfig
 elif [[ "${ACTION}" == "install_driver" ]]; then
   helm_install_driver \
-    "$HELM_RELEASE_NAME" \
+    "${HELM_RELEASE_NAME}" \
     "${REGISTRY}/${IMAGE_NAME}" \
     "${TAG}" \
     "${MOUNTER_KIND}"
