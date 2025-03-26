@@ -113,10 +113,21 @@ jobs:
       run: |
         make e2e-controller
 
-    - name: Print all resources in all namespaces
+    - name: (remove) Print all resources in all namespaces
       run: |
         kubectl get all --all-namespaces
 
+    - name: Install the driver (SystemdMounter)
+      env:
+        ACTION: "install_driver"
+      run: |
+        tests/e2e-kubernetes/scripts/run.sh
+
+    - name: (move this) Print all resources in all namespaces
+      run: |
+        kubectl get all --all-namespaces
+
+    
 
     # - name: Install Scality COSI Driver using Helm Chart
     #   run: |
