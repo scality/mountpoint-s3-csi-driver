@@ -73,6 +73,7 @@ jobs:
       run: |
         kubectl cluster-info
         kubectl get nodes
+        echo $KUBECONFIG
 
     - name: "Debug: SSH to runner"
       uses: scality/actions/action-ssh-to-runner@v1
