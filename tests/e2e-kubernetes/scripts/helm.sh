@@ -38,7 +38,7 @@ function helm_install_driver() {
     --set experimental.podMounter=${USE_POD_MOUNTER} \
   kubectl rollout status daemonset s3-csi-node -n kube-system --timeout=60s
   kubectl get pods -A
-  echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image"
+  echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image}")"
 }
 
 function driver_installed() {
