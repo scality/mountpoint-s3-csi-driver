@@ -27,15 +27,14 @@ function helm_install_driver() {
   fi
 
   helm_uninstall_driver \
-    "$RELEASE_NAME" \
+    "$RELEASE_NAME"
   helm upgrade --install $RELEASE_NAME --namespace kube-system ./charts/aws-mountpoint-s3-csi-driver --values \
     ./charts/aws-mountpoint-s3-csi-driver/values.yaml \
     --set image.repository=${REPOSITORY} \
     --set image.tag=${TAG} \
-    --set image.pullPolicy=Always \
     --set node.serviceAccount.create=true \
     --set node.podInfoOnMountCompat.enable=true \
-    --set experimental.podMounter=${USE_POD_MOUNTER} \
+    --set experimental.podMounter=${USE_POD_MOUNTER}
   kubectl rollout status daemonset s3-csi-node -n kube-system --timeout=60s
   kubectl get pods -A
   echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image}")"
