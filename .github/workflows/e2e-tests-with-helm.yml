@@ -33,6 +33,7 @@ env:
   S3_REGION: "us-east-1"
   TAG: "latest"
   KUBECONFIG: /home/runner/.kube/config
+  HOST_IP: $(hostname -I | awk '{print $1}')
 
 jobs:
   e2e-tests-with-helm:
@@ -90,16 +91,16 @@ jobs:
       timeout-minutes: 10
       continue-on-error: true
 
-    # - name: Setup IAM and S3 Services
-    #   run: |-
-    #     set -e -o pipefail;
-    #     mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb
-    #     chown -R runner:docker logs data
-    #     chmod -R ugo+rwx logs data
-    #     docker compose --profile iam_s3 up -d --quiet-pull
-    #     bash ../scripts/wait_for_local_port.bash 8600 30
-    #     bash ../scripts/wait_for_local_port.bash 8000 30
-    #   working-directory: .github/s3_and_iam_deployment
+    - name: Setup IAM and S3 Services
+      run: |-
+        set -e -o pipefail;
+        mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb
+        chown -R runner:docker logs data
+        chmod -R ugo+rwx logs data
+        docker compose --profile iam_s3 up -d --quiet-pull
+        bash ../scripts/wait_for_local_port.bash 8600 30
+        bash ../scripts/wait_for_local_port.bash 8000 30
+      working-directory: .github/s3_and_iam_deployment
 
     - name: Build, tag, and load docker image into Kind Registry
       env:
@@ -132,17 +133,17 @@ jobs:
       run: |
         kubectl get all --all-namespaces
 
-    # - name: Run E2E Tests (SystemdMounter)
-    #   env:
-    #     ACTION: "run_tests"
-    #   run: |
-    #     tests/e2e-kubernetes/scripts/run.sh
-
-    - name: Run Performance Tests
+    - name: Run E2E Tests (SystemdMounter)
       env:
-        ACTION: "run_perf"
+        ACTION: "run_tests"
       run: |
         tests/e2e-kubernetes/scripts/run.sh
+
+    # - name: Run Performance Tests
+    #   env:
+    #     ACTION: "run_perf"
+    #   run: |
+    #     tests/e2e-kubernetes/scripts/run.sh
 
     # - name: Install the driver (PodMounter)
     #   env:
