@@ -18,8 +18,6 @@ source "${BASE_DIR}"/helm.sh
 TEST_DIR=${BASE_DIR}/../csi-test-artifacts
 BIN_DIR=${TEST_DIR}/bin
 
-HELM_BIN=${BIN_DIR}/helm
-
 ARCH=${ARCH:-x86}
 SELINUX_MODE=${SELINUX_MODE:-}
 
@@ -34,85 +32,19 @@ mkdir -p ${TEST_DIR}
 mkdir -p ${BIN_DIR}
 export PATH="$PATH:${BIN_DIR}"
 
-# function kubectl_install() {
-#   curl -LO "https://dl.k8s.io/release/v$K8S_VERSION/bin/linux/amd64/kubectl"
-#   curl -LO "https://dl.k8s.io/release/v$K8S_VERSION/bin/linux/amd64/kubectl.sha256"
-#   echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
-#   sudo install -o root -g root -m 0755 kubectl ${KUBECTL_INSTALL_PATH}/kubectl
-# }
-
 function print_cluster_info() {
-  $KUBECTL_BIN logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
-  $KUBECTL_BIN version --kubeconfig ${KUBECONFIG}
-  $KUBECTL_BIN get nodes -o wide --kubeconfig ${KUBECONFIG}
+  kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
+  kubectl version --kubeconfig ${KUBECONFIG}
+  kubectl get nodes -o wide --kubeconfig ${KUBECONFIG}
 }
 
-
-function create_cluster() {
-  if [[ "${CLUSTER_TYPE}" == "kops" ]]; then
-    kops_create_cluster \
-      "$CLUSTER_NAME" \
-      "$KOPS_BIN" \
-      "$ZONES" \
-      "$NODE_COUNT" \
-      "$INSTANCE_TYPE" \
-      "$AMI_ID" \
-      "$K8S_VERSION_KOPS" \
-      "$CLUSTER_FILE" \
-      "$KUBECONFIG" \
-      "$KOPS_PATCH_FILE" \
-      "$KOPS_PATCH_NODE_FILE" \
-      "$KOPS_STATE_FILE" \
-      "$SSH_KEY" \
-      "$KOPS_PATCH_NODE_SELINUX_ENFORCING_FILE"
-  elif [[ "${CLUSTER_TYPE}" == "eksctl" ]]; then
-    eksctl_create_cluster \
-      "$CLUSTER_NAME" \
-      "$REGION" \
-      "$KUBECONFIG" \
-      "$CLUSTER_FILE" \
-      "$EKSCTL_BIN" \
-      "$KUBECTL_BIN" \
-      "$EKSCTL_PATCH_FILE" \
-      "$ZONES" \
-      "$CI_ROLE_ARN" \
-      "$INSTANCE_TYPE" \
-      "$AMI_FAMILY" \
-      "$K8S_VERSION_EKSCTL" \
-      "$EKSCTL_PATCH_SELINUX_ENFORCING_FILE"
-  fi
-}
-
-function delete_cluster() {
-  if [[ "${CLUSTER_TYPE}" == "kops" ]]; then
-    kops_delete_cluster \
-      "${KOPS_BIN}" \
-      "${CLUSTER_NAME}" \
-      "${KOPS_STATE_FILE}" \
-      "${FORCE:-}"
-  elif [[ "${CLUSTER_TYPE}" == "eksctl" ]]; then
-    eksctl_delete_cluster \
-      "$EKSCTL_BIN" \
-      "$CLUSTER_NAME" \
-      "$REGION" \
-      "${FORCE:-}"
-  fi
-}
-
-function update_kubeconfig() {
-  if [[ "${CLUSTER_TYPE}" == "kops" ]]; then
-    ${KOPS_BIN} export kubecfg --state "${KOPS_STATE_FILE}" "${CLUSTER_NAME}" --admin --kubeconfig "${KUBECONFIG}"
-  elif [[ "${CLUSTER_TYPE}" == "eksctl" ]]; then
-    aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION} --kubeconfig=${KUBECONFIG}
-  fi
-}
 
 function e2e_cleanup() {
   set -e
-  if driver_installed ${HELM_BIN} ${HELM_RELEASE_NAME} ${KUBECONFIG}; then
-    for ns in $($KUBECTL_BIN get namespaces -o custom-columns=":metadata.name" --kubeconfig "${KUBECONFIG}" | grep -E "^aws-s3-csi-e2e-.*|^volume-.*"); do
-      $KUBECTL_BIN delete all --all -n $ns --timeout=2m --kubeconfig "${KUBECONFIG}"
-      $KUBECTL_BIN delete namespace $ns --timeout=2m --kubeconfig "${KUBECONFIG}"
+  if driver_installed ${HELM_RELEASE_NAME}; then
+    for ns in $(kubectl get namespaces -o custom-columns=":metadata.name" --kubeconfig "${KUBECONFIG}" | grep -E "^aws-s3-csi-e2e-.*|^volume-.*"); do
+      kubectl delete all --all -n $ns --timeout=2m --kubeconfig "${KUBECONFIG}"
+      kubectl delete namespace $ns --timeout=2m --kubeconfig "${KUBECONFIG}"
     done
   fi
   set +e
@@ -123,9 +55,9 @@ function e2e_cleanup() {
 }
 
 function print_cluster_info() {
-  $KUBECTL_BIN logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
-  $KUBECTL_BIN version --kubeconfig ${KUBECONFIG}
-  $KUBECTL_BIN get nodes -o wide --kubeconfig ${KUBECONFIG}
+  kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
+  kubectl version --kubeconfig ${KUBECONFIG}
+  kubectl get nodes -o wide --kubeconfig ${KUBECONFIG}
 }
 
 if [[ "${ACTION}" == "create_cluster" ]]; then
@@ -134,12 +66,9 @@ elif [[ "${ACTION}" == "update_kubeconfig" ]]; then
   update_kubeconfig
 elif [[ "${ACTION}" == "install_driver" ]]; then
   helm_install_driver \
-    "$HELM_BIN" \
-    "$KUBECTL_BIN" \
     "$HELM_RELEASE_NAME" \
     "${REGISTRY}/${IMAGE_NAME}" \
     "${TAG}" \
-    "${KUBECONFIG}" \
     "${MOUNTER_KIND}"
 elif [[ "${ACTION}" == "run_tests" ]]; then
   set +e
@@ -159,10 +88,7 @@ elif [[ "${ACTION}" == "run_perf" ]]; then
   exit $EXIT_CODE
 elif [[ "${ACTION}" == "uninstall_driver" ]]; then
   helm_uninstall_driver \
-    "$HELM_BIN" \
-    "$KUBECTL_BIN" \
-    "$HELM_RELEASE_NAME" \
-    "${KUBECONFIG}"
+    "$HELM_RELEASE_NAME"
 elif [[ "${ACTION}" == "delete_cluster" ]]; then
   delete_cluster
 elif [[ "${ACTION}" == "e2e_cleanup" ]]; then
