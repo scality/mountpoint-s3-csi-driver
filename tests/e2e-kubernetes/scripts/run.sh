@@ -11,8 +11,6 @@ IMAGE_NAME=${IMAGE_NAME:-}
 TAG=${TAG:-}
 
 BASE_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
-source "${BASE_DIR}"/kops.sh
-source "${BASE_DIR}"/eksctl.sh
 source "${BASE_DIR}"/helm.sh
 
 TEST_DIR=${BASE_DIR}/../csi-test-artifacts
