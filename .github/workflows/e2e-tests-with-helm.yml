@@ -128,7 +128,11 @@ jobs:
       run: |
         kubectl get all --all-namespaces
 
-
+    - name: Run E2E Tests (SystemdMounter)
+      env:
+        ACTION: "run_tests"
+      run: |
+        tests/e2e-kubernetes/scripts/run.sh
 
     # - name: Install Scality COSI Driver using Helm Chart
     #   run: |
