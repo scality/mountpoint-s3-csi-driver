@@ -3,7 +3,7 @@
 set -euox pipefail
 
 function helm_uninstall_driver() {
-  RELEASE_NAME=${3}
+  RELEASE_NAME=${1}
   if driver_installed helm ${RELEASE_NAME}; then
     helm uninstall $RELEASE_NAME --namespace kube-system
     kubectl wait --for=delete pod --selector="app=s3-csi-node" -n kube-system --timeout=60s
@@ -41,7 +41,7 @@ function helm_install_driver() {
 }
 
 function driver_installed() {
-  RELEASE_NAME=${2}
+  RELEASE_NAME=${1}
   set +e
   if [[ $(helm list -A | grep $RELEASE_NAME) == *deployed* ]]; then
     set -e
