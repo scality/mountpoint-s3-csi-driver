@@ -30,8 +30,8 @@ function helm_install_driver() {
     "$RELEASE_NAME"
 
   pwd
-  helm upgrade --install ${RELEASE_NAME} --namespace kube-system ../../../charts/aws-mountpoint-s3-csi-driver --values \
-    ../../../charts/aws-mountpoint-s3-csi-driver/values.yaml \
+  helm upgrade --install ${RELEASE_NAME} --namespace kube-system ./charts/scality-mountpoint-s3-csi-driver --values \
+    ./charts/scality-mountpoint-s3-csi-driver/values.yaml \
     --set image.repository=${REPOSITORY} \
     --set image.tag=${TAG} \
     --set node.serviceAccount.create=true \
