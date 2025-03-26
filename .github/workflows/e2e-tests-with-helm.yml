@@ -80,6 +80,7 @@ jobs:
         echo ${HOME}
         echo ${HOME}/.kube/config
         echo $HOME/.kube/config
+        cat $HOME/.kube/config
 
     - name: "Debug: SSH to runner"
       uses: scality/actions/action-ssh-to-runner@v1
