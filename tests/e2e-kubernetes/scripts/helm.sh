@@ -28,6 +28,8 @@ function helm_install_driver() {
 
   helm_uninstall_driver \
     "$RELEASE_NAME"
+
+  pwd
   helm upgrade --install ${RELEASE_NAME} --namespace kube-system ../../../charts/aws-mountpoint-s3-csi-driver --values \
     ../../../charts/aws-mountpoint-s3-csi-driver/values.yaml \
     --set image.repository=${REPOSITORY} \
