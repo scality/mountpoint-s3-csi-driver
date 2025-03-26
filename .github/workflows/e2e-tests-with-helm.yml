@@ -31,6 +31,7 @@ env:
   CS_SECRET_ACCESS_KEY: "verySecretKey1"
   PLATFORM: "linux/amd64"
   S3_REGION: "us-east-1"
+  TAG: "latest"
 
 jobs:
   e2e-tests-with-helm:
@@ -127,7 +128,7 @@ jobs:
       run: |
         kubectl get all --all-namespaces
 
-    
+
 
     # - name: Install Scality COSI Driver using Helm Chart
     #   run: |
