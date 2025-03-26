@@ -31,18 +31,18 @@ mkdir -p ${BIN_DIR}
 export PATH="$PATH:${BIN_DIR}"
 
 function print_cluster_info() {
-  kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
-  kubectl version --kubeconfig ${KUBECONFIG}
-  kubectl get nodes -o wide --kubeconfig ${KUBECONFIG}
+  kubectl logs -l app=s3-csi-node -n kube-system
+  kubectl version
+  kubectl get nodes -o wide
 }
 
 
 function e2e_cleanup() {
   set -e
   if driver_installed ${HELM_RELEASE_NAME}; then
-    for ns in $(kubectl get namespaces -o custom-columns=":metadata.name" --kubeconfig "${KUBECONFIG}" | grep -E "^aws-s3-csi-e2e-.*|^volume-.*"); do
-      kubectl delete all --all -n $ns --timeout=2m --kubeconfig "${KUBECONFIG}"
-      kubectl delete namespace $ns --timeout=2m --kubeconfig "${KUBECONFIG}"
+    for ns in $(kubectl get namespaces -o custom-columns=":metadata.name" | grep -E "^aws-s3-csi-e2e-.*|^volume-.*"); do
+      kubectl delete all --all -n $ns --timeout=2m
+      kubectl delete namespace $ns --timeout=2m
     done
   fi
   set +e
@@ -53,9 +53,9 @@ function e2e_cleanup() {
 }
 
 function print_cluster_info() {
-  kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
-  kubectl version --kubeconfig ${KUBECONFIG}
-  kubectl get nodes -o wide --kubeconfig ${KUBECONFIG}
+  kubectl logs -l app=s3-csi-node -n kube-system
+  kubectl version
+  kubectl get nodes -o wide
 }
 
 if [[ "${ACTION}" == "create_cluster" ]]; then
@@ -71,14 +71,14 @@ elif [[ "${ACTION}" == "install_driver" ]]; then
 elif [[ "${ACTION}" == "run_tests" ]]; then
   set +e
   pushd tests/e2e-kubernetes
-  KUBECONFIG=${KUBECONFIG} ginkgo -p -vv -timeout 60m -- --bucket-region=${REGION} --commit-id=${TAG} --bucket-prefix=${CLUSTER_NAME} --imds-available=true
+  ginkgo -p -vv -timeout 60m -- --bucket-region=${REGION} --commit-id=${TAG} --bucket-prefix=${CLUSTER_NAME} --imds-available=true
   EXIT_CODE=$?
   print_cluster_info
   exit $EXIT_CODE
 elif [[ "${ACTION}" == "run_perf" ]]; then
   set +e
   pushd tests/e2e-kubernetes
-  KUBECONFIG=${KUBECONFIG} go test -ginkgo.vv --bucket-region=${REGION} --commit-id=${TAG} --bucket-prefix=${CLUSTER_NAME} --performance=true --imds-available=true
+  go test -ginkgo.vv --bucket-region=${REGION} --commit-id=${TAG} --bucket-prefix=${CLUSTER_NAME} --performance=true --imds-available=true
   EXIT_CODE=$?
   print_cluster_info
   popd
