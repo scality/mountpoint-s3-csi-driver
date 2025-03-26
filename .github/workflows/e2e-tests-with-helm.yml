@@ -138,11 +138,11 @@ jobs:
       run: |
         tests/e2e-kubernetes/scripts/run.sh
 
-    # - name: Run Performance Tests
-    #   env:
-    #     ACTION: "run_perf"
-    #   run: |
-    #     tests/e2e-kubernetes/scripts/run.sh
+    - name: Run Performance Tests
+      env:
+        ACTION: "run_perf"
+      run: |
+        tests/e2e-kubernetes/scripts/run.sh
 
     # - name: Install the driver (PodMounter)
     #   env:
