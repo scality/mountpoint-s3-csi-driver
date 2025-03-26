@@ -73,7 +73,13 @@ jobs:
       run: |
         kubectl cluster-info
         kubectl get nodes
+        echo "test-variables"
         echo $KUBECONFIG
+        echo ${KUBECONFIG}
+        echo $HOME
+        echo ${HOME}
+        echo ${HOME}/.kube/config
+        echo $HOME/.kube/config
 
     - name: "Debug: SSH to runner"
       uses: scality/actions/action-ssh-to-runner@v1
