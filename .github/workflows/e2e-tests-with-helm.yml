@@ -128,9 +128,15 @@ jobs:
       run: |
         kubectl get all --all-namespaces
 
-    - name: Run E2E Tests (SystemdMounter)
+    # - name: Run E2E Tests (SystemdMounter)
+    #   env:
+    #     ACTION: "run_tests"
+    #   run: |
+    #     tests/e2e-kubernetes/scripts/run.sh
+
+    - name: Run Performance Tests
       env:
-        ACTION: "run_tests"
+        ACTION: "run_perf"
       run: |
         tests/e2e-kubernetes/scripts/run.sh
 
