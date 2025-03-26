@@ -18,7 +18,7 @@ function helm_install_driver() {
   RELEASE_NAME=${1}
   REPOSITORY=${2}
   TAG=${3}
-  MOUNTER_KIND=${7}
+  MOUNTER_KIND=${4}
 
   if [ "$MOUNTER_KIND" = "pod" ]; then
     USE_POD_MOUNTER=true
