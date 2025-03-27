@@ -39,3 +39,12 @@ runs:
       run: |
         docker pull ghcr.io/scality/mountpoint-s3-csi-driver:${{ github.sha }}
         kind load docker-image ghcr.io/scality/mountpoint-s3-csi-driver:${{ github.sha }} --name helm-test-cluster
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v4.3.0
+      with:
+        version: v3.17.2
+
+    - name: Set Host IP
+      shell: bash
+      run: echo "HOST_IP=$(hostname -I | awk '{print $1}')" >> $GITHUB_ENV
