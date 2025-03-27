@@ -1,21 +1,21 @@
 name: CI E2E Tests with Helm
 
-on:
-  push:
-    branches:
-      - '**'
-  workflow_dispatch:
-    inputs:
-      debug_enabled:
-        type: boolean
-        description: 'Run the build with tmate debugging enabled'
-        required: false
-        default: false
-      debug_delay_duration_minutes:
-        type: number
-        description: 'Duration to delay job completion in minutes'
-        required: false
-        default: 5
+# on:
+#   push:
+#     branches:
+#       - '**'
+#   workflow_dispatch:
+#     inputs:
+#       debug_enabled:
+#         type: boolean
+#         description: 'Run the build with tmate debugging enabled'
+#         required: false
+#         default: false
+#       debug_delay_duration_minutes:
+#         type: number
+#         description: 'Duration to delay job completion in minutes'
+#         required: false
+#         default: 5
 
 env:
   IMAGE_NAME: "mountpoint-s3-csi-driver"

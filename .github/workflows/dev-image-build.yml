@@ -1,0 +1,19 @@
+# .github/workflows/dev-image-build.yml
+name: Build Development Image
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build-dev-image:
+    permissions:
+      contents: read
+      packages: write
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
+    with:
+      context: .
+      name: mountpoint-s3-csi-driver
+      namespace: ${{ github.repository_owner }}
+      tag: ${{ github.sha }}
