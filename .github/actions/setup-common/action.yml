@@ -29,15 +29,15 @@ runs:
       shell: bash
       run: go install github.com/onsi/ginkgo/v2/ginkgo
 
-    - name: Create Kind Cluster
-      uses: helm/kind-action@v1.12.0
-      with:
-        version: v0.21.0
-        wait: 90s
-        cluster_name: helm-test-cluster
+    # - name: Create Kind Cluster
+    #   uses: helm/kind-action@v1.12.0
+    #   with:
+    #     version: v0.21.0
+    #     wait: 90s
+    #     cluster_name: helm-test-cluster
 
-    - name: Pull Dev Image into KIND Cluster
-      shell: bash
-      run: |
-        docker pull ghcr.io/scality/mountpoint-s3-csi-driver:${{ github.sha }}
-        kind load docker-image ghcr.io/scality/mountpoint-s3-csi-driver:${{ github.sha }} --name helm-test-cluster
+    # - name: Pull Dev Image into KIND Cluster
+    #   shell: bash
+    #   run: |
+    #     docker pull ghcr.io/scality/mountpoint-s3-csi-driver:${{ github.sha }}
+    #     kind load docker-image ghcr.io/scality/mountpoint-s3-csi-driver:${{ github.sha }} --name helm-test-cluster
