@@ -39,14 +39,14 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: scality/mountpoint-s3-csi-driver
 
-  # dev-image:
-  #   name: Dev Image
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   uses: scality/workflows/.github/workflows/docker-build.yaml@v2
-  #   with:
-  #     context: .
-  #     name: mountpoint-s3-csi-driver
-  #     namespace: ${{ github.repository_owner }}
-  #     tag: ${{ github.sha }}
+  dev-image:
+    name: Dev Image
+    permissions:
+      contents: read
+      packages: write
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
+    with:
+      context: .
+      name: mountpoint-s3-csi-driver
+      namespace: ${{ github.repository_owner }}
+      tag: ${{ github.sha }}
