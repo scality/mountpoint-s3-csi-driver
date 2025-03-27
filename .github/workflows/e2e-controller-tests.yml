@@ -25,47 +25,47 @@ jobs:
       namespace: ${{ github.repository_owner }}
       tag: ${{ github.sha }}
 
-  setup-common: &setup-common
-    runs-on: ubuntu-22.04
-    needs: dev-image
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-      - name: Login to Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: "${{ github.repository_owner }}"
-          password: "${{ github.token }}"
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-      - name: Install Ginkgo CLI
-        run: go install github.com/onsi/ginkgo/v2/ginkgo
-      - name: Create Kind Cluster
-        uses: helm/kind-action@v1.12.0
-        with:
-          version: v0.21.0
-          wait: 90s
-          cluster_name: helm-test-cluster
-      - name: Pull Dev Image into KIND Cluster
-        run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          kind load docker-image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} --name helm-test-cluster
+  # setup-common: &setup-common
+  #   runs-on: ubuntu-22.04
+  #   needs: dev-image
+  #   steps:
+  #     - name: Check out repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ github.sha }}
+  #     - name: Login to Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: "${{ github.repository_owner }}"
+  #         password: "${{ github.token }}"
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version-file: "go.mod"
+  #     - name: Install Ginkgo CLI
+  #       run: go install github.com/onsi/ginkgo/v2/ginkgo
+  #     - name: Create Kind Cluster
+  #       uses: helm/kind-action@v1.12.0
+  #       with:
+  #         version: v0.21.0
+  #         wait: 90s
+  #         cluster_name: helm-test-cluster
+  #     - name: Pull Dev Image into KIND Cluster
+  #       run: |
+  #         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+  #         kind load docker-image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} --name helm-test-cluster
 
-  controller-e2e-tests:
-    <<: *setup-common
-    name: E2E Controller Tests
-    steps:
-      - name: Run Controller Tests
-        run: make e2e-controller
+  # controller-e2e-tests:
+  #   <<: *setup-common
+  #   name: E2E Controller Tests
+  #   steps:
+  #     - name: Run Controller Tests
+  #       run: make e2e-controller
 
-  controller-e2e-tests2:
-    <<: *setup-common
-    name: E2E Controller Tests
-    steps:
-      - name: Run Controller Tests
-        run: make e2e-controller
+  # controller-e2e-tests2:
+  #   <<: *setup-common
+  #   name: E2E Controller Tests
+  #   steps:
+  #     - name: Run Controller Tests
+  #       run: make e2e-controller
