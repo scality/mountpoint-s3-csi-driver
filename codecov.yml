@@ -1,3 +1,8 @@
+codecov:
+  notify:
+    wait_for_ci: true
+    after_n_builds: 1
+
 comment:
   layout: newheader, reach, files, components, diff, flags # show component info in the PR comment
   hide_comment_details: true  # hide the comment details (e.g. coverage targets) in the PR comment
@@ -11,8 +16,8 @@ coverage:
         removed_code_behavior: adjust_base
     patch:
       default:
-        target: 40%
-        threshold: 40%
+        target: 90%
+        threshold: 10%
 
 github_checks:
   annotations: true
