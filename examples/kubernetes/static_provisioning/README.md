@@ -25,6 +25,26 @@ This example shows how to make a static provisioned Mountpoint for S3 persistent
   helm install s3-csi-driver -f values.yaml aws-mountpoint-s3-csi-driver/aws-mountpoint-s3-csi-driver
   ```
 
+  To set the endpoint URL at the driver level when using kustomize, create a custom overlay:
+  
+  ```yaml
+  # kustomization.yaml
+  apiVersion: kustomize.config.k8s.io/v1beta1
+  kind: Kustomization
+  resources:
+    - github.com/awslabs/mountpoint-s3-csi-driver/deploy/kubernetes/overlays/stable/?ref=<YOUR-CSI-DRIVER-VERSION-NUMBER>
+  configMapGenerator:
+    - name: s3-csi-driver-config
+      behavior: merge
+      literals:
+        - endpoint-url=https://bucket.vpce-0e25b8cdd720f900e-argc85vg.s3.us-west-2.vpce.amazonaws.com
+  ```
+  
+  Then apply your custom overlay:
+  ```
+  kubectl apply -k path/to/your/overlay
+  ```
+
 ## Configure
 ### Edit [Persistent Volume](https://github.com/awslabs/mountpoint-s3-csi-driver/blob/main/examples/kubernetes/static_provisioning/static_provisioning.yaml)
 > Note: This example assumes your S3 bucket has already been created. If you need to create a bucket, follow the [S3 documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html) for a general purpose bucket or the [S3 Express One Zone documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-create.html) for a directory bucket.

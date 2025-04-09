@@ -54,6 +54,24 @@ kubectl apply -k "github.com/awslabs/mountpoint-s3-csi-driver/deploy/kubernetes/
 > [!WARNING]
 > Using the main branch to deploy the driver is not supported. The main branch may contain upcoming features incompatible with the currently released stable version of the driver.
 
+To set a custom S3 endpoint URL with kustomize, create a new overlay with the following kustomization.yaml:
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - github.com/awslabs/mountpoint-s3-csi-driver/deploy/kubernetes/overlays/stable/?ref=<YOUR-CSI-DRIVER-VERSION-NUMBER>
+configMapGenerator:
+  - name: s3-csi-driver-config
+    behavior: merge
+    literals:
+      - endpoint-url=https://your-custom-s3-endpoint.com
+```
+
+Then apply your custom overlay:
+```sh
+kubectl apply -k path/to/your/overlay
+```
+
 #### Helm
 - Add the `aws-mountpoint-s3-csi-driver` Helm repository.
 ```sh

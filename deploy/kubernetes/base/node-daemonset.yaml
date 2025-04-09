@@ -104,6 +104,13 @@ spec:
                   name: aws-secret
                   key: session_token
                   optional: true
+            # AWS S3 endpoint URL to use for all volume mounts (takes precedence over PV-level endpoint-url settings)
+            - name: AWS_ENDPOINT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: s3-csi-driver-config
+                  key: endpoint-url
+                  optional: true
           volumeMounts:
             - name: kubelet-dir
               mountPath: /var/lib/kubelet
