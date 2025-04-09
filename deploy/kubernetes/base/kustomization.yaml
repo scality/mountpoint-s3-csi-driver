@@ -6,6 +6,7 @@ resources:
   - node-daemonset.yaml
   - node-serviceaccount.yaml
   - s3-csi-driver-config.yaml
+  - aws-secret.yaml
 secretGenerator:
   - name: aws-credentials
     behavior: create

@@ -7,4 +7,4 @@ metadata:
     app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
 data:
   # Uncomment and set the endpoint-url if needed
-  # endpoint-url: "https://your-custom-s3-endpoint.com" 
+  # endpoint-url: "http://192.168.1.42:8000" 

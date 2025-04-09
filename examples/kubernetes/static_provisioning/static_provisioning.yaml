@@ -13,13 +13,14 @@ spec:
     name: s3-pvc # Name of your PVC
   mountOptions:
     - allow-delete
-    - region us-west-2
-    - prefix some-s3-prefix/
+    # - region us-west-2
+    # - prefix some-s'3-prefix/
+    - endpoint-url http://192.168.1.42:8000
   csi:
     driver: s3.csi.aws.com # Required
-    volumeHandle: s3-csi-driver-volume
+    volumeHandle: demo-volume
     volumeAttributes:
-      bucketName: s3-csi-driver
+      bucketName: demo
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -41,7 +42,7 @@ metadata:
 spec:
   containers:
     - name: app
-      image: centos
+      image: ubuntu
       command: ["/bin/sh"]
       args: ["-c", "echo 'Hello from the container!' >> /data/$(date -u).txt; tail -f /dev/null"]
       volumeMounts:
