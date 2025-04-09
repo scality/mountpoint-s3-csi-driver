@@ -185,6 +185,69 @@ func TestPodMounter(t *testing.T) {
 			}, got)
 		})
 
+		t.Run("Ignores endpoint-url in mount options", func(t *testing.T) {
+			testCtx := setup(t)
+
+			devNull := mountertest.OpenDevNull(t)
+
+			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
+				testCtx.mount.Mount("mountpoint-s3", target, "fuse", nil)
+
+				// Check that endpoint-url is not in the args
+				for _, arg := range args.SortedList() {
+					if strings.Contains(arg, "--endpoint-url") {
+						t.Fatal("endpoint-url should be removed from args")
+					}
+				}
+
+				fd, err = syscall.Dup(int(devNull.Fd()))
+				assert.NoError(t, err)
+
+				return fd, nil
+			}
+
+			// Include endpoint-url in the mount options
+			args := mountpoint.ParseArgs([]string{
+				mountpoint.ArgReadOnly,
+				"--endpoint-url=https://custom-endpoint.example.com",
+			})
+
+			mountRes := make(chan error)
+			go func() {
+				err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+					VolumeID:             testCtx.volumeID,
+					PodID:                testCtx.podUID,
+				}, args)
+				if err != nil {
+					log.Println("Mount failed", err)
+				}
+				mountRes <- err
+			}()
+
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+
+			got := mpPod.receiveMountOptions(testCtx.ctx)
+
+			err := <-mountRes
+			assert.NoError(t, err)
+
+			// Verify endpoint-url is not in the mount options sent to the pod
+			for _, arg := range got.Args {
+				if strings.Contains(arg, "--endpoint-url") {
+					t.Fatal("endpoint-url should not be present in the args sent to the pod")
+				}
+			}
+
+			// Verify endpoint-url from mount options is not in the environment
+			for _, env := range got.Env {
+				if strings.Contains(env, "AWS_ENDPOINT_URL=https://custom-endpoint.example.com") {
+					t.Fatal("endpoint-url from mount options should not be added to environment")
+				}
+			}
+		})
+
 		t.Run("Waits for Mountpoint Pod", func(t *testing.T) {
 			testCtx := setup(t)
 

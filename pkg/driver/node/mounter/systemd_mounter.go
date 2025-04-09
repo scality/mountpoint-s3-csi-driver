@@ -123,6 +123,10 @@ func (m *SystemdMounter) Mount(ctx context.Context, bucketName string, target st
 		env.Set(envprovider.EnvMaxAttempts, maxAttempts)
 	}
 
+	// Always remove `--endpoint-url` from args if provided
+	// This ensures PV-level endpoint configuration is always ignored
+	args.Remove(mountpoint.ArgEndpointURL)
+
 	args.Set(mountpoint.ArgUserAgentPrefix, UserAgent(authenticationSource, m.kubernetesVersion))
 
 	output, err := m.Runner.StartService(timeoutCtx, &system.ExecConfig{

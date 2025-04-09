@@ -124,6 +124,10 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 		env.Set(envprovider.EnvMaxAttempts, maxAttempts)
 	}
 
+	// Always remove `--endpoint-url` from args if provided
+	// This ensures PV-level endpoint configuration is always ignored
+	args.Remove(mountpoint.ArgEndpointURL)
+
 	args.Set(mountpoint.ArgUserAgentPrefix, UserAgent(authenticationSource, pm.kubernetesVersion))
 
 	podMountSockPath := mppod.PathOnHost(podPath, mppod.KnownPathMountSock)

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"slices"
+
 	"github.com/awslabs/aws-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/awslabs/aws-s3-csi-driver/pkg/driver/node/mounter"
 	mock_driver "github.com/awslabs/aws-s3-csi-driver/pkg/driver/node/mounter/mocks"
@@ -16,7 +18,6 @@ import (
 	"github.com/awslabs/aws-s3-csi-driver/pkg/util/testutil/assert"
 	"github.com/golang/mock/gomock"
 	"k8s.io/mount-utils"
-	"slices"
 )
 
 type mounterTestEnv struct {
@@ -114,6 +115,103 @@ func TestS3MounterMount(t *testing.T) {
 					}
 					t.Fatal("Bad env")
 					return "", nil
+				})
+			},
+		},
+		{
+			name:       "success: endpoint url",
+			bucketName: testBucketName,
+			targetPath: testTargetPath,
+			provideCtx: credentialprovider.ProvideContext{},
+			options:    []string{"--endpoint-url=https://custom-endpoint.example.com"},
+			before: func(t *testing.T, env *mounterTestEnv) {
+				env.mockRunner.EXPECT().StartService(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, config *system.ExecConfig) (string, error) {
+					// Check that the endpoint URL is not passed in the environment
+					for _, envVar := range config.Env {
+						if strings.Contains(envVar, "AWS_ENDPOINT_URL=") {
+							t.Fatal("Endpoint URL should not be passed from mountOptions")
+						}
+					}
+
+					// Check that the endpoint URL is not passed in the arguments
+					for _, arg := range config.Args {
+						if strings.Contains(arg, "--endpoint-url") {
+							t.Fatal("Endpoint URL arg should be removed from mountOptions")
+						}
+					}
+
+					return "success", nil
+				})
+			},
+		},
+		{
+			name:       "success: driver environment endpoint url",
+			bucketName: testBucketName,
+			targetPath: testTargetPath,
+			provideCtx: credentialprovider.ProvideContext{},
+			options:    []string{"--aws-max-attempts=10"},
+			before: func(t *testing.T, env *mounterTestEnv) {
+				// Set AWS_ENDPOINT_URL in the environment
+				t.Setenv("AWS_ENDPOINT_URL", "https://driver-endpoint.example.com")
+
+				env.mockRunner.EXPECT().StartService(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, config *system.ExecConfig) (string, error) {
+					// Verify that the environment variable is passed to mountpoint-s3
+					endpointPassed := false
+					for _, envVar := range config.Env {
+						if envVar == "AWS_ENDPOINT_URL=https://driver-endpoint.example.com" {
+							endpointPassed = true
+							break
+						}
+					}
+
+					if !endpointPassed {
+						t.Fatal("Driver level AWS_ENDPOINT_URL should be passed to mountpoint-s3")
+					}
+
+					return "success", nil
+				})
+			},
+		},
+		{
+			name:       "success: driver endpoint takes precedence over mount options",
+			bucketName: testBucketName,
+			targetPath: testTargetPath,
+			provideCtx: credentialprovider.ProvideContext{},
+			options:    []string{"--endpoint-url=https://mount-options-endpoint.example.com"},
+			before: func(t *testing.T, env *mounterTestEnv) {
+				// Set AWS_ENDPOINT_URL in the environment
+				t.Setenv("AWS_ENDPOINT_URL", "https://driver-endpoint.example.com")
+
+				env.mockRunner.EXPECT().StartService(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, config *system.ExecConfig) (string, error) {
+					// Check that the mount options endpoint is not passed in arguments
+					for _, arg := range config.Args {
+						if strings.Contains(arg, "--endpoint-url") {
+							t.Fatal("Mount options endpoint URL should be removed")
+						}
+					}
+
+					// Verify that only the driver environment endpoint is passed
+					driverEndpointFound := false
+					mountOptionsEndpointFound := false
+
+					for _, envVar := range config.Env {
+						if envVar == "AWS_ENDPOINT_URL=https://driver-endpoint.example.com" {
+							driverEndpointFound = true
+						}
+						if envVar == "AWS_ENDPOINT_URL=https://mount-options-endpoint.example.com" {
+							mountOptionsEndpointFound = true
+						}
+					}
+
+					if !driverEndpointFound {
+						t.Fatal("Driver level AWS_ENDPOINT_URL should be passed to mountpoint-s3")
+					}
+
+					if mountOptionsEndpointFound {
+						t.Fatal("Mount options endpoint URL should not be added to environment")
+					}
+
+					return "success", nil
 				})
 			},
 		},
