@@ -23,6 +23,7 @@ const (
 	EnvSecretAccessKey       = "AWS_SECRET_ACCESS_KEY"
 	EnvSessionToken          = "AWS_SESSION_TOKEN"
 	EnvMountpointCacheKey    = "UNSTABLE_MOUNTPOINT_CACHE_KEY"
+	EnvS3EndpointURL         = "AWS_ENDPOINT_URL"
 )
 
 // Key represents an environment variable name.

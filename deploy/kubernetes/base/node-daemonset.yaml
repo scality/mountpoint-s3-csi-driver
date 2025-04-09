@@ -71,7 +71,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - --endpoint=$(CSI_ENDPOINT)
-            - --v=4
+            - --v=5
           env:
             - name: CSI_ENDPOINT
               value: unix:/csi/csi.sock
@@ -103,6 +103,12 @@ spec:
                 secretKeyRef:
                   name: aws-secret
                   key: session_token
+                  optional: true
+            - name: AWS_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: s3_endpoint
                   optional: true
           volumeMounts:
             - name: kubelet-dir

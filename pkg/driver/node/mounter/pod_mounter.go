@@ -121,7 +121,12 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 
 	// Move `--aws-max-attempts` to env if provided
 	if maxAttempts, ok := args.Remove(mountpoint.ArgAWSMaxAttempts); ok {
+		klog.V(4).Infof("Setting %s to %s", envprovider.EnvMaxAttempts, maxAttempts)
 		env.Set(envprovider.EnvMaxAttempts, maxAttempts)
+	}
+	if s3EndpointUrl, ok := args.Remove(mountpoint.ArgS3EndpointURL); ok {
+		klog.V(4).Infof("Setting %s to %s", envprovider.EnvS3EndpointURL, s3EndpointUrl)
+		env.Set(envprovider.EnvS3EndpointURL, s3EndpointUrl)
 	}
 
 	args.Set(mountpoint.ArgUserAgentPrefix, UserAgent(authenticationSource, pm.kubernetesVersion))
