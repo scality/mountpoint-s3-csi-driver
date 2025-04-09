@@ -1,0 +1,232 @@
+name: CI E2E Tests with Helm
+
+# on:
+#   push:
+#     branches:
+#       - '**'
+#   workflow_dispatch:
+#     inputs:
+#       debug_enabled:
+#         type: boolean
+#         description: 'Run the build with tmate debugging enabled'
+#         required: false
+#         default: false
+#       debug_delay_duration_minutes:
+#         type: number
+#         description: 'Duration to delay job completion in minutes'
+#         required: false
+#         default: 5
+
+env:
+  IMAGE_NAME: "mountpoint-s3-csi-driver"
+  REGISTRY: "ghcr.io/scality"
+  BENCHMARK_ARTIFACTS_FOLDER: ".github/artifacts"
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  # KOPS_STATE_FILE: "s3://${{ vars.KOPS_STATE_FILE }}"
+  BENCHMARK_BUCKET: "s3://benchmark-results"
+  CLOUDSERVER_IMAGE: ${{ vars.CLOUDSERVER_IMAGE }}
+  VAULT_IMAGE: ${{ vars.VAULT_IMAGE }}
+  # TODO: S3CSI-1 enable IAM with VAULT for auth.
+  CS_ACCESS_KEY_ID: "accessKey1"
+  CS_SECRET_ACCESS_KEY: "verySecretKey1"
+  PLATFORM: "linux/amd64"
+  S3_REGION: "us-east-1"
+  TAG: "latest"
+  KUBECONFIG: /home/runner/.kube/config
+  HOST_IP: $(hostname -I | awk '{print $1}')
+
+jobs:
+  e2e-tests-with-helm:
+    name: Run E2E Tests
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Login to Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: "${{ github.repository_owner }}"
+        password: "${{ github.token }}"
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: "go.mod"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v4.3.0
+      with:
+        version: v3.17.2
+
+    - name: Create Kind Cluster
+      uses: helm/kind-action@v1.12.0
+      with:
+        version: v0.21.0
+        wait: 90s
+        cluster_name: helm-test-cluster
+
+    - name: Verify KIND cluster is running
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+        echo "test-variables"
+        echo $KUBECONFIG
+        cat $KUBECONFIG
+
+    - name: "Debug: SSH to runner"
+      uses: scality/actions/action-ssh-to-runner@v1
+      with:
+        tmate-server-host: ${{ secrets.TMATE_SERVER_HOST }}
+        tmate-server-port: ${{ secrets.TMATE_SERVER_PORT }}
+        tmate-server-rsa-fingerprint: ${{ secrets.TMATE_SERVER_RSA_FINGERPRINT }}
+        tmate-server-ed25519-fingerprint: ${{ secrets.TMATE_SERVER_ED25519_FINGERPRINT }}
+        detached: true
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      timeout-minutes: 10
+      continue-on-error: true
+
+    - name: Setup IAM and S3 Services
+      run: |-
+        set -e -o pipefail;
+        mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb
+        chown -R runner:docker logs data
+        chmod -R ugo+rwx logs data
+        docker compose --profile iam_s3 up -d --quiet-pull
+        bash ../scripts/wait_for_local_port.bash 8600 30
+        bash ../scripts/wait_for_local_port.bash 8000 30
+      working-directory: .github/s3_and_iam_deployment
+
+    - name: Build, tag, and load docker image into Kind Registry
+      env:
+        REGISTRY: ${{ env.REGISTRY }}
+        IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        PLATFORM: ${{ env.PLATFORM }}
+        TAG: latest
+      run: |
+        make build_image
+        kind load docker-image ghcr.io/scality/mountpoint-s3-csi-driver:latest --name helm-test-cluster
+
+    - name: Install Ginkgo CLI
+      run: go install github.com/onsi/ginkgo/v2/ginkgo
+
+    - name: Run Controller Tests
+      run: |
+        make e2e-controller
+
+    - name: (remove) Print all resources in all namespaces
+      run: |
+        kubectl get all --all-namespaces
+
+    - name: Install the driver (SystemdMounter)
+      env:
+        ACTION: "install_driver"
+      run: |
+        tests/e2e-kubernetes/scripts/run.sh
+
+    - name: (move this) Print all resources in all namespaces
+      run: |
+        kubectl get all --all-namespaces
+
+    - name: Run E2E Tests (SystemdMounter)
+      env:
+        ACTION: "run_tests"
+      run: |
+        tests/e2e-kubernetes/scripts/run.sh
+
+    # - name: Run Performance Tests
+    #   env:
+    #     ACTION: "run_perf"
+    #   run: |
+    #     tests/e2e-kubernetes/scripts/run.sh
+
+    # - name: Install the driver (PodMounter)
+    #   env:
+    #     ACTION: "install_driver"
+    #     MOUNTER_KIND: "pod"
+    #   run: |
+    #     tests/e2e-kubernetes/scripts/run.sh
+    # - name: Run E2E Tests (PodMounter)
+    #   env:
+    #     ACTION: "run_tests"
+    #   run: |
+    #     tests/e2e-kubernetes/scripts/run.sh
+
+    # - name: (move this) Print all resources in all namespaces
+    #   run: |
+    #     kubectl get all --all-namespaces
+
+    # - name: Install Scality COSI Driver using Helm Chart
+    #   run: |
+    #     helm install scality-mountpoint-s3-csi-driver ./helm/scality-mountpoint-s3-csi-driver \
+    #       --set image.tag=latest \
+    #       --set traces.otel_stdout=true
+
+    # - name: Verify Helm Installation
+    #   run: |
+    #     .github/scripts/verify_helm_install.sh
+
+    # - name: E2E tests for greenfield use case using kustomize
+    #   run: |
+    #     .github/scripts/e2e_tests_greenfield_use_case.sh
+
+    # - name: E2E tests for brownfield use case using kustomize
+    #   run: |
+    #     .github/scripts/e2e_tests_brownfield_use_case.sh
+
+    # # the script accepts number of requests for APIs: CREATE_BUCKET, DELETE_BUCKET, GET_INFO
+    # # GRANT_ACCESS and REVOKE_ACCESS in order
+    # # Example below we are testing for those API counts:
+    # # - 0 CREATE_BUCKET
+    # # - 0 DELETE_BUCKET
+    # # - 1 GET_INFO
+    # # - 0 GRANT_ACCESS
+    # # - 0 REVOKE_ACCESS
+    # - name: Verify metrics for healthcheck route
+    #   run: |
+    #     .github/scripts/e2e_tests_metrics.sh 2 1 1 2 2
+
+    # - name: "Delay completion"
+    #   if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+    #   uses: scality/actions/action-delay-job-completion@1.11.0
+    #   with:
+    #     completion_delay_m: ${{ inputs.debug_delay_duration_minutes }}
+    #   continue-on-error: true
+
+    # - name: Cleaup IAM and S3 Services
+    #   run: docker compose --profile iam_s3 down
+    #   working-directory: .github/s3_and_iam_deployment
+
+    # - name: Move S3 and IAM logs and data to artifacts directory
+    #   if: always()
+    #   run: |-
+    #     set -e -o pipefail;
+    #     mkdir -p .github/e2e_tests/artifacts/logs .github/e2e_tests/artifacts/data
+    #     cp -r .github/s3_and_iam_deployment/logs/* .github/e2e_tests/artifacts/logs/
+    #     cp -r .github/s3_and_iam_deployment/data/* .github/e2e_tests/artifacts/data/
+
+    # - name: Capture Kubernetes Logs in artifacts directory
+    #   if: always()
+    #   run: |
+    #     .github/scripts/capture_k8s_logs.sh
+
+    # - name: Cleanup Helm Release and Namespace
+    #   run: |
+    #     helm uninstall scality-cosi-driver -n container-object-storage-system
+    #     kubectl delete namespace container-object-storage-system
+    #   if: always()
+
+    # - name: Upload logs and data to Scality artifacts
+    #   if: always()
+    #   uses: scality/action-artifacts@v4
+    #   with:
+    #     method: upload
+    #     url: https://artifacts.scality.net
+    #     user: ${{ secrets.ARTIFACTS_USER }}
+    #     password: ${{ secrets.ARTIFACTS_PASSWORD }}
+    #     source: .github/e2e_tests/artifacts
