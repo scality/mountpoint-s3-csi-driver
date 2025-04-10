@@ -65,7 +65,6 @@ jobs:
             --bucket-region=us-east-1 \
             --commit-id=${{ github.sha }} \
             --bucket-prefix=helm-test-cluster \
-            --s3-endpoint-url=$S3_ENDPOINT_URL
           EXIT_CODE=$?
           kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
           kubectl version --kubeconfig ${KUBECONFIG}
