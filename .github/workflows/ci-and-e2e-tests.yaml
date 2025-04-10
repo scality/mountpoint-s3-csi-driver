@@ -9,6 +9,7 @@ env:
   CLOUDSERVER_IMAGE: ${{ vars.CLOUDSERVER_IMAGE }}
   AWS_ACCESS_KEY_ID: "accessKey1"
   AWS_SECRET_ACCESS_KEY: "verySecretKey1"
+  KUBECONFIG: "/home/runner/.kube/config"
 
 jobs:
   dev-image:
@@ -66,7 +67,9 @@ jobs:
             --bucket-prefix=helm-test-cluster \
             --s3-endpoint-url=$S3_ENDPOINT_URL
           EXIT_CODE=$?
-          print_cluster_info
+          kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
+          kubectl version --kubeconfig ${KUBECONFIG}
+          kubectl get nodes -o wide --kubeconfig ${KUBECONFIG}
           popd
           cat tests/e2e-kubernetes/csi-test-artifacts/output.json
           exit $EXIT_CODE
