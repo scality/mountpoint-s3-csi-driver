@@ -4,6 +4,10 @@ inputs:
   ref:
     description: "Git ref to checkout"
     required: true
+  deploy_csi_driver:
+    description: "Whether to deploy the CSI driver via Helm"
+    required: false
+    default: "true"
 runs:
   using: "composite"
   steps:
@@ -39,3 +43,42 @@ runs:
       run: |
         docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
         kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name helm-test-cluster
+
+    - name: Deploy Scality Storage
+      shell: bash
+      run: |-
+        set -e -o pipefail;
+        mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb
+        chown -R runner:docker logs
+        chmod -R ugo+rwx data
+        docker compose --profile s3 up -d --quiet-pull
+        bash ../scripts/wait_for_local_port.bash 8000 30
+      working-directory: .github/scality-storage-deployment
+      if: ${{ inputs.deploy_csi_driver == 'true' }}
+
+    - name: Set S3 Endpoint URL environment variable
+      shell: bash
+      run: |
+        echo "S3_ENDPOINT_URL=http://$(hostname -I | awk '{print $1}'):8000" >> $GITHUB_ENV
+        echo "S3 Endpoint URL: http://$(hostname -I | awk '{print $1}'):8000"
+      if: ${{ inputs.deploy_csi_driver == 'true' }}
+
+    - name: Setup Helm
+      uses: azure/setup-helm@v4.3.0
+      if: ${{ inputs.deploy_csi_driver == 'true' }}
+      
+    - name: Install CSI Driver with Helm
+      if: ${{ inputs.deploy_csi_driver == 'true' }}
+      shell: bash
+      run: |
+        helm upgrade --install mountpoint-s3-csi-driver --namespace kube-system ./charts/scality-mountpoint-s3-csi-driver --values \
+          ./charts/scality-mountpoint-s3-csi-driver/values.yaml \
+          --set image.repository=ghcr.io/${{ github.repository }} \
+          --set image.tag=${{ github.sha }} \
+          --set node.serviceAccount.create=true \
+          --set node.podInfoOnMountCompat.enable=true \
+          --set experimental.podMounter=systemd \
+          --set config.s3EndpointUrl=${{ env.S3_ENDPOINT_URL }}
+        kubectl rollout status daemonset s3-csi-node -n kube-system --timeout=60s
+        kubectl get pods -A
+        echo "s3-csi-node-image: $(kubectl get daemonset s3-csi-node -n kube-system -o jsonpath="{$.spec.template.spec.containers[:1].image}")"
