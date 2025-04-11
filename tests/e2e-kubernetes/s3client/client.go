@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	utilrand "k8s.io/apimachinery/pkg/util/rand"
@@ -19,6 +20,15 @@ import (
 // DefaultRegion is the default AWS region to use if unspecified.
 // It is public in order to be modified from test binary which receives region to use as a flag.
 var DefaultRegion string
+
+// DefaultEndpoint is the default S3 endpoint to use if unspecified.
+var DefaultEndpoint string
+
+// DefaultAccessKey is the default AWS access key to use if unspecified.
+var DefaultAccessKey string
+
+// DefaultSecretKey is the default AWS secret key to use if unspecified.
+var DefaultSecretKey string
 
 // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-networking.html#s3-express-endpoints
 var expressAZs = map[string]string{
@@ -49,6 +59,11 @@ func New() *Client {
 func NewWithRegion(region string) *Client {
 	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			DefaultAccessKey,
+			DefaultSecretKey,
+			"",
+		)),
 		config.WithRetryer(func() aws.Retryer {
 			return retry.NewStandard(func(opts *retry.StandardOptions) {
 				opts.MaxAttempts = 5
@@ -57,7 +72,10 @@ func NewWithRegion(region string) *Client {
 		}),
 	)
 	framework.ExpectNoError(err)
-	return &Client{region: region, client: s3.NewFromConfig(cfg)}
+	return &Client{region: region, client: s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+		o.BaseEndpoint = aws.String(DefaultEndpoint)
+	})}
 }
 
 // CreateStandardBucket creates a new standard S3 bucket with a random name,

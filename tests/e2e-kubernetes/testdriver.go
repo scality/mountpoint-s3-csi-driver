@@ -81,13 +81,8 @@ func (d *s3Driver) CreateVolume(ctx context.Context, config *framework.PerTestCo
 		f.Failf("Unsupported volType: %v is specified", volumeType)
 	}
 
-	var bucketName string
-	var deleteBucket s3client.DeleteBucketFunc
-	if config.Prefix == custom_testsuites.S3ExpressTestIdentifier {
-		bucketName, deleteBucket = d.client.CreateDirectoryBucket(ctx)
-	} else {
-		bucketName, deleteBucket = d.client.CreateStandardBucket(ctx)
-	}
+	// Always use standard buckets, even for S3 Express test identifier
+	bucketName, deleteBucket := d.client.CreateStandardBucket(ctx)
 
 	return &s3Volume{
 		bucketName:           bucketName,
