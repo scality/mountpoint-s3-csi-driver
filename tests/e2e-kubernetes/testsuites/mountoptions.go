@@ -120,6 +120,7 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 		validateWriteToVolume(ctx)
 	})
 	ginkgo.It("S3 express -- should access volume as a non-root user", func(ctx context.Context) {
+		ginkgo.Skip("S3 Express tests are disabled")
 		l.config.Prefix = S3ExpressTestIdentifier
 		validateWriteToVolume(ctx)
 	})
@@ -146,6 +147,7 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 		accessVolAsNonRootUser(ctx)
 	})
 	ginkgo.It("S3 express -- should not be able to access volume as a non-root user", func(ctx context.Context) {
+		ginkgo.Skip("S3 Express tests are disabled")
 		l.config.Prefix = S3ExpressTestIdentifier
 		accessVolAsNonRootUser(ctx)
 	})
