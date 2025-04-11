@@ -64,7 +64,7 @@ jobs:
           KUBECONFIG=/home/runner/.kube/config ginkgo -p -vv -timeout 60m -- \
             --bucket-region=us-east-1 \
             --commit-id=${{ github.sha }} \
-            --bucket-prefix=helm-test-cluster \
+            --bucket-prefix=helm-test-cluster
           EXIT_CODE=$?
           kubectl logs -l app=s3-csi-node -n kube-system --kubeconfig ${KUBECONFIG}
           kubectl version --kubeconfig ${KUBECONFIG}
