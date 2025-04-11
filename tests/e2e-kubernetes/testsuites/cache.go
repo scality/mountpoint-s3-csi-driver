@@ -288,12 +288,18 @@ func (t *s3CSICacheTestSuite) DefineTests(driver storageframework.TestDriver, pa
 		})
 
 		Describe("Express", Serial, func() {
+			BeforeEach(func() {
+				Skip("S3 Express tests are disabled")
+			})
 			testCache(cacheTestConfig{
 				useExpressCache: true,
 			})
 		})
 
 		Describe("Multi-Level", Serial, func() {
+			BeforeEach(func() {
+				Skip("Multi-level cache tests using S3 Express are disabled")
+			})
 			testCache(cacheTestConfig{
 				useLocalCache:   true,
 				useExpressCache: true,
