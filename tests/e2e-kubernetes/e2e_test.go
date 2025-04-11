@@ -30,9 +30,9 @@ func init() {
 	flag.Parse()
 
 	// Set environment variables for S3 configuration
-	// if os.Getenv("S3_ENDPOINT") != "" {
-	s3client.DefaultEndpoint = os.Getenv("S3_ENDPOINT_URL")
-	// }
+	if os.Getenv("S3_ENDPOINT_URL") != "" {
+		s3client.DefaultEndpoint = os.Getenv("S3_ENDPOINT_URL")
+	}
 	if os.Getenv("AWS_ACCESS_KEY_ID") != "" {
 		s3client.DefaultAccessKey = os.Getenv("AWS_ACCESS_KEY_ID")
 	}
