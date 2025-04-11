@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.25.12
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.10
 	github.com/aws/aws-sdk-go-v2/service/iam v1.34.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.3
@@ -24,7 +25,6 @@ require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.3 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.10 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.15 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.15 // indirect

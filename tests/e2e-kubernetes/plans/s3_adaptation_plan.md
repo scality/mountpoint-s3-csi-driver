@@ -57,7 +57,7 @@ ginkgo.It("S3 express -- should not be able to access volume as a non-root user"
 ## 2. Ensure Consistent AWS Configuration Across All Tests
 
 ### 2.1 Modify `awsConfig` in `testsuites/util.go`
-- Update to match existing S3 client configuration:
+- Update to match existing S3 client configuration, but without the retry mechanism as it's not needed for S3-compatible storage:
 
 ```go
 func awsConfig(ctx context.Context) aws.Config {
@@ -69,12 +69,6 @@ func awsConfig(ctx context.Context) aws.Config {
             s3client.DefaultSecretKey,
             "",
         )),
-        config.WithRetryer(func() aws.Retryer {
-            return retry.NewStandard(func(opts *retry.StandardOptions) {
-                opts.MaxAttempts = 5
-                opts.MaxBackoff = 2 * time.Minute
-            })
-        }),
     )
     framework.ExpectNoError(err)
     

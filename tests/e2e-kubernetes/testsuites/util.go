@@ -12,6 +12,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/awslabs/aws-s3-csi-driver/tests/e2e-kubernetes/s3client"
 	"github.com/google/uuid"
 	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -266,8 +268,17 @@ func createServiceAccount(ctx context.Context, f *framework.Framework) (*v1.Serv
 }
 
 func awsConfig(ctx context.Context) aws.Config {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(DefaultRegion))
+	// Match the existing S3 client configuration
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(DefaultRegion),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			s3client.DefaultAccessKey,
+			s3client.DefaultSecretKey,
+			"",
+		)),
+	)
 	framework.ExpectNoError(err)
+
 	return cfg
 }
 
