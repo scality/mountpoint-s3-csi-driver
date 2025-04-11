@@ -311,7 +311,7 @@ func (t *s3CSICacheTestSuite) DefineTests(driver storageframework.TestDriver, pa
 // deleteObjectFromS3 deletes an object from given bucket by using S3 SDK.
 // This is useful to create some side-effects by bypassing Mountpoint.
 func deleteObjectFromS3(ctx context.Context, bucket string, key string) {
-	client := s3.NewFromConfig(awsConfig(ctx))
+	client := newS3ClientFromConfig(awsConfig(ctx))
 	_, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
