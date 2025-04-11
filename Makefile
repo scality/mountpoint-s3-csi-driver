@@ -166,6 +166,19 @@ e2e: e2e-controller
 	popd; \
 	exit $$EXIT_CODE
 
+.PHONY: e2e-with-cloudserver
+e2e-with-cloudserver:
+	pushd tests/e2e-tests-with-s3; \
+	KUBECONFIG=${E2E_KUBECONFIG} ginkgo -p -vv -timeout 60m -covermode=atomic -coverprofile=../e2e-coverage.out; \
+	EXIT_CODE=$$?; \
+	popd; \
+	exit $$EXIT_CODE
+
+.PHONY: e2e-with-codecov
+e2e-with-codecov: e2e-with-cloudserver
+	go tool cover -html=tests/e2e-coverage.out -o=tests/e2e-coverage.html
+	@echo "E2E test coverage report generated at tests/e2e-coverage.html"
+
 .PHONY: check_style
 check_style:
 	test -z "$$(gofmt -d . | tee /dev/stderr)"
