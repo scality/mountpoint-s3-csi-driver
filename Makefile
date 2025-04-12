@@ -156,7 +156,7 @@ fmt:
 # Run controller tests with envtest.
 .PHONY: e2e-controller
 e2e-controller: envtest
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TESTBIN) -p path)" go test ./tests/controller/... -ginkgo.v -test.v
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TESTBIN) -p path)" go test ./tests/controller/... -ginkgo.v -ginkgo.junit-report=../../e2e-controller-tests-results.xml -test.v
 
 .PHONY: e2e
 e2e: e2e-controller
@@ -168,16 +168,8 @@ e2e: e2e-controller
 
 .PHONY: e2e-with-cloudserver
 e2e-with-cloudserver:
-	pushd tests/e2e-tests-with-s3; \
-	KUBECONFIG=${E2E_KUBECONFIG} ginkgo -p -vv -timeout 60m -covermode=atomic -coverprofile=../e2e-coverage.out; \
-	EXIT_CODE=$$?; \
-	popd; \
-	exit $$EXIT_CODE
-
-.PHONY: e2e-with-codecov
-e2e-with-codecov: e2e-with-cloudserver
-	go tool cover -html=tests/e2e-coverage.out -o=tests/e2e-coverage.html
-	@echo "E2E test coverage report generated at tests/e2e-coverage.html"
+	cd tests/e2e-tests-with-s3 && \
+	KUBECONFIG=${E2E_KUBECONFIG} ginkgo -p -vv -timeout 60m --junit-report=../../e2e-with-cloudserver-results.xml
 
 .PHONY: check_style
 check_style:

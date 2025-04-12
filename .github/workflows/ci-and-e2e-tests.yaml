@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Run Common Setup
         uses: ./.github/actions/e2e-setup-common
@@ -33,3 +35,40 @@ jobs:
 
       - name: Run Controller Tests
         run: make e2e-controller
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./e2e-controller-tests-results.xml
+          flags: e2e_controller_tests
+          slug: scality/mountpoint-s3-csi-driver
+
+  cloudserver-e2e-tests:
+    name: CloudServer E2E Tests
+    runs-on: ubuntu-22.04
+    needs: dev-image
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Common Setup
+        uses: ./.github/actions/e2e-setup-common
+        with:
+          ref: ${{ github.sha }}
+
+
+      - name: Run CloudServer Tests
+        run: make e2e-with-cloudserver
+        
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./e2e-with-cloudserver-results.xml
+          flags: e2e_with_cloudserver
+          slug: scality/mountpoint-s3-csi-driver
