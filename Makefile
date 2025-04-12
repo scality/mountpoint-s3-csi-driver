@@ -209,3 +209,139 @@ mv $(1) $(1)-$(3) ;\
 } ;\
 ln -sf $(1)-$(3) $(1)
 endef
+
+################################################################
+# Scality CSI driver configuration
+################################################################
+
+# Image tag for the CSI driver (optional)
+CSI_IMAGE_TAG ?=
+
+# S3 endpoint URL (REQUIRED)
+# Example: https://s3.your-scality.com
+S3_ENDPOINT_URL ?=
+
+# AWS/S3 access key for authentication (REQUIRED)
+ACCESS_KEY_ID ?=
+
+# AWS/S3 secret key for authentication (REQUIRED)
+SECRET_ACCESS_KEY ?=
+
+# Set to 'true' to validate S3 credentials before installation (optional)
+VALIDATE_S3 ?= false
+
+# Additional arguments to pass to the script (optional)
+ADDITIONAL_ARGS ?=
+
+################################################################
+# Scality CSI driver commands
+################################################################
+
+# Install the Scality CSI driver
+# 
+# Required parameters:
+#   S3_ENDPOINT_URL - Your Scality S3 endpoint 
+#   ACCESS_KEY_ID - Your S3 access key
+#   SECRET_ACCESS_KEY - Your S3 secret key
+#
+# Optional parameters:
+#   CSI_IMAGE_TAG - Specific version of the driver
+#   VALIDATE_S3 - Set to "true" to verify S3 credentials
+#
+# Example: make csi-install S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
+.PHONY: csi-install
+csi-install:
+	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
+		echo "Error: S3_ENDPOINT_URL is required. Please provide it with 'make S3_ENDPOINT_URL=https://your-s3-endpoint.com csi-install'"; \
+		exit 1; \
+	fi; \
+	if [ -z "$(ACCESS_KEY_ID)" ]; then \
+		echo "Error: ACCESS_KEY_ID is required. Please provide it with 'make ACCESS_KEY_ID=your_access_key csi-install'"; \
+		exit 1; \
+	fi; \
+	if [ -z "$(SECRET_ACCESS_KEY)" ]; then \
+		echo "Error: SECRET_ACCESS_KEY is required. Please provide it with 'make SECRET_ACCESS_KEY=your_secret_key csi-install'"; \
+		exit 1; \
+	fi; \
+	INSTALL_ARGS=""; \
+	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
+	fi; \
+	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
+	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
+	INSTALL_ARGS="$$INSTALL_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
+	if [ "$(VALIDATE_S3)" = "true" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
+	fi; \
+	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
+	fi; \
+	./tests/e2e-scality/scripts/run.sh install $$INSTALL_ARGS
+
+# Uninstall the Scality CSI driver (interactive mode)
+# This will prompt before deleting the namespace
+.PHONY: csi-uninstall
+csi-uninstall:
+	./tests/e2e-scality/scripts/run.sh uninstall
+
+# Uninstall the Scality CSI driver and delete its namespace
+# This automatically deletes namespace without prompting
+.PHONY: csi-uninstall-clean
+csi-uninstall-clean:
+	./tests/e2e-scality/scripts/run.sh uninstall --delete-ns
+
+# Force uninstall the Scality CSI driver
+# Use this when standard uninstall methods aren't working
+.PHONY: csi-uninstall-force
+csi-uninstall-force:
+	./tests/e2e-scality/scripts/run.sh uninstall --force
+
+################################################################
+# E2E test commands for Scality
+################################################################
+
+# Run tests on an already installed CSI driver
+.PHONY: e2e-scality
+e2e-scality:
+	./tests/e2e-scality/scripts/run.sh test
+
+# Install CSI driver and run all tests in one command
+# 
+# Required parameters:
+#   S3_ENDPOINT_URL - Your Scality S3 endpoint 
+#   ACCESS_KEY_ID - Your S3 access key
+#   SECRET_ACCESS_KEY - Your S3 secret key
+#
+# Optional parameters:
+#   CSI_IMAGE_TAG - Specific version of the driver
+#   VALIDATE_S3 - Set to "true" to verify S3 credentials
+#
+# Example: make e2e-scality-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
+.PHONY: e2e-scality-all
+e2e-scality-all:
+	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
+		echo "Error: S3_ENDPOINT_URL is required. Please provide it with 'make S3_ENDPOINT_URL=https://your-s3-endpoint.com e2e-scality-all'"; \
+		exit 1; \
+	fi; \
+	if [ -z "$(ACCESS_KEY_ID)" ]; then \
+		echo "Error: ACCESS_KEY_ID is required. Please provide it with 'make ACCESS_KEY_ID=your_access_key e2e-scality-all'"; \
+		exit 1; \
+	fi; \
+	if [ -z "$(SECRET_ACCESS_KEY)" ]; then \
+		echo "Error: SECRET_ACCESS_KEY is required. Please provide it with 'make SECRET_ACCESS_KEY=your_secret_key e2e-scality-all'"; \
+		exit 1; \
+	fi; \
+	INSTALL_ARGS=""; \
+	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
+	fi; \
+	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
+	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
+	INSTALL_ARGS="$$INSTALL_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
+	if [ "$(VALIDATE_S3)" = "true" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
+	fi; \
+	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
+	fi; \
+	./tests/e2e-scality/scripts/run.sh all $$INSTALL_ARGS
