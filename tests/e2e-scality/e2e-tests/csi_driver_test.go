@@ -75,7 +75,7 @@ var _ = Describe("Scality S3 CSI Driver", func() {
 		It("should have CSI driver pods running", func() {
 			By("Checking CSI driver pods in all namespaces")
 			pods, err := clientset.CoreV1().Pods(corev1.NamespaceAll).List(context.Background(), metav1.ListOptions{
-				LabelSelector: "app in (csi-driver,s3-csi)",
+				LabelSelector: "app.kubernetes.io/component=csi-driver,app.kubernetes.io/name=aws-mountpoint-s3-csi-driver",
 			})
 			Expect(err).NotTo(HaveOccurred(), "Failed to list CSI driver pods across all namespaces")
 

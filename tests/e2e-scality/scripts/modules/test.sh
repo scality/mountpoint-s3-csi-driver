@@ -33,8 +33,8 @@ run_go_tests() {
     return 1
   fi
   
-  # Run the Go tests with default settings
-  local go_test_cmd="go test -v -tags=e2e ./... -args -namespace=$namespace"
+  # Run the Go tests with environment variable for namespace
+  local go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./..."
   
   # Run the Go tests
   log "Executing Go tests in $e2e_tests_dir"
