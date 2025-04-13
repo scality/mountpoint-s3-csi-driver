@@ -21,7 +21,7 @@ jobs:
   controller-e2e-tests:
     name: E2E Controller Tests
     runs-on: ubuntu-22.04
-    needs: dev-image
+    # needs: dev-image
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -32,6 +32,7 @@ jobs:
         uses: ./.github/actions/e2e-setup-common
         with:
           ref: ${{ github.sha }}
+          deploy_s3: false
 
       - name: Run Controller Tests
         run: make e2e-controller
@@ -82,18 +83,6 @@ jobs:
           find ./tests/e2e-scality/e2e-tests -name "*.xml" -ls || true
           find ./test-results -name "*.xml" -ls || true
         
-      - name: Upload test results
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: scality-e2e-test-results
-          path: |
-            ./logs/
-            ./tests/e2e-scality/e2e-tests/*.log
-            ./tests/e2e-scality/e2e-tests/**/*.xml
-            ./test-results/
-          if-no-files-found: warn
-          
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
