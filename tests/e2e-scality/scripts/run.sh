@@ -29,13 +29,8 @@ show_help() {
   echo "  --secret-access-key VALUE Specify S3 secret access key for authentication (REQUIRED)"
   echo "  --validate-s3             Validate S3 endpoint and credentials before installation"
   echo
-  echo "Options for test and go-test commands:"
-  echo "  --skip-go-tests           Skip executing Go-based end-to-end tests (test command only)"
-  echo "  --go-test-args \"ARGS\"     Pass additional arguments to go test command"
-  echo "  --focus \"PATTERN\"         Focus on tests matching the given pattern (Ginkgo)"
-  echo "  --skip \"PATTERN\"          Skip tests matching the given pattern (Ginkgo)"
-  echo "  --tags \"TAGS\"             Specify Go build tags (default: e2e)"
-  echo "  --namespace \"NS\"          Specify the namespace to test (default: mount-s3)"
+  echo "Options for test command:"
+  echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
   echo
   echo "Options for uninstall command:"
   echo "  --delete-ns               Delete the mount-s3 namespace without prompting"
@@ -48,15 +43,15 @@ show_help() {
   echo "  $0 install --validate-s3 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 test                                 # Run all tests including Go-based e2e tests"
   echo "  $0 test --skip-go-tests                 # Run only basic verification tests"
-  echo "  $0 test --focus \"Mount\"                 # Run only tests with 'Mount' in their name"
   echo "  $0 go-test                              # Run Go tests directly (skips verification)"
-  echo "  $0 go-test --focus \"Basic Functionality\" # Run only Go tests matching the pattern"
-  echo "  $0 go-test --namespace \"custom-ns\"      # Test with custom namespace"
   echo "  $0 all                                  # Install driver and run tests"
   echo "  $0 uninstall                            # Uninstall driver (interactive mode)"
   echo "  $0 uninstall --delete-ns                # Uninstall driver and delete namespace"
   echo "  $0 uninstall --force                    # Force delete all resources"
   echo "  $0 help                                 # Show this help message"
+  echo
+  echo "For advanced filtering of Go tests, use 'go test' directly in the tests/e2e-scality/e2e-tests directory:"
+  echo "  cd tests/e2e-scality/e2e-tests && go test -v -tags=e2e -ginkgo.focus=\"Basic Functionality\""
 }
 
 parse_install_parameters() {
@@ -168,26 +163,6 @@ parse_test_parameters() {
       --skip-go-tests)
         params="$params --skip-go-tests"
         shift
-        ;;
-      --go-test-args)
-        params="$params --go-test-args $2"
-        shift 2
-        ;;
-      --focus)
-        params="$params --focus $2"
-        shift 2
-        ;;
-      --skip)
-        params="$params --skip $2"
-        shift 2
-        ;;
-      --tags)
-        params="$params --tags $2"
-        shift 2
-        ;;
-      --namespace)
-        params="$params --namespace $2"
-        shift 2
         ;;
       *)
         echo "Error: Unknown option: $1"

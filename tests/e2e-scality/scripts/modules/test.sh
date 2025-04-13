@@ -14,11 +14,6 @@ get_project_root() {
 run_go_tests() {
   local project_root=$(get_project_root)
   local e2e_tests_dir="${project_root}/tests/e2e-scality/e2e-tests"
-  local test_args="$1"
-  local focus_pattern="$2"
-  local skip_pattern="$3"
-  local tags="$4"
-  local namespace="$5"
   
   log "Running Go-based end-to-end tests for Scality CSI driver..."
   
@@ -34,36 +29,8 @@ run_go_tests() {
     return 1
   fi
   
-  # Use default tags if not specified
-  if [ -z "$tags" ]; then
-    tags="e2e"
-  fi
-  
-  # Build the go test command
-  local go_test_cmd="go test -v -tags=$tags"
-  
-  # Add focus pattern if provided
-  if [ -n "$focus_pattern" ]; then
-    go_test_cmd="$go_test_cmd -ginkgo.focus=\"$focus_pattern\""
-  fi
-  
-  # Add skip pattern if provided
-  if [ -n "$skip_pattern" ]; then
-    go_test_cmd="$go_test_cmd -ginkgo.skip=\"$skip_pattern\""
-  fi
-  
-  # Add namespace if provided
-  if [ -n "$namespace" ]; then
-    go_test_cmd="$go_test_cmd -namespace=\"$namespace\""
-  fi
-  
-  # Add any additional test arguments
-  if [ -n "$test_args" ]; then
-    go_test_cmd="$go_test_cmd $test_args"
-  fi
-  
-  # Add the test directory
-  go_test_cmd="$go_test_cmd ./..."
+  # Run the Go tests with default settings
+  local go_test_cmd="go test -v -tags=e2e ./..."
   
   # Run the Go tests
   log "Executing Go tests in $e2e_tests_dir"
@@ -109,11 +76,6 @@ do_test() {
   
   local skip_go_tests=false
   local skip_verification=false
-  local go_test_args=""
-  local focus_pattern=""
-  local skip_pattern=""
-  local tags=""
-  local namespace=""
   
   # Parse arguments
   while [[ $# -gt 0 ]]; do
@@ -126,26 +88,6 @@ do_test() {
       --skip-verification)
         skip_verification=true
         shift
-        ;;
-      --go-test-args)
-        go_test_args="$2"
-        shift 2
-        ;;
-      --focus)
-        focus_pattern="$2"
-        shift 2
-        ;;
-      --skip)
-        skip_pattern="$2"
-        shift 2
-        ;;
-      --tags)
-        tags="$2"
-        shift 2
-        ;;
-      --namespace)
-        namespace="$2"
-        shift 2
         ;;
       *)
         error "Unknown parameter: $key"
@@ -166,7 +108,7 @@ do_test() {
   
   # Run Go-based tests if not skipped
   if [ "$skip_go_tests" != "true" ]; then
-    if ! run_go_tests "$go_test_args" "$focus_pattern" "$skip_pattern" "$tags" "$namespace"; then
+    if ! run_go_tests; then
       error "Go tests failed."
       return 1
     fi

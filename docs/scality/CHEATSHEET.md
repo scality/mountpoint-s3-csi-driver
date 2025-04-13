@@ -39,14 +39,22 @@ make e2e-scality-verify
 make e2e-scality-go
 ```
 
-### Run Go Tests Directly with Filters (Advanced)
+### Advanced Testing with Go Test (for filtering tests)
 ```bash
-# Run the tests directly using the Ginkgo CLI
+# Go to the tests directory
 cd tests/e2e-scality/e2e-tests
+
+# Run tests with focus on specific test patterns (runs only matching tests)
 go test -v -tags=e2e -ginkgo.focus="Basic Functionality"
 
-# Or use the run.sh script
-./tests/e2e-scality/scripts/run.sh go-test --focus "Basic Functionality"
+# Skip specific test patterns
+go test -v -tags=e2e -ginkgo.skip="Volume Operations"
+
+# Run tests in a specific namespace
+go test -v -tags=e2e -namespace="custom-namespace"
+
+# Combine multiple filters
+go test -v -tags=e2e -ginkgo.focus="Basic" -ginkgo.skip="Volume" -namespace="mount-s3"
 ```
 
 ### Install and Test in One Step
