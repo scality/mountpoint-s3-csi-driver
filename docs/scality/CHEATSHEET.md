@@ -38,19 +38,14 @@ make e2e-scality-verify
 make e2e-scality-go
 ```
 
-### Run Go Tests with Filters
+### Run Go Tests Directly with Filters (Advanced)
 ```bash
-# Run tests matching a specific pattern
-make e2e-scality-go FOCUS="Basic Functionality"
+# Run the tests directly using the Ginkgo CLI
+cd tests/e2e-scality/e2e-tests
+go test -v -tags=e2e -ginkgo.focus="Basic Functionality"
 
-# Skip tests matching a specific pattern
-make e2e-scality-go SKIP="Volume Operations"
-
-# Run tests in a specific namespace
-make e2e-scality-go NAMESPACE="custom-namespace"
-
-# Combine multiple options
-make e2e-scality-go FOCUS="Basic" SKIP="Volume" NAMESPACE="mount-s3"
+# Or use the run.sh script
+./tests/e2e-scality/scripts/run.sh go-test --focus "Basic Functionality"
 ```
 
 ### Install and Test in One Step
@@ -59,16 +54,6 @@ make e2e-scality-all \
   S3_ENDPOINT_URL=https://s3.example.com \
   ACCESS_KEY_ID=your_key \
   SECRET_ACCESS_KEY=your_secret
-```
-
-### Run End-to-End Tests with Filtering (Install and Test)
-```bash
-make e2e-scality-all \
-  S3_ENDPOINT_URL=https://s3.example.com \
-  ACCESS_KEY_ID=your_key \
-  SECRET_ACCESS_KEY=your_secret \
-  FOCUS="Basic Functionality" \
-  SKIP="Volume Operations"
 ```
 
 ## Uninstallation

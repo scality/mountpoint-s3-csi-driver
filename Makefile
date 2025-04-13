@@ -308,31 +308,10 @@ e2e-scality:
 
 # Run only the Go-based e2e tests (skips verification checks)
 # 
-# Usage: make e2e-scality-go [FOCUS="pattern"] [SKIP="pattern"] [NAMESPACE="namespace"]
-#
-# Optional parameters:
-#   FOCUS - Run only tests matching the pattern
-#   SKIP - Skip tests matching the pattern
-#   NAMESPACE - Override the namespace (default: mount-s3)
-#   TAGS - Specify Go build tags (default: e2e)
-#
-# Example: make e2e-scality-go FOCUS="Basic Functionality" SKIP="Volume"
+# Usage: make e2e-scality-go
 .PHONY: e2e-scality-go
 e2e-scality-go:
-	@TEST_ARGS=""; \
-	if [ ! -z "$(FOCUS)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --focus $(FOCUS)"; \
-	fi; \
-	if [ ! -z "$(SKIP)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --skip $(SKIP)"; \
-	fi; \
-	if [ ! -z "$(NAMESPACE)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --namespace $(NAMESPACE)"; \
-	fi; \
-	if [ ! -z "$(TAGS)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --tags $(TAGS)"; \
-	fi; \
-	./tests/e2e-scality/scripts/run.sh go-test $$TEST_ARGS
+	./tests/e2e-scality/scripts/run.sh go-test
 
 # Run the verification tests only (skips Go tests)
 # Makes sure the CSI driver is properly installed
@@ -350,10 +329,8 @@ e2e-scality-verify:
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
-#   FOCUS - Run only tests matching the pattern
-#   SKIP - Skip tests matching the pattern
 #
-# Example: make e2e-scality-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret FOCUS="Basic"
+# Example: make e2e-scality-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
 .PHONY: e2e-scality-all
 e2e-scality-all:
 	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
@@ -378,15 +355,8 @@ e2e-scality-all:
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
 	fi; \
-	TEST_ARGS=""; \
-	if [ ! -z "$(FOCUS)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --focus $(FOCUS)"; \
-	fi; \
-	if [ ! -z "$(SKIP)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --skip $(SKIP)"; \
-	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
 	fi; \
 	./tests/e2e-scality/scripts/run.sh install $$INSTALL_ARGS && \
-	./tests/e2e-scality/scripts/run.sh test $$TEST_ARGS
+	./tests/e2e-scality/scripts/run.sh test
