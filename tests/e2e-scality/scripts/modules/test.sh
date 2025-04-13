@@ -34,12 +34,13 @@ run_go_tests() {
     return 1
   fi
   
-  # Run the Go tests with environment variable for namespace
+  # Build the Go test command
   local go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./..."
   
   # Add JUnit report if specified
   if [ -n "$junit_report" ]; then
     log "Using JUnit report file: $junit_report"
+    # Use the correct format for Ginkgo JUnit report
     go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.junit-report=$junit_report"
   fi
   
@@ -105,7 +106,7 @@ do_test() {
   local namespace="$DEFAULT_NAMESPACE"
   local junit_report=""
   
-  # Parse arguments
+  # Parse command-line parameters
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -121,9 +122,20 @@ do_test() {
         skip_verification=true
         shift
         ;;
+      --junit-report=*)
+        # Extract the value after the equals sign
+        junit_report="${key#*=}"
+        shift
+        ;;
       --junit-report)
-        junit_report="$2"
-        shift 2
+        # Handle both formats: --junit-report=path and --junit-report path
+        if [[ "$2" != --* && -n "$2" ]]; then
+          junit_report="$2"
+          shift 2
+        else
+          error "Missing value for parameter: $key"
+          return 1
+        fi
         ;;
       *)
         error "Unknown parameter: $key"

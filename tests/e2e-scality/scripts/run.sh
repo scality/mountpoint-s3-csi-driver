@@ -262,16 +262,25 @@ main() {
       
       # Separate install and test args
       for arg in "$@"; do
+        # Check for JUnit report param with equals sign format
+        if [[ "$arg" == --junit-report=* ]]; then
+          test_args="$test_args $arg"
+          continue
+        fi
+        
         case "$arg" in
-          --junit-report | --skip-go-tests | --skip-verification)
+          --junit-report)
             test_args="$test_args $arg"
             shift
             
             # If this argument requires a value, add it to test_args
-            if [[ "$arg" == "--junit-report" && $# -gt 0 ]]; then
+            if [[ $# -gt 0 && "$1" != --* ]]; then
               test_args="$test_args $1"
               shift
             fi
+            ;;
+          --skip-go-tests | --skip-verification)
+            test_args="$test_args $arg"
             ;;
           *)
             install_args="$install_args $arg"
