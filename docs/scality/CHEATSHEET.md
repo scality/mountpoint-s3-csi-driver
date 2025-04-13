@@ -33,6 +33,10 @@ make e2e-scality
 ```bash
 make e2e-scality-verify
 ```
+This command only checks if:
+- The CSI driver pods are running correctly in the namespace
+- The CSI driver is properly registered in the cluster
+It skips running the Go-based tests.
 
 ### Run Only Go-Based End-to-End Tests
 ```bash
@@ -50,7 +54,7 @@ go test -v -tags=e2e -ginkgo.focus="Basic Functionality"
 # Skip specific test patterns
 go test -v -tags=e2e -ginkgo.skip="Volume Operations"
 
-# Run tests in a specific namespace
+# Run tests in a specific namespace (default is "mount-s3")
 go test -v -tags=e2e -namespace="custom-namespace"
 
 # Combine multiple filters
