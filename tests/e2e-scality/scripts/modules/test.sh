@@ -34,8 +34,8 @@ run_go_tests() {
     return 1
   fi
   
-  # Build the Go test command
-  local go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./..."
+  # Build the Go test command with enhanced verbosity
+  local go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.vv -ginkgo.progress"
   
   # Add JUnit report if specified
   if [ -n "$junit_report" ]; then
@@ -69,7 +69,7 @@ run_go_tests() {
     fi
     
     # Use the correct format for Ginkgo JUnit report
-    go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.junit-report=$junit_absolute_path"
+    go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.v -ginkgo.progress -ginkgo.junit-report=$junit_absolute_path"
     log "Final JUnit report path: $junit_absolute_path"
   fi
   
