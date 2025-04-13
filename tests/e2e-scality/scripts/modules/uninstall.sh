@@ -11,6 +11,7 @@ DEFAULT_NAMESPACE="kube-system"
 readonly ERROR_HELM_UNINSTALL=10
 readonly ERROR_NS_DELETE=11
 readonly ERROR_CSI_DELETE=12
+readonly ERROR_SECRET_DELETE=13
 
 # Uninstall the CSI driver
 uninstall_csi_driver() {
@@ -66,13 +67,32 @@ uninstall_csi_driver() {
     if ! exec_cmd helm uninstall scality-s3-csi -n $NAMESPACE; then
       error "Failed to uninstall Helm release from namespace $NAMESPACE. Error code: $ERROR_HELM_UNINSTALL"
       if [ "$FORCE" = true ]; then
-        warn "Force mode enabled. Continuing with namespace deletion despite Helm uninstall failure."
+        warn "Force mode enabled. Continuing with uninstallation despite Helm uninstall failure."
       else
         return $ERROR_HELM_UNINSTALL
       fi
     else
       log "Helm release uninstalled successfully from namespace $NAMESPACE."
     fi
+  fi
+  
+  # Delete AWS credentials secret
+  # Check if secret exists before attempting to delete
+  if exec_cmd kubectl get secret aws-secret -n $NAMESPACE &> /dev/null; then
+    log "Deleting AWS credentials secret from namespace $NAMESPACE..."
+    if ! exec_cmd kubectl delete secret aws-secret -n $NAMESPACE; then
+      error "Failed to delete AWS credentials secret from namespace $NAMESPACE. Error code: $ERROR_SECRET_DELETE"
+      if [ "$FORCE" = true ]; then
+        warn "Force mode enabled. Continuing with uninstallation despite secret deletion failure."
+      else
+        # Non-fatal error, just warn but don't exit
+        warn "Failed to delete AWS credentials secret. You may need to delete it manually."
+      fi
+    else
+      log "AWS credentials secret deleted successfully from namespace $NAMESPACE."
+    fi
+  else
+    warn "AWS credentials secret not found in namespace $NAMESPACE."
   fi
   
   # Only delete namespace if it's a custom namespace (not kube-system)
@@ -149,6 +169,9 @@ do_uninstall() {
         ;;
       $ERROR_CSI_DELETE)
         fatal "Uninstallation failed during CSI driver deletion. Please check the logs for details."
+        ;;
+      $ERROR_SECRET_DELETE)
+        fatal "Uninstallation failed during AWS secret deletion. Please check the logs for details."
         ;;
       *)
         fatal "Uninstallation failed with unknown error code: $result"
