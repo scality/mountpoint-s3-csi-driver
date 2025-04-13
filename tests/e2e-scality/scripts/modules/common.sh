@@ -52,15 +52,14 @@ check_dependencies() {
     missing_deps=1
   fi
   
+  if ! command -v curl &> /dev/null; then
+    error "curl is not installed. It's required for basic endpoint validation."
+    missing_deps=1
+  fi
+  
   if ! command -v aws &> /dev/null; then
-    warn "AWS CLI is not installed. This is optional but recommended for better S3 validation."
-    warn "Alternative validation methods will be used, but they may be less reliable."
-    
-    # Check for curl as a fallback
-    if ! command -v curl &> /dev/null; then
-      warn "curl is not installed. This is needed for alternate S3 validation methods."
-      warn "Limited validation capabilities will be available."
-    fi
+    warn "AWS CLI is not installed. Only endpoint connectivity will be validated."
+    warn "Credentials (access key and secret key) cannot be validated without AWS CLI."
   fi
   
   if [ $missing_deps -ne 0 ]; then

@@ -67,15 +67,17 @@ make csi-install \
 
 ### S3 Validation
 
-When you set `VALIDATE_S3=true`, the script will verify your S3 credentials and endpoint before installation. This helps identify configuration issues early.
+When you set `VALIDATE_S3=true`, the script will perform validation checks before installation:
 
-The validation process uses multiple methods to check connectivity:
-
-1. AWS CLI (if installed) - Most comprehensive validation method
-2. Curl with S3 signing - Works without AWS CLI but requires curl and openssl
-3. Basic connectivity check - Simple endpoint accessibility test
-
-If AWS CLI is not installed, the script will automatically fall back to alternative methods.
+1. **Basic Endpoint Connectivity**: Verifies that the S3 endpoint URL is reachable.
+   - Checks if the endpoint exists and responds
+   - Verifies it looks like an S3 service (by checking for appropriate responses)
+   
+2. **Credential Validation** (if AWS CLI is installed):
+   - Validates that your access key and secret key work correctly
+   - Shows available buckets if successful
+   
+If AWS CLI is not installed, only the endpoint connectivity will be validated, but the credentials cannot be checked. The installation will proceed with a warning that credential issues might occur later.
 
 ## Common Scality Configurations
 

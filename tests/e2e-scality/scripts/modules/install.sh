@@ -11,115 +11,63 @@ validate_s3_configuration() {
   local secret_access_key="$3"
   
   log "Validating S3 configuration..."
-  log "Attempting to connect to S3 endpoint: $endpoint_url"
-  log "Using access key ID: $access_key_id"
-  log "Secret key length: ${#secret_access_key} characters"
+  log "Checking endpoint connectivity: $endpoint_url"
   
   # Create a temporary file for capturing output
   local temp_output=$(mktemp)
   
-  # For local development/test endpoints, accept more relaxed validation
-  local is_local=false
-  if [[ "$endpoint_url" == *"localhost"* ]] || [[ "$endpoint_url" == *"127.0.0.1"* ]]; then
-    is_local=true
-    log "Detected local endpoint, will use relaxed validation requirements."
-  fi
+  # Step 1: Basic endpoint connectivity check with curl
+  local http_code=$(curl -s -o "$temp_output" -w "%{http_code}" "$endpoint_url" 2>/dev/null)
   
-  # Method 1: Try using AWS CLI if available
-  if command -v aws &> /dev/null; then
-    log "AWS CLI found, using it for validation..."
+  if [[ "$http_code" == 2* ]] || [[ "$http_code" == 3* ]]; then
+    log "S3 endpoint is reachable (HTTP $http_code)"
     
-    # Use environment variables method for AWS credentials (more reliable with Scality S3)
-    if AWS_ACCESS_KEY_ID="$access_key_id" AWS_SECRET_ACCESS_KEY="$secret_access_key" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
-      log "Successfully connected to S3 endpoint using AWS CLI."
-      log "Available buckets:"
-      cat "$temp_output"
+    # If we get a 403 Forbidden/Access Denied, that's good because it means the endpoint exists and is an S3 service
+    if [[ "$http_code" == "403" ]] || grep -q "AccessDenied\|InvalidAccessKeyId" "$temp_output"; then
+      log "Endpoint is confirmed as an S3 service (received access denied, which is expected without credentials)"
       
-      # Clean up temporary file
-      rm -f "$temp_output"
-      return 0
-    else
-      log "AWS CLI validation failed. Error details:"
-      cat "$temp_output"
-      log "Trying alternative validation methods..."
-    fi
-  else
-    log "AWS CLI not found, using alternative validation methods..."
-  fi
-  
-  # Method 2: Try using curl to access a specific bucket or list endpoint
-  log "Attempting alternative endpoint tests with curl..."
-  
-  # For local/test endpoints, try accessing common test endpoints
-  local endpoints_to_try=(
-    "${endpoint_url}/"
-    "${endpoint_url}/s3"
-    "${endpoint_url}/s3/health"
-    "${endpoint_url}/health"
-  )
-  
-  for test_url in "${endpoints_to_try[@]}"; do
-    log "Testing endpoint: $test_url"
-    local curl_result=$(curl -s -o "$temp_output" -w "%{http_code}" "$test_url" 2>/dev/null)
-    
-    if [[ "$curl_result" == 2* ]] || [[ "$curl_result" == 3* ]]; then
-      log "Successfully connected to endpoint: $test_url (HTTP $curl_result)"
-      
-      if [ "$is_local" = true ]; then
-        log "Local endpoint connectivity confirmed. Assuming credentials are valid for development environment."
-        rm -f "$temp_output"
-        return 0
+      # Step 2: Check credentials with AWS CLI if it's installed
+      if command -v aws &> /dev/null; then
+        log "AWS CLI found, validating access key and secret key..."
+        
+        # Use environment variables method for AWS credentials
+        if AWS_ACCESS_KEY_ID="$access_key_id" AWS_SECRET_ACCESS_KEY="$secret_access_key" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
+          log "SUCCESS: AWS access key and secret key validated successfully!"
+          log "Available buckets:"
+          cat "$temp_output"
+        else
+          error "Failed to validate AWS credentials. Error details:"
+          cat "$temp_output"
+          log "Please check your access key and secret key."
+          rm -f "$temp_output"
+          return 1
+        fi
+      else
+        log "AWS CLI not installed - cannot validate access key and secret key."
+        log "Only basic endpoint connectivity was confirmed."
+        log "Proceeding with installation, but credential issues might occur later."
       fi
-    else
-      log "Connection to $test_url failed with HTTP code $curl_result"
-    fi
-  done
-  
-  # Method 3: Try a simplified S3 list access
-  if [ "$is_local" = true ]; then
-    log "Attempting simplified S3 access for local endpoint..."
-    local query_params="?AWSAccessKeyId=${access_key_id}&Signature=not_checked_for_local&Timestamp=$(date -u +"%Y-%m-%dT%H%%3A%M%%3A%SZ")"
-    local test_url="${endpoint_url}/${query_params}"
-    
-    local curl_result=$(curl -s -o "$temp_output" -w "%{http_code}" "$test_url" 2>/dev/null)
-    
-    # Many test S3 servers will at least respond with XML, even if authentication fails
-    if grep -q "<?xml" "$temp_output"; then
-      log "Local S3 endpoint responding with XML content, suggesting the endpoint is functional."
-      log "For local development endpoints, this is considered sufficient validation."
-      # Clean up temporary file
-      rm -f "$temp_output"
-      return 0
-    fi
-  fi
-  
-  # Final method: Basic connection test (last resort)
-  log "Attempting basic connection test to endpoint..."
-  if curl -s -o /dev/null -w "%{http_code}" "$endpoint_url" 2>/dev/null | grep -q -E '^[23]'; then
-    if [ "$is_local" = true ]; then
-      log "Basic connection to local S3 endpoint succeeded."
-      log "For local development, treating this as successful validation."
+      
       # Clean up temporary file
       rm -f "$temp_output"
       return 0
     else
-      log "Basic connection to S3 endpoint succeeded, but credentials could not be validated."
-      log "Warning: This only confirms the endpoint is reachable, not that the credentials are valid."
+      log "Endpoint is reachable but response doesn't seem to be from an S3 service."
+      log "Response received:"
+      cat "$temp_output"
     fi
-  fi
-  
-  # All validation methods failed
-  if [ "$is_local" = true ]; then
-    error "Failed to validate local S3 endpoint. Check if your S3 server is running."
   else
-    error "Failed to validate S3 endpoint and credentials using multiple methods."
+    error "Failed to connect to S3 endpoint (HTTP code: $http_code)"
+    log "Please check if the endpoint URL is correct and the S3 service is running."
+    cat "$temp_output"
+    rm -f "$temp_output"
+    return 1
   fi
   
-  log "Please verify your endpoint URL and credentials manually before proceeding."
-  
-  # Clean up temporary file
+  # If we get here, the endpoint is reachable but we couldn't confirm it's an S3 service
+  log "Proceeding with installation, but S3 configuration issues might occur."
   rm -f "$temp_output"
-  return 1
+  return 0
 }
 
 # Install the Scality CSI driver using Helm
