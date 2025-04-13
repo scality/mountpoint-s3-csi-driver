@@ -21,6 +21,12 @@ run_go_tests() {
   local namespace="$5"
   
   log "Running Go-based end-to-end tests for Scality CSI driver..."
+  debug "Got parameters:"
+  debug "  test_args: '$test_args'"
+  debug "  focus_pattern: '$focus_pattern'"
+  debug "  skip_pattern: '$skip_pattern'"
+  debug "  tags: '$tags'"
+  debug "  namespace: '$namespace'"
   
   # Check if Go is installed
   if ! command -v go &> /dev/null; then
@@ -117,7 +123,8 @@ do_test() {
   
   # Parse arguments
   while [[ $# -gt 0 ]]; do
-    case "$1" in
+    key="$1"
+    case "$key" in
       --skip-go-tests)
         skip_go_tests=true
         shift
@@ -147,11 +154,21 @@ do_test() {
         shift 2
         ;;
       *)
-        error "Unknown parameter: $1"
-        shift
+        error "Unknown parameter: $key"
+        return 1
         ;;
     esac
   done
+  
+  # Debug output for parameters
+  debug "Parameters received:"
+  debug "skip_go_tests: $skip_go_tests"
+  debug "skip_verification: $skip_verification"
+  debug "go_test_args: $go_test_args"
+  debug "focus_pattern: $focus_pattern"
+  debug "skip_pattern: $skip_pattern"
+  debug "tags: $tags"
+  debug "namespace: $namespace"
   
   # Run basic verification tests unless skipped
   if [ "$skip_verification" != "true" ]; then
