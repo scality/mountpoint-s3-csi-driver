@@ -220,7 +220,7 @@ CSI_IMAGE_TAG ?=
 # Custom image repository for the CSI driver (optional)
 CSI_IMAGE_REPOSITORY ?=
 
-# Namespace to deploy the CSI driver in (optional, defaults to mount-s3)
+# Namespace to deploy the CSI driver in (optional, defaults to kube-system)
 CSI_NAMESPACE ?=
 
 # S3 endpoint URL (REQUIRED)
@@ -254,7 +254,7 @@ ADDITIONAL_ARGS ?=
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
 #   CSI_IMAGE_REPOSITORY - Custom image repository for the driver
-#   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to mount-s3)
+#   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
 # Example: make csi-install S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
@@ -294,7 +294,8 @@ csi-install:
 	./tests/e2e-scality/scripts/run.sh install $$INSTALL_ARGS
 
 # Uninstall the Scality CSI driver (interactive mode)
-# This will prompt before deleting the namespace
+# This will uninstall from the default namespace (kube-system) or the specified namespace
+# Note: kube-system namespace will NOT be deleted even with --delete-ns
 .PHONY: csi-uninstall
 csi-uninstall:
 	@UNINSTALL_ARGS=""; \
@@ -303,8 +304,9 @@ csi-uninstall:
 	fi; \
 	./tests/e2e-scality/scripts/run.sh uninstall $$UNINSTALL_ARGS
 
-# Uninstall the Scality CSI driver and delete its namespace
-# This automatically deletes namespace without prompting
+# Uninstall the Scality CSI driver and delete custom namespace
+# This automatically deletes namespace without prompting ONLY for custom namespaces
+# Note: kube-system namespace will NOT be deleted even with --delete-ns
 .PHONY: csi-uninstall-clean
 csi-uninstall-clean:
 	@UNINSTALL_ARGS="--delete-ns"; \
@@ -315,6 +317,7 @@ csi-uninstall-clean:
 
 # Force uninstall the Scality CSI driver
 # Use this when standard uninstall methods aren't working
+# Note: kube-system namespace will NOT be deleted even with --force
 .PHONY: csi-uninstall-force
 csi-uninstall-force:
 	@UNINSTALL_ARGS="--force"; \
@@ -367,7 +370,7 @@ e2e-scality-verify:
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
 #   CSI_IMAGE_REPOSITORY - Custom image repository for the driver
-#   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to mount-s3)
+#   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
 # Example: make e2e-scality-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret

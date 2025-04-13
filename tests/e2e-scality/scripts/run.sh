@@ -10,7 +10,7 @@ MODULES_DIR="${SCRIPT_DIR}/modules"
 source "${MODULES_DIR}/common.sh"
 
 # Default namespace value
-DEFAULT_NAMESPACE="mount-s3"
+DEFAULT_NAMESPACE="kube-system"
 
 # Show help message
 show_help() {
@@ -25,7 +25,7 @@ show_help() {
   echo "  help      Show this help message"
   echo
   echo "Global options:"
-  echo "  --namespace VALUE          Specify the namespace to use (default: mount-s3)"
+  echo "  --namespace VALUE          Specify the namespace to use (default: kube-system)"
   echo
   echo "Options for install command:"
   echo "  --image-tag VALUE         Specify custom image tag for the CSI driver"
@@ -39,7 +39,7 @@ show_help() {
   echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
   echo
   echo "Options for uninstall command:"
-  echo "  --delete-ns               Delete the CSI driver namespace without prompting"
+  echo "  --delete-ns               Delete the CSI driver namespace without prompting (only for custom namespaces, not kube-system)"
   echo "  --force                   Force delete all resources including CSI driver registration"
   echo
   echo "Examples:"
@@ -54,9 +54,9 @@ show_help() {
   echo "  $0 go-test                              # Run Go tests directly (skips verification)"
   echo "  $0 all                                  # Install driver and run tests"
   echo "  $0 all --namespace custom-namespace     # Install driver and run tests in a custom namespace"
-  echo "  $0 uninstall                            # Uninstall driver (interactive mode)"
+  echo "  $0 uninstall                            # Uninstall driver from kube-system namespace"
   echo "  $0 uninstall --namespace custom-namespace  # Uninstall driver from a custom namespace"
-  echo "  $0 uninstall --delete-ns                # Uninstall driver and delete namespace"
+  echo "  $0 uninstall --namespace custom-namespace --delete-ns  # Uninstall driver and delete custom namespace"
   echo "  $0 uninstall --force                    # Force delete all resources"
   echo "  $0 help                                 # Show this help message"
   echo

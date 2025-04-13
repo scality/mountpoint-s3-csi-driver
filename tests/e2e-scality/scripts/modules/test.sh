@@ -5,7 +5,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Default namespace value
-DEFAULT_NAMESPACE="mount-s3"
+DEFAULT_NAMESPACE="kube-system"
 
 # Get the project root directory
 get_project_root() {

@@ -10,6 +10,7 @@ make csi-install \
   SECRET_ACCESS_KEY=verySecretKey1 \
   VALIDATE_S3=true
 ```
+This installs the CSI driver in the default namespace (kube-system).
 
 ### Installation with Custom Namespace
 ```bash
@@ -38,6 +39,7 @@ make csi-install \
 ```bash
 make e2e-scality
 ```
+Tests the CSI driver in the default namespace (kube-system).
 
 ### Testing with Custom Namespace
 ```bash
@@ -80,6 +82,7 @@ make e2e-scality-all \
   ACCESS_KEY_ID=your_key \
   SECRET_ACCESS_KEY=your_secret
 ```
+Installs in the default namespace (kube-system).
 
 ### Install with Custom Namespace and Test
 ```bash
@@ -92,25 +95,31 @@ make e2e-scality-all \
 
 ## Uninstallation
 
-### Interactive Uninstall (will prompt)
+### Uninstall from Default Namespace
 ```bash
 make csi-uninstall
 ```
+Uninstalls from the default namespace (kube-system). This will NOT delete the kube-system namespace.
 
 ### Uninstall from a Custom Namespace
 ```bash
 make csi-uninstall CSI_NAMESPACE=custom-namespace
 ```
+By default, this will prompt before deleting the custom namespace.
 
-### Auto Uninstall (no prompts)
+### Auto Uninstall with Custom Namespace Deletion
 ```bash
 make csi-uninstall-clean CSI_NAMESPACE=custom-namespace
 ```
+This automatically deletes the custom namespace without prompting.
+Note that if you don't specify a custom namespace, the kube-system namespace will NOT be deleted.
 
-### Force Uninstall (for stuck resources)
+### Force Uninstall
 ```bash
 make csi-uninstall-force CSI_NAMESPACE=custom-namespace
 ```
+Use this when standard uninstall methods aren't working.
+Note that if you don't specify a custom namespace, the kube-system namespace will NOT be deleted.
 
 ## Common Configurations
 

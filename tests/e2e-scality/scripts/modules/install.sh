@@ -5,7 +5,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Default namespace value
-DEFAULT_NAMESPACE="mount-s3"
+DEFAULT_NAMESPACE="kube-system"
 
 # Validate S3 configuration by testing connectivity and credentials
 validate_s3_configuration() {

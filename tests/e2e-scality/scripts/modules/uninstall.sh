@@ -5,7 +5,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Default namespace value
-DEFAULT_NAMESPACE="mount-s3"
+DEFAULT_NAMESPACE="kube-system"
 
 # Define error codes
 readonly ERROR_HELM_UNINSTALL=10
@@ -20,12 +20,17 @@ uninstall_csi_driver() {
   local DELETE_NS=false
   local FORCE=false
   local NAMESPACE="$DEFAULT_NAMESPACE"
+  local IS_CUSTOM_NAMESPACE=false
   
   # Parse arguments
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --namespace)
         NAMESPACE="$2"
+        # Check if a custom namespace was provided (not kube-system)
+        if [ "$NAMESPACE" != "$DEFAULT_NAMESPACE" ]; then
+          IS_CUSTOM_NAMESPACE=true
+        fi
         shift 2
         ;;
       --delete-ns)
@@ -70,9 +75,10 @@ uninstall_csi_driver() {
     fi
   fi
   
-  # Delete the namespace if requested or ask interactively
-  if [ "$FORCE" = true ]; then
-    log "Force mode enabled. Deleting namespace $NAMESPACE..."
+  # Only delete namespace if it's a custom namespace (not kube-system)
+  # and the delete flag is set or force mode is enabled
+  if [ "$IS_CUSTOM_NAMESPACE" = true ] && [ "$DELETE_NS" = true -o "$FORCE" = true ]; then
+    log "Deleting custom namespace $NAMESPACE..."
     if ! exec_cmd kubectl delete namespace $NAMESPACE --timeout=60s; then
       error "Failed to delete namespace $NAMESPACE. Error code: $ERROR_NS_DELETE"
       warn "You may need to manually delete stuck resources in the namespace."
@@ -84,17 +90,9 @@ uninstall_csi_driver() {
     else
       log "Namespace $NAMESPACE deleted successfully."
     fi
-  elif [ "$DELETE_NS" = true ]; then
-    log "Deleting namespace $NAMESPACE..."
-    if ! exec_cmd kubectl delete namespace $NAMESPACE --timeout=60s; then
-      error "Failed to delete namespace $NAMESPACE. Error code: $ERROR_NS_DELETE"
-      return $ERROR_NS_DELETE
-    else
-      log "Namespace $NAMESPACE deleted successfully."
-    fi
-  else
-    # Interactive mode
-    read -p "Do you want to delete the $NAMESPACE namespace and all its resources? (y/N): " DELETE_NAMESPACE
+  elif [ "$IS_CUSTOM_NAMESPACE" = true ] && [ "$DELETE_NS" = false ] && [ "$FORCE" = false ]; then
+    # Interactive mode only for custom namespaces
+    read -p "Do you want to delete the custom namespace $NAMESPACE and all its resources? (y/N): " DELETE_NAMESPACE
     if [[ "$DELETE_NAMESPACE" =~ ^[Yy]$ ]]; then
       log "Deleting namespace $NAMESPACE..."
       if ! exec_cmd kubectl delete namespace $NAMESPACE --timeout=60s; then
@@ -106,6 +104,9 @@ uninstall_csi_driver() {
     else
       log "Keeping namespace $NAMESPACE."
     fi
+  else
+    # If using kube-system, never delete it
+    log "Using system namespace $NAMESPACE, skipping namespace deletion for safety."
   fi
   
   # Check if CSI driver is still registered
