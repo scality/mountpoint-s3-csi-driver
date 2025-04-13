@@ -5,9 +5,10 @@
 ### Basic Installation
 ```bash
 make csi-install \
-  S3_ENDPOINT_URL=https://s3.example.com \
-  ACCESS_KEY_ID=your_key \
-  SECRET_ACCESS_KEY=your_secret
+  S3_ENDPOINT_URL=http://localhost:8000 \
+  ACCESS_KEY_ID=accessKey1 \
+  SECRET_ACCESS_KEY=verySecretKey1 \
+  VALIDATE_S3=true
 ```
 
 ### Installation with Options
