@@ -43,6 +43,7 @@ runs:
       run: |
         docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
         kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name helm-test-cluster
+      if: ${{ inputs.deploy_s3 == 'true' }}
 
     - name: Deploy Scality Storage
       shell: bash
