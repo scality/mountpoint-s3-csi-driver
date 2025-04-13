@@ -69,18 +69,23 @@ validate_s3_configuration() {
 
 # Install the Scality CSI driver using Helm
 install_csi_driver() {
-  # Process arguments
+  # Process parameters
   local IMAGE_TAG=""
+  local IMAGE_REPOSITORY=""
   local ENDPOINT_URL=""
   local ACCESS_KEY_ID=""
   local SECRET_ACCESS_KEY=""
   local VALIDATE_S3="false"
   
-  # Parse arguments
+  # Parse parameters
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --image-tag)
         IMAGE_TAG="$2"
+        shift 2
+        ;;
+      --image-repository)
+        IMAGE_REPOSITORY="$2"
         shift 2
         ;;
       --endpoint-url)
@@ -161,6 +166,12 @@ install_csi_driver() {
   if [ -n "$IMAGE_TAG" ]; then
     log "Using custom image tag: $IMAGE_TAG"
     HELM_PARAMS+=(--set "image.tag=$IMAGE_TAG")
+  fi
+  
+  # Add image repository if specified
+  if [ -n "$IMAGE_REPOSITORY" ]; then
+    log "Using custom image repository: $IMAGE_REPOSITORY"
+    HELM_PARAMS+=(--set "image.repository=$IMAGE_REPOSITORY")
   fi
   
   # Install/upgrade the Helm chart

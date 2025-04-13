@@ -247,6 +247,7 @@ ADDITIONAL_ARGS ?=
 #
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
+#   CSI_IMAGE_REPOSITORY - Custom image repository for the driver
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
 # Example: make csi-install S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
@@ -267,6 +268,9 @@ csi-install:
 	INSTALL_ARGS=""; \
 	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
+	fi; \
+	if [ ! -z "$(CSI_IMAGE_REPOSITORY)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --image-repository $(CSI_IMAGE_REPOSITORY)"; \
 	fi; \
 	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
 	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
@@ -328,6 +332,7 @@ e2e-scality-verify:
 #
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
+#   CSI_IMAGE_REPOSITORY - Custom image repository for the driver
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
 # Example: make e2e-scality-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
@@ -348,6 +353,9 @@ e2e-scality-all:
 	INSTALL_ARGS=""; \
 	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
+	fi; \
+	if [ ! -z "$(CSI_IMAGE_REPOSITORY)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --image-repository $(CSI_IMAGE_REPOSITORY)"; \
 	fi; \
 	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
 	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \

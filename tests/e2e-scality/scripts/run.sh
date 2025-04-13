@@ -23,6 +23,7 @@ show_help() {
   echo
   echo "Options for install command:"
   echo "  --image-tag VALUE         Specify custom image tag for the CSI driver"
+  echo "  --image-repository VALUE  Specify custom image repository for the CSI driver"
   echo "  --endpoint-url VALUE      Specify custom S3 endpoint URL (REQUIRED)"
   echo "  --access-key-id VALUE     Specify S3 access key ID for authentication (REQUIRED)"
   echo "  --secret-access-key VALUE Specify S3 secret access key for authentication (REQUIRED)"
@@ -43,6 +44,7 @@ show_help() {
   echo "Examples:"
   echo "  $0 install --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --image-tag v1.14.0 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
+  echo "  $0 install --image-repository myrepo/csi-driver --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --validate-s3 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 test                                 # Run all tests including Go-based e2e tests"
   echo "  $0 test --skip-go-tests                 # Run only basic verification tests"
@@ -69,6 +71,11 @@ parse_install_parameters() {
       --image-tag)
         IMAGE_TAG="$2"
         params="$params --image-tag $2"
+        shift 2
+        ;;
+      --image-repository)
+        IMAGE_REPOSITORY="$2"
+        params="$params --image-repository $2"
         shift 2
         ;;
       --endpoint-url)

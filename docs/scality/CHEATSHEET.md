@@ -15,6 +15,7 @@ make csi-install \
 ```bash
 make csi-install \
   CSI_IMAGE_TAG=v1.14.0 \
+  CSI_IMAGE_REPOSITORY=my-registry/mountpoint-s3-csi-driver \
   S3_ENDPOINT_URL=https://s3.example.com \
   ACCESS_KEY_ID=your_key \
   SECRET_ACCESS_KEY=your_secret \
@@ -51,6 +52,16 @@ go test -v -tags=e2e -ginkgo.focus="Basic Functionality"
 ### Install and Test in One Step
 ```bash
 make e2e-scality-all \
+  S3_ENDPOINT_URL=https://s3.example.com \
+  ACCESS_KEY_ID=your_key \
+  SECRET_ACCESS_KEY=your_secret
+```
+
+### Install with Custom Image and Test
+```bash
+make e2e-scality-all \
+  CSI_IMAGE_TAG=v1.14.0 \
+  CSI_IMAGE_REPOSITORY=my-registry/mountpoint-s3-csi-driver \
   S3_ENDPOINT_URL=https://s3.example.com \
   ACCESS_KEY_ID=your_key \
   SECRET_ACCESS_KEY=your_secret
