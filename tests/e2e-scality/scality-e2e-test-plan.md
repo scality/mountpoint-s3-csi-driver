@@ -286,24 +286,35 @@ After implementing Phase 1:
    - Framework successfully compiles"
    ```
 
-## Phase 2: Standard Test Suite Integration
+## Phase 2: Go Test Implementation with Existing Infrastructure
 
-1. **Configure Standard Kubernetes Test Suites**
+1. **Resolve Go Dependencies**
+   ```go
+   // Fix module dependencies to ensure proper versions
+   // In go.mod
+   require (
+       // Match the versions used in e2e-kubernetes
+       github.com/aws/aws-sdk-go-v2 v1.30.3
+       github.com/onsi/ginkgo/v2 v2.19.0
+       github.com/onsi/gomega v1.33.1
+       k8s.io/api v0.29.8
+       k8s.io/apimachinery v0.29.8
+       k8s.io/kubernetes v1.29.14
+       // Other required dependencies
+   )
+   ```
+
+2. **Implement Basic Volume Tests**
    ```go
    // In e2e_test.go
    var StandardTestSuites = []func() framework.TestSuite{
-       testsuites.InitVolumesTestSuite,         // Basic volume tests
-       testsuites.InitVolumeIOTestSuite,        // IO operations on volumes
-       testsuites.InitVolumeModeTestSuite,      // Different volume modes
-       testsuites.InitSubPathTestSuite,         // Subpath tests
-       testsuites.InitProvisioningTestSuite,    // Provisioning tests
-       testsuites.InitMultiVolumeTestSuite,     // Multiple volumes tests
+       testsuites.InitVolumesTestSuite, // Basic volume tests, verified to work with S3
    }
    
-   // This executes testSuites for csi volumes.
+   // This executes testSuites for csi volumes
    var _ = utils.SIGDescribe("Scality CSI Volumes", func() {
        curDriver := initScalityDriver()
-   
+       
        args := framework.GetDriverNameWithFeatureTags(curDriver)
        args = append(args, func() {
            framework.DefineTestSuites(curDriver, StandardTestSuites)
@@ -312,55 +323,43 @@ After implementing Phase 1:
    })
    ```
 
-2. **Create Test Volume Management**
+3. **Add Test Verification Methods**
    ```go
-   // In testdriver.go
-   type ScalityVolume struct {
-       bucketName   string
-       deleteBucket s3client.DeleteBucketFunc
+   // In pkg/testutil/verification.go
+   // Implement helpers for verifying test results
+   
+   // VerifyPVCreated checks if a PV with the given name exists
+   func VerifyPVCreated(ctx context.Context, c clientset.Interface, pvName string) error {
+       pv, err := c.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
+       if err != nil {
+           return fmt.Errorf("failed to get PV %s: %v", pvName, err)
+       }
+       
+       if pv.Status.Phase != v1.VolumeBound && pv.Status.Phase != v1.VolumeAvailable {
+           return fmt.Errorf("PV %s is not in bound or available state: %s", pvName, pv.Status.Phase)
+       }
+       
+       return nil
    }
    
-   func (v *ScalityVolume) DeleteVolume(ctx context.Context) {
-       err := v.deleteBucket(ctx)
-       f.ExpectNoError(err, "Failed to delete S3 Bucket: %s", v.bucketName)
-   }
+   // Similar verification helpers for PVCs, Pods, etc.
    ```
 
-3. **Update Run Script Integration**
-   - Enhance scripts/run.sh to use auto-detected kubectl path
-   - Add support for Kubernetes E2E framework parameters
-   - Configure proper parameter passing to Go tests
-
-4. **Implement CSI Driver Installation Script with Simple Authentication**
-   ```bash
-   # In scripts/install_csi_driver.sh
-   
-   install_csi_driver() {
-     # Use helm directly (not via Go tests)
-     echo "Installing CSI driver using Helm"
-     
-     # Check if release already exists
-     if helm list -n kube-system | grep -q "csi-driver-s3"; then
-       echo "CSI driver already installed, upgrading..."
-       helm upgrade csi-driver-s3 ./charts/csi-driver-s3 \
-         --namespace kube-system \
-         --set s3.endpoint=$S3_ENDPOINT_URL \
-         --set s3.accessKeyID=$ACCESS_KEY_ID \
-         --set s3.secretAccessKey=$SECRET_ACCESS_KEY
-     else
-       echo "Installing CSI driver..."
-       helm install csi-driver-s3 ./charts/csi-driver-s3 \
-         --namespace kube-system \
-         --create-namespace \
-         --set s3.endpoint=$S3_ENDPOINT_URL \
-         --set s3.accessKeyID=$ACCESS_KEY_ID \
-         --set s3.secretAccessKey=$SECRET_ACCESS_KEY
-     fi
-     
-     # Wait for CSI driver to be ready using auto-detected kubectl
-     echo "Waiting for CSI driver pods to be running..."
-     $KUBECTL_PATH wait --for=condition=Ready pods -l app=csi-driver-s3 -n kube-system --timeout=120s
+4. **Create Simple Scality-Specific Test Suite**
+   ```go
+   // In testsuites/s3_basic.go
+   func InitScalityBasicTestSuite() framework.TestSuite {
+       return &scalityBasicTestSuite{}
    }
+   
+   type scalityBasicTestSuite struct {
+       tsInfo framework.TestSuiteInfo
+   }
+   
+   // Implement framework.TestSuite interface methods
+   func (t *scalityBasicTestSuite) GetTestSuiteInfo() framework.TestSuiteInfo
+   func (t *scalityBasicTestSuite) SkipUnsupportedTests(driver framework.TestDriver, pattern framework.TestPattern)
+   func (t *scalityBasicTestSuite) DefineTests(driver framework.TestDriver, pattern framework.TestPattern)
    ```
 
 ### Phase 2 Documentation and Verification
@@ -368,174 +367,54 @@ After implementing Phase 2:
 
 1. **Documentation**
    ```bash
-   # Update framework documentation
+   # Update test documentation
    cd tests/e2e-scality
-   # Document standard test suites
-   # Document run script usage with examples
-   # Document how test suite interacts with Kubernetes resources
-   # Document kubectl auto-detection
+   # Document test integration with existing infrastructure
+   # Document how to run tests with existing SCALE-T make commands
    ```
 
 2. **Verification**
    ```bash
-   # Test with minimal setup - just verify S3 client works
-   go test -v ./pkg/s3client -run=TestS3ClientBasic \
-     -s3-endpoint-url="http://localhost:8000" \
-     -access-key-id="test" \
-     -secret-access-key="test"
+   # Test with existing infrastructure
+   # Run using SCALE-T specific make commands that install the CSI driver
    
-   # Test driver initialization without running actual tests
-   go test -v ./... -run=TestDriverInit \
+   # Then verify that the tests work with the installed driver
+   go test -v ./... -ginkgo.focus="Basic" \
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
      -kubeconfig="$HOME/.kube/config"
-   
-   # Test run script auto-detection and parameter passing
-   KUBECONFIG="$HOME/.kube/config" ./scripts/run.sh go-test \
-     --endpoint-url="http://localhost:8000" \
-     --access-key-id="test" \
-     --secret-access-key="test" \
-     --run="TestDriverInit"
-   
-   # Verify Kubernetes connection using auto-detected kubectl
-   ./scripts/run.sh check-kubernetes
    ```
 
 3. **Commit Changes**
    ```bash
    git add .
-   git commit -m "Phase 2: Standard Test Suite Integration
+   git commit -m "Phase 2: Test Implementation with Existing Infrastructure
    
-   - Configured standard Kubernetes test suites
-   - Implemented test volume management
-   - Enhanced run.sh with kubectl auto-detection
-   - Added CSI driver installation script with simple authentication
-   - Verified S3 client and driver initialization with Kubernetes framework"
+   - Resolved Go dependencies
+   - Implemented basic volume tests
+   - Added verification helpers
+   - Created Scality-specific test suite
+   - Integrated with existing SCALE-T infrastructure"
    ```
 
-## Phase 3: Basic Volume Test Implementation
+## Phase 3: Extended Test Suite Implementation
 
-1. **Implement Simple Volume Test Using Kubernetes E2E Framework**
+1. **Implement Scality-Specific Mount Options Test Suite**
    ```go
-   // In e2e_test.go - add a simple test that runs outside the framework
-   func TestBasicVolumeCreation(t *testing.T) {
-       // Initialize driver and create a test volume
-       driver := initScalityDriver()
-       ctx := context.Background()
-       
-       // Create a test config
-       config := &framework.PerTestConfig{
-           Framework: &framework.Framework{},
-       }
-       
-       // Create a volume
-       volume := driver.CreateVolume(ctx, config, framework.StandardVolumeType)
-       defer volume.DeleteVolume(ctx)
-       
-       // Verify volume is accessible
-       // ... add verification steps
+   // In testsuites/mount_options.go
+   func InitScalityMountOptionsTestSuite() framework.TestSuite {
+       return &scalityMountOptionsTestSuite{}
    }
-   ```
-
-2. **Test Ginkgo Integration**
-   - Add a minimal Ginkgo test to verify framework integration
-   - Configure proper parameter passing to Ginkgo tests
-
-3. **Implement Skip Patterns**
-   - Identify which standard tests should be skipped for Scality
-   - Implement proper skip logic in driver
-
-4. **Implement Kubernetes Resource Verification**
-   - Add helper functions to verify PVs and PVCs are created correctly
-   - Add helper functions to check pod mounts
-   - Use kubectl (via framework or directly) to verify resources
-
-### Phase 3 Documentation and Verification
-After implementing Phase 3:
-
-1. **Documentation**
-   ```bash
-   # Update test documentation in README.md
-   cd tests/e2e-scality
-   # Document basic volume tests
-   # Document test patterns and skip logic
-   # Add examples of running tests with make commands
-   # Document kubectl commands for verifying test results
-   # Document that only kubeconfig needs to be specified
-   ```
-
-2. **Verification**
-   ```bash
-   # Run the basic volume test with direct Go command
-   go test -v ./... -run=TestBasicVolumeCreation \
-     -s3-endpoint-url="http://localhost:8000" \
-     -access-key-id="test" \
-     -secret-access-key="test" \
-     -kubeconfig="$HOME/.kube/config"
    
-   # Run a minimal Ginkgo test with direct Go command
-   go test -v ./... -ginkgo.focus="Basic volume test" \
-     -s3-endpoint-url="http://localhost:8000" \
-     -access-key-id="test" \
-     -secret-access-key="test" \
-     -kubeconfig="$HOME/.kube/config"
+   type scalityMountOptionsTestSuite struct {
+       tsInfo framework.TestSuiteInfo
+   }
    
-   # Use run.sh script with auto-detection
-   KUBECONFIG="$HOME/.kube/config" ./scripts/run.sh go-test \
-     --endpoint-url="http://localhost:8000" \
-     --access-key-id="test" \
-     --secret-access-key="test" \
-     --ginkgo.focus="Basic volume test"
-     
-   # Verify Kubernetes resources created by tests using auto-detected kubectl
-   ./scripts/run.sh kubectl get pv
-   ./scripts/run.sh kubectl get pvc
-   ./scripts/run.sh kubectl get pods
-   ```
-
-3. **Ensuring Both Testing Methods Work**
-   
-   a. **Direct Go Commands**:
-   ```bash
-   # Direct go test command for basic volume test
-   go test -v ./... -run=TestBasicVolumeCreation \
-     -s3-endpoint-url="http://localhost:8000" \
-     -access-key-id="test" \
-     -secret-access-key="test" \
-     -kubeconfig="$HOME/.kube/config"
-   
-   # Direct go test command for Ginkgo test
-   go test -v ./... -ginkgo.focus="Basic volume test" \
-     -s3-endpoint-url="http://localhost:8000" \
-     -access-key-id="test" \
-     -secret-access-key="test" \
-     -kubeconfig="$HOME/.kube/config"
-   ```
-   
-   b. **Make Commands with CSI Driver Installation (Primary Method)**:
-   ```bash
-   # Primary method - installs CSI driver and runs tests
-   # Only need to specify kubeconfig, kubectl path is auto-detected
-   make e2e-scality-all \
-     S3_ENDPOINT_URL=http://localhost:8000 \
-     ACCESS_KEY_ID=test \
-     SECRET_ACCESS_KEY=test \
-     KUBECONFIG="$HOME/.kube/config" \
-     ADDITIONAL_ARGS="--ginkgo.focus=\"Basic\""
-   ```
-
-4. **Commit Changes**
-   ```bash
-   git add .
-   git commit -m "Phase 3: Basic Volume Test Implementation
-   
-   - Implemented basic volume creation test with Kubernetes E2E framework
-   - Added Ginkgo integration
-   - Implemented test skip patterns
-   - Verified volume creation and deletion
-   - Added kubectl verification of Kubernetes resources
-   - Verified auto-detection of kubectl works"
+   // Implement framework.TestSuite interface methods
+   func (t *scalityMountOptionsTestSuite) GetTestSuiteInfo() framework.TestSuiteInfo
+   func (t *scalityMountOptionsTestSuite) SkipUnsupportedTests(driver framework.TestDriver, pattern framework.TestPattern)
+   func (t *scalityMountOptionsTestSuite) DefineTests(driver framework.TestDriver, pattern framework.TestPattern)
    ```
 
 ## Phase 4: Custom Test Suites for Scality
