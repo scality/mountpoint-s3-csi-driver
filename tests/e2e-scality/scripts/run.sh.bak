@@ -1,0 +1,269 @@
+#!/bin/bash
+set -e
+
+# Define colors for better readability
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+# Print with timestamp
+log() {
+  echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] $1${NC}"
+}
+
+warn() {
+  echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
+}
+
+error() {
+  echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+  exit 1
+}
+
+# Check for required tools
+check_dependencies() {
+  log "Checking dependencies..."
+  
+  if ! command -v helm &> /dev/null; then
+    error "Helm is not installed. Please install it first."
+  fi
+
+  if ! command -v kubectl &> /dev/null; then
+    error "kubectl is not installed. Please install it first."
+  fi
+  
+  log "All dependencies are installed."
+}
+
+# Install the Scality CSI driver using Helm
+install_csi_driver() {
+  log "Installing Scality CSI driver using Helm..."
+  
+  # Get the directory where this script is located
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  
+  # Navigate to the root of the project to access the charts directory
+  PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+  
+  # Create AWS credentials secret if it doesn't exist
+  log "Creating AWS credentials secret..."
+  kubectl create namespace mount-s3 --dry-run=client -o yaml | kubectl apply -f -
+  
+  # Check if aws-secret already exists
+  if ! kubectl get secret aws-secret -n mount-s3 &> /dev/null; then
+    # Create the secret with placeholder values - replace these with actual values as needed
+    kubectl create secret generic aws-secret \
+      --from-literal=key_id="YOUR_AWS_ACCESS_KEY_ID" \
+      --from-literal=access_key="YOUR_AWS_SECRET_ACCESS_KEY" \
+      -n mount-s3
+  else
+    log "Secret aws-secret already exists, skipping creation."
+  fi
+  
+  # Install/upgrade the Helm chart
+  helm upgrade --install scality-s3-csi \
+    "$PROJECT_ROOT/charts/scality-mountpoint-s3-csi-driver" \
+    --namespace mount-s3 \
+    --create-namespace \
+    --set node.s3EndpointUrl="https://s3.scality.com" \
+    --wait
+  
+  log "CSI driver installation complete."
+}
+
+# Verify the installation
+verify_installation() {
+  log "Verifying CSI driver installation..."
+  
+  # Wait for the pods to be running
+  log "Waiting for CSI driver pods to be in Running state..."
+  
+  # Maximum wait time in seconds (5 minutes)
+  MAX_WAIT_TIME=300
+  WAIT_INTERVAL=10
+  ELAPSED_TIME=0
+  
+  while [ $ELAPSED_TIME -lt $MAX_WAIT_TIME ]; do
+    if kubectl get pods -n mount-s3 | grep -q "Running"; then
+      log "CSI driver pods are now running."
+      kubectl get pods -n mount-s3
+      break
+    else
+      log "Pods not yet in Running state. Waiting ${WAIT_INTERVAL} seconds... (${ELAPSED_TIME}/${MAX_WAIT_TIME}s)"
+      sleep $WAIT_INTERVAL
+      ELAPSED_TIME=$((ELAPSED_TIME + WAIT_INTERVAL))
+    fi
+  done
+  
+  # Check if we timed out
+  if [ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]; then
+    log "Timed out waiting for pods to be in Running state. Current pod status:"
+    kubectl get pods -n mount-s3
+    error "CSI driver pods did not reach Running state within ${MAX_WAIT_TIME} seconds."
+  fi
+  
+  # Check if CSI driver is registered
+  log "Checking if CSI driver is registered..."
+  if kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
+    log "CSI driver is registered successfully."
+  else
+    error "CSI driver is not registered properly."
+  fi
+}
+
+# Run end-to-end tests
+run_tests() {
+  log "Running end-to-end tests for Scality CSI driver..."
+  
+  # Get the directory where this script is located
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  
+  # TODO: Implement actual tests
+  log "No tests implemented yet. This is a placeholder for future test implementation."
+  
+  # Example of how tests would be run:
+  # cd "$SCRIPT_DIR"
+  # go test -v ./...
+  
+  log "Tests completed."
+}
+
+# Uninstall the CSI driver
+uninstall_csi_driver() {
+  log "Uninstalling Scality CSI driver..."
+  
+  # Process arguments
+  local DELETE_NS=false
+  local FORCE=false
+  
+  # Check for command line flags
+  if [ "$1" == "--delete-ns" ]; then
+    DELETE_NS=true
+  elif [ "$1" == "--force" ]; then
+    DELETE_NS=true
+    FORCE=true
+  fi
+  
+  # Check if the namespace exists
+  if ! kubectl get namespace mount-s3 &> /dev/null; then
+    warn "Namespace mount-s3 does not exist. Nothing to uninstall."
+    return
+  fi
+  
+  # Check if the Helm release exists
+  if ! helm status scality-s3-csi -n mount-s3 &> /dev/null; then
+    warn "Helm release scality-s3-csi not found in namespace mount-s3. Nothing to uninstall."
+  else
+    # Uninstall the Helm release
+    log "Uninstalling Helm release scality-s3-csi..."
+    helm uninstall scality-s3-csi -n mount-s3
+    log "Helm release uninstalled successfully."
+  fi
+  
+  # Delete the namespace if requested or ask interactively
+  if [ "$FORCE" = true ]; then
+    log "Force mode enabled. Deleting namespace mount-s3..."
+    kubectl delete namespace mount-s3
+    log "Namespace deleted successfully."
+  elif [ "$DELETE_NS" = true ]; then
+    log "Deleting namespace mount-s3..."
+    kubectl delete namespace mount-s3
+    log "Namespace deleted successfully."
+  else
+    # Interactive mode
+    read -p "Do you want to delete the mount-s3 namespace and all its resources? (y/N): " DELETE_NAMESPACE
+    if [[ "$DELETE_NAMESPACE" =~ ^[Yy]$ ]]; then
+      log "Deleting namespace mount-s3..."
+      kubectl delete namespace mount-s3
+      log "Namespace deleted successfully."
+    else
+      log "Keeping namespace mount-s3."
+    fi
+  fi
+  
+  # Check if CSI driver is still registered
+  if kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
+    warn "CSI driver s3.csi.aws.com is still registered. You may need to delete it manually:"
+    warn "kubectl delete csidriver s3.csi.aws.com"
+    
+    # In force mode, automatically delete the CSI driver
+    if [ "$FORCE" = true ]; then
+      log "Force mode enabled. Deleting CSI driver s3.csi.aws.com..."
+      kubectl delete csidriver s3.csi.aws.com
+      log "CSI driver deleted successfully."
+    fi
+  else
+    log "CSI driver is no longer registered."
+  fi
+  
+  log "Uninstallation complete."
+}
+
+# Show help message
+show_help() {
+  echo "Usage: $0 [COMMAND] [OPTIONS]"
+  echo
+  echo "Commands:"
+  echo "  install   Install and verify the Scality CSI driver (default)"
+  echo "  test      Run end-to-end tests against the installed driver"
+  echo "  all       Install driver and run tests"
+  echo "  uninstall Uninstall the Scality CSI driver"
+  echo "  help      Show this help message"
+  echo
+  echo "Options for uninstall command:"
+  echo "  --delete-ns  Delete the mount-s3 namespace without prompting"
+  echo "  --force      Force delete all resources including CSI driver registration"
+  echo
+  echo "Examples:"
+  echo "  $0                          # Install the CSI driver (default action)"
+  echo "  $0 install                  # Explicitly install the CSI driver"
+  echo "  $0 test                     # Run tests against an already installed driver"
+  echo "  $0 all                      # Install driver and run tests"
+  echo "  $0 uninstall                # Uninstall driver (interactive mode)"
+  echo "  $0 uninstall --delete-ns    # Uninstall driver and delete namespace"
+  echo "  $0 uninstall --force        # Force delete all resources"
+  echo "  $0 help                     # Show this help message"
+}
+
+# Main execution
+main() {
+  # Process command line arguments
+  COMMAND=${1:-install}
+  
+  case $COMMAND in
+    install)
+      log "Starting Scality CSI driver installation..."
+      check_dependencies
+      install_csi_driver
+      verify_installation
+      log "Scality CSI driver setup completed successfully."
+      ;;
+    test)
+      run_tests
+      ;;
+    all)
+      log "Starting Scality CSI driver installation and tests..."
+      check_dependencies
+      install_csi_driver
+      verify_installation
+      run_tests
+      log "Scality CSI driver setup and tests completed successfully."
+      ;;
+    uninstall)
+      # Pass the second argument to uninstall_csi_driver if it exists
+      uninstall_csi_driver "${2:-}"
+      ;;
+    help)
+      show_help
+      ;;
+    *)
+      error "Unknown command: $COMMAND"
+      show_help
+      exit 1
+      ;;
+  esac
+}
+
+# Execute main function with all arguments
+main "$@" 

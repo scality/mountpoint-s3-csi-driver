@@ -71,6 +71,7 @@ The following table provides the support status for various distros with regards
 
 ## Documentation
 
+* [Driver Architecture](docs/ARCHITECTURE.md)
 * [Driver Installation](docs/install.md)
 * [Kubernetes Static Provisioning Example](/examples/kubernetes/static_provisioning)
 * [Driver Uninstallation](docs/install.md#uninstalling-the-driver)

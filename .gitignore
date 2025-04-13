@@ -1,6 +1,7 @@
 **/credentials
 bin/
 tests/bin
+tests/e2e-scality/e2e-tests/e2e-tests
 go.work
 go.work.sum
 .github/artifacts/benchmark-data.json
