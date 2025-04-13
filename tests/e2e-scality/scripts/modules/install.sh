@@ -19,43 +19,45 @@ validate_s3_configuration() {
   # Step 1: Basic endpoint connectivity check with curl
   local http_code=$(curl -s -o "$temp_output" -w "%{http_code}" "$endpoint_url" 2>/dev/null)
   
-  if [[ "$http_code" == 2* ]] || [[ "$http_code" == 3* ]]; then
-    log "S3 endpoint is reachable (HTTP $http_code)"
+  # For S3 endpoints, a 403 is actually good - it means the endpoint exists and requires auth
+  if [[ "$http_code" == "403" ]] || grep -q "AccessDenied\|InvalidAccessKeyId" "$temp_output"; then
+    log "S3 endpoint is confirmed (received HTTP $http_code with access denied, which is expected)"
+    log "Basic connectivity validation successful!"
     
-    # If we get a 403 Forbidden/Access Denied, that's good because it means the endpoint exists and is an S3 service
-    if [[ "$http_code" == "403" ]] || grep -q "AccessDenied\|InvalidAccessKeyId" "$temp_output"; then
-      log "Endpoint is confirmed as an S3 service (received access denied, which is expected without credentials)"
+    # Step 2: Check credentials with AWS CLI if it's installed
+    if command -v aws &> /dev/null; then
+      log "AWS CLI found, validating access key and secret key..."
       
-      # Step 2: Check credentials with AWS CLI if it's installed
-      if command -v aws &> /dev/null; then
-        log "AWS CLI found, validating access key and secret key..."
-        
-        # Use environment variables method for AWS credentials
-        if AWS_ACCESS_KEY_ID="$access_key_id" AWS_SECRET_ACCESS_KEY="$secret_access_key" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
-          log "SUCCESS: AWS access key and secret key validated successfully!"
-          log "Available buckets:"
-          cat "$temp_output"
-        else
-          error "Failed to validate AWS credentials. Error details:"
-          cat "$temp_output"
-          log "Please check your access key and secret key."
-          rm -f "$temp_output"
-          return 1
-        fi
+      # Use environment variables method for AWS credentials
+      if AWS_ACCESS_KEY_ID="$access_key_id" AWS_SECRET_ACCESS_KEY="$secret_access_key" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
+        log "SUCCESS: AWS access key and secret key validated successfully!"
+        log "Available buckets:"
+        cat "$temp_output"
       else
-        log "AWS CLI not installed - cannot validate access key and secret key."
-        log "Only basic endpoint connectivity was confirmed."
-        log "Proceeding with installation, but credential issues might occur later."
+        error "Failed to validate AWS credentials. Error details:"
+        cat "$temp_output"
+        log "Please check your access key and secret key."
+        rm -f "$temp_output"
+        return 1
       fi
-      
-      # Clean up temporary file
-      rm -f "$temp_output"
-      return 0
     else
-      log "Endpoint is reachable but response doesn't seem to be from an S3 service."
-      log "Response received:"
-      cat "$temp_output"
+      log "AWS CLI not installed - cannot validate access key and secret key."
+      log "Only basic endpoint connectivity was confirmed."
+      log "Proceeding with installation, but credential issues might occur later."
     fi
+    
+    # Clean up temporary file
+    rm -f "$temp_output"
+    return 0
+  # For non-403 codes, check if it's otherwise a successful response
+  elif [[ "$http_code" == 2* ]] || [[ "$http_code" == 3* ]]; then
+    log "S3 endpoint is reachable (HTTP $http_code)"
+    log "Response does not look like a typical S3 endpoint (no access denied response)"
+    log "Response received:"
+    cat "$temp_output"
+    log "Will proceed with installation, but this might not be an S3 service."
+    rm -f "$temp_output"
+    return 0
   else
     error "Failed to connect to S3 endpoint (HTTP code: $http_code)"
     log "Please check if the endpoint URL is correct and the S3 service is running."
@@ -63,11 +65,6 @@ validate_s3_configuration() {
     rm -f "$temp_output"
     return 1
   fi
-  
-  # If we get here, the endpoint is reachable but we couldn't confirm it's an S3 service
-  log "Proceeding with installation, but S3 configuration issues might occur."
-  rm -f "$temp_output"
-  return 0
 }
 
 # Install the Scality CSI driver using Helm
