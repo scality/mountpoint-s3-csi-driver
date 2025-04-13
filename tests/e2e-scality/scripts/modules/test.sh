@@ -40,6 +40,14 @@ run_go_tests() {
   # Add JUnit report if specified
   if [ -n "$junit_report" ]; then
     log "Using JUnit report file: $junit_report"
+    
+    # Create the output directory if it doesn't exist
+    local junit_dir=$(dirname "$junit_report")
+    if [ ! -d "$junit_dir" ] && [ "$junit_dir" != "." ]; then
+      log "Creating output directory for JUnit report: $junit_dir"
+      mkdir -p "$junit_dir"
+    fi
+    
     # Use the correct format for Ginkgo JUnit report
     go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.junit-report=$junit_report"
   fi

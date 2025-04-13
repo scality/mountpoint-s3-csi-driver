@@ -75,6 +75,17 @@ jobs:
             CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
             ADDITIONAL_ARGS="--junit-report=./test-results/scality-e2e-tests-results.xml"
         
+      - name: Copy test results to expected location
+        if: ${{ !cancelled() }}
+        run: |
+          # Make sure the directory exists
+          mkdir -p ./test-results/
+          # Copy from the actual location to the expected location
+          find . -name "scality-e2e-tests-results.xml" -exec cp {} ./test-results/ \;
+          # List files to verify
+          find . -name "scality-e2e-tests-results.xml"
+          ls -la ./test-results/
+        
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
