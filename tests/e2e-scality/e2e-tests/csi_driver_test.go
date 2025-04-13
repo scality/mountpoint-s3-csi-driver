@@ -64,7 +64,7 @@ func TestScalityCSIDriver(t *testing.T) {
 var _ = Describe("Scality S3 CSI Driver", func() {
 	// Test basic driver functionality
 	Describe("Basic Functionality", func() {
-		It("should have CSI driver properly registered", func() {
+		It("should have CSI driver properly registered with the Kubernetes Cluster", func() {
 			By("Checking for CSI driver registration")
 			driver, err := clientset.StorageV1().CSIDrivers().Get(context.Background(),
 				"s3.csi.aws.com", metav1.GetOptions{})
