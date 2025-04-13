@@ -16,27 +16,21 @@ import (
 
 // Command-line flags
 var (
-	focusFlag     = flag.String("focus", "", "Focus on tests matching the given pattern")
-	skipFlag      = flag.String("skip", "", "Skip tests matching the given pattern")
+	// namespaceFlag overrides the namespace used in tests
 	namespaceFlag = flag.String("namespace", "mount-s3", "Namespace where CSI driver is installed")
 )
 
 // TestScalityCSIDriver is the main Go test function that triggers the Ginkgo framework
 func TestScalityCSIDriver(t *testing.T) {
+	// Register Ginkgo's fail handler
 	RegisterFailHandler(Fail)
-
-	// Check if extra Ginkgo args need to be set
-	var args []string
-	if *focusFlag != "" {
-		args = append(args, "--focus", *focusFlag)
-	}
-	if *skipFlag != "" {
-		args = append(args, "--skip", *skipFlag)
-	}
 
 	// Run the tests
 	RunSpecs(t, "Scality S3 CSI Driver Suite")
 }
+
+// For Ginkgo focus and skip, use the built-in flags:
+// go test -v -tags=e2e -ginkgo.focus="Basic" -ginkgo.skip="Volume"
 
 var _ = Describe("Scality S3 CSI Driver", func() {
 	// Define test namespace for resources
@@ -47,6 +41,7 @@ var _ = Describe("Scality S3 CSI Driver", func() {
 	BeforeEach(func() {
 		// Get namespace from flag
 		driverNamespace = *namespaceFlag
+		GinkgoWriter.Write([]byte("Using namespace: " + driverNamespace + "\n"))
 	})
 
 	// Test basic driver functionality
