@@ -81,10 +81,14 @@ jobs:
           # Make sure the directory exists
           mkdir -p ./test-results/
           # Copy from the actual location to the expected location
-          find . -name "scality-e2e-tests-results.xml" -exec cp {} ./test-results/ \;
+          find ./tests/e2e-scality/e2e-tests -name "scality-e2e-tests-results.xml" -exec cp {} ./test-results/ \;
+          # Also check for any XML files that might have been created
+          find ./tests/e2e-scality/e2e-tests -name "*.xml" -exec cp {} ./test-results/ \;
           # List files to verify
-          find . -name "scality-e2e-tests-results.xml"
-          ls -la ./test-results/
+          echo "Files found in e2e-tests directory:"
+          find ./tests/e2e-scality/e2e-tests -name "*.xml"
+          echo "Files in test-results directory:"
+          ls -la ./test-results/ || true
         
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -94,6 +98,7 @@ jobs:
           path: |
             ./logs/
             ./tests/e2e-scality/e2e-tests/*.log
+            ./tests/e2e-scality/e2e-tests/**/*.xml
             ./test-results/
           if-no-files-found: warn
           

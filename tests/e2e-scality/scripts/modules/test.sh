@@ -41,15 +41,36 @@ run_go_tests() {
   if [ -n "$junit_report" ]; then
     log "Using JUnit report file: $junit_report"
     
+    # Handle absolute and relative paths
+    local junit_absolute_path
+    
+    # If path is absolute, use it directly
+    if [[ "$junit_report" = /* ]]; then
+      junit_absolute_path="$junit_report"
+    else
+      # For relative paths, determine if we need to adjust the path based on the CWD
+      # If path starts with ./ then make it relative to the e2e-tests directory
+      if [[ "$junit_report" = ./* ]]; then
+        # For paths starting with ./, keep them relative to the test directory
+        junit_absolute_path="$junit_report"
+        log "Using relative path from e2e-tests directory: $junit_absolute_path"
+      else
+        # For other paths (like just a filename), ensure they're created in the test directory
+        junit_absolute_path="./$junit_report"
+        log "Adjusted path to be relative to e2e-tests directory: $junit_absolute_path"
+      fi
+    fi
+    
     # Create the output directory if it doesn't exist
-    local junit_dir=$(dirname "$junit_report")
+    local junit_dir=$(dirname "$junit_absolute_path")
     if [ ! -d "$junit_dir" ] && [ "$junit_dir" != "." ]; then
       log "Creating output directory for JUnit report: $junit_dir"
       mkdir -p "$junit_dir"
     fi
     
     # Use the correct format for Ginkgo JUnit report
-    go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.junit-report=$junit_report"
+    go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.junit-report=$junit_absolute_path"
+    log "Final JUnit report path: $junit_absolute_path"
   fi
   
   # Run the Go tests
@@ -58,7 +79,18 @@ run_go_tests() {
   
   if ! (cd "$e2e_tests_dir" && eval "$go_test_cmd"); then
     error "Go tests failed with exit code $?"
+    # List any XML files that were created
+    if [ -n "$junit_report" ]; then
+      log "Checking for JUnit report files:"
+      (cd "$e2e_tests_dir" && find . -name "*.xml" -ls || true)
+    fi
     return 1
+  fi
+  
+  # Verify the JUnit report was created
+  if [ -n "$junit_report" ]; then
+    log "Checking for JUnit report file:"
+    (cd "$e2e_tests_dir" && find . -name "*.xml" -ls || true)
   fi
   
   log "Go tests completed successfully."
