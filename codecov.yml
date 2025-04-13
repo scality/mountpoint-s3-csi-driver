@@ -1,7 +1,7 @@
 codecov:
   notify:
     wait_for_ci: true
-    after_n_builds: 1
+    after_n_builds: 4
 
 comment:
   layout: condensed_header, condensed_files, condensed_footer
