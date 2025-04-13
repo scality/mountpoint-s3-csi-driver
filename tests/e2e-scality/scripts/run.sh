@@ -186,6 +186,10 @@ parse_test_parameters() {
         params="$params --skip-go-tests"
         shift
         ;;
+      --junit-report)
+        params="$params --junit-report $2"
+        shift 2
+        ;;
       *)
         echo "Error: Unknown option: $1"
         show_help
@@ -252,13 +256,36 @@ main() {
       # Get namespace parameter
       local namespace_param=$(get_namespace_param "$@")
       
+      # Extract installation related arguments, exclude the test-specific arguments
+      local install_args=""
+      local test_args=""
+      
+      # Separate install and test args
+      for arg in "$@"; do
+        case "$arg" in
+          --junit-report | --skip-go-tests | --skip-verification)
+            test_args="$test_args $arg"
+            shift
+            
+            # If this argument requires a value, add it to test_args
+            if [[ "$arg" == "--junit-report" && $# -gt 0 ]]; then
+              test_args="$test_args $1"
+              shift
+            fi
+            ;;
+          *)
+            install_args="$install_args $arg"
+            ;;
+        esac
+      done
+      
       # Pass all command-line parameters to install module
-      exec_cmd do_install $namespace_param "$@"
+      exec_cmd do_install $namespace_param $install_args
       
       source "${MODULES_DIR}/test.sh"
       
-      # Run tests with same namespace
-      exec_cmd do_test $namespace_param
+      # Run tests with same namespace and any test-specific arguments
+      exec_cmd do_test $namespace_param $test_args
       
       log "Scality CSI driver setup and tests completed successfully."
       ;;

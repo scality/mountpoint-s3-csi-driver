@@ -18,6 +18,7 @@ run_go_tests() {
   local project_root=$(get_project_root)
   local e2e_tests_dir="${project_root}/tests/e2e-scality/e2e-tests"
   local namespace="${1:-$DEFAULT_NAMESPACE}"
+  local junit_report="$2"
   
   log "Running Go-based end-to-end tests for Scality CSI driver in namespace: $namespace..."
   
@@ -35,6 +36,12 @@ run_go_tests() {
   
   # Run the Go tests with environment variable for namespace
   local go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./..."
+  
+  # Add JUnit report if specified
+  if [ -n "$junit_report" ]; then
+    log "Using JUnit report file: $junit_report"
+    go_test_cmd="NAMESPACE=$namespace go test -v -tags=e2e ./... -ginkgo.junit-report=$junit_report"
+  fi
   
   # Run the Go tests
   log "Executing Go tests in $e2e_tests_dir"
@@ -96,6 +103,7 @@ do_test() {
   local skip_go_tests=false
   local skip_verification=false
   local namespace="$DEFAULT_NAMESPACE"
+  local junit_report=""
   
   # Parse arguments
   while [[ $# -gt 0 ]]; do
@@ -112,6 +120,10 @@ do_test() {
       --skip-verification)
         skip_verification=true
         shift
+        ;;
+      --junit-report)
+        junit_report="$2"
+        shift 2
         ;;
       *)
         error "Unknown parameter: $key"
@@ -134,7 +146,7 @@ do_test() {
   
   # Run Go-based tests if not skipped
   if [ "$skip_go_tests" != "true" ]; then
-    if ! run_go_tests "$namespace"; then
+    if ! run_go_tests "$namespace" "$junit_report"; then
       error "Go tests failed."
       return 1
     fi
