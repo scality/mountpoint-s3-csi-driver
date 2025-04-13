@@ -4,6 +4,9 @@
 # Source common functions
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+# Default namespace value
+DEFAULT_NAMESPACE="mount-s3"
+
 # Validate S3 configuration by testing connectivity and credentials
 validate_s3_configuration() {
   local endpoint_url="$1"
@@ -76,10 +79,15 @@ install_csi_driver() {
   local ACCESS_KEY_ID=""
   local SECRET_ACCESS_KEY=""
   local VALIDATE_S3="false"
+  local NAMESPACE="$DEFAULT_NAMESPACE"
   
   # Parse parameters
   while [ "$#" -gt 0 ]; do
     case "$1" in
+      --namespace)
+        NAMESPACE="$2"
+        shift 2
+        ;;
       --image-tag)
         IMAGE_TAG="$2"
         shift 2
@@ -135,28 +143,28 @@ install_csi_driver() {
     fi
   fi
 
-  log "Installing Scality CSI driver using Helm..."
+  log "Installing Scality CSI driver using Helm in namespace: $NAMESPACE..."
   
   # Get project root from common function
   PROJECT_ROOT=$(get_project_root)
   
   # Create S3 credentials secret if it doesn't exist
-  log "Creating S3 credentials secret..."
-  exec_cmd kubectl create namespace mount-s3 --dry-run=client -o yaml | kubectl apply -f -
+  log "Creating S3 credentials secret in namespace: $NAMESPACE..."
+  exec_cmd kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
   
   # Create or update the secret with provided values
   exec_cmd kubectl create secret generic aws-secret \
     --from-literal=key_id="$ACCESS_KEY_ID" \
     --from-literal=access_key="$SECRET_ACCESS_KEY" \
-    -n mount-s3 \
+    -n $NAMESPACE \
     --dry-run=client -o yaml | kubectl apply -f -
     
-  log "S3 credentials secret created/updated."
+  log "S3 credentials secret created/updated in namespace: $NAMESPACE."
   
   # Prepare helm command parameters
   local HELM_PARAMS=(
     "$PROJECT_ROOT/charts/scality-mountpoint-s3-csi-driver"
-    --namespace mount-s3
+    --namespace $NAMESPACE
     --create-namespace
     --set "node.s3EndpointUrl=$ENDPOINT_URL"
     --wait
@@ -179,15 +187,20 @@ install_csi_driver() {
   
   exec_cmd helm upgrade --install scality-s3-csi "${HELM_PARAMS[@]}"
   
-  log "CSI driver installation complete."
+  log "CSI driver installation complete in namespace: $NAMESPACE."
+  
+  # Export the namespace for other functions to use
+  export CSI_NAMESPACE="$NAMESPACE"
 }
 
 # Verify the installation
 verify_installation() {
-  log "Verifying CSI driver installation..."
+  local namespace="${CSI_NAMESPACE:-$DEFAULT_NAMESPACE}"
+  
+  log "Verifying CSI driver installation in namespace: $namespace..."
   
   # Wait for the pods to be running
-  log "Waiting for CSI driver pods to be in Running state..."
+  log "Waiting for CSI driver pods to be in Running state in namespace: $namespace..."
   
   # Maximum wait time in seconds (5 minutes)
   MAX_WAIT_TIME=300
@@ -195,10 +208,10 @@ verify_installation() {
   ELAPSED_TIME=0
   
   while [ $ELAPSED_TIME -lt $MAX_WAIT_TIME ]; do
-    if exec_cmd kubectl get pods -n mount-s3 | grep -q "Running"; then
-      log "CSI driver pods are now running."
+    if exec_cmd kubectl get pods -n $namespace | grep -q "Running"; then
+      log "CSI driver pods are now running in namespace: $namespace."
       
-      exec_cmd kubectl get pods -n mount-s3
+      exec_cmd kubectl get pods -n $namespace
       break
     else
       log "Pods not yet in Running state. Waiting ${WAIT_INTERVAL} seconds... (${ELAPSED_TIME}/${MAX_WAIT_TIME}s)"
@@ -210,7 +223,7 @@ verify_installation() {
   # Check if we timed out
   if [ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]; then
     log "Timed out waiting for pods to be in Running state. Current pod status:"
-    exec_cmd kubectl get pods -n mount-s3
+    exec_cmd kubectl get pods -n $namespace
     error "CSI driver pods did not reach Running state within ${MAX_WAIT_TIME} seconds."
   fi
   
@@ -226,13 +239,29 @@ verify_installation() {
 
 # Main installation function that will be called from run.sh
 do_install() {
+  local namespace="$DEFAULT_NAMESPACE"
+  
   log "Starting Scality CSI driver installation..."
   
+  # Process namespace parameter first
+  for ((i=1; i<=$#; i++)); do
+    if [[ "${!i}" == "--namespace" && $((i+1)) -le $# ]]; then
+      j=$((i+1))
+      namespace="${!j}"
+      break
+    fi
+  done
+  
+  log "Using namespace: $namespace"
+  
   check_dependencies
+  
+  # Export namespace for other functions to use
+  export CSI_NAMESPACE="$namespace"
   
   # Pass all arguments to install_csi_driver
   install_csi_driver "$@"
   
   verify_installation
-  log "Scality CSI driver setup completed successfully."
+  log "Scality CSI driver setup completed successfully in namespace: $namespace."
 }

@@ -9,6 +9,9 @@ MODULES_DIR="${SCRIPT_DIR}/modules"
 # Source common functions
 source "${MODULES_DIR}/common.sh"
 
+# Default namespace value
+DEFAULT_NAMESPACE="mount-s3"
+
 # Show help message
 show_help() {
   echo "Usage: $0 [COMMAND] [OPTIONS]"
@@ -20,6 +23,9 @@ show_help() {
   echo "  all       Install driver and run tests"
   echo "  uninstall Uninstall the Scality CSI driver"
   echo "  help      Show this help message"
+  echo
+  echo "Global options:"
+  echo "  --namespace VALUE          Specify the namespace to use (default: mount-s3)"
   echo
   echo "Options for install command:"
   echo "  --image-tag VALUE         Specify custom image tag for the CSI driver"
@@ -33,19 +39,23 @@ show_help() {
   echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
   echo
   echo "Options for uninstall command:"
-  echo "  --delete-ns               Delete the mount-s3 namespace without prompting"
+  echo "  --delete-ns               Delete the CSI driver namespace without prompting"
   echo "  --force                   Force delete all resources including CSI driver registration"
   echo
   echo "Examples:"
   echo "  $0 install --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
+  echo "  $0 install --namespace custom-namespace --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --image-tag v1.14.0 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --image-repository myrepo/csi-driver --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --validate-s3 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 test                                 # Run all tests including Go-based e2e tests"
+  echo "  $0 test --namespace custom-namespace    # Run tests in a custom namespace"
   echo "  $0 test --skip-go-tests                 # Run only basic verification tests"
   echo "  $0 go-test                              # Run Go tests directly (skips verification)"
   echo "  $0 all                                  # Install driver and run tests"
+  echo "  $0 all --namespace custom-namespace     # Install driver and run tests in a custom namespace"
   echo "  $0 uninstall                            # Uninstall driver (interactive mode)"
+  echo "  $0 uninstall --namespace custom-namespace  # Uninstall driver from a custom namespace"
   echo "  $0 uninstall --delete-ns                # Uninstall driver and delete namespace"
   echo "  $0 uninstall --force                    # Force delete all resources"
   echo "  $0 help                                 # Show this help message"
@@ -63,6 +73,10 @@ parse_install_parameters() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --namespace)
+        params="$params --namespace $2"
+        shift 2
+        ;;
       --image-tag)
         IMAGE_TAG="$2"
         params="$params --image-tag $2"
@@ -133,6 +147,10 @@ parse_uninstall_parameters() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --namespace)
+        params="$params --namespace $2"
+        shift 2
+        ;;
       --delete-ns)
         params="$params --delete-ns"
         shift
@@ -160,6 +178,10 @@ parse_test_parameters() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --namespace)
+        params="$params --namespace $2"
+        shift 2
+        ;;
       --skip-go-tests)
         params="$params --skip-go-tests"
         shift
@@ -176,8 +198,26 @@ parse_test_parameters() {
   echo "$params"
 }
 
+# Extract namespace from parameters if present, otherwise use default
+get_namespace_param() {
+  local namespace="$DEFAULT_NAMESPACE"
+  local args=("$@")
+  
+  for ((i=0; i<${#args[@]}; i++)); do
+    if [[ "${args[$i]}" == "--namespace" && $((i+1)) -lt ${#args[@]} ]]; then
+      namespace="${args[$i+1]}"
+      break
+    fi
+  done
+  
+  echo "--namespace $namespace"
+}
+
 # Main execution
 main() {
+  # Set default namespace
+  local namespace_param=$(get_namespace_param "$@")
+  
   # Process command line arguments
   COMMAND=${1:-install}
   shift || true # Remove the command from the arguments
@@ -186,7 +226,7 @@ main() {
     install)
       source "${MODULES_DIR}/install.sh"
       # Pass all command-line parameters to install module
-      exec_cmd do_install "$@"
+      exec_cmd do_install $namespace_param "$@"
       ;;
     test)
       source "${MODULES_DIR}/test.sh"
@@ -209,13 +249,16 @@ main() {
       
       source "${MODULES_DIR}/install.sh"
       
+      # Get namespace parameter
+      local namespace_param=$(get_namespace_param "$@")
+      
       # Pass all command-line parameters to install module
-      exec_cmd do_install "$@"
+      exec_cmd do_install $namespace_param "$@"
       
       source "${MODULES_DIR}/test.sh"
       
-      # Run tests
-      exec_cmd do_test
+      # Run tests with same namespace
+      exec_cmd do_test $namespace_param
       
       log "Scality CSI driver setup and tests completed successfully."
       ;;

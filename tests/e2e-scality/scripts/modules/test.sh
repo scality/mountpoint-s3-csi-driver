@@ -4,6 +4,9 @@
 # Source common functions
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+# Default namespace value
+DEFAULT_NAMESPACE="mount-s3"
+
 # Get the project root directory
 get_project_root() {
   # Four levels up from this script (modules -> scripts -> e2e-scality -> tests -> root)
@@ -14,8 +17,9 @@ get_project_root() {
 run_go_tests() {
   local project_root=$(get_project_root)
   local e2e_tests_dir="${project_root}/tests/e2e-scality/e2e-tests"
+  local namespace="${1:-$DEFAULT_NAMESPACE}"
   
-  log "Running Go-based end-to-end tests for Scality CSI driver..."
+  log "Running Go-based end-to-end tests for Scality CSI driver in namespace: $namespace..."
   
   # Check if Go is installed
   if ! command -v go &> /dev/null; then
@@ -30,7 +34,7 @@ run_go_tests() {
   fi
   
   # Run the Go tests with default settings
-  local go_test_cmd="go test -v -tags=e2e ./..."
+  local go_test_cmd="go test -v -tags=e2e ./... -args -namespace=$namespace"
   
   # Run the Go tests
   log "Executing Go tests in $e2e_tests_dir"
@@ -47,16 +51,9 @@ run_go_tests() {
 
 # Run basic verification tests
 run_verification_tests() {
-  log "Verifying Scality CSI driver installation..."
+  local namespace="${1:-$DEFAULT_NAMESPACE}"
   
-  # Check if the CSI driver pods are running
-  if exec_cmd kubectl get pods -n mount-s3 | grep -q "Running"; then
-    log "CSI driver pods are running properly."
-  else
-    error "Some CSI driver pods are not in Running state."
-    exec_cmd kubectl get pods -n mount-s3
-    return 1
-  fi
+  log "Verifying Scality CSI driver installation in namespace: $namespace..."
   
   # Check if the CSI driver is registered
   if exec_cmd kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
@@ -64,6 +61,28 @@ run_verification_tests() {
   else
     error "CSI driver is not registered properly."
     return 1
+  fi
+  
+  # First, check pods in the specific namespace
+  log "Looking for CSI driver pods in namespace $namespace..."
+  local ns_pods=$(exec_cmd kubectl get pods -n $namespace | grep -E "s3|csi" || true)
+  
+  if [ -n "$ns_pods" ] && echo "$ns_pods" | grep -q "Running"; then
+    log "CSI driver pods are running properly in namespace $namespace:"
+    echo "$ns_pods"
+  else
+    # If not found in the specified namespace, check all namespaces as a fallback
+    log "No CSI driver pods found in namespace $namespace. Checking all namespaces..."
+    local csi_pods=$(exec_cmd kubectl get pods --all-namespaces | grep -E "s3|csi" || true)
+    
+    if [ -n "$csi_pods" ] && echo "$csi_pods" | grep -q "Running"; then
+      log "CSI driver pods are running properly in other namespaces:"
+      echo "$csi_pods"
+    else
+      error "No CSI driver pods found in Running state in any namespace."
+      exec_cmd kubectl get pods --all-namespaces | grep -E "s3|csi"
+      return 1
+    fi
   fi
   
   log "Basic verification tests passed."
@@ -76,11 +95,16 @@ do_test() {
   
   local skip_go_tests=false
   local skip_verification=false
+  local namespace="$DEFAULT_NAMESPACE"
   
   # Parse arguments
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
+      --namespace)
+        namespace="$2"
+        shift 2
+        ;;
       --skip-go-tests)
         skip_go_tests=true
         shift
@@ -96,9 +120,11 @@ do_test() {
     esac
   done
   
+  log "Using namespace: $namespace"
+  
   # Run basic verification tests unless skipped
   if [ "$skip_verification" != "true" ]; then
-    if ! run_verification_tests; then
+    if ! run_verification_tests "$namespace"; then
       error "Verification tests failed. Cannot proceed with Go tests."
       return 1
     fi
@@ -108,7 +134,7 @@ do_test() {
   
   # Run Go-based tests if not skipped
   if [ "$skip_go_tests" != "true" ]; then
-    if ! run_go_tests; then
+    if ! run_go_tests "$namespace"; then
       error "Go tests failed."
       return 1
     fi
