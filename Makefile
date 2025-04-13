@@ -321,16 +321,16 @@ e2e-scality:
 e2e-scality-go:
 	@TEST_ARGS=""; \
 	if [ ! -z "$(FOCUS)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --focus \"$(FOCUS)\""; \
+		TEST_ARGS="$$TEST_ARGS --focus $(FOCUS)"; \
 	fi; \
 	if [ ! -z "$(SKIP)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --skip \"$(SKIP)\""; \
+		TEST_ARGS="$$TEST_ARGS --skip $(SKIP)"; \
 	fi; \
 	if [ ! -z "$(NAMESPACE)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --namespace \"$(NAMESPACE)\""; \
+		TEST_ARGS="$$TEST_ARGS --namespace $(NAMESPACE)"; \
 	fi; \
 	if [ ! -z "$(TAGS)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --tags \"$(TAGS)\""; \
+		TEST_ARGS="$$TEST_ARGS --tags $(TAGS)"; \
 	fi; \
 	./tests/e2e-scality/scripts/run.sh go-test $$TEST_ARGS
 
@@ -380,10 +380,10 @@ e2e-scality-all:
 	fi; \
 	TEST_ARGS=""; \
 	if [ ! -z "$(FOCUS)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --focus \"$(FOCUS)\""; \
+		TEST_ARGS="$$TEST_ARGS --focus $(FOCUS)"; \
 	fi; \
 	if [ ! -z "$(SKIP)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --skip \"$(SKIP)\""; \
+		TEST_ARGS="$$TEST_ARGS --skip $(SKIP)"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
