@@ -27,6 +27,12 @@ show_help() {
   echo "  --secret-access-key VALUE Specify S3 secret access key for authentication (REQUIRED)"
   echo "  --validate-s3             Validate S3 endpoint and credentials before installation"
   echo
+  echo "Options for test command:"
+  echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
+  echo "  --go-test-args \"ARGS\"     Pass additional arguments to go test command"
+  echo "  --focus \"PATTERN\"         Focus on tests matching the given pattern (Ginkgo)"
+  echo "  --skip \"PATTERN\"          Skip tests matching the given pattern (Ginkgo)"
+  echo
   echo "Options for uninstall command:"
   echo "  --delete-ns               Delete the mount-s3 namespace without prompting"
   echo "  --force                   Force delete all resources including CSI driver registration"
@@ -35,7 +41,9 @@ show_help() {
   echo "  $0 install --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --image-tag v1.14.0 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
   echo "  $0 install --validate-s3 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
-  echo "  $0 test                                 # Run tests against an already installed driver"
+  echo "  $0 test                                 # Run all tests including Go-based e2e tests"
+  echo "  $0 test --skip-go-tests                 # Run only basic verification tests"
+  echo "  $0 test --focus \"Mount\"                 # Run only tests with 'Mount' in their name"
   echo "  $0 all                                  # Install driver and run tests"
   echo "  $0 uninstall                            # Uninstall driver (interactive mode)"
   echo "  $0 uninstall --delete-ns                # Uninstall driver and delete namespace"
@@ -144,6 +152,22 @@ parse_test_parameters() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --skip-go-tests)
+        params="$params --skip-go-tests"
+        shift
+        ;;
+      --go-test-args)
+        params="$params --go-test-args $2"
+        shift 2
+        ;;
+      --focus)
+        params="$params --focus $2"
+        shift 2
+        ;;
+      --skip)
+        params="$params --skip $2"
+        shift 2
+        ;;
       *)
         echo "Error: Unknown option: $1"
         show_help
