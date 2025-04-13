@@ -17,6 +17,8 @@ run_go_tests() {
   local test_args="$1"
   local focus_pattern="$2"
   local skip_pattern="$3"
+  local tags="$4"
+  local namespace="$5"
   
   log "Running Go-based end-to-end tests for Scality CSI driver..."
   
@@ -32,8 +34,13 @@ run_go_tests() {
     return 1
   fi
   
+  # Use default tags if not specified
+  if [ -z "$tags" ]; then
+    tags="e2e"
+  fi
+  
   # Build the go test command
-  local go_test_cmd="go test -v"
+  local go_test_cmd="go test -v -tags=$tags"
   
   # Add focus pattern if provided
   if [ -n "$focus_pattern" ]; then
@@ -43,6 +50,11 @@ run_go_tests() {
   # Add skip pattern if provided
   if [ -n "$skip_pattern" ]; then
     go_test_cmd="$go_test_cmd -ginkgo.skip=\"$skip_pattern\""
+  fi
+  
+  # Add namespace if provided
+  if [ -n "$namespace" ]; then
+    go_test_cmd="$go_test_cmd -namespace=\"$namespace\""
   fi
   
   # Add any additional test arguments
@@ -96,15 +108,22 @@ do_test() {
   log "Starting Scality CSI driver tests..."
   
   local skip_go_tests=false
+  local skip_verification=false
   local go_test_args=""
   local focus_pattern=""
   local skip_pattern=""
+  local tags=""
+  local namespace=""
   
   # Parse arguments
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --skip-go-tests)
         skip_go_tests=true
+        shift
+        ;;
+      --skip-verification)
+        skip_verification=true
         shift
         ;;
       --go-test-args)
@@ -119,6 +138,14 @@ do_test() {
         skip_pattern="$2"
         shift 2
         ;;
+      --tags)
+        tags="$2"
+        shift 2
+        ;;
+      --namespace)
+        namespace="$2"
+        shift 2
+        ;;
       *)
         error "Unknown parameter: $1"
         shift
@@ -126,15 +153,19 @@ do_test() {
     esac
   done
   
-  # Run basic verification tests first
-  if ! run_verification_tests; then
-    error "Verification tests failed. Cannot proceed with Go tests."
-    return 1
+  # Run basic verification tests unless skipped
+  if [ "$skip_verification" != "true" ]; then
+    if ! run_verification_tests; then
+      error "Verification tests failed. Cannot proceed with Go tests."
+      return 1
+    fi
+  else
+    log "Skipping verification tests as requested."
   fi
   
   # Run Go-based tests if not skipped
   if [ "$skip_go_tests" != "true" ]; then
-    if ! run_go_tests "$go_test_args" "$focus_pattern" "$skip_pattern"; then
+    if ! run_go_tests "$go_test_args" "$focus_pattern" "$skip_pattern" "$tags" "$namespace"; then
       error "Go tests failed."
       return 1
     fi

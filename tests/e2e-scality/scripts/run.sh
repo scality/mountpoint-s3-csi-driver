@@ -16,6 +16,7 @@ show_help() {
   echo "Commands:"
   echo "  install   Install and verify the Scality CSI driver (default)"
   echo "  test      Run end-to-end tests against the installed driver"
+  echo "  go-test   Run only Go-based e2e tests (skips verification checks)"
   echo "  all       Install driver and run tests"
   echo "  uninstall Uninstall the Scality CSI driver"
   echo "  help      Show this help message"
@@ -27,11 +28,13 @@ show_help() {
   echo "  --secret-access-key VALUE Specify S3 secret access key for authentication (REQUIRED)"
   echo "  --validate-s3             Validate S3 endpoint and credentials before installation"
   echo
-  echo "Options for test command:"
-  echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
+  echo "Options for test and go-test commands:"
+  echo "  --skip-go-tests           Skip executing Go-based end-to-end tests (test command only)"
   echo "  --go-test-args \"ARGS\"     Pass additional arguments to go test command"
   echo "  --focus \"PATTERN\"         Focus on tests matching the given pattern (Ginkgo)"
   echo "  --skip \"PATTERN\"          Skip tests matching the given pattern (Ginkgo)"
+  echo "  --tags \"TAGS\"             Specify Go build tags (default: e2e)"
+  echo "  --namespace \"NS\"          Specify the namespace to test (default: mount-s3)"
   echo
   echo "Options for uninstall command:"
   echo "  --delete-ns               Delete the mount-s3 namespace without prompting"
@@ -44,6 +47,9 @@ show_help() {
   echo "  $0 test                                 # Run all tests including Go-based e2e tests"
   echo "  $0 test --skip-go-tests                 # Run only basic verification tests"
   echo "  $0 test --focus \"Mount\"                 # Run only tests with 'Mount' in their name"
+  echo "  $0 go-test                              # Run Go tests directly (skips verification)"
+  echo "  $0 go-test --focus \"Basic Functionality\" # Run only Go tests matching the pattern"
+  echo "  $0 go-test --namespace \"custom-ns\"      # Test with custom namespace"
   echo "  $0 all                                  # Install driver and run tests"
   echo "  $0 uninstall                            # Uninstall driver (interactive mode)"
   echo "  $0 uninstall --delete-ns                # Uninstall driver and delete namespace"
@@ -168,6 +174,14 @@ parse_test_parameters() {
         params="$params --skip $2"
         shift 2
         ;;
+      --tags)
+        params="$params --tags $2"
+        shift 2
+        ;;
+      --namespace)
+        params="$params --namespace $2"
+        shift 2
+        ;;
       *)
         echo "Error: Unknown option: $1"
         show_help
@@ -197,6 +211,15 @@ main() {
       # Parse test parameters
       local test_parameters=$(parse_test_parameters "$@")
       # Pass processed parameters to test module
+      exec_cmd do_test $test_parameters
+      ;;
+    go-test)
+      # This command runs only the Go tests without verification
+      source "${MODULES_DIR}/test.sh"
+      # Parse test parameters
+      local test_parameters=$(parse_test_parameters "$@")
+      # Pass processed parameters to run_go_tests function directly
+      test_parameters="$test_parameters --skip-verification"
       exec_cmd do_test $test_parameters
       ;;
     all)

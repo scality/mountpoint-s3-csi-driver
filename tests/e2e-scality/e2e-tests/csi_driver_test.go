@@ -1,6 +1,42 @@
 //go:build e2e
 // +build e2e
 
+/*
+End-to-End Tests for Scality S3 CSI Driver
+
+These tests verify the functionality of the Scality S3 CSI Driver in a Kubernetes environment.
+They are designed to be run after the CSI driver has been installed.
+
+Running the tests:
+-----------------
+1. Directly with Go:
+   ```
+   cd tests/e2e-scality/e2e-tests
+   go test -v -tags=e2e
+   ```
+
+2. With filters:
+   ```
+   go test -v -tags=e2e -ginkgo.focus="Basic Functionality" -namespace="mount-s3"
+   ```
+
+3. Via the script:
+   ```
+   ./tests/e2e-scality/scripts/run.sh go-test --focus "Basic Functionality"
+   ```
+
+4. Via Makefile:
+   ```
+   make e2e-scality-go FOCUS="Basic Functionality" NAMESPACE="mount-s3"
+   ```
+
+Available parameters:
+-------------------
+* -ginkgo.focus="pattern" - Run only tests matching the pattern
+* -ginkgo.skip="pattern" - Skip tests matching the pattern
+* -namespace="ns" - Override the namespace for testing (default: mount-s3)
+*/
+
 package main
 
 import (
