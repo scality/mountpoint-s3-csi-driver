@@ -57,6 +57,60 @@ run_go_tests() {
   return 0
 }
 
+# Wait for pods to reach the Running state
+wait_for_pods() {
+  local namespace="${1:-$DEFAULT_NAMESPACE}"
+  local max_attempts=30
+  local wait_seconds=10
+  local attempt=1
+  local all_namespaces=false
+  
+  if [ "$2" = "all-namespaces" ]; then
+    all_namespaces=true
+  fi
+  
+  log "Waiting for CSI driver pods to reach Running state..."
+  
+  while [ $attempt -le $max_attempts ]; do
+    local pods_running=false
+    local pod_output=""
+    
+    if [ "$all_namespaces" = true ]; then
+      pod_output=$(exec_cmd kubectl get pods --all-namespaces | grep -E "s3|csi" || true)
+    else
+      pod_output=$(exec_cmd kubectl get pods -n "$namespace" | grep -E "s3|csi" || true)
+    fi
+    
+    if [ -z "$pod_output" ]; then
+      log "Attempt $attempt/$max_attempts: No CSI driver pods found yet. Waiting ${wait_seconds}s..."
+    elif echo "$pod_output" | grep -q "Running"; then
+      pods_running=true
+      break
+    else
+      log "Attempt $attempt/$max_attempts: Pods are not running yet. Current status:"
+      echo "$pod_output"
+      log "Waiting ${wait_seconds}s for pods to start..."
+    fi
+    
+    sleep $wait_seconds
+    attempt=$((attempt + 1))
+  done
+  
+  if [ "$pods_running" = true ]; then
+    log "CSI driver pods are now in Running state:"
+    echo "$pod_output"
+    return 0
+  else
+    error "Timed out waiting for CSI driver pods to reach Running state after $((max_attempts * wait_seconds)) seconds."
+    if [ "$all_namespaces" = true ]; then
+      exec_cmd kubectl get pods --all-namespaces | grep -E "s3|csi"
+    else
+      exec_cmd kubectl get pods -n "$namespace" | grep -E "s3|csi"
+    fi
+    return 1
+  fi
+}
+
 # Run basic verification tests
 run_verification_tests() {
   local namespace="${1:-$DEFAULT_NAMESPACE}"
@@ -71,24 +125,12 @@ run_verification_tests() {
     return 1
   fi
   
-  # First, check pods in the specific namespace
-  log "Looking for CSI driver pods in namespace $namespace..."
-  local ns_pods=$(exec_cmd kubectl get pods -n $namespace | grep -E "s3|csi" || true)
-  
-  if [ -n "$ns_pods" ] && echo "$ns_pods" | grep -q "Running"; then
-    log "CSI driver pods are running properly in namespace $namespace:"
-    echo "$ns_pods"
-  else
-    # If not found in the specified namespace, check all namespaces as a fallback
-    log "No CSI driver pods found in namespace $namespace. Checking all namespaces..."
-    local csi_pods=$(exec_cmd kubectl get pods --all-namespaces | grep -E "s3|csi" || true)
-    
-    if [ -n "$csi_pods" ] && echo "$csi_pods" | grep -q "Running"; then
-      log "CSI driver pods are running properly in other namespaces:"
-      echo "$csi_pods"
-    else
-      error "No CSI driver pods found in Running state in any namespace."
-      exec_cmd kubectl get pods --all-namespaces | grep -E "s3|csi"
+  # Wait for the CSI driver pods to reach Running state
+  if ! wait_for_pods "$namespace"; then
+    # If pods not found in the specified namespace, try all namespaces
+    log "CSI driver pods not found in namespace $namespace. Checking all namespaces..."
+    if ! wait_for_pods "$namespace" "all-namespaces"; then
+      error "Failed to find running CSI driver pods in any namespace."
       return 1
     fi
   fi
