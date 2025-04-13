@@ -53,8 +53,14 @@ check_dependencies() {
   fi
   
   if ! command -v aws &> /dev/null; then
-    warn "AWS CLI is not installed. It's required for S3 configuration validation."
-    warn "Consider installing AWS CLI or use --skip-validation flag."
+    warn "AWS CLI is not installed. This is optional but recommended for better S3 validation."
+    warn "Alternative validation methods will be used, but they may be less reliable."
+    
+    # Check for curl as a fallback
+    if ! command -v curl &> /dev/null; then
+      warn "curl is not installed. This is needed for alternate S3 validation methods."
+      warn "Limited validation capabilities will be available."
+    fi
   fi
   
   if [ $missing_deps -ne 0 ]; then

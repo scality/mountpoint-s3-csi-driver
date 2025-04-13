@@ -228,6 +228,7 @@ ACCESS_KEY_ID ?=
 SECRET_ACCESS_KEY ?=
 
 # Set to 'true' to validate S3 credentials before installation (optional)
+# Works with AWS CLI (preferred) or alternative methods like curl if AWS CLI is not installed
 VALIDATE_S3 ?= false
 
 # Additional arguments to pass to the script (optional)
