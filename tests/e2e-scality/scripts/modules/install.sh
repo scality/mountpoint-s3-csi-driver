@@ -15,49 +15,25 @@ validate_s3_configuration() {
   log "Using access key ID: $access_key_id"
   log "Secret key length: ${#secret_access_key} characters"
   
-  # Create a temporary file for the AWS CLI configuration
-  local temp_config=$(mktemp)
+  # Create a temporary file for capturing output
   local temp_output=$(mktemp)
   
-  # Write AWS CLI configuration to the temporary file
-  cat > "$temp_config" << EOF
-[default]
-aws_access_key_id = $access_key_id
-aws_secret_access_key = $secret_access_key
-EOF
-
-  log "AWS config file created at: $temp_config"
-  log "Config file contents (redacted secret):"
-  cat "$temp_config" | sed "s/aws_secret_access_key.*/aws_secret_access_key = ***REDACTED***/g"
-  
-  # First attempt: Using AWS_CONFIG_FILE
-  log "First validation attempt: Using AWS_CONFIG_FILE method"
-  if ! AWS_CONFIG_FILE="$temp_config" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
-    log "First attempt failed. Error details:"
+  # Use environment variables method for AWS credentials (more reliable with Scality S3)
+  if ! AWS_ACCESS_KEY_ID="$access_key_id" AWS_SECRET_ACCESS_KEY="$secret_access_key" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
+    error "Failed to connect to S3 endpoint using provided credentials."
+    log "Error details:"
     cat "$temp_output"
-    
-    # Second attempt: Using environment variables directly (like in your working example)
-    log "Second validation attempt: Using environment variables method"
-    if ! AWS_ACCESS_KEY_ID="$access_key_id" AWS_SECRET_ACCESS_KEY="$secret_access_key" exec_cmd aws --endpoint-url "$endpoint_url" s3 ls > "$temp_output" 2>&1; then
-      error "Failed to connect to S3 endpoint using provided credentials with both methods."
-      log "Error details from second attempt:"
-      cat "$temp_output"
-      # Clean up temporary files
-      rm -f "$temp_config" "$temp_output"
-      return 1
-    else
-      log "Second attempt succeeded! Environment variable method works."
-      cat "$temp_output"
-    fi
-  else
-    log "First attempt succeeded! AWS_CONFIG_FILE method works."
-    cat "$temp_output"
+    # Clean up temporary file
+    rm -f "$temp_output"
+    return 1
   fi
   
   log "Successfully connected to S3 endpoint and authenticated with provided credentials."
+  log "Available buckets:"
+  cat "$temp_output"
   
-  # Clean up temporary files
-  rm -f "$temp_config" "$temp_output"
+  # Clean up temporary file
+  rm -f "$temp_output"
   return 0
 }
 
