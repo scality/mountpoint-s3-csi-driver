@@ -75,20 +75,12 @@ jobs:
             CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
             ADDITIONAL_ARGS="--junit-report=./test-results/scality-e2e-tests-results.xml"
         
-      - name: Copy test results to expected location
+      - name: Check JUnit report location
         if: ${{ !cancelled() }}
         run: |
-          # Make sure the directory exists
-          mkdir -p ./test-results/
-          # Copy from the actual location to the expected location
-          find ./tests/e2e-scality/e2e-tests -name "scality-e2e-tests-results.xml" -exec cp {} ./test-results/ \;
-          # Also check for any XML files that might have been created
-          find ./tests/e2e-scality/e2e-tests -name "*.xml" -exec cp {} ./test-results/ \;
-          # List files to verify
-          echo "Files found in e2e-tests directory:"
-          find ./tests/e2e-scality/e2e-tests -name "*.xml"
-          echo "Files in test-results directory:"
-          ls -la ./test-results/ || true
+          echo "Searching for JUnit report files:"
+          find ./tests/e2e-scality/e2e-tests -name "*.xml" -ls || true
+          find ./test-results -name "*.xml" -ls || true
         
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -107,6 +99,6 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./test-results/scality-e2e-tests-results.xml
+          file: ./tests/e2e-scality/e2e-tests/test-results/scality-e2e-tests-results.xml
           flags: scality_e2e_tests
           slug: scality/mountpoint-s3-csi-driver
