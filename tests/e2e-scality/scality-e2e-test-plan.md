@@ -19,7 +19,7 @@ This document outlines a comprehensive plan for implementing end-to-end (E2E) te
 - Document and verify each step before proceeding
 - **Ensure all tests can be run via direct Go commands, Make/run.sh commands, and CI workflows**
 - **Use kubectl to verify Kubernetes resources during tests**
-- **Automatically detect kubectl path in run.sh**
+- **Require kubectl path to be explicitly provided in command-line arguments**
 - **Focus exclusively on standard S3 functionality (no S3 Express Zone)**
 - **Use only simple access key and secret key authentication**
 - **Organize code according to the Kubernetes E2E framework patterns**
@@ -60,7 +60,7 @@ tests/e2e-scality/
 2. **Required Tools**
    - **CI Environment**: kubectl installed via GitHub Actions
    - **Local Environment**: kubectl installed locally
-   - kubectl path will be auto-detected by run.sh (not required as input parameter)
+   - **kubectl path must be provided explicitly as an input parameter**
    - Helm is needed for chart installation but will be used directly by scripts
    
 3. **S3 Storage Access**
@@ -72,53 +72,22 @@ tests/e2e-scality/
    - Go installed (version 1.18+)
    - GNU Make
 
-## Kubectl Auto-detection in run.sh
-The run.sh script will include logic to detect kubectl:
+## Command-line Arguments for Tests
+The tests should accept the following command-line arguments:
 
 ```bash
-# Auto-detect kubectl path
-detect_kubectl_path() {
-  # Check if kubectl is in PATH
-  if command -v kubectl &> /dev/null; then
-    KUBECTL_PATH=$(command -v kubectl)
-    echo "Using kubectl at: $KUBECTL_PATH"
-    return 0
-  fi
-  
-  # Check common locations for CI environments
-  for path in "/usr/local/bin/kubectl" "/usr/bin/kubectl" "/bin/kubectl"; do
-    if [ -f "$path" ]; then
-      KUBECTL_PATH="$path"
-      echo "Using kubectl at: $KUBECTL_PATH"
-      return 0
-    fi
-  done
-  
-  echo "Error: kubectl not found. Please install kubectl."
-  return 1
-}
+# Required parameters
+--kubectl-path=<path>           # Path to kubectl binary
+--kubeconfig=<path>             # Path to kubeconfig file
+--s3-endpoint-url=<url>         # S3 endpoint URL
+--access-key-id=<id>            # S3 access key ID
+--secret-access-key=<key>       # S3 secret access key
 
-# Detect environment (CI vs local)
-detect_environment() {
-  # Check for GitHub Actions environment
-  if [ -n "$GITHUB_ACTIONS" ]; then
-    ENVIRONMENT="github-actions"
-    echo "Detected GitHub Actions environment"
-    return 0
-  fi
-  
-  # Check for Minikube
-  if command -v minikube &> /dev/null && minikube status &> /dev/null; then
-    ENVIRONMENT="minikube"
-    echo "Detected Minikube environment"
-    return 0
-  fi
-  
-  # Default to generic environment
-  ENVIRONMENT="generic"
-  echo "Using generic environment"
-  return 0
-}
+# Optional parameters
+--commit-id=<id>                # Commit ID for bucket naming (default: local)
+--bucket-prefix=<prefix>        # Prefix for temporary buckets (default: e2e-test-)
+--skip-cleanup                  # Skip resource cleanup after tests
+--ginkgo.focus=<expr>           # Focus on specific test cases
 ```
 
 ## Documentation and Verification Process
@@ -132,7 +101,7 @@ After each phase or major step:
    - Add examples of all testing commands (Go commands, Makefile commands)
    - **Ensure README includes commands for running tests with kubectl verification**
    - **Document kubectl commands needed to verify test results**
-   - **Document that kubectl path is auto-detected by run.sh**
+   - **Document that kubectl path must be explicitly provided**
 
 2. **Verification Steps**
    - Execute end-to-end tests for the CSI driver
@@ -144,7 +113,7 @@ After each phase or major step:
      - Direct Go test commands for quick component testing
      - Make commands with `e2e-scality-all` which installs CSI driver
    - **Use kubectl to verify Kubernetes resources created during tests**
-   - **Verify auto-detection of kubectl works in both CI and local environments**
+   - **Verify tests work with kubectl path provided explicitly**
 
 3. **Commit Process**
    - Create detailed commit message
@@ -200,7 +169,7 @@ After each phase or major step:
    
    // Create methods for standard S3 bucket operations
    func New(endpoint, accessKey, secretKey string) *Client
-   func (c *Client) CreateBucket(ctx context.Context) (string, DeleteBucketFunc)
+   func (c *Client) CreateBucket(ctx context.Context) (string, DeleteBucketFunc, error)
    func (c *Client) DeleteBucket(ctx context.Context, bucketName string) error
    func (c *Client) WipeoutBucket(ctx context.Context, bucketName string) error
    ```
@@ -225,22 +194,19 @@ After each phase or major step:
    }
    ```
 
-5. **Modify run.sh to Auto-detect kubectl**
+5. **Modify run.sh to Require kubectl Path**
    ```bash
    # In scripts/run.sh
    
-   # Auto-detect kubectl path
-   detect_kubectl_path
-   detect_environment
-   
-   # Only require the user to provide kubeconfig
-   if [ -z "$KUBECONFIG" ]; then
-     echo "Error: KUBECONFIG environment variable is not set"
+   # Require the user to provide kubectl path
+   if [ -z "$KUBECTL_PATH" ]; then
+     echo "Error: KUBECTL_PATH environment variable or --kubectl-path parameter is not set"
+     echo "Please provide the path to kubectl binary"
      exit 1
    fi
    
-   # Use the detected kubectl path when calling go test
-   GO_TEST_ARGS="-kubectl-path=$KUBECTL_PATH -kubeconfig=$KUBECONFIG"
+   # Use the provided kubectl path when calling go test
+   GO_TEST_ARGS="--kubectl-path=$KUBECTL_PATH --kubeconfig=$KUBECONFIG"
    ```
 
 ### Phase 1 Documentation and Verification
@@ -253,7 +219,7 @@ After implementing Phase 1:
    # Document framework integration
    # Document test driver interfaces
    # Document S3 client usage
-   # Document kubectl auto-detection in run.sh
+   # Document kubectl path requirement
    ```
 
 2. **Verification**
@@ -268,8 +234,13 @@ After implementing Phase 1:
    # Verify basic setup with a simple test that does nothing
    go test -v ./... -run=TestFrameworkCompiles
    
-   # Verify kubectl auto-detection works
+   # Verify kubectl path is required
    ./scripts/run.sh check-kubectl
+   # Should fail with error about missing kubectl path
+   
+   # Verify with explicit kubectl path
+   ./scripts/run.sh check-kubectl --kubectl-path=/usr/local/bin/kubectl
+   # Should succeed
    ```
 
 3. **Commit Changes**
@@ -281,7 +252,7 @@ After implementing Phase 1:
    - Implemented test driver interfaces 
    - Created S3 client package for standard S3 operations
    - Set up configuration for simple access key/secret key authentication
-   - Added auto-detection of kubectl in run.sh
+   - Required explicit kubectl path to be provided
    - Established proper directory structure aligned with Kubernetes E2E patterns
    - Framework successfully compiles"
    ```
@@ -371,6 +342,7 @@ After implementing Phase 2:
    cd tests/e2e-scality
    # Document test integration with existing infrastructure
    # Document how to run tests with existing SCALE-T make commands
+   # Document required kubectl path parameter
    ```
 
 2. **Verification**
@@ -383,6 +355,7 @@ After implementing Phase 2:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    ```
 
@@ -395,6 +368,7 @@ After implementing Phase 2:
    - Implemented basic volume tests
    - Added verification helpers
    - Created Scality-specific test suite
+   - Required explicit kubectl path
    - Integrated with existing SCALE-T infrastructure"
    ```
 
@@ -533,6 +507,7 @@ After implementing Phase 4:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    
    # Run multi-volume tests
@@ -540,6 +515,7 @@ After implementing Phase 4:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    
    # Run all custom Scality tests
@@ -547,6 +523,7 @@ After implementing Phase 4:
      --endpoint-url="http://localhost:8000" \
      --access-key-id="test" \
      --secret-access-key="test" \
+     --kubectl-path="/usr/local/bin/kubectl" \
      --kubeconfig="$HOME/.kube/config" \
      --ginkgo.focus="Scality"
    ```
@@ -560,17 +537,19 @@ After implementing Phase 4:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    ```
    
    b. **Make Commands with CSI Driver Installation (Primary Method)**:
    ```bash
    # Primary method - installs CSI driver and runs tests
-   # Only need to specify kubeconfig, kubectl path is auto-detected
+   # Required parameters for kubectl path and kubeconfig
    make e2e-scality-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
+     KUBECTL_PATH=/usr/local/bin/kubectl \
      KUBECONFIG="$HOME/.kube/config" \
      ADDITIONAL_ARGS="--ginkgo.focus=\"Basic\""
    ```
@@ -636,6 +615,7 @@ After implementing Phase 5:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    
    # Run write performance tests
@@ -643,6 +623,7 @@ After implementing Phase 5:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    
    # Run scalability tests
@@ -650,6 +631,7 @@ After implementing Phase 5:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    ```
 
@@ -662,17 +644,19 @@ After implementing Phase 5:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    ```
    
    b. **Make Commands with CSI Driver Installation (Primary Method)**:
    ```bash
    # Primary method - installs CSI driver and runs tests
-   # Only need to specify kubeconfig, kubectl path is auto-detected
+   # Required parameters for kubectl path and kubeconfig
    make e2e-scality-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
+     KUBECTL_PATH=/usr/local/bin/kubectl \
      KUBECONFIG="$HOME/.kube/config" \
      ADDITIONAL_ARGS="--ginkgo.focus=\"Performance|Scalability\""
    ```
@@ -745,17 +729,19 @@ After implementing Phase 6:
      -s3-endpoint-url="http://localhost:8000" \
      -access-key-id="test" \
      -secret-access-key="test" \
+     -kubectl-path="/usr/local/bin/kubectl" \
      -kubeconfig="$HOME/.kube/config"
    ```
    
    b. **Make Commands for Full Testing (Primary Method)**:
    ```bash
    # Primary testing method - installs CSI driver and runs all tests
-   # Only need to specify kubeconfig, kubectl path is auto-detected
+   # Required parameters for kubectl path and kubeconfig
    make e2e-scality-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
+     KUBECTL_PATH=/usr/local/bin/kubectl \
      KUBECONFIG="$HOME/.kube/config" \
      ADDITIONAL_ARGS="--ginkgo.focus=\"Basic\""
    
@@ -793,6 +779,7 @@ go test -v ./... -run=TestSpecificTest \
   -s3-endpoint-url="http://localhost:8000" \
   -access-key-id="test" \
   -secret-access-key="test" \
+  -kubectl-path="/usr/local/bin/kubectl" \
   -kubeconfig="$HOME/.kube/config"
 
 # Example: Run tests matching a pattern
@@ -800,6 +787,7 @@ go test -v ./... -ginkgo.focus="Mount options" \
   -s3-endpoint-url="http://localhost:8000" \
   -access-key-id="test" \
   -secret-access-key="test" \
+  -kubectl-path="/usr/local/bin/kubectl" \
   -kubeconfig="$HOME/.kube/config"
 ```
 
@@ -809,13 +797,14 @@ go test -v ./... -ginkgo.focus="Mount options" \
 - Matches how tests will run in CI
 ```bash
 # Primary method - installs CSI driver and runs tests
-# Only need to specify kubeconfig, kubectl path is auto-detected
+# Required parameters for kubectl path and kubeconfig
 make e2e-scality-all \
   S3_ENDPOINT_URL=http://localhost:8000 \
   ACCESS_KEY_ID=test \
   SECRET_ACCESS_KEY=test \
+  KUBECTL_PATH=/usr/local/bin/kubectl \
   KUBECONFIG="$HOME/.kube/config" \
   ADDITIONAL_ARGS="--ginkgo.focus=\"Basic\""
 ```
 
-The README.md will document both approaches, with emphasis on the make e2e-scality-all command as the primary testing method that most closely matches the CI environment. It will also include instructions for using kubectl to verify the test results. 
+The README.md will document both approaches, with emphasis on the make e2e-scality-all command as the primary testing method that most closely matches the CI environment. It will also include instructions for using kubectl to verify the test results and emphasize that kubectl path must be provided explicitly. 
