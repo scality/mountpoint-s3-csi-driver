@@ -1,7 +1,7 @@
 codecov:
-  notify:
-    wait_for_ci: true
-    after_n_builds: 1
+  # notify:
+  #   wait_for_ci: true
+  #   after_n_builds: 2
 
 comment:
   layout: newheader, reach, files, components, diff, flags # show component info in the PR comment
