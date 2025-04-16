@@ -1,0 +1,131 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Scality E2E Project-Specific Cursor Rule (Unified)
+
+This rule governs all E2E test, workflow, and commit/PRD requirements for the Scality CSI project.
+
+---
+
+### 1. End-to-End “All” Command
+
+- The main command to run all E2E tests, install the cluster, and deploy everything is:
+  ```
+  make e2e-scality-all S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1 VALIDATE_S3=true CSI_IMAGE_TAG=local CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver
+  ```
+- **Always use these values for local development:**
+  - `ACCESS_KEY_ID=accessKey1`
+  - `SECRET_ACCESS_KEY=verySecretKey1`
+  - `S3_ENDPOINT_URL=http://localhost:8000`
+  - `CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver`
+  - `CSI_IMAGE_TAG=local`
+- **For CI:** use `CSI_IMAGE_TAG=${{ github.sha }}`
+
+---
+
+### 2. Option Propagation & Consistency
+
+- When adding a new option or flag:
+  - **Propagate it to:**  
+    - `run.sh` (script)
+    - `Makefile`
+    - Go test flags
+    - CI workflow (`.github/workflows/ci-and-e2e-tests.yaml`)
+    - Documentation (`README.md`)
+  - **Keep all options/flags in sync** across these files.
+  - If you notice any inconsistency, update the relevant files and prompt for review.
+
+---
+
+### 3. Documentation Update
+
+- Whenever a new option is added or a workflow changes, update the project root `README.md` to reflect:
+  - New usage
+  - Options
+  - Main workflow changes
+
+---
+
+### 4. Error Handling & Exit Codes
+
+- If any step in the Makefile or script fails (especially S3 validation), the process must:
+  - Exit with a non-zero code
+  - Print a clear error message
+
+---
+
+### 5. CI Integration
+
+- The E2E CI workflow is defined in `.github/workflows/ci-and-e2e-tests.yaml` under the “Run Scality Tests” step.
+- When new options are added, update the “Run Scality Tests” step in the CI YAML.
+- **Never** try to run GitHub Actions locally; always use the Make command locally.
+- Only update `.github/workflows/ci-and-e2e-tests.yaml` for CI.
+
+---
+
+### 6. User Input for New Options
+
+- If a new required option is introduced, always:
+  - Ask the user to update the Cursor rules
+  - Prompt for the value of that option
+
+---
+
+### 7. S3 Validation Handling
+
+- If `VALIDATE_S3=true` and S3 validation fails:
+  - Stop execution
+  - Prompt the user to run the Cloud Server
+  - Wait for user confirmation before resuming tests
+
+---
+
+### 8. Repository/Tag Defaults
+
+- **Local development:**
+  - `CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver`
+  - `CSI_IMAGE_TAG=local`
+- **CI:**
+  - `CSI_IMAGE_TAG=${{ github.sha }}`
+
+---
+
+### 9. update-e2e-tests Workflow (Commit & Task Completion)
+
+**When to run:**  
+- Before every commit that changes:
+  - CSI driver code
+  - Any E2E test code, scripts, or test infrastructure
+  - The Makefile, `run.sh`, or any script/infra that affects E2E test execution
+  - Any configuration or dependency that could impact E2E test results
+- Whenever a tracked task is marked as complete in `tasks.md` (or equivalent PRD/task file).
+
+**What to do:**  
+1. **Run the full E2E test suite locally** using the command and values in section 1.
+2. **Ensure all tests pass.**
+   - If tests fail, fix the issues before committing or marking the task as complete.
+3. **If new options/flags are added:**
+   - Update the script (`run.sh`), Makefile, Go test flags, CI workflow, and documentation to keep everything in sync.
+   - Prompt for user input if a new required option is introduced.
+4. **If any step fails (especially S3 validation):**
+   - Ensure the process exits with a non-zero code and a clear message.
+   - If `VALIDATE_S3=true` and S3 validation fails, stop execution and prompt to run the Cloud Server. Wait for confirmation before resuming.
+5. **Never attempt to run GitHub Actions locally.**  
+   Only update `.github/workflows/ci-and-e2e-tests.yaml` for CI.
+
+**Consistency Reminder:**  
+- All new options and flags must be kept in sync across Go test flags, scripts, Makefile, CI workflow, and documentation.
+- If you notice any inconsistency, update the relevant files and prompt for review.
+
+---
+
+**How to use:**  
+- This rule is enforced before every commit and whenever you mark a tracked task as complete.
+- The agent will remind you to run and pass the E2E suite before every commit and whenever you mark a task as complete.
+
+---
+
+**Reference:**  
+This rule is the single source of truth for E2E test and workflow consistency in the Scality CSI project.
