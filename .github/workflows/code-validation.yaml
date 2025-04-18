@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [style, unit, csi, controller]
+        test: [check-style, unit-test, csi-compliance-test, controller-integration-test]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -25,22 +25,13 @@ jobs:
 
     - name: Code formatting check
       if: matrix.test == 'style'
-      run: make check_style
+      run: make check-style
 
-    - name: Unit tests
-      if: matrix.test == 'unit'
-      run: make test-unit
-
-    - name: CSI spec compliance tests
-      if: matrix.test == 'csi'
-      run: make test-csi-compliance
-
-    - name: Controller tests (K8s API mock)
-      if: matrix.test == 'controller'
-      run: make controller-integration-test
+    - name: Run ${{ matrix.test }}
+      run: make ${{ matrix.test }}
 
     - name: Upload unit test coverage to Codecov
-      if: matrix.test == 'unit'
+      if: matrix.test == 'unit-test'
       continue-on-error: true
       uses: codecov/codecov-action@v5
       with:
@@ -48,7 +39,7 @@ jobs:
         slug: scality/mountpoint-s3-csi-driver
 
     - name: Upload controller test results to Codecov
-      if: matrix.test == 'controller'
+      if: matrix.test == 'controller-integration-test'
       continue-on-error: true
       uses: codecov/test-results-action@v1
       with:
