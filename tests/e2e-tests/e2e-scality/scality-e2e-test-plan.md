@@ -26,7 +26,7 @@ This document outlines a comprehensive plan for implementing end-to-end (E2E) te
 
 ## Initial Cleanup
 Before beginning implementation, we will:
-1. Remove all existing files in the `tests/e2e-scality/e2e-tests/` directory
+1. Remove all existing files in the `tests/e2e-tests/e2e-scality/` directory
 2. Keep only the test plan and create new directories as needed
 3. Use the e2e-kubernetes folder as reference (not copying code)
 
@@ -34,21 +34,19 @@ Before beginning implementation, we will:
 Create a proper directory structure to organize the tests according to Kubernetes E2E framework patterns:
 
 ```
-tests/e2e-scality/
-├── e2e-tests/
-│   ├── kubernetes/        # Standard Kubernetes E2E tests
-│   ├── scality/           # Scality-specific tests
-│   ├── pkg/               # Common packages
-│   │   ├── s3client/      # S3 client implementation
-│   │   └── testutil/      # Test utilities
-│   ├── testsuites/        # Test suite implementations
-│   ├── e2e_test.go        # Main test file
-│   ├── testdriver.go      # Driver implementation
-│   └── go.mod             # Go module file
-├── scripts/
-│   ├── run.sh             # Script to run tests
-│   └── modules/           # Script modules
-└── scality-e2e-test-plan.md
+tests/e2e-tests/
+├── kubernetes/        # Standard Kubernetes E2E tests
+├── scality/           # Scality-specific tests
+├── pkg/               # Common packages
+│   ├── s3client/      # S3 client implementation
+│   └── testutil/      # Test utilities
+├── testsuites/        # Test suite implementations
+├── e2e_test.go        # Main test file
+├── testdriver.go      # Driver implementation
+├── go.mod             # Go module file
+└── scripts/           # Already exists
+    ├── run.sh         # Script to run tests
+    └── modules/       # Script modules
 ```
 
 ## Prerequisites
@@ -111,7 +109,7 @@ After each phase or major step:
    - Document test results
    - **For each testable phase, verify tests can be run using two methods:**
      - Direct Go test commands for quick component testing
-     - Make commands with `e2e-scality-all` which installs CSI driver
+     - Make commands with `e2e-test-all` which installs CSI driver
    - **Use kubectl to verify Kubernetes resources created during tests**
    - **Verify tests work with kubectl path provided explicitly**
 
@@ -215,7 +213,7 @@ After implementing Phase 1:
 1. **Documentation**
    ```bash
    # Update documentation
-   cd tests/e2e-scality
+   cd tests/e2e-tests
    # Document framework integration
    # Document test driver interfaces
    # Document S3 client usage
@@ -225,7 +223,7 @@ After implementing Phase 1:
 2. **Verification**
    ```bash
    # Verify compilation
-   cd tests/e2e-scality
+   cd tests/e2e-tests
    go build ./...
    
    # Check for any build errors
@@ -339,7 +337,7 @@ After implementing Phase 2:
 1. **Documentation**
    ```bash
    # Update test documentation
-   cd tests/e2e-scality
+   cd tests/e2e-tests
    # Document test integration with existing infrastructure
    # Document how to run tests with existing SCALE-T make commands
    # Document required kubectl path parameter
@@ -494,7 +492,7 @@ After implementing Phase 4:
 1. **Documentation**
    ```bash
    # Update custom tests documentation in README.md
-   cd tests/e2e-scality
+   cd tests/e2e-tests
    # Document custom test suites
    # Document specific Scality features tested
    # Add examples of running custom tests
@@ -545,7 +543,7 @@ After implementing Phase 4:
    ```bash
    # Primary method - installs CSI driver and runs tests
    # Required parameters for kubectl path and kubeconfig
-   make e2e-scality-all \
+   make e2e-test-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
@@ -563,7 +561,7 @@ After implementing Phase 4:
    - Added mount options tests specific to Scality
    - Added multi-volume tests for Scality S3 storage
    - Created proper Kubernetes resource verification utilities
-   - All custom tests passing with make e2e-scality-all"
+   - All custom tests passing with make e2e-test-all"
    ```
 
 ## Phase 5: Performance and Scalability Tests
@@ -602,7 +600,7 @@ After implementing Phase 5:
 1. **Documentation**
    ```bash
    # Update performance test documentation in README.md
-   cd tests/e2e-scality
+   cd tests/e2e-tests
    # Document performance tests
    # Document how to interpret results
    # Add examples of running performance tests
@@ -652,7 +650,7 @@ After implementing Phase 5:
    ```bash
    # Primary method - installs CSI driver and runs tests
    # Required parameters for kubectl path and kubeconfig
-   make e2e-scality-all \
+   make e2e-test-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
@@ -669,7 +667,7 @@ After implementing Phase 5:
    - Implemented performance test suite following Kubernetes E2E patterns
    - Added FIO tests for read/write performance
    - Added scalability tests
-   - Documented performance results with make e2e-scality-all"
+   - Documented performance results with make e2e-test-all"
    ```
 
 ## Phase 6: CI Integration
@@ -697,7 +695,7 @@ After implementing Phase 6:
 1. **Documentation**
    ```bash
    # Update CI documentation in README.md
-   cd tests/e2e-scality
+   cd tests/e2e-tests
    # Document CI workflow
    # Document CI troubleshooting
    ```
@@ -705,14 +703,14 @@ After implementing Phase 6:
 2. **Verification**
    ```bash
    # Verify full test suite with smoke tests
-   make e2e-scality-all \
+   make e2e-test-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
      ADDITIONAL_ARGS="--ginkgo.focus=\"Smoke\" --junit-report=./test-results.xml"
    
    # Verify with matrix test parameters
-   make e2e-scality-all \
+   make e2e-test-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
@@ -737,7 +735,7 @@ After implementing Phase 6:
    ```bash
    # Primary testing method - installs CSI driver and runs all tests
    # Required parameters for kubectl path and kubeconfig
-   make e2e-scality-all \
+   make e2e-test-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
@@ -746,7 +744,7 @@ After implementing Phase 6:
      ADDITIONAL_ARGS="--ginkgo.focus=\"Basic\""
    
    # For running specific test groups
-   make e2e-scality-all \
+   make e2e-test-all \
      S3_ENDPOINT_URL=http://localhost:8000 \
      ACCESS_KEY_ID=test \
      SECRET_ACCESS_KEY=test \
@@ -761,7 +759,7 @@ After implementing Phase 6:
    - Created GitHub Actions workflow file
    - Added smoke tests for CI
    - Added JUnit reporting
-   - Documented make e2e-scality-all usage in README.md
+   - Documented make e2e-test-all usage in README.md
    - Updated documentation for running tests with kubectl"
    ```
 
@@ -798,7 +796,7 @@ go test -v ./... -ginkgo.focus="Mount options" \
 ```bash
 # Primary method - installs CSI driver and runs tests
 # Required parameters for kubectl path and kubeconfig
-make e2e-scality-all \
+make e2e-test-all \
   S3_ENDPOINT_URL=http://localhost:8000 \
   ACCESS_KEY_ID=test \
   SECRET_ACCESS_KEY=test \
@@ -807,4 +805,4 @@ make e2e-scality-all \
   ADDITIONAL_ARGS="--ginkgo.focus=\"Basic\""
 ```
 
-The README.md will document both approaches, with emphasis on the make e2e-scality-all command as the primary testing method that most closely matches the CI environment. It will also include instructions for using kubectl to verify the test results and emphasize that kubectl path must be provided explicitly. 
+The README.md will document both approaches, with emphasis on the make e2e-test-all command as the primary testing method that most closely matches the CI environment. It will also include instructions for using kubectl to verify the test results and emphasize that kubectl path must be provided explicitly.
