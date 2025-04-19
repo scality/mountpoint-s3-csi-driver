@@ -35,25 +35,25 @@
 
 | Phase | Task | Description | Status | Depends On |
 |-------|------|-------------|--------|------------|
-| 1 | 1 | Framework Setup | ⬜ To Do | |
-| 1 | 1.1 | Remove existing files in e2e-scality directory | ⬜ To Do | |
+| 1 | 1 | Framework Setup | 🟡 In Progress | |
+| 1 | 1.1 | Remove existing files in e2e-scality directory | 🟡 In Progress | |
 | 1 | 1.2 | Create proper directory structure | ⬜ To Do | 1.1 |
-| 1 | 1.3 | Configure project dependencies | ⬜ To Do | 1.2 |
-| 1 | 1.4 | Implement test driver interfaces | ⬜ To Do | 1.3 |
-| 1 | 1.5 | Create S3 client package | ⬜ To Do | 1.3 |
-| 1 | 1.6 | Set up test configuration | ⬜ To Do | 1.3 |
-| 1 | 1.7 | Modify run.sh to require kubectl path | ⬜ To Do | 1.2 |
+| 1 | 1.3 | Configure project dependencies | 🟡 In Progress | 1.2 |
+| 1 | 1.4 | Implement test driver interfaces | 🟡 In Progress | 1.3 |
+| 1 | 1.5 | Create S3 client package | ✅ Done | 1.3 |
+| 1 | 1.6 | Set up test configuration | 🟡 In Progress | 1.3 |
+| 1 | 1.7 | Modify run.sh to require kubectl path | ✅ Done | 1.2 |
 | 1 | 1.8 | Document and verify framework setup | ⬜ To Do | 1.4, 1.5, 1.6, 1.7 |
 | 2 | 2 | Basic Test Implementation | ⬜ To Do | 1 |
 | 2 | 2.1 | Resolve Go dependencies | ⬜ To Do | 1.3 |
 | 2 | 2.2 | Implement basic volume tests | ⬜ To Do | 2.1 |
-| 2 | 2.3 | Add test verification methods | ⬜ To Do | 2.2 |
+| 2 | 2.3 | Add test verification methods | ✅ Done | 2.2 |
 | 2 | 2.4 | Create simple Scality test suite | ⬜ To Do | 2.2 |
 | 2 | 2.5 | Document and verify basic tests | ⬜ To Do | 2.3, 2.4 |
 | 3 | 3 | Custom Test Suites | ⬜ To Do | 2 |
 | 3 | 3.1 | Implement mount options test suite | ⬜ To Do | 2.4 |
 | 3 | 3.2 | Implement multi-volume test suite | ⬜ To Do | 2.4 |
-| 3 | 3.3 | Create Kubernetes resource verification helpers | ⬜ To Do | 3.1, 3.2 |
+| 3 | 3.3 | Create Kubernetes resource verification helpers | ✅ Done | 3.1, 3.2 |
 | 3 | 3.4 | Document and verify custom test suites | ⬜ To Do | 3.3 |
 | 4 | 4 | Performance and Scalability Tests | ⬜ To Do | 3 |
 | 4 | 4.1 | Create performance test suite | ⬜ To Do | 3.4 |
