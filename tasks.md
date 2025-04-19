@@ -35,18 +35,18 @@
 
 | Phase | Task | Description | Status | Depends On |
 |-------|------|-------------|--------|------------|
-| 1 | 1 | Framework Setup | 🟡 In Progress | |
-| 1 | 1.1 | Remove existing files in e2e-scality directory | 🟡 In Progress | |
-| 1 | 1.2 | Create proper directory structure | ⬜ To Do | 1.1 |
-| 1 | 1.3 | Configure project dependencies | 🟡 In Progress | 1.2 |
-| 1 | 1.4 | Implement test driver interfaces | 🟡 In Progress | 1.3 |
+| 1 | 1 | Framework Setup | ✅ Done | |
+| 1 | 1.1 | Remove existing files in e2e-scality directory | ✅ Done | |
+| 1 | 1.2 | Create proper directory structure | ✅ Done | 1.1 |
+| 1 | 1.3 | Configure project dependencies | ✅ Done | 1.2 |
+| 1 | 1.4 | Implement test driver interfaces | ✅ Done | 1.3 |
 | 1 | 1.5 | Create S3 client package | ✅ Done | 1.3 |
-| 1 | 1.6 | Set up test configuration | 🟡 In Progress | 1.3 |
+| 1 | 1.6 | Set up test configuration | ✅ Done | 1.3 |
 | 1 | 1.7 | Modify run.sh to require kubectl path | ✅ Done | 1.2 |
-| 1 | 1.8 | Document and verify framework setup | ⬜ To Do | 1.4, 1.5, 1.6, 1.7 |
-| 2 | 2 | Basic Test Implementation | ⬜ To Do | 1 |
-| 2 | 2.1 | Resolve Go dependencies | ⬜ To Do | 1.3 |
-| 2 | 2.2 | Implement basic volume tests | ⬜ To Do | 2.1 |
+| 1 | 1.8 | Document and verify framework setup | ✅ Done | 1.4, 1.5, 1.6, 1.7 |
+| 2 | 2 | Basic Test Implementation | 🟡 In Progress | 1 |
+| 2 | 2.1 | Resolve Go dependencies | ✅ Done | 1.3 |
+| 2 | 2.2 | Implement basic volume tests | 🟡 In Progress | 2.1 |
 | 2 | 2.3 | Add test verification methods | ✅ Done | 2.2 |
 | 2 | 2.4 | Create simple Scality test suite | ⬜ To Do | 2.2 |
 | 2 | 2.5 | Document and verify basic tests | ⬜ To Do | 2.3, 2.4 |
