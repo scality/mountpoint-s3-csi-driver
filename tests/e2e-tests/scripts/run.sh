@@ -134,7 +134,7 @@ parse_install_parameters() {
     error "Missing required parameter: --kubectl-path"
     show_help
     exit 1
-  }
+  fi
   
   if [ "$has_endpoint_url" = false ]; then
     error "Missing required parameter: --endpoint-url"
@@ -196,7 +196,7 @@ parse_uninstall_parameters() {
     error "Missing required parameter: --kubectl-path"
     show_help
     exit 1
-  }
+  fi
   
   # Return parameters
   echo "$params"
@@ -266,7 +266,7 @@ parse_test_parameters() {
     error "Missing required parameter: --kubectl-path"
     show_help
     exit 1
-  }
+  fi
   
   # Only validate S3 parameters if we're not skipping Go tests
   if [[ ! "$params" == *"--skip-go-tests"* ]]; then
