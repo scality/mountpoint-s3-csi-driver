@@ -76,6 +76,6 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./tests/e2e-tests/e2e-tests/test-results/scality-e2e-tests-results.xml
+          file: ./tests/e2e-tests/test-results/scality-e2e-tests-results.xml
           flags: scality_e2e_tests
           slug: scality/mountpoint-s3-csi-driver
