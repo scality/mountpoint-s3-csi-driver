@@ -9,6 +9,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2eskipper "k8s.io/kubernetes/test/e2e/framework/skipper"
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 )
 
@@ -80,11 +81,17 @@ func (s *ScalityDriver) GetDriverInfo() *storageframework.DriverInfo {
 
 // SkipUnsupportedTest skips tests that are not supported by the S3 CSI driver
 func (s *ScalityDriver) SkipUnsupportedTest(pattern storageframework.TestPattern) {
-	if pattern.VolType == storageframework.InlineVolume {
-		panic("S3 CSI Driver does not support inline volumes")
+	// Skip Block volume tests
+	if pattern.VolMode == v1.PersistentVolumeBlock {
+		e2eskipper.Skipf("S3 CSI Driver does not support block volumes -- skipping pattern %s", pattern.Name)
 	}
+	// Skip Inline volume tests
+	if pattern.VolType == storageframework.InlineVolume {
+		e2eskipper.Skipf("S3 CSI Driver does not support inline volumes -- skipping pattern %s", pattern.Name)
+	}
+	// Skip PreprovisionedPV tests if FsType is not provided, as it's required by our driver.
 	if pattern.VolType == storageframework.PreprovisionedPV && pattern.FsType == "" {
-		panic("S3 CSI Driver requires an explicit fsType to be specified")
+		e2eskipper.Skipf("S3 CSI Driver requires an explicit fsType for PreprovisionedPV -- skipping pattern %s", pattern.Name)
 	}
 }
 
