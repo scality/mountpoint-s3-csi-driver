@@ -403,14 +403,14 @@ main() {
             # Handle --option=value format
             kubectl_path="${1#*=}"
             test_args="$test_args --kubectl-path $kubectl_path"
-            install_args="$install_args --kubectl-path $kubectl_path"
+            # Don't add kubectl_path to install_args since install doesn't recognize it
             shift
             ;;
           --kubectl-path)
             # Handle --option value format
             kubectl_path="$2"
             test_args="$test_args --kubectl-path $kubectl_path"
-            install_args="$install_args --kubectl-path $kubectl_path"
+            # Don't add kubectl_path to install_args since install doesn't recognize it
             shift 2
             ;;
           --help)
