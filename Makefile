@@ -142,6 +142,14 @@ ACCESS_KEY_ID ?=
 # AWS/S3 secret key for authentication (REQUIRED)
 SECRET_ACCESS_KEY ?=
 
+# Path to the kubectl binary (REQUIRED)
+# Example: /usr/local/bin/kubectl
+KUBECTL_PATH ?=
+
+# Path to the kubeconfig file (optional, defaults to $HOME/.kube/config)
+# Example: /path/to/kubeconfig
+KUBECONFIG ?= $(HOME)/.kube/config
+
 # Set to 'true' to validate S3 credentials before installation (optional)
 # Checks endpoint connectivity and validates credentials (if AWS CLI is available)
 VALIDATE_S3 ?= false
@@ -240,9 +248,24 @@ csi-uninstall-force:
 ################################################################
 
 # Run tests on an already installed CSI driver
+#
+# Required parameters:
+#   KUBECTL_PATH - Path to kubectl binary
+#
+# Optional parameters:
+#   KUBECONFIG - Path to kubeconfig file (defaults to $HOME/.kube/config)
+#   CSI_NAMESPACE - Namespace where the CSI driver is installed
 .PHONY: e2e-tests
 e2e-tests:
-	@TEST_ARGS=""; \
+	@if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl e2e-tests'"; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(KUBECONFIG)" ]; then \
+		echo "Warning: Kubeconfig file not found at $(KUBECONFIG). Tests may fail."; \
+	fi; \
+	export KUBECONFIG="$(KUBECONFIG)"; \
+	TEST_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
 		TEST_ARGS="$$TEST_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
@@ -250,10 +273,25 @@ e2e-tests:
 
 # Run only the Go-based e2e tests (skips verification checks)
 # 
-# Usage: make e2e-tests-go
+# Required parameters:
+#   KUBECTL_PATH - Path to kubectl binary
+#
+# Optional parameters:
+#   KUBECONFIG - Path to kubeconfig file (defaults to $HOME/.kube/config)
+#   CSI_NAMESPACE - Namespace where the CSI driver is installed
+#
+# Usage: make e2e-tests-go KUBECTL_PATH=/path/to/kubectl
 .PHONY: e2e-tests-go
 e2e-tests-go:
-	@TEST_ARGS=""; \
+	@if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl e2e-tests-go'"; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(KUBECONFIG)" ]; then \
+		echo "Warning: Kubeconfig file not found at $(KUBECONFIG). Tests may fail."; \
+	fi; \
+	export KUBECONFIG="$(KUBECONFIG)"; \
+	TEST_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
 		TEST_ARGS="$$TEST_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
@@ -261,9 +299,24 @@ e2e-tests-go:
 
 # Run the verification tests only (skips Go tests)
 # Makes sure the CSI driver is properly installed
+#
+# Required parameters:
+#   KUBECTL_PATH - Path to kubectl binary
+#
+# Optional parameters:
+#   KUBECONFIG - Path to kubeconfig file (defaults to $HOME/.kube/config)
+#   CSI_NAMESPACE - Namespace where the CSI driver is installed
 .PHONY: e2e-tests-verify
 e2e-tests-verify:
-	@TEST_ARGS="--skip-go-tests"; \
+	@if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl e2e-tests-verify'"; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(KUBECONFIG)" ]; then \
+		echo "Warning: Kubeconfig file not found at $(KUBECONFIG). Tests may fail."; \
+	fi; \
+	export KUBECONFIG="$(KUBECONFIG)"; \
+	TEST_ARGS="--skip-go-tests --kubectl-path $(KUBECTL_PATH)"; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
 		TEST_ARGS="$$TEST_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
@@ -275,14 +328,16 @@ e2e-tests-verify:
 #   S3_ENDPOINT_URL - Your Scality S3 endpoint 
 #   ACCESS_KEY_ID - Your S3 access key
 #   SECRET_ACCESS_KEY - Your S3 secret key
+#   KUBECTL_PATH - Path to the kubectl binary
 #
 # Optional parameters:
+#   KUBECONFIG - Path to kubeconfig file (defaults to $HOME/.kube/config)
 #   CSI_IMAGE_TAG - Specific version of the driver
 #   CSI_IMAGE_REPOSITORY - Custom image repository for the driver
 #   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
-# Example: make e2e-tests-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
+# Example: make e2e-tests-all S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1 KUBECTL_PATH=/usr/local/bin/kubectl
 .PHONY: e2e-tests-all
 e2e-tests-all:
 	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
@@ -297,7 +352,15 @@ e2e-tests-all:
 		echo "Error: SECRET_ACCESS_KEY is required. Please provide it with 'make SECRET_ACCESS_KEY=your_secret_key e2e-tests-all'"; \
 		exit 1; \
 	fi; \
-	INSTALL_ARGS=""; \
+	if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl e2e-tests-all'"; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(KUBECONFIG)" ]; then \
+		echo "Warning: Kubeconfig file not found at $(KUBECONFIG). Tests may fail."; \
+	fi; \
+	export KUBECONFIG="$(KUBECONFIG)"; \
+	INSTALL_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
 	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
 	fi; \
