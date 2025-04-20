@@ -69,7 +69,7 @@ jobs:
             CSI_IMAGE_TAG=${{ github.sha }} \
             CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
             KUBECTL_PATH=$(which kubectl) \
-            ADDITIONAL_ARGS="--junit-report=./test-results/scality-e2e-tests-results.xml"
+            JUNIT_REPORT="./test-results/scality-e2e-tests-results.xml"
 
       - name: Upload test results to Codecov
         if: ${{ always() }}

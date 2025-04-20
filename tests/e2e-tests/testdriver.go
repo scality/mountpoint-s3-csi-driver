@@ -14,7 +14,7 @@ import (
 
 const (
 	// DriverName is the name of the CSI driver
-	DriverName = "s3.csi.scality.com"
+	DriverName = "s3.csi.aws.com"
 	// DriverNamespace is the namespace where the CSI driver is installed
 	DriverNamespace = "kube-system"
 	// DefaultFSType is the default filesystem type to use

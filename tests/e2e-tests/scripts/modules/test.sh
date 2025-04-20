@@ -204,11 +204,14 @@ run_verification_tests() {
   # Use the specified kubectl path
   local kubectl_cmd="$kubectl_path"
   
-  # Check if the CSI driver is registered
-  if "$kubectl_cmd" get csidrivers | grep -q "s3.csi.scality.com"; then
-    log "CSI driver is registered properly."
+  # Check if the CSI driver is registered with either name
+  local csi_drivers=$("$kubectl_cmd" get csidrivers -o custom-columns=NAME:.metadata.name --no-headers)
+  
+  if echo "$csi_drivers" | grep -q "s3.csi.aws.com"; then
+    log "CSI driver s3.csi.aws.com is registered properly."
   else
-    error "CSI driver is not registered properly."
+    error "CSI driver is not registered properly. Available CSI drivers:"
+    "$kubectl_cmd" get csidrivers
     return 1
   fi
   

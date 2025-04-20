@@ -80,6 +80,7 @@ install_csi_driver() {
   local SECRET_ACCESS_KEY=""
   local VALIDATE_S3="false"
   local NAMESPACE="$DEFAULT_NAMESPACE"
+  local HELM_SET_PARAMS=""
   
   # Parse parameters
   while [ "$#" -gt 0 ]; do
@@ -111,6 +112,11 @@ install_csi_driver() {
       --validate-s3)
         VALIDATE_S3="true"
         shift
+        ;;
+      --set)
+        # Handle Helm set parameters
+        HELM_SET_PARAMS="${HELM_SET_PARAMS} $2"
+        shift 2
         ;;
       --help)
         # Silently ignore help parameter, it's handled by the main script
@@ -184,6 +190,15 @@ install_csi_driver() {
   if [ -n "$IMAGE_REPOSITORY" ]; then
     log "Using custom image repository: $IMAGE_REPOSITORY"
     HELM_PARAMS+=(--set "image.repository=$IMAGE_REPOSITORY")
+  fi
+  
+  # Add Helm set parameters
+  if [ -n "$HELM_SET_PARAMS" ]; then
+    log "Using additional Helm parameters: $HELM_SET_PARAMS"
+    # Process each parameter as a separate set value
+    for param in $HELM_SET_PARAMS; do
+      HELM_PARAMS+=(--set "$param")
+    done
   fi
   
   # Install/upgrade the Helm chart
@@ -273,13 +288,16 @@ verify_installation() {
   # Check if CSI driver is registered
   log "Checking if CSI driver is registered..."
   
-  if exec_cmd kubectl get csidrivers | grep -q "s3.csi.scality.com"; then
-    log "CSI driver s3.csi.scality.com is registered successfully."
-  elif exec_cmd kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
-    log "CSI driver s3.csi.aws.com is registered successfully (using AWS driver name)."
-    warn "Note: The driver is using the AWS name (s3.csi.aws.com) instead of the Scality name (s3.csi.scality.com)."
+  # Get the list of CSI drivers in a more reliable way
+  local csi_drivers=$(exec_cmd kubectl get csidrivers -o custom-columns=NAME:.metadata.name --no-headers)
+  
+  if echo "$csi_drivers" | grep -q "s3.csi.aws.com"; then
+    log "CSI driver s3.csi.aws.com is registered successfully."
+    return 0
   else
-    error "CSI driver is not registered properly."
+    error "CSI driver is not registered properly. Available CSI drivers:"
+    exec_cmd kubectl get csidrivers
+    return 1
   fi
 }
 

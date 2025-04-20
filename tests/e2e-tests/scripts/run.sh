@@ -117,6 +117,20 @@ parse_install_parameters() {
         params="$params --validate-s3"
         shift
         ;;
+      --set=*)
+        # Handle --option=value format for helm set parameters
+        set_param="${1#*=}"
+        # Add the set parameter to install_args
+        params="$params --set $set_param"
+        shift
+        ;;
+      --set)
+        # Handle --option value format for helm set parameters
+        set_param="$2"
+        # Add the set parameter to install_args
+        params="$params --set $set_param"
+        shift 2
+        ;;
       *)
         # For other arguments, pass them through
         if [[ $# -gt 1 && "$2" != --* ]]; then
@@ -254,6 +268,20 @@ parse_test_parameters() {
         ;;
       --additional-args)
         params="$params --additional-args \"$2\""
+        shift 2
+        ;;
+      --set=*)
+        # Handle --option=value format for helm set parameters
+        set_param="${1#*=}"
+        # Add the set parameter to install_args
+        params="$params --set $set_param"
+        shift
+        ;;
+      --set)
+        # Handle --option value format for helm set parameters
+        set_param="$2"
+        # Add the set parameter to install_args
+        params="$params --set $set_param"
         shift 2
         ;;
       *)
@@ -460,6 +488,44 @@ main() {
             install_args="$install_args --endpoint-url $direct_endpoint_url"
             # We assume this is the same as s3-endpoint-url for tests
             test_args="$test_args --s3-endpoint-url $direct_endpoint_url"
+            shift 2
+            ;;
+          --additional-args=*)
+            # Handle --option=value format for additional args
+            additional_args="${1#*=}"
+            test_args="$test_args $additional_args"
+            shift
+            ;;
+          --additional-args)
+            # Handle --option value format for additional args
+            additional_args="$2"
+            test_args="$test_args $additional_args"
+            shift 2
+            ;;
+          --set=*)
+            # Handle --option=value format for helm set parameters
+            set_param="${1#*=}"
+            # Add the set parameter to install_args
+            install_args="$install_args --set $set_param"
+            shift
+            ;;
+          --set)
+            # Handle --option value format for helm set parameters
+            set_param="$2"
+            # Add the set parameter to install_args
+            install_args="$install_args --set $set_param"
+            shift 2
+            ;;
+          --junit-report=*)
+            # Handle --option=value format for junit-report
+            junit_report="${1#*=}"
+            test_args="$test_args --junit-report $junit_report"
+            shift
+            ;;
+          --junit-report)
+            # Handle --option value format for junit-report
+            junit_report="$2"
+            test_args="$test_args --junit-report $junit_report"
             shift 2
             ;;
           --help)

@@ -146,13 +146,17 @@ SECRET_ACCESS_KEY ?=
 # Example: /usr/local/bin/kubectl
 KUBECTL_PATH ?=
 
-# Path to the kubeconfig file (optional, defaults to $HOME/.kube/config)
+# Kubeconfig path (optional, defaults to $HOME/.kube/config)
 # Example: /path/to/kubeconfig
 KUBECONFIG ?= $(HOME)/.kube/config
 
 # Set to 'true' to validate S3 credentials before installation (optional)
 # Checks endpoint connectivity and validates credentials (if AWS CLI is available)
 VALIDATE_S3 ?= false
+
+# JUnit report file path (optional)
+# Example: ./test-results/e2e-tests-results.xml
+JUNIT_REPORT ?=
 
 # Additional arguments to pass to the script (optional)
 ADDITIONAL_ARGS ?=
@@ -378,7 +382,7 @@ e2e-tests-all:
 	fi; \
 	export KUBECONFIG="$(KUBECONFIG)"; \
 	INSTALL_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
-	# Add image tag and repository as separate arguments \
+	# Image tag and repository as separate arguments \
 	IMAGE_TAG_ARG=""; \
 	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
 		IMAGE_TAG_ARG="--image-tag $(CSI_IMAGE_TAG)"; \
@@ -399,4 +403,8 @@ e2e-tests-all:
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		ADDITIONAL_ARGS_VALUE="$(ADDITIONAL_ARGS)"; \
 	fi; \
-	./tests/e2e-tests/scripts/run.sh all $$INSTALL_ARGS $$IMAGE_TAG_ARG $$IMAGE_REPO_ARG $$NAMESPACE_ARG --endpoint-url $(S3_ENDPOINT_URL) --access-key-id $(ACCESS_KEY_ID) --secret-access-key $(SECRET_ACCESS_KEY) $$VALIDATE_ARG $$ADDITIONAL_ARGS_VALUE
+	JUNIT_REPORT_ARG=""; \
+	if [ ! -z "$(JUNIT_REPORT)" ]; then \
+		JUNIT_REPORT_ARG="--junit-report $(JUNIT_REPORT)"; \
+	fi; \
+	./tests/e2e-tests/scripts/run.sh all $$INSTALL_ARGS $$IMAGE_TAG_ARG $$IMAGE_REPO_ARG $$NAMESPACE_ARG --endpoint-url $(S3_ENDPOINT_URL) --access-key-id $(ACCESS_KEY_ID) --secret-access-key $(SECRET_ACCESS_KEY) $$VALIDATE_ARG $$JUNIT_REPORT_ARG $$ADDITIONAL_ARGS_VALUE
