@@ -26,7 +26,7 @@ This document outlines a comprehensive plan for implementing end-to-end (E2E) te
 
 ## Initial Cleanup
 Before beginning implementation, we will:
-1. Remove all existing files in the `tests/e2e-tests/e2e-scality/` directory
+1. Remove all existing files in the `tests/e2e-tests/e2e-tests/` directory
 2. Keep only the test plan and create new directories as needed
 3. Use the e2e-kubernetes folder as reference (not copying code)
 

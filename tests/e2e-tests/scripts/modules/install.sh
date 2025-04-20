@@ -1,5 +1,5 @@
 #!/bin/bash
-# install.sh - Installation functions for e2e-scality scripts
+# install.sh - Installation functions for e2e-tests scripts
 
 # Source common functions
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"

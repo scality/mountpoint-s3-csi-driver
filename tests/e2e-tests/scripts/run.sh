@@ -1,5 +1,5 @@
 #!/bin/bash
-# run.sh - Main entry point for e2e-scality scripts
+# run.sh - Main entry point for e2e-tests scripts
 set -e
 
 # Get the directory where this script is located

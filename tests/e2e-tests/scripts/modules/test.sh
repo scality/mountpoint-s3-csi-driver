@@ -1,5 +1,5 @@
 #!/bin/bash
-# test.sh - Test functions for e2e-scality scripts
+# test.sh - Test functions for e2e-tests scripts
 
 # Source common functions
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
