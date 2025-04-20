@@ -343,48 +343,102 @@ main() {
       log "Starting Scality CSI driver installation and tests..."
       
       source "${MODULES_DIR}/install.sh"
+      source "${MODULES_DIR}/test.sh"
       
       # Get namespace parameter
       local namespace_param=$(get_namespace_param "$@")
       
-      # Extract installation related arguments, exclude the test-specific arguments
+      # Initialize variables for parsing
       local install_args=""
       local test_args=""
+      local endpoint_url=""
+      local access_key_id=""
+      local secret_access_key=""
+      local kubectl_path=""
       
-      # Separate install and test args
-      for arg in "$@"; do
-        # Check for JUnit report param with equals sign format
-        if [[ "$arg" == --junit-report=* ]]; then
-          test_args="$test_args $arg"
-          continue
-        fi
-        
-        case "$arg" in
-          --junit-report)
-            test_args="$test_args $arg"
+      # Process arguments handling both --option value and --option=value formats
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --s3-endpoint-url=*)
+            # Handle --option=value format
+            endpoint_url="${1#*=}"
+            test_args="$test_args --s3-endpoint-url $endpoint_url"
             shift
-            
-            # If this argument requires a value, add it to test_args
-            if [[ $# -gt 0 && "$1" != --* ]]; then
-              test_args="$test_args $1"
-              shift
-            fi
             ;;
-          --skip-go-tests | --skip-verification)
-            test_args="$test_args $arg"
+          --s3-endpoint-url)
+            # Handle --option value format
+            endpoint_url="$2"
+            test_args="$test_args --s3-endpoint-url $endpoint_url"
+            shift 2
+            ;;
+          --access-key-id=*)
+            # Handle --option=value format
+            access_key_id="${1#*=}"
+            test_args="$test_args --access-key-id $access_key_id"
+            install_args="$install_args --access-key-id $access_key_id"
+            shift
+            ;;
+          --access-key-id)
+            # Handle --option value format
+            access_key_id="$2"
+            test_args="$test_args --access-key-id $access_key_id"
+            install_args="$install_args --access-key-id $access_key_id"
+            shift 2
+            ;;
+          --secret-access-key=*)
+            # Handle --option=value format
+            secret_access_key="${1#*=}"
+            test_args="$test_args --secret-access-key $secret_access_key"
+            install_args="$install_args --secret-access-key $secret_access_key"
+            shift
+            ;;
+          --secret-access-key)
+            # Handle --option value format
+            secret_access_key="$2"
+            test_args="$test_args --secret-access-key $secret_access_key"
+            install_args="$install_args --secret-access-key $secret_access_key"
+            shift 2
+            ;;
+          --kubectl-path=*)
+            # Handle --option=value format
+            kubectl_path="${1#*=}"
+            test_args="$test_args --kubectl-path $kubectl_path"
+            install_args="$install_args --kubectl-path $kubectl_path"
+            shift
+            ;;
+          --kubectl-path)
+            # Handle --option value format
+            kubectl_path="$2"
+            test_args="$test_args --kubectl-path $kubectl_path"
+            install_args="$install_args --kubectl-path $kubectl_path"
+            shift 2
+            ;;
+          --help)
+            # Pass this to both
+            test_args="$test_args --help"
+            install_args="$install_args --help"
+            shift
             ;;
           *)
-            install_args="$install_args $arg"
+            # For other arguments, pass them as-is to both
+            test_args="$test_args $1"
+            install_args="$install_args $1"
+            shift
             ;;
         esac
       done
       
-      # Pass all command-line parameters to install module
+      # Add the endpoint URL as --endpoint-url for the install step
+      if [ -n "$endpoint_url" ]; then
+        install_args="$install_args --endpoint-url $endpoint_url"
+      fi
+      
+      # Pass processed parameters to do_install
+      log "Running installation with args: $install_args"
       exec_cmd do_install $namespace_param $install_args
       
-      source "${MODULES_DIR}/test.sh"
-      
-      # Run tests with same namespace and any test-specific arguments
+      # Pass processed parameters to do_test
+      log "Running tests with args: $test_args"
       exec_cmd do_test $namespace_param $test_args
       
       log "Scality CSI driver setup and tests completed successfully."
