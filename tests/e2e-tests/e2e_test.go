@@ -77,6 +77,9 @@ func getAPIServerHostFromKubeconfig(kubeconfigPath string) (string, error) {
 
 // TestE2E runs the Scality S3 CSI driver E2E tests.
 func TestE2E(t *testing.T) {
+	// Register Gomega's fail handler
+	gomega.RegisterFailHandler(ginkgo.Fail)
+
 	// Register the framework flags and handle context
 	f.AfterReadingAllFlags(&f.TestContext)
 
@@ -107,6 +110,34 @@ func TestE2E(t *testing.T) {
 var ScalityTestSuites = []func() storageframework.TestSuite{
 	testsuites.InitVolumesTestSuite,
 }
+
+// Add a simple direct test to verify S3 client works
+var _ = ginkgo.Describe("Scality S3 CSI Driver Basic", func() {
+	// Simple test to verify S3 client
+	ginkgo.It("should be able to create a bucket", func(ctx context.Context) {
+		// Create S3 config from flags
+		s3Config := &s3client.Config{
+			EndpointURL:     S3EndpointURL,
+			AccessKeyID:     AccessKeyID,
+			SecretAccessKey: SecretAccessKey,
+			BucketPrefix:    BucketPrefix,
+		}
+
+		// Create S3 client
+		client, err := s3client.NewClient(s3Config)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to create S3 client")
+		gomega.Expect(client).NotTo(gomega.BeNil(), "S3 client must not be nil")
+
+		// Create a test bucket
+		bucketName, err := client.CreateBucket(ctx)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to create bucket")
+		gomega.Expect(bucketName).NotTo(gomega.BeEmpty(), "Bucket name must not be empty")
+
+		// Clean up the bucket
+		err = client.DeleteBucket(ctx, bucketName)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to delete bucket")
+	})
+})
 
 // This executes testSuites for the Scality CSI driver.
 var _ = utils.SIGDescribe("Scality S3 CSI Driver", func() {
