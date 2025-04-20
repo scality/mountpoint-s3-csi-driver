@@ -81,20 +81,20 @@ func (s *ScalityDriver) GetDriverInfo() *storageframework.DriverInfo {
 // SkipUnsupportedTest skips tests that are not supported by the S3 CSI driver
 func (s *ScalityDriver) SkipUnsupportedTest(pattern storageframework.TestPattern) {
 	if pattern.VolType == storageframework.InlineVolume {
-		framework.Skipf("S3 CSI Driver does not support inline volumes")
+		panic("S3 CSI Driver does not support inline volumes")
 	}
 	if pattern.VolType == storageframework.PreprovisionedPV && pattern.FsType == "" {
-		framework.Skipf("S3 CSI Driver requires an explicit fsType to be specified")
+		panic("S3 CSI Driver requires an explicit fsType to be specified")
 	}
 }
 
 // PrepareTest prepares test resources
-func (s *ScalityDriver) PrepareTest(ctx context.Context) (*storageframework.PerTestConfig, func()) {
+func (s *ScalityDriver) PrepareTest(ctx context.Context, f *framework.Framework) *storageframework.PerTestConfig {
 	return &storageframework.PerTestConfig{
 		Driver:    s,
 		Prefix:    "s3",
-		Framework: nil,
-	}, func() {}
+		Framework: f,
+	}
 }
 
 // CreateVolume creates a test volume for testing
@@ -139,7 +139,7 @@ func (s *ScalityDriver) createDynamicVolume(ctx context.Context, config *storage
 }
 
 // GetPersistentVolumeSource returns a PV source for a pre-provisioned volume
-func (s *ScalityDriver) GetPersistentVolumeSource(readOnly bool, fsType string, volume storageframework.TestVolume) *v1.PersistentVolumeSource {
+func (s *ScalityDriver) GetPersistentVolumeSource(readOnly bool, fsType string, volume storageframework.TestVolume) (*v1.PersistentVolumeSource, *v1.VolumeNodeAffinity) {
 	s3Vol, ok := volume.(*s3Volume)
 	if !ok {
 		framework.Failf("Failed to cast test volume to s3Volume")
@@ -153,7 +153,7 @@ func (s *ScalityDriver) GetPersistentVolumeSource(readOnly bool, fsType string, 
 			VolumeAttributes: map[string]string{"bucket": s3Vol.bucketName},
 			ReadOnly:         readOnly,
 		},
-	}
+	}, nil
 }
 
 // GetDynamicProvisionStorageClass returns a storage class for dynamic provisioning
