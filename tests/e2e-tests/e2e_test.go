@@ -38,7 +38,6 @@ func init() {
 	config.CopyFlags(config.Flags, flag.CommandLine)
 	f.RegisterCommonFlags(flag.CommandLine)
 	f.RegisterClusterFlags(flag.CommandLine)
-	f.AfterReadingAllFlags(&f.TestContext)
 
 	// Register our custom flags
 	flag.StringVar(&S3EndpointURL, "s3-endpoint-url", "", "S3 endpoint URL")
@@ -76,31 +75,12 @@ func getAPIServerHostFromKubeconfig(kubeconfigPath string) (string, error) {
 	return cluster.Server, nil
 }
 
-// TestE2E is the main entry point for the Ginkgo tests
+// TestE2E runs the Scality S3 CSI driver E2E tests.
 func TestE2E(t *testing.T) {
-	// Parse all flags
-	flag.Parse()
+	// Register the framework flags and handle context
+	f.AfterReadingAllFlags(&f.TestContext)
 
-	// Validate required framework flags are set *before* reading kubeconfig
-	if f.TestContext.KubeConfig == "" {
-		t.Fatalf("--kubeconfig is required")
-	}
-	if f.TestContext.KubectlPath == "" {
-		t.Fatalf("--kubectl-path is required")
-	}
-
-	// Dynamically set the host from the provided kubeconfig
-	apiServerHost, err := getAPIServerHostFromKubeconfig(f.TestContext.KubeConfig)
-	if err != nil {
-		t.Fatalf("Failed to get API server host from kubeconfig: %v", err)
-	}
-	f.TestContext.Host = apiServerHost
-	f.Logf("Using API Server Host from kubeconfig: %s", f.TestContext.Host) // Log the host being used
-
-	// Set up Gomega and Ginkgo fail handlers
-	gomega.RegisterFailHandler(ginkgo.Fail)
-
-	// Validate required S3 flags
+	// Validate required flags *after* parsing
 	if S3EndpointURL == "" {
 		t.Fatalf("s3-endpoint-url is required")
 	}
@@ -112,8 +92,10 @@ func TestE2E(t *testing.T) {
 	}
 
 	// Set kubectl path in the environment if provided
-	if err := os.Setenv("TEST_KUBECTL", f.TestContext.KubectlPath); err != nil {
-		t.Fatalf("Failed to set TEST_KUBECTL environment variable: %v", err)
+	if f.TestContext.KubectlPath != "" {
+		if err := os.Setenv("TEST_KUBECTL", f.TestContext.KubectlPath); err != nil {
+			t.Fatalf("Failed to set TEST_KUBECTL environment variable: %v", err)
+		}
 	}
 
 	// Run the Ginkgo specs
@@ -128,7 +110,7 @@ var ScalityTestSuites = []func() storageframework.TestSuite{
 
 // This executes testSuites for the Scality CSI driver.
 var _ = utils.SIGDescribe("Scality S3 CSI Driver", func() {
-	// Create S3 config from flags
+	// Create S3 config from flags *before* driver init
 	s3Config := &s3client.Config{
 		EndpointURL:     S3EndpointURL,
 		AccessKeyID:     AccessKeyID,
@@ -136,32 +118,39 @@ var _ = utils.SIGDescribe("Scality S3 CSI Driver", func() {
 		BucketPrefix:    BucketPrefix,
 	}
 
-	// Initialize the driver directly here, before getting args
+	// Initialize the driver directly here, as framework needs it early
 	driver, err := InitScalityDriver(s3Config)
-	// Use GinkgoRecover to handle potential panics during setup
-	defer ginkgo.GinkgoRecover()
-	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to initialize S3 driver during setup")
-	gomega.Expect(driver).NotTo(gomega.BeNil(), "Driver should not be nil after initialization")
+	// Log potential initialization error. Proper checks will happen later.
+	if err != nil {
+		f.Logf("Initial driver initialization failed (will be checked before defining suites): %v", err)
+	} else if driver == nil {
+		f.Logf("Initial driver initialization returned nil driver (will be checked before defining suites)")
+	}
 
 	// Get framework arguments including driver name and feature tags
 	args := storageframework.GetDriverNameWithFeatureTags(driver)
+
 	// Append the function that defines which test suites to run
 	args = append(args, func() {
+		// Perform driver initialization checks HERE, inside the framework function
+		defer ginkgo.GinkgoRecover() // Add recover here as well
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to initialize S3 driver before defining suites")
+		gomega.Expect(driver).NotTo(gomega.BeNil(), "Driver must not be nil when defining suites")
+
+		// Define the test suites using the validated driver
 		storageframework.DefineTestSuites(driver, ScalityTestSuites)
 	})
+
 	// Run the tests within the framework context
 	f.Context(args...)
 
 	// Cleanup S3 resources after each test if enabled
 	if CleanupAfterTest {
 		ginkgo.AfterEach(func(ctx context.Context) {
-			// Re-initialize driver for cleanup in case setup failed partially?
-			// Or rely on the driver instance from the outer scope if it was successful?
-			// Let's assume the driver was successfully initialized if we reach here.
+			// Check if driver and s3Client were successfully initialized before cleanup
 			if driver != nil && driver.s3Client != nil {
 				err := driver.s3Client.CleanupAllBuckets(ctx)
 				if err != nil {
-					// Use framework logging
 					f.Logf("Failed to clean up buckets: %v", err)
 				}
 			}
