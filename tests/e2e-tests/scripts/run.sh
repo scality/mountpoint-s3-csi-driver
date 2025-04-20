@@ -413,6 +413,50 @@ main() {
             # Don't add kubectl_path to install_args since install doesn't recognize it
             shift 2
             ;;
+          --image-tag=*)
+            # Handle --option=value format for image tag
+            image_tag="${1#*=}"
+            # Only add to install_args, not test_args
+            install_args="$install_args --image-tag $image_tag"
+            shift
+            ;;
+          --image-tag)
+            # Handle --option value format for image tag
+            image_tag="$2"
+            # Only add to install_args, not test_args
+            install_args="$install_args --image-tag $image_tag"
+            shift 2
+            ;;
+          --image-repository=*)
+            # Handle --option=value format for image repository
+            image_repo="${1#*=}"
+            # Only add to install_args, not test_args
+            install_args="$install_args --image-repository $image_repo"
+            shift
+            ;;
+          --image-repository)
+            # Handle --option value format for image repository
+            image_repo="$2"
+            # Only add to install_args, not test_args
+            install_args="$install_args --image-repository $image_repo"
+            shift 2
+            ;;
+          --endpoint-url=*)
+            # Handle --option=value format for direct endpoint URL (used by install)
+            direct_endpoint_url="${1#*=}"
+            install_args="$install_args --endpoint-url $direct_endpoint_url"
+            # We assume this is the same as s3-endpoint-url for tests
+            test_args="$test_args --s3-endpoint-url $direct_endpoint_url"
+            shift
+            ;;
+          --endpoint-url)
+            # Handle --option value format for direct endpoint URL (used by install)
+            direct_endpoint_url="$2"
+            install_args="$install_args --endpoint-url $direct_endpoint_url"
+            # We assume this is the same as s3-endpoint-url for tests
+            test_args="$test_args --s3-endpoint-url $direct_endpoint_url"
+            shift 2
+            ;;
           --help)
             # Pass this to both
             test_args="$test_args --help"
@@ -420,9 +464,19 @@ main() {
             shift
             ;;
           *)
-            # For other arguments, pass them as-is to both
-            test_args="$test_args $1"
-            install_args="$install_args $1"
+            # For other arguments, handle more carefully
+            log "Unknown parameter: $1"
+            # If it looks like a test parameter, only add to test_args
+            if [[ "$1" == --skip* || "$1" == --junit* || "$1" == --ginkgo* || "$1" == --test* || "$1" == --additional-args* ]]; then
+              test_args="$test_args $1"
+            elif [[ "$1" == --validate-s3* ]]; then
+              # Validation only applies to install
+              install_args="$install_args $1"
+            elif [[ $# -gt 1 && "$2" != --* ]]; then
+              # This parameter has a value, so make sure to shift properly
+              log "  with value: $2"
+              shift
+            fi
             shift
             ;;
         esac
