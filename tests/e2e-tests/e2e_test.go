@@ -12,6 +12,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework/config"
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/kubernetes/test/e2e/storage/testsuites"
+	"k8s.io/kubernetes/test/e2e/storage/utils"
 )
 
 var (
@@ -90,39 +91,25 @@ func TestE2E(t *testing.T) {
 	ginkgo.RunSpecs(t, "Scality S3 CSI Driver E2E Suite")
 }
 
-// ScalityTestSuites lists all test suites that will be run
-var ScalityTestSuites = []ginkgo.NodeToBeRun{
-	// Basic volume tests
-	ginkgo.NodeToBeRun{
-		Text: "Scality S3 CSI Driver",
-		Nodes: []ginkgo.NodeToBeRun{
-			{Text: "Basic Volume Tests"},
-			{Text: "Static Provisioning"},
-			{Text: "Dynamic Provisioning"},
-		},
-	},
-	// Performance tests (if enabled)
-	ginkgo.NodeToBeRun{
-		Text: "Performance",
-		Nodes: []ginkgo.NodeToBeRun{
-			{Text: "Read/Write Performance"},
-		},
-	},
+// CSITestSuites lists the Kubernetes storage test suites to run
+var CSITestSuites = []func() storageframework.TestSuite{
+	testsuites.InitVolumesTestSuite, // Start with just the basic volume test suite
+	// Add more test suites as needed once basic tests are working
+	// testsuites.InitVolumeIOTestSuite,
+	// testsuites.InitVolumeModeTestSuite,
+	// testsuites.InitSubPathTestSuite,
+	// testsuites.InitProvisioningTestSuite,
+	// testsuites.InitMultiVolumeTestSuite,
 }
 
-// StandardTestSuites lists the Kubernetes storage test suites to run
-var StandardTestSuites = []func() storageframework.TestSuite{
-	testsuites.InitVolumesTestSuite,
-	testsuites.InitVolumeIOTestSuite,
-	testsuites.InitVolumeModeTestSuite,
-	testsuites.InitSubPathTestSuite,
-	testsuites.InitProvisioningTestSuite,
-	testsuites.InitMultiVolumeTestSuite,
-}
+// This executes testSuites for csi volumes.
+var _ = utils.SIGDescribe("Scality S3 CSI Driver", func() {
+	if PerformanceTests {
+		// If performance tests are enabled, replace the test suites
+		// Add performance test suite here when implemented
+		// CSITestSuites = []func() storageframework.TestSuite{custom_testsuites.InitS3CSIPerformanceTestSuite}
+	}
 
-// Define the context for running the test suites
-var _ = ginkgo.Describe("Scality S3 CSI Driver", func() {
-	// Initialize test driver
 	driver, err := InitScalityDriver(&s3client.Config{
 		EndpointURL:     S3EndpointURL,
 		AccessKeyID:     AccessKeyID,
@@ -130,24 +117,28 @@ var _ = ginkgo.Describe("Scality S3 CSI Driver", func() {
 		BucketPrefix:    BucketPrefix,
 	})
 
-	ginkgo.BeforeEach(func() {
-		if err != nil {
-			framework.Failf("Failed to initialize test driver: %v", err)
-		}
+	if err != nil {
+		framework.Failf("Failed to initialize test driver: %v", err)
+	}
+
+	args := framework.GetDriverNameWithFeatureTags(driver)
+	args = append(args, func() {
+		// Define the test suites to run
+		storageframework.DefineTestSuites(driver, CSITestSuites)
 	})
 
-	// Run standard test suites
-	ginkgo.Context("Kubernetes Storage Suite", func() {
-		storageframework.DefineTestSuites(driver, StandardTestSuites)
-	})
+	// Run the tests
+	framework.Context(args...)
 
-	// Run performance tests if enabled
-	if PerformanceTests {
-		ginkgo.Context("Performance Tests", func() {
-			ginkgo.It("should be able to read and write data efficiently", func() {
-				// Performance tests will be implemented in a future phase
-				framework.Logf("Performance tests are not yet implemented")
-			})
+	// Cleanup all resources after tests if enabled
+	if CleanupAfterTest {
+		ginkgo.AfterEach(func() {
+			if driver != nil && driver.s3Client != nil {
+				ctx := ginkgo.GinkgoContext()
+				if err := driver.s3Client.CleanupAllBuckets(ctx); err != nil {
+					framework.Logf("Failed to cleanup buckets: %v", err)
+				}
+			}
 		})
 	}
 })

@@ -112,6 +112,10 @@ install_csi_driver() {
         VALIDATE_S3="true"
         shift
         ;;
+      --help)
+        # Silently ignore help parameter, it's handled by the main script
+        shift
+        ;;
       *)
         warn "Unknown parameter: $1"
         shift
@@ -199,8 +203,8 @@ verify_installation() {
   
   log "Verifying CSI driver installation in namespace: $namespace..."
   
-  # Wait for the pods to be running
-  log "Waiting for CSI driver pods to be in Running state in namespace: $namespace..."
+  # Wait for the CSI driver pods to be ready
+  log "Waiting for CSI driver pods to be fully ready in namespace: $namespace..."
   
   # Maximum wait time in seconds (5 minutes)
   MAX_WAIT_TIME=300
@@ -208,13 +212,51 @@ verify_installation() {
   ELAPSED_TIME=0
   
   while [ $ELAPSED_TIME -lt $MAX_WAIT_TIME ]; do
-    if exec_cmd kubectl get pods -n $namespace | grep -q "Running"; then
-      log "CSI driver pods are now running in namespace: $namespace."
+    # Get the CSI driver pod names - check for both possible labels
+    local driver_pods=$(kubectl get pods -n $namespace -l 'app in (s3-csi-driver,s3-csi-node)' -o name 2>/dev/null)
+    
+    if [ -z "$driver_pods" ]; then
+      log "No CSI driver pods found yet. Waiting ${WAIT_INTERVAL} seconds... (${ELAPSED_TIME}/${MAX_WAIT_TIME}s)"
+      sleep $WAIT_INTERVAL
+      ELAPSED_TIME=$((ELAPSED_TIME + WAIT_INTERVAL))
+      continue
+    fi
+    
+    # Check if all CSI driver pods are ready
+    local all_ready=true
+    local ready_count=0
+    local total_count=0
+    
+    for pod in $driver_pods; do
+      total_count=$((total_count + 1))
       
-      exec_cmd kubectl get pods -n $namespace
+      # Check if the pod is running and all containers are ready
+      local pod_status=$(kubectl get $pod -n $namespace -o jsonpath='{.status.phase}' 2>/dev/null)
+      local containers_ready=$(kubectl get $pod -n $namespace -o jsonpath='{.status.containerStatuses[*].ready}' 2>/dev/null)
+      
+      if [ "$pod_status" != "Running" ]; then
+        all_ready=false
+        break
+      fi
+      
+      # Check if all containers are ready (all values are "true")
+      if [[ "$containers_ready" == *"false"* || -z "$containers_ready" ]]; then
+        all_ready=false
+        break
+      fi
+      
+      ready_count=$((ready_count + 1))
+    done
+    
+    if [ "$all_ready" = true ] && [ $ready_count -gt 0 ]; then
+      log "All CSI driver pods are running and ready ($ready_count/$total_count) in namespace: $namespace."
+      
+      # Show all pods in the namespace
+      exec_cmd kubectl get pods -n $namespace -o wide
       break
     else
-      log "Pods not yet in Running state. Waiting ${WAIT_INTERVAL} seconds... (${ELAPSED_TIME}/${MAX_WAIT_TIME}s)"
+      log "Waiting for all CSI driver pods to be ready. Currently $ready_count out of $total_count are fully ready. Waiting ${WAIT_INTERVAL} seconds... (${ELAPSED_TIME}/${MAX_WAIT_TIME}s)"
+      exec_cmd kubectl get pods -n $namespace | grep -E "s3-csi|scality"
       sleep $WAIT_INTERVAL
       ELAPSED_TIME=$((ELAPSED_TIME + WAIT_INTERVAL))
     fi
@@ -222,16 +264,20 @@ verify_installation() {
   
   # Check if we timed out
   if [ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]; then
-    log "Timed out waiting for pods to be in Running state. Current pod status:"
-    exec_cmd kubectl get pods -n $namespace
-    error "CSI driver pods did not reach Running state within ${MAX_WAIT_TIME} seconds."
+    log "Timed out waiting for CSI driver pods to be ready. Current pod status:"
+    exec_cmd kubectl get pods -n $namespace -o wide
+    exec_cmd kubectl describe pods -n $namespace -l app=s3-csi-driver
+    error "CSI driver pods did not reach ready state within ${MAX_WAIT_TIME} seconds."
   fi
   
   # Check if CSI driver is registered
   log "Checking if CSI driver is registered..."
   
-  if exec_cmd kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
-    log "CSI driver is registered successfully."
+  if exec_cmd kubectl get csidrivers | grep -q "s3.csi.scality.com"; then
+    log "CSI driver s3.csi.scality.com is registered successfully."
+  elif exec_cmd kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
+    log "CSI driver s3.csi.aws.com is registered successfully (using AWS driver name)."
+    warn "Note: The driver is using the AWS name (s3.csi.aws.com) instead of the Scality name (s3.csi.scality.com)."
   else
     error "CSI driver is not registered properly."
   fi

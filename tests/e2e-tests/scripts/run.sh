@@ -70,12 +70,13 @@ show_help() {
   echo "  cd tests/e2e-tests && go test -v -ginkgo.focus=\"Basic Volume Tests\" -s3-endpoint-url=http://localhost:8000 -access-key-id=accessKey1 -secret-access-key=verySecretKey1 -kubectl-path=/usr/local/bin/kubectl"
 }
 
+# Parse install parameters
 parse_install_parameters() {
   local params=""
+  local has_kubectl_path=false
   local has_endpoint_url=false
   local has_access_key_id=false
   local has_secret_access_key=false
-  local has_kubectl_path=false
 
   # Process options
   while [[ $# -gt 0 ]]; do
@@ -90,29 +91,24 @@ parse_install_parameters() {
         shift 2
         ;;
       --image-tag)
-        IMAGE_TAG="$2"
         params="$params --image-tag $2"
         shift 2
         ;;
       --image-repository)
-        IMAGE_REPOSITORY="$2"
         params="$params --image-repository $2"
         shift 2
         ;;
       --endpoint-url)
-        ENDPOINT_URL="$2"
         params="$params --endpoint-url $2"
         has_endpoint_url=true
         shift 2
         ;;
       --access-key-id)
-        ACCESS_KEY_ID="$2"
         params="$params --access-key-id $2"
         has_access_key_id=true
         shift 2
         ;;
       --secret-access-key)
-        SECRET_ACCESS_KEY="$2"
         params="$params --secret-access-key $2"
         has_secret_access_key=true
         shift 2
@@ -122,9 +118,16 @@ parse_install_parameters() {
         shift
         ;;
       *)
-        echo "Error: Unknown option: $1"
-        show_help
-        exit 1
+        # For other arguments, pass them through
+        if [[ $# -gt 1 && "$2" != --* ]]; then
+          # This parameter has a value
+          params="$params $1 $2"
+          shift 2
+        else
+          # This is a flag
+          params="$params $1"
+          shift
+        fi
         ;;
     esac
   done
@@ -135,19 +138,19 @@ parse_install_parameters() {
     show_help
     exit 1
   fi
-  
+
   if [ "$has_endpoint_url" = false ]; then
     error "Missing required parameter: --endpoint-url"
     show_help
     exit 1
   fi
-  
+
   if [ "$has_access_key_id" = false ]; then
     error "Missing required parameter: --access-key-id"
     show_help
     exit 1
   fi
-  
+
   if [ "$has_secret_access_key" = false ]; then
     error "Missing required parameter: --secret-access-key"
     show_help
@@ -320,8 +323,10 @@ main() {
   case $COMMAND in
     install)
       source "${MODULES_DIR}/install.sh"
-      # Pass all command-line parameters to install module
-      exec_cmd do_install $namespace_param "$@"
+      # Parse install parameters to validate required parameters
+      local install_parameters=$(parse_install_parameters "$@")
+      # Pass processed parameters to install module
+      exec_cmd do_install $namespace_param $install_parameters
       ;;
     test)
       source "${MODULES_DIR}/test.sh"
@@ -458,10 +463,10 @@ main() {
             shift 2
             ;;
           --help)
-            # Pass this to both
-            test_args="$test_args --help"
-            install_args="$install_args --help"
-            shift
+            # Handle help flag - only pass to test_args if needed
+            # Don't pass to install_args since install module doesn't recognize it
+            show_help
+            exit 0
             ;;
           *)
             # For other arguments, handle more carefully

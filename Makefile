@@ -167,6 +167,7 @@ ADDITIONAL_ARGS ?=
 #   S3_ENDPOINT_URL - Your Scality S3 endpoint 
 #   ACCESS_KEY_ID - Your S3 access key
 #   SECRET_ACCESS_KEY - Your S3 secret key
+#   KUBECTL_PATH - Path to kubectl binary
 #
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
@@ -174,7 +175,7 @@ ADDITIONAL_ARGS ?=
 #   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
-# Example: make csi-install S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
+# Example: make csi-install S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret KUBECTL_PATH=/usr/local/bin/kubectl
 .PHONY: csi-install
 csi-install:
 	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
@@ -189,7 +190,11 @@ csi-install:
 		echo "Error: SECRET_ACCESS_KEY is required. Please provide it with 'make SECRET_ACCESS_KEY=your_secret_key csi-install'"; \
 		exit 1; \
 	fi; \
-	INSTALL_ARGS=""; \
+	if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl csi-install'"; \
+		exit 1; \
+	fi; \
+	INSTALL_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
 	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
 	fi; \
@@ -215,7 +220,11 @@ csi-install:
 # Note: kube-system namespace will NOT be deleted even with --delete-ns
 .PHONY: csi-uninstall
 csi-uninstall:
-	@UNINSTALL_ARGS=""; \
+	@if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl csi-uninstall'"; \
+		exit 1; \
+	fi; \
+	UNINSTALL_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
 		UNINSTALL_ARGS="$$UNINSTALL_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
@@ -226,7 +235,11 @@ csi-uninstall:
 # Note: kube-system namespace will NOT be deleted even with --delete-ns
 .PHONY: csi-uninstall-clean
 csi-uninstall-clean:
-	@UNINSTALL_ARGS="--delete-ns"; \
+	@if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl csi-uninstall-clean'"; \
+		exit 1; \
+	fi; \
+	UNINSTALL_ARGS="--kubectl-path $(KUBECTL_PATH) --delete-ns"; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
 		UNINSTALL_ARGS="$$UNINSTALL_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
@@ -237,7 +250,11 @@ csi-uninstall-clean:
 # Note: kube-system namespace will NOT be deleted even with --force
 .PHONY: csi-uninstall-force
 csi-uninstall-force:
-	@UNINSTALL_ARGS="--force"; \
+	@if [ -z "$(KUBECTL_PATH)" ]; then \
+		echo "Error: KUBECTL_PATH is required. Please provide it with 'make KUBECTL_PATH=/path/to/kubectl csi-uninstall-force'"; \
+		exit 1; \
+	fi; \
+	UNINSTALL_ARGS="--kubectl-path $(KUBECTL_PATH) --force"; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
 		UNINSTALL_ARGS="$$UNINSTALL_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
@@ -337,7 +354,7 @@ e2e-tests-verify:
 #   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
-# Example: make e2e-tests-all S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1 KUBECTL_PATH=/usr/local/bin/kubectl
+# Example: make e2e-tests-all S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1 KUBECTL_PATH=/usr/local/bin/kubectl CSI_IMAGE_TAG=local CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver
 .PHONY: e2e-tests-all
 e2e-tests-all:
 	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
@@ -361,22 +378,25 @@ e2e-tests-all:
 	fi; \
 	export KUBECONFIG="$(KUBECONFIG)"; \
 	INSTALL_ARGS="--kubectl-path $(KUBECTL_PATH)"; \
+	# Add image tag and repository as separate arguments \
+	IMAGE_TAG_ARG=""; \
 	if [ ! -z "$(CSI_IMAGE_TAG)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --image-tag $(CSI_IMAGE_TAG)"; \
+		IMAGE_TAG_ARG="--image-tag $(CSI_IMAGE_TAG)"; \
 	fi; \
+	IMAGE_REPO_ARG=""; \
 	if [ ! -z "$(CSI_IMAGE_REPOSITORY)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --image-repository $(CSI_IMAGE_REPOSITORY)"; \
+		IMAGE_REPO_ARG="--image-repository $(CSI_IMAGE_REPOSITORY)"; \
 	fi; \
+	NAMESPACE_ARG=""; \
 	if [ ! -z "$(CSI_NAMESPACE)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --namespace $(CSI_NAMESPACE)"; \
+		NAMESPACE_ARG="--namespace $(CSI_NAMESPACE)"; \
 	fi; \
-	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
-	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
-	INSTALL_ARGS="$$INSTALL_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
+	VALIDATE_ARG=""; \
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
+		VALIDATE_ARG="--validate-s3"; \
 	fi; \
+	ADDITIONAL_ARGS_VALUE=""; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
+		ADDITIONAL_ARGS_VALUE="$(ADDITIONAL_ARGS)"; \
 	fi; \
-	./tests/e2e-tests/scripts/run.sh all $$INSTALL_ARGS
+	./tests/e2e-tests/scripts/run.sh all $$INSTALL_ARGS $$IMAGE_TAG_ARG $$IMAGE_REPO_ARG $$NAMESPACE_ARG --endpoint-url $(S3_ENDPOINT_URL) --access-key-id $(ACCESS_KEY_ID) --secret-access-key $(SECRET_ACCESS_KEY) $$VALIDATE_ARG $$ADDITIONAL_ARGS_VALUE

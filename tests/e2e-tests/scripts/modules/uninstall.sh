@@ -75,6 +75,7 @@ uninstall_csi_driver() {
       log "Helm release uninstalled successfully from namespace $NAMESPACE."
     fi
   fi
+  fi
   
   # Delete AWS credentials secret
   # Check if secret exists before attempting to delete
@@ -129,23 +130,36 @@ uninstall_csi_driver() {
     log "Using system namespace $NAMESPACE, skipping namespace deletion for safety."
   fi
   
-  # Check if CSI driver is still registered
-  if exec_cmd kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
-    warn "CSI driver s3.csi.aws.com is still registered. You may need to delete it manually:"
-    warn "kubectl delete csidriver s3.csi.aws.com"
-    
-    # In force mode, automatically delete the CSI driver
-    if [ "$FORCE" = true ]; then
-      log "Force mode enabled. Deleting CSI driver s3.csi.aws.com..."
-      if ! exec_cmd kubectl delete csidriver s3.csi.aws.com; then
-        error "Failed to delete CSI driver. Error code: $ERROR_CSI_DELETE"
-        warn "You may need to manually delete the CSI driver registration."
-        return $ERROR_CSI_DELETE
-      else
-        log "CSI driver deleted successfully."
-      fi
+  # Check if CSI driver is still registered (check both possible names)
+  local csi_driver_found=false
+  local csi_driver_name=""
+  
+  # Check for Scality driver name first
+  if exec_cmd kubectl get csidrivers | grep -q "s3.csi.scality.com"; then
+    csi_driver_found=true
+    csi_driver_name="s3.csi.scality.com"
+    warn "CSI driver $csi_driver_name is still registered. You may need to delete it manually:"
+    warn "kubectl delete csidriver $csi_driver_name"
+  
+  # Then check for AWS driver name
+  elif exec_cmd kubectl get csidrivers | grep -q "s3.csi.aws.com"; then
+    csi_driver_found=true
+    csi_driver_name="s3.csi.aws.com"
+    warn "CSI driver $csi_driver_name is still registered. You may need to delete it manually:"
+    warn "kubectl delete csidriver $csi_driver_name"
+  fi
+  
+  # Handle deletion if driver was found
+  if [ "$csi_driver_found" = true ] && [ "$FORCE" = true ]; then
+    log "Force mode enabled. Deleting CSI driver $csi_driver_name..."
+    if ! exec_cmd kubectl delete csidriver $csi_driver_name; then
+      error "Failed to delete CSI driver. Error code: $ERROR_CSI_DELETE"
+      warn "You may need to manually delete the CSI driver registration."
+      return $ERROR_CSI_DELETE
+    else
+      log "CSI driver deleted successfully."
     fi
-  else
+  elif [ "$csi_driver_found" = false ]; then
     log "CSI driver is no longer registered."
   fi
   
