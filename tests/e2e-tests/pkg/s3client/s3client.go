@@ -202,12 +202,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	"k8s.io/kubernetes/test/e2e/framework"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	utilrand "k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/kubernetes/test/e2e/framework"
 )
 
 // DefaultRegion is the default AWS region to use if unspecified.
@@ -265,13 +266,12 @@ func (c *Client) CreateStandardBucket(ctx context.Context) (string, DeleteBucket
 	return bucketName, c.create(ctx, input)
 }
 
-
 // randomBucketName generates a random bucket name by using prefix (`s3BucketNamePrefix`) and `suffix`
 // and generating random string for the remaining space according to S3's limit (63 as of today).
 func (c *Client) randomBucketName(suffix string) string {
 	prefixLen := len(s3BucketNamePrefix)
 	suffixLen := len(suffix)
-	rand := utilrand.String(s3BucketNameMaxLength - prefixLen - suffixLen)  // TODO: Add util
+	rand := utilrand.String(s3BucketNameMaxLength - prefixLen - suffixLen)
 	return s3BucketNamePrefix + rand + suffix
 }
 

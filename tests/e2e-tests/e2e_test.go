@@ -201,6 +201,7 @@ import (
 	f "k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/storage/testsuites"
 	"k8s.io/kubernetes/test/e2e/storage/framework"
+	"k8s.io/kubernetes/test/e2e/storage/utils"
 )
 
 func init() {
