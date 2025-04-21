@@ -173,12 +173,6 @@ import (
 	"k8s.io/kubernetes/test/e2e/storage/framework"
 )
 
-var (
-	CommitId     string
-	BucketRegion string // assumed to be the same as k8s cluster's region
-	BucketPrefix string
-)
-
 type s3Driver struct {
 	client     *s3client.Client
 	driverInfo framework.DriverInfo
@@ -277,9 +271,7 @@ func (d *s3Driver) GetPersistentVolumeSource(readOnly bool, fsType string, testV
 	}, nil
 }
 
-
 func (v *s3Volume) DeleteVolume(ctx context.Context) {
 	err := v.deleteBucket(ctx)
 	f.ExpectNoError(err, "Failed to delete S3 Bucket: %s", v.bucketName)
 }
-

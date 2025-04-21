@@ -197,7 +197,6 @@ import (
 
 	ginkgo "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e-tests/pkg/s3client"
 	f "k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/kubernetes/test/e2e/storage/testsuites"
@@ -207,18 +206,13 @@ import (
 func init() {
 	testing.Init()
 
-	f.RegisterClusterFlags(flag.CommandLine) // configures --kubeconfig flag // TODO: Check if this flag is correct in test.sh
-	f.RegisterCommonFlags(flag.CommandLine)  // configures --kubectl flag // TODO: Check if this flag is correct in test.sh
+	f.RegisterClusterFlags(flag.CommandLine) // configures --kubeconfig flag
+	f.RegisterCommonFlags(flag.CommandLine)  // configures --kubectl flag
+	// Finalize and validate the test context after all flags are parsed.
+	// This sets up global test configuration (e.g., kubeconfig, kubectl path, timeouts)
+	// and ensures the E2E framework is ready to run tests.
 	f.AfterReadingAllFlags(&f.TestContext)
-
-	// TODO: Add these to testdriver.go
-	// flag.StringVar(&CommitId, "commit-id", "local", "commit id will be used to name buckets")
-	flag.StringVar(&BucketRegion, "bucket-region", "us-east-1", "region where temporary buckets will be created")
-	flag.StringVar(&BucketPrefix, "bucket-prefix", "local", "prefix for temporary buckets")
 	flag.Parse()
-
-	// TODO: Add this to s3client.go
-	s3client.DefaultRegion = BucketRegion
 }
 
 func TestE2E(t *testing.T) {

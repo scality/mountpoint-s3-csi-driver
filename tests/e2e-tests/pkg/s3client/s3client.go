@@ -212,10 +212,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-// DefaultRegion is the default AWS region to use if unspecified.
-// It is public in order to be modified from test binary which receives region to use as a flag.
-var DefaultRegion string
-
+const DefaultRegion = "us-east-1"
 const s3BucketNameMaxLength = 63
 const s3BucketNamePrefix = "s3-csi-k8s-e2e-"
 
