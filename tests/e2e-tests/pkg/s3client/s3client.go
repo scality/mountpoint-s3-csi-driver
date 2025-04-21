@@ -205,6 +205,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	utilrand "k8s.io/apimachinery/pkg/util/rand"
@@ -237,6 +238,11 @@ func New() *Client {
 func NewWithRegion(region string) *Client {
 	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			"accessKey1",
+			"verySecretKey1",
+			"",
+		)),
 		config.WithRetryer(func() aws.Retryer {
 			return retry.NewStandard(func(opts *retry.StandardOptions) {
 				opts.MaxAttempts = 5
@@ -245,7 +251,10 @@ func NewWithRegion(region string) *Client {
 		}),
 	)
 	framework.ExpectNoError(err)
-	return &Client{region: region, client: s3.NewFromConfig(cfg)} // TODO: Add endpoint here
+	return &Client{region: region, client: s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+		o.BaseEndpoint = aws.String("http://192.168.1.80:8000")
+	})} // TODO: Add endpoint here
 }
 
 // CreateStandardBucket creates a new standard S3 bucket with a random name,

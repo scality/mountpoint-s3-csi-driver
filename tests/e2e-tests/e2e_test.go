@@ -199,8 +199,8 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e-tests/pkg/s3client"
 	f "k8s.io/kubernetes/test/e2e/framework"
-	"k8s.io/kubernetes/test/e2e/storage/testsuites"
 	"k8s.io/kubernetes/test/e2e/storage/framework"
+	"k8s.io/kubernetes/test/e2e/storage/testsuites"
 	"k8s.io/kubernetes/test/e2e/storage/utils"
 )
 
@@ -212,7 +212,7 @@ func init() {
 	f.AfterReadingAllFlags(&f.TestContext)
 
 	// TODO: Add these to testdriver.go
-	flag.StringVar(&CommitId, "commit-id", "local", "commit id will be used to name buckets")
+	// flag.StringVar(&CommitId, "commit-id", "local", "commit id will be used to name buckets")
 	flag.StringVar(&BucketRegion, "bucket-region", "us-east-1", "region where temporary buckets will be created")
 	flag.StringVar(&BucketPrefix, "bucket-prefix", "local", "prefix for temporary buckets")
 	flag.Parse()
