@@ -50,7 +50,7 @@ func NewWithRegion(region string) *Client {
 	framework.ExpectNoError(err)
 	return &Client{region: region, client: s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.UsePathStyle = true
-		o.BaseEndpoint = aws.String("http://192.168.1.80:8000")
+		o.BaseEndpoint = aws.String("http://localhost:8000")
 	})} // TODO: Add endpoint here
 }
 

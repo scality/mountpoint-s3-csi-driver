@@ -72,7 +72,8 @@ run_go_tests() {
   fi
   
   # Build the Go test command with enhanced verbosity
-  local go_test_cmd="go test -v ./... -ginkgo.v -s3-endpoint-url=$s3_endpoint_url -access-key-id=$access_key_id -secret-access-key=$secret_access_key -kubectl-path=$kubectl_path -kubeconfig=$kubeconfig_path -bucket-prefix=$bucket_prefix $additional_args"
+  # local go_test_cmd="go test -v ./... -ginkgo.v -s3-endpoint-url=$s3_endpoint_url -access-key-id=$access_key_id -secret-access-key=$secret_access_key -kubectl-path=$kubectl_path -kubeconfig=$kubeconfig_path -bucket-prefix=$bucket_prefix $additional_args"
+  local go_test_cmd="KUBECONFIG=$(KUBECONFIG) go test -v ./... -ginkgo.v $additional_args"
   
   # Add JUnit report if specified
   if [ -n "$junit_report" ]; then
