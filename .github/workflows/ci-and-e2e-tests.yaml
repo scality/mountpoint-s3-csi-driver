@@ -41,25 +41,6 @@ jobs:
         id: get_ip
         run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
 
-      - name: Debug Kubectl Info
-        run: |
-          echo "Kubectl location: $(which kubectl)"
-          echo "Kubectl version: $(kubectl version --client=true -o yaml)"
-          echo "Kubeconfig location: $KUBECONFIG"
-          echo "Default kubeconfig content check:"
-          ls -la ~/.kube/ || echo "No ~/.kube directory"
-          if [ -f ~/.kube/config ]; then
-            echo "Default kubeconfig exists"
-            kubectl config view --minify
-          else
-            echo "No default kubeconfig found"
-          fi
-          echo "Checking for kind-specific kubeconfig:"
-          kind get kubeconfig --name=helm-test-cluster
-          echo "Testing connection to cluster:"
-          kubectl get nodes -o wide
-          kubectl get pods -A
-
       - name: Run Scality Tests
         run: |
           mkdir -p test-results

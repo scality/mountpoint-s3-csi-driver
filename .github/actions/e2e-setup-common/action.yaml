@@ -4,10 +4,6 @@ inputs:
   ref:
     description: "Git ref to checkout"
     required: true
-  deploy_s3:
-    description: "Whether to deploy s3 via docker compose"
-    required: false
-    default: "true"
 runs:
   using: "composite"
   steps:
@@ -34,12 +30,22 @@ runs:
         wait: 90s
         cluster_name: helm-test-cluster
 
-    - name: Pull Dev Image into KIND Cluster
+    - name: Pull Docker Images in Parallel
       shell: bash
       run: |
-        docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+        # Start both Docker pulls in parallel
+        docker pull ghcr.io/${{ github.repository }}:${{ github.sha }} &
+        DRIVER_PID=$!
+        
+        docker pull ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG} &
+        CLOUDSERVER_PID=$!
+        
+        # Wait for both pulls to complete
+        wait $DRIVER_PID || { echo "❌ Driver image pull failed"; exit 1; }
+        wait $CLOUDSERVER_PID || { echo "❌ CloudServer image pull failed"; exit 1; }
+        
+        # Load the driver image into KIND
         kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name helm-test-cluster
-      if: ${{ inputs.deploy_s3 == 'true' }}
 
     - name: Deploy Scality Storage
       shell: bash
@@ -51,8 +57,6 @@ runs:
         docker compose --profile s3 up -d --quiet-pull
         bash ../scripts/wait_for_local_port.bash 8000 30
       working-directory: .github/scality-storage-deployment
-      if: ${{ inputs.deploy_s3 == 'true' }}
 
     - name: Setup Helm
       uses: azure/setup-helm@v4.3.0
-      if: ${{ inputs.deploy_s3 == 'true' }}
