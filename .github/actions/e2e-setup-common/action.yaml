@@ -23,6 +23,7 @@ runs:
       uses: actions/setup-go@v4
       with:
         go-version-file: "tests/e2e-tests/go.mod"
+        cache: true
 
     - name: Create Kind Cluster
       uses: helm/kind-action@v1.12.0
@@ -30,26 +31,25 @@ runs:
         wait: 90s
         cluster_name: helm-test-cluster
 
-    - name: Pull Docker Images in Parallel
+    - name: Pull Cloudserver (S3) and CSI driver development image in Parallel
       shell: bash
       run: |
         # Start both Docker pulls in parallel
         docker pull ghcr.io/${{ github.repository }}:${{ github.sha }} &
         DRIVER_PID=$!
-        
+
         docker pull ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG} &
         CLOUDSERVER_PID=$!
         
         # Wait for both pulls to complete
         wait $DRIVER_PID || { echo "❌ Driver image pull failed"; exit 1; }
         wait $CLOUDSERVER_PID || { echo "❌ CloudServer image pull failed"; exit 1; }
-        
-        # Load the driver image into KIND
-        kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name helm-test-cluster
 
-    - name: Deploy Scality Storage
+
+    - name: Load CSI Driver into KIND and Deploy Cloudserver (S3)
       shell: bash
       run: |-
+        kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name helm-test-cluster
         set -e -o pipefail;
         mkdir -p logs/s3
         chown -R runner:docker logs
