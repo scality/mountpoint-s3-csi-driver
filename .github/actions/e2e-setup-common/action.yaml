@@ -28,10 +28,6 @@ runs:
       with:
         go-version-file: "tests/e2e-tests/go.mod"
 
-    - name: Install Ginkgo CLI
-      shell: bash
-      run: go install github.com/onsi/ginkgo/v2/ginkgo
-
     - name: Create Kind Cluster
       uses: helm/kind-action@v1.12.0
       with:
