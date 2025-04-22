@@ -31,6 +31,9 @@ runs:
         wait: 90s
         cluster_name: helm-test-cluster
 
+    - name: Setup Helm
+      uses: azure/setup-helm@v4.3.0
+
     - name: Pull Container Images and Download GO Dependencies in Parallel
       shell: bash
       run: |
@@ -40,11 +43,11 @@ runs:
 
         docker pull ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG} &
         CLOUDSERVER_PID=$!
-        
+
         # Start Go dependency download in parallel
         (cd tests/e2e-tests && go mod download) &
         GO_DEPS_PID=$!
-        
+
         # Wait for all operations to complete
         wait $DRIVER_PID || { echo "❌ Driver image pull failed"; exit 1; }
         wait $CLOUDSERVER_PID || { echo "❌ CloudServer image pull failed"; exit 1; }
@@ -60,6 +63,3 @@ runs:
         docker compose --profile s3 up -d --quiet-pull
         bash ../scripts/wait_for_local_port.bash 8000 30
       working-directory: .github/scality-storage-deployment
-
-    - name: Setup Helm
-      uses: azure/setup-helm@v4.3.0
