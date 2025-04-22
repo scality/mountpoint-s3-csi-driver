@@ -45,7 +45,7 @@ runs:
       shell: bash
       run: |-
         set -e -o pipefail;
-        mkdir -p logs/s3 logs/iam logs/cosi_driver data/vaultdb
+        mkdir -p logs/s3
         chown -R runner:docker logs
         chmod -R ugo+rwx data
         docker compose --profile s3 up -d --quiet-pull
