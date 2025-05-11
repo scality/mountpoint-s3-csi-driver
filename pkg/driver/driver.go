@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/healthcheck"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
@@ -58,12 +59,30 @@ type Driver struct {
 	NodeServer *node.S3NodeServer
 
 	stopCh chan struct{}
+
+	// Health checker for the S3 endpoint
+	S3HealthChecker *healthcheck.S3ConnectivityChecker
 }
 
 func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error) {
 	// Validate that AWS_ENDPOINT_URL is set
-	if os.Getenv(envprovider.EnvEndpointURL) == "" {
+	endpointURL := os.Getenv(envprovider.EnvEndpointURL)
+	if endpointURL == "" {
 		return nil, fmt.Errorf("AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function")
+	}
+
+	// Create a health checker for the S3 endpoint
+	healthChecker := healthcheck.NewS3ConnectivityChecker(endpointURL, 30*time.Second)
+
+	// Perform an initial connectivity check
+	checkCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	klog.Infof("Checking connectivity to S3 endpoint: %s", endpointURL)
+	if err := healthChecker.CheckConnectivity(checkCtx); err != nil {
+		klog.Warningf("S3 endpoint connectivity check failed: %v. Driver will continue, but you should verify your S3 endpoint configuration.", err)
+	} else {
+		klog.Infof("Successfully verified connectivity to S3 endpoint: %s", endpointURL)
 	}
 
 	config, err := rest.InClusterConfig()
@@ -116,13 +135,14 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		klog.Infoln("Using systemd mounter")
 	}
 
-	nodeServer := node.NewS3NodeServer(nodeID, mounterImpl)
+	nodeServer := node.NewS3NodeServer(nodeID, mounterImpl, healthChecker)
 
 	return &Driver{
-		Endpoint:   endpoint,
-		NodeID:     nodeID,
-		NodeServer: nodeServer,
-		stopCh:     stopCh,
+		Endpoint:        endpoint,
+		NodeID:          nodeID,
+		NodeServer:      nodeServer,
+		stopCh:          stopCh,
+		S3HealthChecker: healthChecker,
 	}, nil
 }
 
@@ -170,16 +190,26 @@ func (d *Driver) Run() error {
 	csi.RegisterControllerServer(d.Srv, d)
 	csi.RegisterNodeServer(d.Srv, d.NodeServer)
 
+	// Start periodic health checks in background
+	go d.S3HealthChecker.Start(context.Background())
+
 	klog.Infof("Listening for connections on address: %#v", listener.Addr())
 	return d.Srv.Serve(listener)
 }
 
 func (d *Driver) Stop() {
 	klog.Infof("Stopping server")
+
+	// Stop health checker
+	if d.S3HealthChecker != nil {
+		d.S3HealthChecker.Stop()
+	}
+
 	if d.stopCh != nil {
 		close(d.stopCh)
 		d.stopCh = nil
 	}
+
 	d.Srv.Stop()
 }
 
