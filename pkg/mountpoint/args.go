@@ -20,6 +20,7 @@ const (
 	ArgGid                             = "--gid"
 	ArgDirMode                         = "--dir-mode"
 	ArgFileMode                        = "--file-mode"
+	ArgProfile                         = "--profile"
 	ArgEndpointURL                     = "--endpoint-url"       // stripped – cluster‑admin controls S3 endpoints
 	ArgStorageClass                    = "--storage-class"      // stripped – driver forces bucket default (STANDARD)
 	ArgExpressOneZoneCache             = "--cache-xz"           // stripped – Express One Zone shared cache

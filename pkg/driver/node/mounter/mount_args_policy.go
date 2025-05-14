@@ -25,4 +25,9 @@ func enforceCSIDriverMountArgPolicy(args *mountpoint.Args) {
 	if _, ok := args.Remove(mountpoint.ArgStorageClass); ok {
 		klog.Warningf("--storage-class ignored: only STANDARD is supported by the CSI driver")
 	}
+
+	// The profile flag is not supported in our authentication model
+	if _, ok := args.Remove(mountpoint.ArgProfile); ok {
+		klog.Warningf("--profile ignored: AWS profile authentication is not supported")
+	}
 }

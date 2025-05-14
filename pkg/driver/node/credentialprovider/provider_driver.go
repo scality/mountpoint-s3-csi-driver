@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider/awsprofile"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 )
@@ -34,15 +33,6 @@ func (c *Provider) provideFromDriver(provideCtx ProvideContext) (envprovider.Env
 		}
 
 		env.Merge(longTermCredsEnv)
-	} else {
-		// Profile provider
-		// TODO: This is not officially supported and won't work by default with containerization.
-		configFile := os.Getenv(envprovider.EnvConfigFile)
-		sharedCredentialsFile := os.Getenv(envprovider.EnvSharedCredentialsFile)
-		if configFile != "" && sharedCredentialsFile != "" {
-			env.Set(envprovider.EnvConfigFile, configFile)
-			env.Set(envprovider.EnvSharedCredentialsFile, sharedCredentialsFile)
-		}
 	}
 
 	// STS Web Identity provider
@@ -63,11 +53,7 @@ func (c *Provider) provideFromDriver(provideCtx ProvideContext) (envprovider.Env
 
 // cleanupFromDriver removes any credential files that were created for driver-level authentication via [Provider.provideFromDriver].
 func (c *Provider) cleanupFromDriver(cleanupCtx CleanupContext) error {
-	prefix := driverLevelLongTermCredentialsProfilePrefix(cleanupCtx.PodID, cleanupCtx.VolumeID)
-	return awsprofile.Cleanup(awsprofile.Settings{
-		Basepath: cleanupCtx.WritePath,
-		Prefix:   prefix,
-	})
+	return nil
 }
 
 // provideStsWebIdentityCredentialsFromDriver provides credentials for STS Web Identity from the driver's service account.
@@ -87,36 +73,18 @@ func provideStsWebIdentityCredentialsFromDriver(provideCtx ProvideContext) (envp
 }
 
 // provideLongTermCredentialsFromDriver provides long-term AWS credentials from the driver's environment variables.
-// These variables injected to driver's Pod from a configured Kubernetes secret if configured, here it basically
-// created a AWS Profile from these credentials in [provideCtx.WritePath].
+// It directly sets the access key, secret key, and session token in the returned environment.
 func provideLongTermCredentialsFromDriver(provideCtx ProvideContext, accessKeyID, secretAccessKey, sessionToken string) (envprovider.Environment, error) {
-	prefix := driverLevelLongTermCredentialsProfilePrefix(provideCtx.PodID, provideCtx.VolumeID)
-	awsProfile, err := awsprofile.Create(awsprofile.Settings{
-		Basepath: provideCtx.WritePath,
-		Prefix:   prefix,
-		FilePerm: CredentialFilePerm,
-	}, awsprofile.Credentials{
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
-		SessionToken:    sessionToken,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("credentialprovider: long-term: failed to create aws profile: %w", err)
+	// Create an environment with the provided credentials
+	env := envprovider.Environment{
+		envprovider.EnvAccessKeyID:     accessKeyID,
+		envprovider.EnvSecretAccessKey: secretAccessKey,
 	}
 
-	profile := awsProfile.Name
-	configFile := filepath.Join(provideCtx.EnvPath, awsProfile.ConfigFilename)
-	credentialsFile := filepath.Join(provideCtx.EnvPath, awsProfile.CredentialsFilename)
+	// Add session token if provided
+	if sessionToken != "" {
+		env.Set(envprovider.EnvSessionToken, sessionToken)
+	}
 
-	return envprovider.Environment{
-		envprovider.EnvProfile:               profile,
-		envprovider.EnvConfigFile:            configFile,
-		envprovider.EnvSharedCredentialsFile: credentialsFile,
-	}, nil
-}
-
-// driverLevelLongTermCredentialsProfilePrefix generates a prefix for AWS credential profile names
-// when using driver-level authentication. The prefix includes both pod and volume IDs to ensure uniqueness.
-func driverLevelLongTermCredentialsProfilePrefix(podID, volumeID string) string {
-	return escapedVolumeIdentifier(podID, volumeID) + "-"
+	return env, nil
 }

@@ -93,10 +93,8 @@ func (c *Provider) provideFromPod(ctx context.Context, provideCtx ProvideContext
 
 		envprovider.EnvEC2MetadataDisabled: "true",
 
-		// TODO: These were needed with `systemd` but probably won't be necessary with containerization.
-		envprovider.EnvMountpointCacheKey:    cacheKey,
-		envprovider.EnvConfigFile:            filepath.Join(provideCtx.EnvPath, "disable-config"),
-		envprovider.EnvSharedCredentialsFile: filepath.Join(provideCtx.EnvPath, "disable-credentials"),
+		// Unique cache key for this pod's service account to help Mountpoint organize caches
+		envprovider.EnvMountpointCacheKey: cacheKey,
 	}, nil
 }
 

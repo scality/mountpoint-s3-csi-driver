@@ -261,9 +261,9 @@ func TestMergingEnvironments(t *testing.T) {
 		},
 		{
 			name:  "merge with overlapping keys",
-			env:   envprovider.Environment{"AWS_REGION": "us-west-1", "AWS_PROFILE": "default"},
+			env:   envprovider.Environment{"AWS_REGION": "us-west-1", "AWS_SESSION_TOKEN": "token1"},
 			other: envprovider.Environment{"AWS_REGION": "us-east-1", "AWS_DEFAULT_REGION": "us-east-2"},
-			want:  envprovider.Environment{"AWS_REGION": "us-east-1", "AWS_PROFILE": "default", "AWS_DEFAULT_REGION": "us-east-2"},
+			want:  envprovider.Environment{"AWS_REGION": "us-east-1", "AWS_SESSION_TOKEN": "token1", "AWS_DEFAULT_REGION": "us-east-2"},
 		},
 		{
 			name:  "merge with empty values",

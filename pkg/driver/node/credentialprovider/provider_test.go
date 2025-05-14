@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider/awsprofile/awsprofiletest"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/util/testutil"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/util/testutil/assert"
@@ -55,35 +54,32 @@ func TestProvidingDriverLevelCredentials(t *testing.T) {
 		credentialprovider.AuthenticationSourceUnspecified,
 	}
 
-	t.Run("only long-term credentials", func(t *testing.T) {
-		for _, authSource := range authenticationSourceVariants {
-			setEnvForLongTermCredentials(t)
+	t.Run("long-term", func(t *testing.T) {
+		setEnvForLongTermCredentials(t)
 
-			writePath := t.TempDir()
-			provideCtx := credentialprovider.ProvideContext{
-				AuthenticationSource: authSource,
-				WritePath:            writePath,
-				EnvPath:              testEnvPath,
-				PodID:                testPodID,
-				VolumeID:             testVolumeID,
-			}
-
-			env, source, err := provider.Provide(context.Background(), provideCtx)
-			assert.NoError(t, err)
-			assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
-			assert.Equals(t, envprovider.Environment{
-				"AWS_PROFILE":                 testProfilePrefix + "s3-csi",
-				"AWS_CONFIG_FILE":             "/test-env/" + testProfilePrefix + "s3-csi-config",
-				"AWS_SHARED_CREDENTIALS_FILE": "/test-env/" + testProfilePrefix + "s3-csi-credentials",
-			}, env)
-			assertLongTermCredentials(t, writePath)
+		writePath := t.TempDir()
+		provideCtx := credentialprovider.ProvideContext{
+			AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+			WritePath:            writePath,
+			EnvPath:              testEnvPath,
+			PodID:                testPodID,
+			VolumeID:             testVolumeID,
 		}
+
+		env, source, err := provider.Provide(context.Background(), provideCtx)
+		assert.NoError(t, err)
+		assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
+		assert.Equals(t, envprovider.Environment{
+			"AWS_ACCESS_KEY_ID":     testAccessKeyID,
+			"AWS_SECRET_ACCESS_KEY": testSecretAccessKey,
+			"AWS_SESSION_TOKEN":     testSessionToken,
+		}, env)
 	})
 
-	t.Run("only sts web identity credentials", func(t *testing.T) {
-		for _, authSource := range authenticationSourceVariants {
-			setEnvForStsWebIdentityCredentials(t)
+	t.Run("sts web identity", func(t *testing.T) {
+		setEnvForStsWebIdentityCredentials(t)
 
+		for _, authSource := range authenticationSourceVariants {
 			writePath := t.TempDir()
 			provideCtx := credentialprovider.ProvideContext{
 				AuthenticationSource: authSource,
@@ -104,28 +100,6 @@ func TestProvidingDriverLevelCredentials(t *testing.T) {
 		}
 	})
 
-	t.Run("only profile provider", func(t *testing.T) {
-		basepath := t.TempDir()
-		t.Setenv("AWS_CONFIG_FILE", filepath.Join(basepath, "config"))
-		t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(basepath, "credentials"))
-
-		provideCtx := credentialprovider.ProvideContext{
-			AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
-			WritePath:            t.TempDir(),
-			EnvPath:              testEnvPath,
-			PodID:                testPodID,
-			VolumeID:             testVolumeID,
-		}
-
-		env, source, err := provider.Provide(context.Background(), provideCtx)
-		assert.NoError(t, err)
-		assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
-		assert.Equals(t, envprovider.Environment{
-			"AWS_CONFIG_FILE":             filepath.Join(basepath, "config"),
-			"AWS_SHARED_CREDENTIALS_FILE": filepath.Join(basepath, "credentials"),
-		}, env)
-	})
-
 	t.Run("long-term and sts web identity credentials", func(t *testing.T) {
 		for _, authSource := range authenticationSourceVariants {
 			setEnvForLongTermCredentials(t)
@@ -144,13 +118,12 @@ func TestProvidingDriverLevelCredentials(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
 			assert.Equals(t, envprovider.Environment{
-				"AWS_PROFILE":                 testProfilePrefix + "s3-csi",
-				"AWS_CONFIG_FILE":             "/test-env/" + testProfilePrefix + "s3-csi-config",
-				"AWS_SHARED_CREDENTIALS_FILE": "/test-env/" + testProfilePrefix + "s3-csi-credentials",
+				"AWS_ACCESS_KEY_ID":           testAccessKeyID,
+				"AWS_SECRET_ACCESS_KEY":       testSecretAccessKey,
+				"AWS_SESSION_TOKEN":           testSessionToken,
 				"AWS_ROLE_ARN":                testRoleARN,
 				"AWS_WEB_IDENTITY_TOKEN_FILE": filepath.Join(testEnvPath, testDriverLevelServiceAccountToken),
 			}, env)
-			assertLongTermCredentials(t, writePath)
 			assertWebIdentityTokenFile(t, filepath.Join(writePath, testDriverLevelServiceAccountToken))
 		}
 	})
@@ -268,10 +241,6 @@ func TestProvidingPodLevelCredentials(t *testing.T) {
 
 			// Having a unique cache key for namespace/serviceaccount pair
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-
-			// Disable long-term credentials
-			"AWS_CONFIG_FILE":             "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE": "/test-env/disable-credentials",
 
 			// Disable EC2 credentials
 			"AWS_EC2_METADATA_DISABLED": "true",
@@ -424,8 +393,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "us-east-2",
 			"AWS_DEFAULT_REGION":            "us-east-2",
@@ -442,8 +409,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "eu-west-1",
 			"AWS_DEFAULT_REGION":            "eu-west-1",
@@ -460,8 +425,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "eu-north-1",
 			"AWS_DEFAULT_REGION":            "eu-north-1",
@@ -479,8 +442,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "eu-west-1",
 			"AWS_DEFAULT_REGION":            "eu-north-1",
@@ -498,8 +459,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "us-west-1",
 			"AWS_DEFAULT_REGION":            "us-west-1",
@@ -518,8 +477,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "us-west-1",
 			"AWS_DEFAULT_REGION":            "eu-north-1",
@@ -537,8 +494,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "ap-south-1",
 			"AWS_DEFAULT_REGION":            "ap-south-1",
@@ -557,8 +512,6 @@ func TestDetectingRegionToUseForPodLevelCredentials(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodLevelServiceAccountToken),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    "ap-south-1",
 			"AWS_DEFAULT_REGION":            "eu-north-1",
@@ -608,8 +561,6 @@ func TestProvidingPodLevelCredentialsForDifferentPods(t *testing.T) {
 		"AWS_ROLE_ARN":                  "arn:aws:iam::123456789012:role/Test1",
 		"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, "pod1-"+testVolumeID+".token"),
 		"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/test-sa-1",
-		"AWS_CONFIG_FILE":               "/test-env/disable-config",
-		"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 		"AWS_EC2_METADATA_DISABLED":     "true",
 		"AWS_REGION":                    testIMDSRegion,
 		"AWS_DEFAULT_REGION":            testIMDSRegion,
@@ -626,8 +577,6 @@ func TestProvidingPodLevelCredentialsForDifferentPods(t *testing.T) {
 		"AWS_ROLE_ARN":                  "arn:aws:iam::123456789012:role/Test2",
 		"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, "pod2-"+testVolumeID+".token"),
 		"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/test-sa-2",
-		"AWS_CONFIG_FILE":               "/test-env/disable-config",
-		"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 		"AWS_EC2_METADATA_DISABLED":     "true",
 		"AWS_REGION":                    testIMDSRegion,
 		"AWS_DEFAULT_REGION":            testIMDSRegion,
@@ -670,8 +619,6 @@ func TestProvidingPodLevelCredentialsWithSlashInIDs(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, testPodID+"-vol~1.token"),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    testIMDSRegion,
 			"AWS_DEFAULT_REGION":            testIMDSRegion,
@@ -693,8 +640,6 @@ func TestProvidingPodLevelCredentialsWithSlashInIDs(t *testing.T) {
 			"AWS_ROLE_ARN":                  testRoleARN,
 			"AWS_WEB_IDENTITY_TOKEN_FILE":   filepath.Join(testEnvPath, "pod~123-"+testVolumeID+".token"),
 			"UNSTABLE_MOUNTPOINT_CACHE_KEY": testPodNamespace + "/" + testPodServiceAccount,
-			"AWS_CONFIG_FILE":               "/test-env/disable-config",
-			"AWS_SHARED_CREDENTIALS_FILE":   "/test-env/disable-credentials",
 			"AWS_EC2_METADATA_DISABLED":     "true",
 			"AWS_REGION":                    testIMDSRegion,
 			"AWS_DEFAULT_REGION":            testIMDSRegion,
@@ -727,11 +672,10 @@ func TestCleanup(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
 		assert.Equals(t, envprovider.Environment{
-			"AWS_PROFILE":                 testProfilePrefix + "s3-csi",
-			"AWS_CONFIG_FILE":             "/test-env/" + testProfilePrefix + "s3-csi-config",
-			"AWS_SHARED_CREDENTIALS_FILE": "/test-env/" + testProfilePrefix + "s3-csi-credentials",
+			"AWS_ACCESS_KEY_ID":     testAccessKeyID,
+			"AWS_SECRET_ACCESS_KEY": testSecretAccessKey,
+			"AWS_SESSION_TOKEN":     testSessionToken,
 		}, env)
-		assertLongTermCredentials(t, writePath)
 
 		// Perform cleanup
 		err = provider.Cleanup(credentialprovider.CleanupContext{
@@ -823,20 +767,7 @@ func setEnvForLongTermCredentials(t *testing.T) {
 	t.Setenv("AWS_SESSION_TOKEN", testSessionToken)
 }
 
-func assertLongTermCredentials(t *testing.T, basepath string) {
-	t.Helper()
-
-	awsprofiletest.AssertCredentialsFromAWSProfile(
-		t,
-		testProfilePrefix+"s3-csi",
-		credentialprovider.CredentialFilePerm,
-		filepath.Join(basepath, testProfilePrefix+"s3-csi-config"),
-		filepath.Join(basepath, testProfilePrefix+"s3-csi-credentials"),
-		testAccessKeyID,
-		testSecretAccessKey,
-		testSessionToken,
-	)
-}
+// assertLongTermCredentials is no longer needed since we directly set credentials in environment
 
 func setEnvForStsWebIdentityCredentials(t *testing.T) {
 	t.Helper()
