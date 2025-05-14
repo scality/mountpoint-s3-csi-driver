@@ -16,6 +16,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	e2epv "k8s.io/kubernetes/test/e2e/framework/pv"
+	e2evolume "k8s.io/kubernetes/test/e2e/framework/volume"
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	admissionapi "k8s.io/pod-security-admission/api"
 	"k8s.io/utils/ptr"
@@ -356,5 +357,80 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 				CustomPodName:   "test-access-denied-" + uuid.NewString()[:8],
 			},
 		)
+	})
+
+	ginkgo.It("ignores AWS_PROFILE environment variable and succeeds with secret credentials", func(ctx context.Context) {
+		ownerS3Client := s3client.New("", bartAK, bartSK)
+		bucketName, deleteBucket := ownerS3Client.CreateBucket(ctx)
+		ginkgo.DeferCleanup(deleteBucket)
+		framework.Logf("Created bucket %s with bucket owner's credentials", bucketName)
+
+		// Create a secret with correct credentials
+		secretName, err := CreateCredentialSecret(ctx, f, "profile-test", bartAK, bartSK)
+		framework.ExpectNoError(err, "Failed to create secret with test credentials")
+
+		// Build PV/PVC that uses the secret
+		cfg := driver.PrepareTest(ctx, f)
+		volumeResource := CreateVolumeWithSecretReference(
+			ctx,
+			cfg,
+			pattern,
+			secretName,
+			f.Namespace.Name,
+			bucketName,
+		)
+
+		// Create a ConfigMap with AWS_PROFILE set to a non-existent profile
+		// This should be ignored by the driver
+		cmName := "aws-profile-test-" + uuid.NewString()[:8]
+		awsProfileEnvMap := &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cmName,
+				Namespace: f.Namespace.Name,
+			},
+			Data: map[string]string{
+				"AWS_PROFILE": "non-existent-profile-" + uuid.NewString()[:8],
+			},
+		}
+		_, err = f.ClientSet.CoreV1().ConfigMaps(f.Namespace.Name).Create(ctx, awsProfileEnvMap, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create ConfigMap with AWS_PROFILE")
+
+		// Create pod with unique name
+		podName := "test-aws-profile-" + uuid.NewString()[:8]
+		framework.Logf("Creating pod %s in namespace %s with AWS_PROFILE set", podName, f.Namespace.Name)
+
+		pod := e2epod.MakePod(f.Namespace.Name, nil, []*v1.PersistentVolumeClaim{volumeResource.Pvc}, admissionapi.LevelRestricted, "")
+		pod.Name = podName
+		podModifierNonRoot(pod)
+
+		// Add the ConfigMap with AWS_PROFILE as an environment variable to the pod
+		pod.Spec.Containers[0].EnvFrom = []v1.EnvFromSource{
+			{
+				ConfigMapRef: &v1.ConfigMapEnvSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: cmName,
+					},
+				},
+			},
+		}
+
+		// Create the pod - should succeed despite AWS_PROFILE being set
+		pod, err = f.ClientSet.CoreV1().Pods(f.Namespace.Name).Create(ctx, pod, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create pod")
+
+		// Wait for the pod to be ready
+		err = e2epod.WaitForPodRunningInNamespace(ctx, f.ClientSet, pod)
+		framework.ExpectNoError(err, "Failed waiting for pod to be running")
+
+		// Test we can write a file to verify the mount works
+		volPath := "/mnt/volume1"
+		testFile := fmt.Sprintf("%s/test-aws-profile.txt", volPath)
+		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("echo 'test content' > %s", testFile))
+		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("cat %s | grep 'test content'", testFile))
+
+		framework.Logf("Successfully mounted and accessed volume despite AWS_PROFILE being set to a non-existent profile")
+
+		// Clean up the pod
+		e2epod.DeletePodWithWait(ctx, f.ClientSet, pod)
 	})
 }
