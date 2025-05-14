@@ -21,26 +21,26 @@
 
 | Phase | Task | Description | Status | Depends On | Commit Message |
 |-------|------|-------------|--------|------------|----------------|
-| 1     | 1    | Remove AWS_PROFILE environment variable | ⬜ To Do |            | s3csi-34: Remove AWS_PROFILE support from envprovider<br><br>Remove EnvProfile constant and update affected tests. This is part of the effort to remove AWS profile support from the driver. |
-| 1     | 1.1  | Remove EnvProfile constant from pkg/driver/node/envprovider/provider.go | ⬜ To Do | 1          | |
-| 1     | 1.2  | Update tests in pkg/driver/node/envprovider/provider_test.go | ⬜ To Do | 1.1        | |
-| 1     | 2    | Remove AWS Profile provider functionality | ⬜ To Do |            | s3csi-34: Remove profile provider from credentialprovider<br><br>Remove AWS profile provider section from provider_driver.go and update related tests to eliminate AWS_PROFILE credential method. |
-| 1     | 2.1  | Remove profile provider section from pkg/driver/node/credentialprovider/provider_driver.go | ⬜ To Do | 1          | |
-| 1     | 2.2  | Update tests in pkg/driver/node/credentialprovider/provider_test.go | ⬜ To Do | 2.1        | |
-| 2     | 3    | Remove AWS profile package | ⬜ To Do | 2          | s3csi-34: Remove awsprofile package and references<br><br>Delete the awsprofile directory and clean up imports across the codebase to remove all traces of AWS profile functionality. |
-| 2     | 3.1  | Remove entire pkg/driver/node/credentialprovider/awsprofile directory and its tests | ⬜ To Do | 2.2        | |
-| 2     | 3.2  | Clean up imports and references to the awsprofile package | ⬜ To Do | 3.1        | |
-| 3     | 4    | Remove AWS Config File references | ⬜ To Do | 3         | s3csi-34: Remove AWS config file support<br><br>Remove AWS_CONFIG_FILE and AWS_SHARED_CREDENTIALS_FILE constants and update related code to remove shared credentials files support. |
-| 3     | 4.1  | Remove EnvConfigFile and EnvSharedCredentialsFile constants from pkg/driver/node/envprovider/provider.go | ⬜ To Do | 3        | |
-| 3     | 4.2  | Update all code references to these constants | ⬜ To Do | 4.1      | |
-| 3     | 5    | Block --profile flag in mount options | ⬜ To Do | 4          | s3csi-34: Block --profile flag in mount options<br><br>Add ArgProfile constant and modify mount_args_policy to strip the --profile flag from mount arguments. |
-| 3     | 5.1  | Add ArgProfile constant to pkg/mountpoint/args.go | ⬜ To Do | 4.2        | |
-| 3     | 5.2  | Update pkg/driver/node/mounter/mount_args_policy.go to strip --profile flag | ⬜ To Do | 5.1        | |
+| 1     | 1    | Remove AWS_PROFILE environment variable | ✅ Done |            | s3csi-34: Remove AWS_PROFILE support from envprovider<br><br>Remove EnvProfile constant and update affected tests. This is part of the effort to remove AWS profile support from the driver. |
+| 1     | 1.1  | Remove EnvProfile constant from pkg/driver/node/envprovider/provider.go | ✅ Done | 1          | |
+| 1     | 1.2  | Update tests in pkg/driver/node/envprovider/provider_test.go | ✅ Done | 1.1        | |
+| 1     | 2    | Remove AWS Profile provider functionality | ✅ Done |            | s3csi-34: Remove profile provider from credentialprovider<br><br>Remove AWS profile provider section from provider_driver.go and update related tests to eliminate AWS_PROFILE credential method. |
+| 1     | 2.1  | Remove profile provider section from pkg/driver/node/credentialprovider/provider_driver.go | ✅ Done | 1          | |
+| 1     | 2.2  | Update tests in pkg/driver/node/credentialprovider/provider_test.go | ✅ Done | 2.1        | |
+| 2     | 3    | Remove AWS profile package | ✅ Done | 2          | s3csi-34: Remove awsprofile package and references<br><br>Delete the awsprofile directory and clean up imports across the codebase to remove all traces of AWS profile functionality. |
+| 2     | 3.1  | Remove entire pkg/driver/node/credentialprovider/awsprofile directory and its tests | ✅ Done | 2.2        | |
+| 2     | 3.2  | Clean up imports and references to the awsprofile package | ✅ Done | 3.1        | |
+| 3     | 4    | Remove AWS Config File references | ✅ Done | 3         | s3csi-34: Remove AWS config file support<br><br>Remove AWS_CONFIG_FILE and AWS_SHARED_CREDENTIALS_FILE constants and update related code to remove shared credentials files support. |
+| 3     | 4.1  | Remove EnvConfigFile and EnvSharedCredentialsFile constants from pkg/driver/node/envprovider/provider.go | ✅ Done | 3        | |
+| 3     | 4.2  | Update all code references to these constants | ✅ Done | 4.1      | |
+| 3     | 5    | Block --profile flag in mount options | ✅ Done | 4          | s3csi-34: Block --profile flag in mount options<br><br>Add ArgProfile constant and modify mount_args_policy to strip the --profile flag from mount arguments. |
+| 3     | 5.1  | Add ArgProfile constant to pkg/mountpoint/args.go | ✅ Done | 4.2        | |
+| 3     | 5.2  | Update pkg/driver/node/mounter/mount_args_policy.go to strip --profile flag | ✅ Done | 5.1        | |
 | 4     | 6    | Add e2e tests for profile removal | ⬜ To Do | 5          | s3csi-34: Add e2e tests for profile flag stripping<br><br>Add tests to verify --profile mount option is properly stripped and AWS_PROFILE environment variable is not used. |
 | 4     | 6.1  | Add test in tests/e2e/customsuites/mountoptions.go to verify --profile is stripped | ⬜ To Do | 5.2        | |
 | 4     | 6.2  | Add test to verify AWS_PROFILE env var is no longer used | ⬜ To Do | 6.1        | |
 | 5     | 7    | Final validation | ⬜ To Do | 6          | s3csi-34: Perform final validation of AWS_PROFILE removal<br><br>Execute all tests and verify that all authentication methods work properly without AWS_PROFILE support. |
-| 5     | 7.1  | Run all tests to ensure changes work correctly | ⬜ To Do | 6.2        | |
+| 5     | 7.1  | Run all tests to ensure changes work correctly | 🟡 In Progress | 6.2        | Unit tests pass, e2e tests pending |
 | 5     | 7.2  | Manual verification of authentication methods without AWS_PROFILE | ⬜ To Do | 7.1        | |
 
 ## Technical Details
