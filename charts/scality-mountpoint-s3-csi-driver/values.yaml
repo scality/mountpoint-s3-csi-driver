@@ -47,8 +47,9 @@ node:
                   - hybrid
   podInfoOnMountCompat:
     enable: false
-  # AWS S3 endpoint URL to use for all volume mounts (takes precedence over PV-level endpoint-url settings)
-  s3EndpointUrl: ""
+  # S3 endpoint URL to use for all volume mounts
+  # This is a sample value, replace with your own endpoint
+  s3EndpointUrl: "http://s3.example.com:8000"
 
 sidecars:
   nodeDriverRegistrar:
