@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://scality.github.io/mountpoint-s3-csi-driver/</loc>
+         <lastmod>2025-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://scality.github.io/mountpoint-s3-csi-driver/CONFIGURATION/</loc>
+         <lastmod>2025-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://scality.github.io/mountpoint-s3-csi-driver/LOGGING/</loc>
+         <lastmod>2025-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://scality.github.io/mountpoint-s3-csi-driver/install/</loc>
+         <lastmod>2025-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://scality.github.io/mountpoint-s3-csi-driver/scality/</loc>
+         <lastmod>2025-05-20</lastmod>
+    </url>
+    <url>
+         <loc>https://scality.github.io/mountpoint-s3-csi-driver/scality/CHEATSHEET/</loc>
+         <lastmod>2025-05-20</lastmod>
+    </url>
+</urlset>
