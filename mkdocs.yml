@@ -43,3 +43,5 @@ markdown_extensions:
 
 nav:
   - Home: README.md
+  - 'Getting Started':
+    - 'Quick Start Guide': quick-start.md
