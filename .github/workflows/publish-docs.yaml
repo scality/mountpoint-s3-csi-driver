@@ -3,7 +3,7 @@ name: Publish Documentation
 on:
   push:
     branches:
-      - main
+      - documentation/S3CSI-59-delete-obselete-files-add-and-init-documentation
   workflow_dispatch:
 
 permissions:
