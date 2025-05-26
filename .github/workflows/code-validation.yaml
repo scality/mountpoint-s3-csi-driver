@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [precommit, lint, unit-test, csi-compliance-test, controller-integration-test, validate-helm, precommit]
+        test: [precommit, lint, unit-test, csi-compliance-test, controller-integration-test, validate-helm]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
       run: |
         go install golang.org/x/tools/cmd/goimports@latest
         go install mvdan.cc/gofumpt@latest
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint
+        go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 
     - name: Run ${{ matrix.test }}
       run: make ${{ matrix.test }}
