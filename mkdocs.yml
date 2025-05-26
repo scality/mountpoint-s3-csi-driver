@@ -15,16 +15,17 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.tabs
-    - navigation.tabs.sticky
     - search.suggest
+    - search.highlight
+    - content.code.copy
+
+extra_css:
+  - assets/css/custom.css
 
 plugins:
   - search
   - mermaid2
   - awesome-pages
-  - enumerate-headings:
-      toc_depth: 3
 
 markdown_extensions:
   - admonition
@@ -35,6 +36,9 @@ markdown_extensions:
   - meta
   - toc:
       toc_depth: 3
+  - pymdownx.highlight:
+      linenums: true
+      pygments_style: monokai
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
