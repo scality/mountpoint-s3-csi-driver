@@ -658,3 +658,69 @@
     background-color: #F8F7F6 !important;
     color: #333333 !important;
 }
+
+/* ========================================================================
+   CONTENT WIDTH AND LAYOUT ADJUSTMENTS
+   ======================================================================== */
+
+/* Remove max-width constraints and use full available width */
+.md-content {
+    max-width: none !important;
+}
+
+.md-content__inner {
+    max-width: none !important;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Add spacing between header and main content */
+.md-main {
+    padding-top: 1rem;
+}
+
+/* Adjust main grid to use more screen space */
+.md-grid {
+    max-width: none !important;
+    margin: 0 auto;
+}
+
+/* Wider content area with minimal side margins */
+.md-main__inner {
+    max-width: none !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Adjust sidebar and content spacing */
+.md-sidebar {
+    padding: 0;
+}
+
+/* Ensure content uses available space when sidebar is present */
+.md-content__inner:not(:last-child) {
+    margin-right: 0;
+}
+
+/* Optional: If you want to set a reasonable max-width for readability */
+/* Uncomment and adjust the value as needed */
+/*
+.md-content__inner {
+    max-width: 1400px !important;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+*/
+
+/* Responsive adjustments for smaller screens */
+@media screen and (max-width: 76.1875em) {
+    .md-content__inner {
+        padding: 0 1rem;
+    }
+}
+
+@media screen and (max-width: 44.9375em) {
+    .md-content__inner {
+        padding: 0 0.8rem;
+    }
+}
