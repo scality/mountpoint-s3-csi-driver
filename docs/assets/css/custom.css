@@ -729,3 +729,31 @@
         padding: 0 0.8rem;
     }
 }
+
+/* ========================================================================
+   STICKY SIDEBAR POSITIONING
+   ======================================================================== */
+
+/* Keep left sidebar (navigation) sticky at top */
+.md-sidebar--primary {
+    position: sticky !important;
+    top: 4rem !important; /* Adjust based on header height */
+    height: calc(100vh - 4rem) !important;
+    overflow-y: auto !important;
+}
+
+/* Keep right sidebar (table of contents) sticky at top */
+.md-sidebar--secondary {
+    position: sticky !important;
+    top: 4rem !important; /* Adjust based on header height */
+    height: calc(100vh - 4rem) !important;
+    overflow-y: auto !important;
+}
+
+/* Ensure sidebars don't move when scrolling */
+@media screen and (min-width: 60em) {
+    .md-sidebar {
+        position: sticky !important;
+        top: 4rem !important;
+    }
+}
