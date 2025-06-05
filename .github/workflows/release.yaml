@@ -68,6 +68,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Download Helm Chart Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-chart
+          path: ./release-assets
+
+      - name: Generate checksums
+        run: |
+          cd ./release-assets
+          sha256sum scality-mountpoint-s3-csi-driver-${{ inputs.tag }}.tgz > scality-mountpoint-s3-csi-driver-${{ inputs.tag }}.tgz.sha256
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
@@ -77,8 +88,18 @@ jobs:
           tag_name: ${{ inputs.tag }}
           name: Release ${{ inputs.tag }}
           generate_release_notes: true
+          files: |
+            ./release-assets/scality-mountpoint-s3-csi-driver-${{ inputs.tag }}.tgz
+            ./release-assets/scality-mountpoint-s3-csi-driver-${{ inputs.tag }}.tgz.sha256
           body: |
-            Mountpoint for Scality S3 CSI Driver
+            ## Scality S3 CSI Driver
 
-            ## CHANGELOG
-            See [CHANGELOG](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/CHANGELOG.md) for full list of changes
+            📚 **Documentation**: https://scality.github.io/mountpoint-s3-csi-driver/
+
+            ### 📦 Release Assets
+            - **Helm Chart**: `scality-mountpoint-s3-csi-driver-${{ inputs.tag }}.tgz` (attached below)
+            - **Docker Image**: `ghcr.io/scality/mountpoint-s3-csi-driver:${{ inputs.tag }}` (multi-arch: linux/amd64, linux/arm64)
+            - **Helm OCI**: `oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver:${{ inputs.tag }}`
+
+            ### 🔍 What's Changed
+            <!-- GitHub will auto-populate this section with commits and PRs -->
