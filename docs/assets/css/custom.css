@@ -26,6 +26,11 @@
     font-weight: bold;
 }
 
+/* Reduce spacing under H1 headings */
+.md-typeset h1 {
+    margin-bottom: 0em;
+}
+
 /* Underline all content links for better visibility */
 .md-typeset a {
     text-decoration: underline;
