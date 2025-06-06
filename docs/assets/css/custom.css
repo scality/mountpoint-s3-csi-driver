@@ -731,6 +731,58 @@
 }
 
 /* ========================================================================
+   TABLE STYLING IMPROVEMENTS
+   ======================================================================== */
+
+/* Improve table column widths for better readability */
+.md-typeset table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* Give first column more space for mount options */
+.md-typeset table th:first-child,
+.md-typeset table td:first-child {
+    width: 25% !important;
+    min-width: 200px;
+    word-wrap: break-word;
+}
+
+/* Adjust other columns proportionally */
+.md-typeset table th:nth-child(2),
+.md-typeset table td:nth-child(2) {
+    width: 40% !important;
+}
+
+.md-typeset table th:nth-child(3),
+.md-typeset table td:nth-child(3) {
+    width: 20% !important;
+}
+
+.md-typeset table th:nth-child(4),
+.md-typeset table td:nth-child(4) {
+    width: 15% !important;
+}
+
+/* Ensure table cells wrap content properly */
+.md-typeset table td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Make tables horizontally scrollable on small screens */
+.md-typeset__scrollwrap {
+    overflow-x: auto;
+}
+
+/* Improve code formatting in table cells */
+.md-typeset table code {
+    white-space: nowrap;
+    font-size: 0.85em;
+}
+
+/* ========================================================================
    STICKY SIDEBAR POSITIONING
    ======================================================================== */
 
