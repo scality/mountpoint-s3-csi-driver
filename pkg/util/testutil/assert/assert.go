@@ -6,12 +6,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 // Equals fails the test if `want` and `got` are not equal.
 func Equals(t *testing.T, want any, got any) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.EquateErrors()); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.EquateErrors(), protocmp.Transform()); diff != "" {
 		t.Errorf("Assertion failure (-want +got):\n%s", diff)
 	}
 }
