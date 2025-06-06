@@ -49,7 +49,7 @@ ARG TARGETARCH
 WORKDIR /go/src/github.com/scality/mountpoint-s3-csi-driver
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg/mod \
-    TARGETARCH=${TARGETARCH} make bin
+    TARGETARCH=${TARGETARCH} make generate-licenses bin
 
 # `eks-distro-minimal-base-csi` includes `libfuse` and mount utils such as `umount`.
 # We need to make sure to use same Amazon Linux version here and while producing Mountpoint to not have glibc compatibility issues.
@@ -57,6 +57,10 @@ FROM public.ecr.aws/eks-distro-build-tooling/eks-distro-minimal-base-csi:2025-04
 ARG MOUNTPOINT_VERSION
 ENV MOUNTPOINT_VERSION=${MOUNTPOINT_VERSION}
 ENV MOUNTPOINT_BIN_DIR=/mountpoint-s3/bin
+
+# Copy license files and attribution notices first (they change less frequently)
+COPY --from=builder /go/src/github.com/scality/mountpoint-s3-csi-driver/LICENSES /LICENSES
+COPY --from=builder /go/src/github.com/scality/mountpoint-s3-csi-driver/NOTICE /NOTICE
 
 # Copy Mountpoint binary
 COPY --from=mp_builder /mountpoint-s3 /mountpoint-s3

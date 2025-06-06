@@ -17,6 +17,10 @@ SHELL = /bin/bash
 # MP CSI Driver version
 VERSION=0.6.0
 
+# List of allowed licenses in the CSI Driver's dependencies.
+# See https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L28 for list of canonical names for licenses.
+ALLOWED_LICENSES="Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT"
+
 PKG=github.com/scality/mountpoint-s3-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
 BUILD_DATE?=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -113,6 +117,30 @@ precommit:
 .PHONY: clean
 clean:
 	rm -rf bin/ && docker system prune
+
+################################################################
+# License checking and generation
+################################################################
+
+# Download Go tools and dependencies (required for CI)
+.PHONY: download-tools
+download-tools:
+	@echo "Downloading Go tools and dependencies..."
+	go mod download
+
+# Check that all dependencies use allowed licenses
+.PHONY: check-licenses
+check-licenses:
+	@echo "Checking licenses for all dependencies..."
+	go tool go-licenses check --allowed_licenses ${ALLOWED_LICENSES} ./...
+
+# Generate license files for all dependencies
+.PHONY: generate-licenses
+generate-licenses: download-tools
+	@echo "Generating license files..."
+	@rm -rf LICENSES/
+	@mkdir -p LICENSES/
+	go tool go-licenses save --save_path="./LICENSES" --force ./...
 
 ## Binaries used in tests.
 
