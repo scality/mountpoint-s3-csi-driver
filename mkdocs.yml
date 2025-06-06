@@ -99,5 +99,6 @@ nav:
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Administrator and User Guide: admin-user-guide.md
+      - Auditing: auditing.md
   - Reference:
       - Minimal Helm Example: examples/minimal-helm.yaml
