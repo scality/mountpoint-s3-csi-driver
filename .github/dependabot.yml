@@ -4,9 +4,111 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     commit-message:
       prefix: "pip"
-      include: scope
+      include: "scope"
     labels:
       - "dependencies"
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "gomod"
+      include: "scope"
+    labels:
+      - "gomod"
+      - "dependencies"
+    ignore:
+      - dependency-name: "github.com/aws/*"
+        update-types:
+          - "version-update:semver-minor"
+    groups:
+      kubernetes:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+      testing:
+        patterns:
+          - "github.com/onsi/*"
+          - "github.com/golang/mock"
+          - "*test*"
+      grpc-protobuf:
+        patterns:
+          - "google.golang.org/grpc"
+          - "google.golang.org/protobuf"
+          - "google.golang.org/genproto*"
+      go-core:
+        patterns:
+          - "golang.org/x/*"
+          - "github.com/google/*"
+        exclude-patterns:
+          - "github.com/aws/*"
+      aws-sdk:
+        patterns:
+          - "github.com/aws/*"
+
+  - package-ecosystem: "gomod"
+    directory: "/tests/e2e"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "gomod"
+      include: "scope"
+    labels:
+      - "gomod"
+      - "dependencies"
+      - "e2e"
+    ignore:
+      - dependency-name: "github.com/aws/*"
+        update-types:
+          - "version-update:semver-minor"
+    groups:
+      kubernetes-e2e:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+      testing-e2e:
+        patterns:
+          - "github.com/onsi/*"
+          - "*test*"
+      aws-sdk-e2e:
+        patterns:
+          - "github.com/aws/*"
+      go-core-e2e:
+        patterns:
+          - "golang.org/x/*"
+          - "github.com/google/*"
+        exclude-patterns:
+          - "github.com/aws/*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "github-actions"
+      include: "scope"
+    labels:
+      - "github-actions"
+      - "dependencies"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
