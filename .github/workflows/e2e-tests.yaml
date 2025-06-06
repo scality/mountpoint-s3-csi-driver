@@ -1,9 +1,18 @@
-name: E2E Tests
+name: E2E Integration Tests with RING S3
 
 on:
   push:
     branches:
+      - main
+  pull_request:
+    branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'mkdocs.yml'
+      - 'requirements.txt'  # MkDocs requirements
+      - 'NOTICE'
 
 env:
   KUBECONFIG: "/home/runner/.kube/config"
@@ -22,7 +31,7 @@ jobs:
       tag: ${{ github.sha }}
 
   e2e-tests:
-    name: E2E tests with RING S3 v${{ matrix.ring_version }}
+    name: v${{ matrix.ring_version }}
     runs-on: ubuntu-22.04-8core
     needs: dev-image
     strategy:
