@@ -1,6 +1,9 @@
 name: E2E Integration Tests with RING S3
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - '**'
