@@ -15,7 +15,7 @@
 SHELL = /bin/bash
 
 # MP CSI Driver version
-VERSION=1.13.0
+VERSION=0.6.0
 
 PKG=github.com/scality/mountpoint-s3-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
