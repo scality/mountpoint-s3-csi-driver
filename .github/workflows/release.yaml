@@ -78,7 +78,9 @@ jobs:
           name: Release ${{ inputs.tag }}
           generate_release_notes: true
           body: |
-            Mountpoint for Scality S3 CSI Driver
+            ## Scality S3 CSI Driver
 
-            ## CHANGELOG
-            See [CHANGELOG](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/CHANGELOG.md) for full list of changes
+            📚 **Documentation**: https://scality.github.io/mountpoint-s3-csi-driver/
+
+            ### 🔍 What's Changed
+            <!-- GitHub will auto-populate this section with commits and PRs -->
