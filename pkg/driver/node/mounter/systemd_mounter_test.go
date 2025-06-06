@@ -354,7 +354,7 @@ func TestS3MounterMount(t *testing.T) {
 			bucketName: testBucketName,
 			targetPath: testTargetPath,
 			provideCtx: credentialprovider.ProvideContext{},
-			options:    []string{"--cache-xz", "--incremental-upload", "--storage-class=STANDARD"},
+			options:    []string{"--cache-xz", "--incremental-upload", "--storage-class=STANDARD", "-o"},
 			before: func(t *testing.T, env *mounterTestEnv) {
 				env.mockRunner.EXPECT().StartService(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, config *system.ExecConfig) (string, error) {
 					// Verify none of the policy-disallowed options are in the command-line arguments
@@ -362,7 +362,8 @@ func TestS3MounterMount(t *testing.T) {
 						if strings.Contains(arg, "--cache-xz") ||
 							strings.Contains(arg, "--incremental-upload") ||
 							strings.Contains(arg, "--storage-class") ||
-							strings.Contains(arg, "--profile") {
+							strings.Contains(arg, "--profile") ||
+							strings.Contains(arg, "-o") {
 							t.Fatal("policy-disallowed options should be removed from mount options")
 						}
 					}

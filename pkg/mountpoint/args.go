@@ -25,6 +25,7 @@ const (
 	ArgStorageClass                    = "--storage-class"      // stripped – driver forces bucket default (STANDARD)
 	ArgExpressOneZoneCache             = "--cache-xz"           // stripped – Express One Zone shared cache
 	ArgExpressOneZoneIncrementalUpload = "--incremental-upload" // stripped – Express One Zone incremental upload
+	ArgFsTab                           = "-o"                   // stripped – driver does not support fs-tab
 )
 
 // An ArgKey represents the key of an argument.
