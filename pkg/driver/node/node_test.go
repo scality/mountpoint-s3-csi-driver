@@ -14,7 +14,6 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/mounter"
 	mock_driver "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/mounter/mocks"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/volumecontext"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
 )
 
@@ -567,46 +566,6 @@ func TestNodeGetCapabilitiesForPodMounter(t *testing.T) {
 	}, resp.GetCapabilities())
 
 	nodeTestEnv.mockCtl.Finish()
-}
-
-func TestLogSafeNodePublishVolumeRequest(t *testing.T) {
-	tests := []struct {
-		name               string
-		publishReq         *csi.NodePublishVolumeRequest
-		expectedPublishReq *csi.NodePublishVolumeRequest
-	}{
-		{
-			name: "redacts access key and removes tokens",
-			publishReq: &csi.NodePublishVolumeRequest{
-				VolumeId: "test-volume-id",
-				Secrets: map[string]string{
-					"access_key_id":     "AKIAXXXXXXXXXXXXXXXX",
-					"secret_access_key": "SECRET-VALUE-TO-REDACT",
-				},
-				VolumeContext: map[string]string{
-					"bucketName":                          "my-bucket",
-					volumecontext.CSIServiceAccountTokens: "sensitive-token-value",
-				},
-			},
-			expectedPublishReq: &csi.NodePublishVolumeRequest{
-				VolumeId: "test-volume-id",
-				Secrets: map[string]string{
-					"access_key_id":     "AKIAXXXXXXXXXXXXXXXX",
-					"secret_access_key": "[REDACTED]",
-				},
-				VolumeContext: map[string]string{
-					"bucketName": "my-bucket",
-				},
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			safeReq := node.LogSafeNodePublishVolumeRequestForTest(tc.publishReq)
-			assert.Equals(t, tc.expectedPublishReq, safeReq)
-		})
-	}
 }
 
 var _ mounter.Mounter = &dummyMounter{}

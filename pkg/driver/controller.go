@@ -20,18 +20,19 @@ import (
 	"context"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 )
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	klog.V(4).Infof("CreateVolume: called with args %#v", req)
+	klog.V(4).Infof("CreateVolume: called with args %s", protosanitizer.StripSecrets(req))
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	klog.V(4).Infof("DeleteVolume: called with args: %#v", req)
+	klog.V(4).Infof("DeleteVolume: called with args: %s", protosanitizer.StripSecrets(req))
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
@@ -44,7 +45,7 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 }
 
 func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
-	klog.V(4).Infof("ControllerGetCapabilities: called with args %#v", req)
+	klog.V(4).Infof("ControllerGetCapabilities: called with args %s", protosanitizer.StripSecrets(req))
 	caps := []csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_UNKNOWN, // not required, but our testing framework expects some controller capabilities to be returned: https://github.com/kubernetes-csi/csi-test/blob/v2.0.1/pkg/sanity/controller.go#L71
 	}
@@ -63,17 +64,17 @@ func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.Control
 }
 
 func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-	klog.V(4).Infof("GetCapacity: called with args %#v", req)
+	klog.V(4).Infof("GetCapacity: called with args %s", protosanitizer.StripSecrets(req))
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
 func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
-	klog.V(4).Infof("ListVolumes: called with args %#v", req)
+	klog.V(4).Infof("ListVolumes: called with args %s", protosanitizer.StripSecrets(req))
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
-	klog.V(4).Infof("ValidateVolumeCapabilities: called with args %#v", req)
+	klog.V(4).Infof("ValidateVolumeCapabilities: called with args %s", protosanitizer.StripSecrets(req))
 	return &csi.ValidateVolumeCapabilitiesResponse{}, nil
 }
 

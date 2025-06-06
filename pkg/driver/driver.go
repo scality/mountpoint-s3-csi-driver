@@ -58,6 +58,10 @@ type Driver struct {
 	NodeServer *node.S3NodeServer
 
 	stopCh chan struct{}
+
+	// Embed the unimplemented servers to satisfy the interface
+	csi.UnimplementedIdentityServer
+	csi.UnimplementedControllerServer
 }
 
 func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error) {

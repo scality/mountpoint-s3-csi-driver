@@ -18,11 +18,11 @@ package node
 
 import (
 	"context"
-	"maps"
 	"os"
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
@@ -45,7 +45,7 @@ var (
 	}
 )
 
-var volumeCaps = []csi.VolumeCapability_AccessMode{
+var volumeCaps = []*csi.VolumeCapability_AccessMode{
 	{
 		Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 	},
@@ -63,6 +63,9 @@ const (
 type S3NodeServer struct {
 	NodeID  string
 	Mounter mounter.Mounter
+
+	// Embed the unimplemented server to satisfy the interface
+	csi.UnimplementedNodeServer
 }
 
 func NewS3NodeServer(nodeID string, mounter mounter.Mounter) *S3NodeServer {
@@ -78,7 +81,7 @@ func (ns *S3NodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnst
 }
 
 func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
-	klog.V(4).Infof("NodePublishVolume: new request: %+v", logSafeNodePublishVolumeRequest(req))
+	klog.V(4).Infof("NodePublishVolume: new request: %s", protosanitizer.StripSecrets(req))
 
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
@@ -152,7 +155,7 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 }
 
 func (ns *S3NodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
-	klog.V(4).Infof("NodeUnpublishVolume: called with args %+v", req)
+	klog.V(4).Infof("NodeUnpublishVolume: called with args %s", protosanitizer.StripSecrets(req))
 
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
@@ -199,7 +202,7 @@ func (ns *S3NodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpan
 }
 
 func (ns *S3NodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
-	klog.V(4).Infof("NodeGetCapabilities: called with args %+v", req)
+	klog.V(4).Infof("NodeGetCapabilities: called with args %s", protosanitizer.StripSecrets(req))
 	var caps []*csi.NodeServiceCapability
 	var nodeCaps []csi.NodeServiceCapability_RPC_Type
 	if util.UsePodMounter() {
@@ -221,7 +224,7 @@ func (ns *S3NodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGe
 }
 
 func (ns *S3NodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
-	klog.V(4).Infof("NodeGetInfo: called with args %+v", req)
+	klog.V(4).Infof("NodeGetInfo: called with args %s", protosanitizer.StripSecrets(req))
 
 	return &csi.NodeGetInfoResponse{
 		NodeId: ns.NodeID,
@@ -282,38 +285,4 @@ func podIDFromTargetPath(target string) (string, bool) {
 		return "", false
 	}
 	return targetPath.PodID, true
-}
-
-// logSafeNodePublishVolumeRequest returns a copy of given `csi.NodePublishVolumeRequest`
-// with sensitive fields removed.
-func logSafeNodePublishVolumeRequest(req *csi.NodePublishVolumeRequest) *csi.NodePublishVolumeRequest {
-	safeVolumeContext := maps.Clone(req.VolumeContext)
-	delete(safeVolumeContext, volumecontext.CSIServiceAccountTokens)
-
-	// Create a copy of credential with sensitive values redacted
-	redactedCredential := make(map[string]string)
-	for k, v := range req.Secrets {
-		if k == "secret_access_key" {
-			// Redact the secret access key
-			redactedCredential[k] = "[REDACTED]"
-		} else {
-			redactedCredential[k] = v
-		}
-	}
-
-	return &csi.NodePublishVolumeRequest{
-		VolumeId:          req.VolumeId,
-		PublishContext:    req.PublishContext,
-		StagingTargetPath: req.StagingTargetPath,
-		TargetPath:        req.TargetPath,
-		VolumeCapability:  req.VolumeCapability,
-		Readonly:          req.Readonly,
-		VolumeContext:     safeVolumeContext,
-		Secrets:           redactedCredential,
-	}
-}
-
-// LogSafeNodePublishVolumeRequestForTest exports logSafeNodePublishVolumeRequest for testing
-func LogSafeNodePublishVolumeRequestForTest(req *csi.NodePublishVolumeRequest) *csi.NodePublishVolumeRequest {
-	return logSafeNodePublishVolumeRequest(req)
 }
