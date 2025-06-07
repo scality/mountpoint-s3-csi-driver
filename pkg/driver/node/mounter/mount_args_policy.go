@@ -30,4 +30,9 @@ func enforceCSIDriverMountArgPolicy(args *mountpoint.Args) {
 	if _, ok := args.Remove(mountpoint.ArgStorageClass); ok {
 		klog.Warningf("--storage-class ignored: only STANDARD is supported by the CSI driver")
 	}
+
+	// This driver does not support fs-tab
+	if _, ok := args.Remove(mountpoint.ArgFsTab); ok {
+		klog.Warningf("-o ignored: driver does not support fs-tab")
+	}
 }

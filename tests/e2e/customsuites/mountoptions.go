@@ -246,6 +246,10 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 			)
 		})
 
+		ginkgo.It("strips -o flag", func(ctx context.Context) {
+			validateStrippedOption(ctx, "-o", "fs-tab")
+		})
+
 		ginkgo.It("strips all unsupported volume level mount flags when they arrive together", func(ctx context.Context) {
 			ginkgo.By("PVC with every disallowed flag at once")
 

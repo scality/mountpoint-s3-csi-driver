@@ -552,6 +552,11 @@ func TestPodMounter(t *testing.T) {
 					argToStrip:  "--profile=my-aws-profile",
 					description: "AWS profile credentials",
 				},
+				{
+					name:        "fs-tab",
+					argToStrip:  "-o",
+					description: "fs-tab",
+				},
 			}
 
 			for _, tc := range testCases {
@@ -595,7 +600,12 @@ func TestPodMounter(t *testing.T) {
 
 					// Verify the disallowed flag is not in the args list
 					for _, arg := range got.Args {
-						if strings.Contains(arg, tc.argToStrip) {
+						// For fs-tab (-o), check for exact match to avoid false positives with --read-only
+						if tc.name == "fs-tab" {
+							if arg == tc.argToStrip {
+								t.Fatalf("Expected %s to be removed from args, but found: %s", tc.argToStrip, arg)
+							}
+						} else if strings.Contains(arg, tc.argToStrip) {
 							t.Fatalf("Expected %s to be removed from args, but found: %s", tc.argToStrip, arg)
 						}
 					}
@@ -621,6 +631,7 @@ func TestPodMounter(t *testing.T) {
 				"--incremental-upload",
 				"--storage-class=STANDARD",
 				"--profile=my-aws-profile",
+				"-o",
 			})
 
 			mountRes := make(chan error)
@@ -649,7 +660,8 @@ func TestPodMounter(t *testing.T) {
 				if strings.Contains(arg, "--cache-xz") ||
 					strings.Contains(arg, "--incremental-upload") ||
 					strings.Contains(arg, "--storage-class") ||
-					strings.Contains(arg, "--profile") {
+					strings.Contains(arg, "--profile") ||
+					arg == "-o" {
 					t.Fatalf("Expected policy-disallowed options to be removed from args, but found: %s", arg)
 				}
 			}
