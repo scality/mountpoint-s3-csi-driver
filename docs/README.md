@@ -1,10 +1,13 @@
-# Welcome to the Scality S3 CSI Driver Documentation
+# Scality Container Storage Interface S3 Driver Documentation
 
 The Scality S3 Container Storage Interface (CSI) Driver allows Kubernetes applications to access Scality S3 objects through a file system interface.
-This driver is a fork of the [Mountpoint for Amazon S3 CSI Driver](https://github.com/awslabs/mountpoint-s3-csi-driver) and has been adapted for use with Scality S3-compatible storage solutions.
+This driver is a fork of the [Mountpoint for Amazon S3 CSI Driver](https://github.com/awslabs/mountpoint-s3-csi-driver).
+It has been engineered and optimized specifically for use with Scality S3-compatible storage solutions.
 
 Scality CSI driver presents an S3 bucket as a storage volume accessible by containers in Kubernetes clusters using [Mountpoint for Amazon S3](https://github.com/awslabs/mountpoint-s3).
 It implements the [CSI specification](https://github.com/container-storage-interface/spec/blob/master/spec.md) for container orchestrators to manage storage volumes.
+
+---
 
 ## Key Features
 
@@ -12,6 +15,8 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 - **Familiar File Access**: Access S3 objects as files and directories, simplifying application integration.
 - **Customizable Mounts**: Fine-tune volume mounts with a variety of supported options for performance and behavior.
 - **Scality Integration**: Optimized for Scality S3 storage solutions like [Scality RING](https://www.scality.com/ring/).
+
+---
 
 ## Getting Started
 
