@@ -215,3 +215,14 @@ spec:
     Node-level disk space and permissions for the cache path are also your responsibility.
 
 For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../concepts/filesystem-semantics.md) and [Permissions (How-To)](../how-to/permissions.md) pages.
+
+
+### Access Modes
+
+- Only `ReadWriteMany` and `ReadOnlyMany` access modes are supported for S3 volumes.
+- `ReadWriteOnce` is not supported due to the nature of S3 storage.
+
+### Volume Configuration
+
+- **Storage Class**: Use `storageClassName: ""` for static provisioning.
+- **Capacity**: Storage capacity values are required by Kubernetes but not enforced by S3.

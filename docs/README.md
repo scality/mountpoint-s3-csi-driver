@@ -22,14 +22,11 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 
 | Topic | Description | Documentation |
 |-------|-------------|---------------|
-| **Driver Deployment** | Install, upgrade, or remove the Scality S3 CSI Driver | |
+| **Driver Deployment** | | |
 | Prerequisites | Cluster version, node OS, network, and IAM requirements before installation | [Prerequisites](driver-deployment/prerequisites.md) |
 | Quick Start | Three commands to install the driver and mount a test bucket | [Quick Start Guide](driver-deployment/quick-start.md) |
 | Detailed Installation | Step‑by‑step Helm install with custom values, upgrades, and rollbacks | [Installation Guide](driver-deployment/detailed-installation.md) |
-| Uninstall | Safely remove driver pods, CRDs, and secrets from the cluster | [Uninstall Guide](driver-deployment/uninstall.md) |
-
-<!-- | Helm Installation | Recommended installation method using Helm charts | [Installation Guide](installation.md) |
-| Minimal Example | Copy-paste deployment with PV, PVC, and Pod | [Minimal Helm Example](examples/minimal-helm.yaml) | -->
+| Uninstallation | Safely remove driver pods, CRDs, and secrets from the cluster | [Uninstallation Guide](driver-deployment/uninstallation.md) |
 
 ### Configuration & Usage
 

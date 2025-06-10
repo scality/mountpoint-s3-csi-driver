@@ -4,24 +4,10 @@ This guide provides a fast way to deploy the Scality S3 CSI Driver using Helm an
 
 ## Prerequisites
 
-- A Kubernetes cluster (v1.30 or newer).
-- `kubectl` configured to communicate with your cluster.
-- [Helm](https://helm.sh/docs/intro/install/) v3 installed.
-- An existing S3 bucket on your Scality RING.
-- S3 endpoint URL, access key, and secret key for your S3 bucket.
+Before starting, ensure all requirements outlined in the **[Prerequisites](prerequisites.md)** guide are met.
 
-> **⚠️ Security Warning**: This guide demonstrates basic credential handling for testing purposes. Be aware of the following security considerations:
->
-> - Environment variables expose credentials in shell history and process lists
-> - Commands with credentials are visible to other users via `ps` commands
-> - The `kube-system` namespace has elevated privileges
->
-> **For Production Use**:
->
-> - Create secrets from files instead of command line arguments
-> - Use a dedicated namespace with appropriate RBAC policies
-> - Consider using IAM roles or service accounts for credential management
-> - Always clean up credentials after testing
+!!! warning "Security Warning"
+    This guide demonstrates basic credential handling for testing purposes. For production deployments, please follow the security best practices outlined in the [Prerequisites](prerequisites.md) guide.
 
 ## Installation
 
@@ -35,20 +21,20 @@ helm repo add scality https://scality.github.io/mountpoint-s3-csi-driver/charts/
 helm repo update
 ```
 
-### Step 2: Set your configuration variables
+### Step 2: Set configuration variables
 
-Replace these values with your actual S3 configuration:
+Replace these values with the actual S3 configuration:
 
 ```bash
-# Required: Your S3-compatible endpoint URL
+# Required: S3-compatible endpoint URL
 export S3_ENDPOINT_URL="http://s3.example.com:8000"
 
-# Required: Your S3 credentials
+# Required: S3 credentials
 export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
 export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
 # export AWS_SESSION_TOKEN="YOUR_SESSION_TOKEN"  # Optional, uncomment if needed
 
-# Required: Your S3 bucket name for testing
+# Required: S3 bucket name for testing
 export S3_BUCKET_NAME="my-test-bucket"
 
 # Optional: Customize these if needed
@@ -76,7 +62,7 @@ kubectl create secret generic ${SECRET_NAME} \
   --namespace=${NAMESPACE}
 ```
 
-If you need a session token, add it:
+If a session token is needed, add it:
 
 ```bash
 kubectl patch secret ${SECRET_NAME} -n ${NAMESPACE} --type='json' -p='[{"op": "add", "path": "/data/session_token", "value": "'$(echo -n "${AWS_SESSION_TOKEN}" | base64)'"}]'
@@ -149,7 +135,7 @@ capacity:
   storageClassName: "" # Required for static provisioning
   claimRef: # To ensure no other PVCs can claim this PV
     namespace: default # Namespace is required even though it's in "default" namespace.
-    name: s3-pvc-test # Name of your PVC
+    name: s3-pvc-test # Name of the PVC
   mountOptions:
     - allow-delete
     - allow-overwrite
@@ -252,4 +238,4 @@ This quick start provides a basic overview. For more advanced configurations and
 - **[Configuration Options](../configuration/index.md)** for detailed settings.
 - **[How-To Guides](../how-to/static-provisioning.md)** for common use cases.
 - **[Minimal Helm Example](../examples/minimal-helm.yaml)**: A self-contained example demonstrating a minimal deployment, PVC and Pod manifest.
-  (Note: this example YAML uses a local Helm chart path. Adapt as needed for your environment).
+  (Note: this example YAML uses a local Helm chart path. Adapt as needed for the target environment).

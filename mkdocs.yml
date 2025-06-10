@@ -84,7 +84,7 @@ nav:
       - Prerequisites: driver-deployment/prerequisites.md
       - Quick Start: driver-deployment/quick-start.md
       - Detailed Installation: driver-deployment/detailed-installation.md
-      - Uninstall: driver-deployment/uninstall.md
+      - Uninstallation: driver-deployment/uninstallation.md
   - Configuration:
       - Overview: configuration/index.md
       - Driver Configuration: configuration/driver-configuration.md
