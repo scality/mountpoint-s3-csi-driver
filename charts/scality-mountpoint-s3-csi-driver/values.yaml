@@ -44,8 +44,8 @@ node:
 sidecars:
   nodeDriverRegistrar:
     image:
-      repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
-      tag: v2.13.0
+      repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+      tag: v2.14.0
       pullPolicy: IfNotPresent
     env:
       - name: KUBE_NODE_NAME
@@ -61,7 +61,7 @@ sidecars:
   livenessProbe:
     image:
       repository: registry.k8s.io/sig-storage/livenessprobe
-      tag: v2.15.0
+      tag: v2.16.0
       pullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /csi
