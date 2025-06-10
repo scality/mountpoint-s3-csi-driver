@@ -18,18 +18,18 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 
 ---
 
-## Getting Started
-
-The **[Quick Start Guide](quick-start.md)** provides step-by-step instructions for deploying the driver, securely creating secrets, and mounting S3 buckets in Kubernetes clusters.
-
 ## Documentation Overview
 
-This documentation provides comprehensive information to install, configure, use, and troubleshoot the Scality S3 CSI Driver.
+| Topic | Description | Documentation |
+|-------|-------------|---------------|
+| **Driver Deployment** | Install, upgrade, or remove the Scality S3 CSI Driver | |
+| Prerequisites | Cluster version, node OS, network, and IAM requirements before installation | [Prerequisites](driver-deployment/prerequisites.md) |
+| Quick Start | Three commands to install the driver and mount a test bucket | [Quick Start Guide](driver-deployment/quick-start.md) |
+| Detailed Installation | Step‑by‑step Helm install with custom values, upgrades, and rollbacks | [Installation Guide](driver-deployment/detailed-installation.md) |
+| Uninstall | Safely remove driver pods, CRDs, and secrets from the cluster | [Uninstall Guide](driver-deployment/uninstall.md) |
 
-### Installation & Setup
-
-- **[Installation](installation.md)** – Prerequisites and secure installation instructions, including manual secret creation
-- **[Quick Start Guide](quick-start.md)** – Step-by-step deployment guide
+<!-- | Helm Installation | Recommended installation method using Helm charts | [Installation Guide](installation.md) |
+| Minimal Example | Copy-paste deployment with PV, PVC, and Pod | [Minimal Helm Example](examples/minimal-helm.yaml) | -->
 
 ### Configuration & Usage
 

@@ -4,7 +4,7 @@ This guide demonstrates how to statically provision an existing S3 bucket as a P
 
 ## Prerequisites
 
-- Scality S3 CSI Driver and S3 credentials secret set up as described in the [Installation Guide](../installation.md)
+- Scality S3 CSI Driver and S3 credentials secret set up as described in the [Installation Guide](../driver-deployment/detailed-installation.md)
 - An existing S3 bucket
 
 ## Example: Static Provisioning

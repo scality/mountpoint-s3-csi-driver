@@ -62,4 +62,4 @@ After applying your manifests, verify the region override is in effect by checki
 ## References
 
 - [Volume Configuration](../configuration/volume-configuration.md)
-- [Installation Guide](../installation.md)
+- [Installation Guide](../driver-deployment/detailed-installation.md)
