@@ -16,6 +16,18 @@
     word-break: break-word;
 }
 
+/* Remove the max-width constraint on the main content */
+
+.md-main__inner.md-grid {
+    max-width: initial;
+}
+
+/* Remove the max-width constraint on the header and footer */
+
+.md-grid {
+    max-width: initial;
+}
+
 /* Make all headings bold for better hierarchy */
 .md-typeset h1,
 .md-typeset h2,
