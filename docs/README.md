@@ -23,30 +23,10 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 | Topic | Description | Documentation |
 |-------|-------------|---------------|
 | **Driver Deployment** | | |
-| Prerequisites | Cluster version, node OS, network, and IAM requirements before installation | [Prerequisites](driver-deployment/prerequisites.md) |
+| Prerequisites | Kubernetes cluster, RING storage, credentials, and network requirements before installation | [Prerequisites](driver-deployment/prerequisites.md) |
 | Quick Start | Three commands to install the driver and mount a test bucket | [Quick Start Guide](driver-deployment/quick-start.md) |
 | Detailed Installation | Step‑by‑step Helm install with custom values, upgrades, and rollbacks | [Installation Guide](driver-deployment/detailed-installation.md) |
 | Uninstallation | Safely remove driver pods, CRDs, and secrets from the cluster | [Uninstallation Guide](driver-deployment/uninstallation.md) |
-
-### Configuration & Usage
-
-- **[Configuration](configuration/index.md)** – Driver and volume configuration, including supported mount options and static provisioning patterns
-- **[How-To Guides](how-to/static-provisioning.md)** – Practical implementation examples
-- **[Minimal Helm Example](examples/minimal-helm.yaml)** – Complete, copy-pasteable example for production
-
-### Understanding the Driver
-
-- **[Concepts](concepts/filesystem-semantics.md)** – Filesystem semantics, limitations, and S3-specific behaviors
-
-### Support & Troubleshooting
-
-- **[Troubleshooting](troubleshooting.md)** – Common issue resolution and diagnostic tips
-
-## Security & Best Practices
-
-- **Manual Secret Creation**: Always create S3 credential secrets manually before installing the chart. Do not store credentials in Helm values or use in-line secrets.
-- **Access Modes**: Only `ReadWriteMany` and `ReadOnlyMany` are supported for S3 volumes.
-- **Namespace Isolation**: Use dedicated namespaces and RBAC for improved security.
 
 ## Container Images
 
@@ -64,8 +44,3 @@ For issues or questions:
 
 1. Search existing [GitHub Issues](https://github.com/scality/mountpoint-s3-csi-driver/issues)
 2. Open a new [GitHub Issue](https://github.com/scality/mountpoint-s3-csi-driver/issues) if the problem is not already addressed
-
-## License
-
-This project is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/LICENSE) file for details.
-It incorporates code from the original Mountpoint for Amazon S3 CSI Driver, also licensed under Apache 2.0.

@@ -41,6 +41,20 @@ RING version 9.4 or newer is required.
 - This includes DNS resolution of the S3 endpoint hostname and network access to the S3 service on the appropriate ports
   (typically 80 for HTTP or 443 for HTTPS, unless a specific port is specified in the S3 endpoint URL).
 
+## Container Image Requirements
+
+The CSI driver deployment requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:
+
+| Component | Image | Registry | Purpose |
+|-----------|-------|----------|---------|
+| **Scality S3 CSI Driver** | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.0` | GitHub Container Registry (GHCR) | Main CSI driver functionality |
+| **CSI Node Driver Registrar** | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0` | GitHub Container Registry (GHCR) | Registers CSI driver with kubelet |
+| **Liveness Probe** | `ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.15.0` | GitHub Container Registry (GHCR) | Health monitoring for CSI driver pods |
+
+!!! note "Private Registry Configuration"
+    If using a private container registry or image mirroring, update the `image.repository` values in the Helm chart configuration accordingly.
+    Ensure appropriate `imagePullSecrets` are configured if authentication is required.
+
 ## Next Steps
 
 Once all prerequisites are verified and met, proceed with:
