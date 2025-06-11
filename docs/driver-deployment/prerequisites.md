@@ -4,46 +4,24 @@ Before installing the Scality S3 CSI Driver, ensure the environment meets the fo
 
 ## Kubernetes Requirements
 
-### Kubernetes Version
+**Kubernetes Version:**
 
 - Kubernetes **v1.30.0** or newer is required. The driver relies on features and API versions available in these Kubernetes releases.
 
-### Tools
+**Tools:**
 
 - `kubectl` configured to communicate with the cluster.
 - [Helm](https://helm.sh/docs/intro/install/) v3 installed.
+- `jq` (optional but recommended) for parsing JSON output in troubleshooting commands.
 
-### RBAC (Role-Based Access Control)
+**RBAC (Role-Based Access Control):**
 
 - The Helm chart will create the necessary `ServiceAccount`, `ClusterRole`, and `ClusterRoleBinding` for the driver to function.
 - Ensure the user or tool performing the Helm installation has sufficient permissions to create these RBAC resources at the cluster scope.
 
-## RING Storage Requirements
-
-RING version 9.4 or newer is required.
-
-### S3 Resources
-
-- S3 endpoint URL is required for CSI driver installation using Helm.
-
-### IAM Credentials
-
-- IAM credentials consisting of access key ID and secret access key for an IAM entity. These credentials will be stored as a Kubernetes Secret and accessed by the driver.
-- The IAM entity whose credentials are used must have appropriate permissions. See [this document](../permissions.md) for detailed permission requirements.
-- Optional: Session Token (required only when using temporary credentials).
-
-!!! note "Credentials Refresh"
-    The driver does not automatically refresh credentials when using session token (temporary credentials).
-
-### Network Connectivity
-
-- Kubernetes worker nodes must have network connectivity to the Scality S3 endpoint (RING).
-- This includes DNS resolution of the S3 endpoint hostname and network access to the S3 service on the appropriate ports
-  (typically 80 for HTTP or 443 for HTTPS, unless a specific port is specified in the S3 endpoint URL).
-
 ## Container Image Requirements
 
-The CSI driver deployment requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:
+The deployment of the Scality S3 CSI Driver requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:
 
 | Component | Image | Registry | Purpose |
 |-----------|-------|----------|---------|
@@ -55,6 +33,30 @@ The CSI driver deployment requires access to several container images. Ensure th
     If using a private container registry or image mirroring, update the `image.repository` values in the Helm chart configuration accordingly.
     Ensure appropriate `imagePullSecrets` are configured if authentication is required.
 
+## RING Storage Requirements
+
+!!! note "Scality Support"
+    The CSI driver is only officially supported by Scality when used with Scality RING S3.
+
+**RING version:** RING v9.4.2 or newer is required.
+
+**S3 Resources:** RING S3 endpoint URL is required for CSI driver installation using Helm.
+
+**IAM Credentials:**
+
+- IAM credentials consisting of access key ID and secret access key for an IAM entity. These credentials will be stored as a Kubernetes Secret and accessed by the driver.
+- The IAM entity whose credentials are used must have appropriate permissions. See [this document](../permissions.md) for detailed permission requirements.
+- Optional: Session Token (required only when using temporary credentials).
+
+!!! note "Credentials Refresh"
+    The driver does not automatically refresh credentials when using session token (temporary credentials).
+
+**Network Connectivity:**
+
+- Kubernetes worker nodes must have network connectivity to the Scality RING S3 endpoint.
+- This includes DNS resolution of the S3 endpoint hostname and network access to the S3 service on the appropriate ports
+  (typically 80 for HTTP or 443 for HTTPS, unless a specific port is specified in the S3 endpoint URL).
+
 ## Next Steps
 
 Once all prerequisites are verified and met, proceed with:
@@ -62,12 +64,6 @@ Once all prerequisites are verified and met, proceed with:
 - **[Quick Start Guide](quick-start.md)** – Fast deployment for testing
 - **[Detailed Installation](detailed-installation.md)** – Step-by-step installation with custom configuration
 
-<!-- markdownlint-disable MD046 -->
 !!! warning "Testing vs Production"
-    The quick start guide demonstrates basic credential handling for testing purposes. Be aware that:
-
-    - Environment variables expose credentials in shell history and process lists
-    - Commands with credentials are visible to other users via `ps` commands
-    - The driver by default uses the `kube-system` namespace which has elevated privileges
-    - Always follow production security practices for real deployments.
-<!-- markdownlint-enable MD046 -->
+    The [quick start guide](quick-start.md) demonstrates basic installation and is recommended for testing purposes only.
+    For production deployments follow the steps outlined in the [detailed installation guide](detailed-installation.md).

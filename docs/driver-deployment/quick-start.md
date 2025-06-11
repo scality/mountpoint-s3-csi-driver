@@ -10,9 +10,9 @@ Before starting, ensure all requirements outlined in the **[Prerequisites](prere
 !!! warning "For Testing Only"
     The quick start guide is intended for testing purposes only. The installation uses default values including:
 
-    - Kubernetes Namespace: default
-    - Kubernetes S3 Credentials Secret name: s3-secret
-    - DefaultS3 Region(can be overridden at volume level): us-east-1
+    - Kubernetes Namespace for driver installation: `default`
+    - Kubernetes S3 Credentials Secret name: `s3-secret`
+    - Default S3 Region (can be overridden at volume level): `us-east-1`
 
     For production deployments and to customize these values or use a different namespace, see the [detailed installation guide](detailed-installation.md).
 <!-- markdownlint-enable MD046 -->
@@ -21,10 +21,14 @@ Before starting, ensure all requirements outlined in the **[Prerequisites](prere
 
 **Step 1. Set configuration variables:**
 
-Replace these values with actual S3 endpoint and credentials:
+!!! note "S3 Endpoint URL"
+    For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
+    Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
+
+Replace these values with actual S3 endpoint and credentials.
 
 ```bash
-export S3_ENDPOINT_URL="http://s3.example.com:8000"
+export S3_ENDPOINT_URL="https://s3.example.com"
 export ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
 export SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
 ```
@@ -70,25 +74,44 @@ kubectl get csidriver s3.csi.scality.com
 
 ## Uninstallation
 
-If no volumes were provisioned, uninstall the driver using the following command:
+!!! note "If Volumes Were Provisioned"
+    If any applications (Kubernetes pods) were using PersistentVolumes or PersistentVolumeClaims provisioned using the S3 CSI driver,
+    follow the complete [uninstallation guide](uninstallation.md) to properly clean up all resources.
+
+For a quick start installation with no volumes provisioned, the driver can uninstall the driver with these simple steps:
+
+**Step 1. Uninstall the Helm release:**
 
 ```bash
 helm uninstall scality-mountpoint-s3-csi-driver
 ```
 
-The S3 sredentials secret can be deleted using the following command:
+**Step 2. Delete the S3 credentials secret:**
 
 ```bash
 kubectl delete secret s3-secret
 ```
 
-If volumes were provisioned, the driver can be uninstalled using the [uninstallation guide](uninstallation.md).
+**Step 3. Verify removal:**
+
+- Check that CSI driver is removed
+
+    ```bash
+    kubectl get csidriver s3.csi.scality.com
+    ```
+
+- Check that no driver pods remain
+
+    ```bash
+    kubectl get pods -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
+    ```
 
 ## Next Steps
 
-- **For Production**: Follow the [detailed installation guide](detailed-installation.md) for:
-  - Namespace isolation
-  - Secure credential management  
-  - Custom configurations
+**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets with your applications.
 
-- **Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/how-to/index.md) to learn how to use S3 buckets with your applications
+**For Production Deployments**: Follow the [detailed installation guide](detailed-installation.md) for:
+
+- Namespace isolation
+- Secure credential management
+- Custom helm configurations
