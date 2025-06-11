@@ -1,9 +1,7 @@
-# Driver Configuration (Helm Chart Values)
+# Helm Chart Configuration Reference (TODO) verify this
 
-The Scality S3 CSI Driver is configured primarily through the `values.yaml` file when deploying via Helm. This page details the available parameters.
-
-## Driver Parameters
-
+The Scality S3 CSI Driver is configured primarily through the [`values.yaml`](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml)
+file when deploying via Helm.
 These parameters configure the overall behavior of the CSI driver components.
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
@@ -50,39 +48,10 @@ These parameters configure the overall behavior of the CSI driver components.
 | `controller.*`                                       | Configuration for the CSI controller (Deployment, ServiceAccount). *Only used if `experimental.podMounter` is true.*                               | N/A (not documented)                                   | No                          |
 | `mountpointPod.*`                                    | Configuration for the Mountpoint pods spawned by the controller. *Only used if `experimental.podMounter` is true.*                                  | N/A (not documented)                                   | No                          |
 
-### Security Notes on `s3CredentialSecret`
+## Security Notes on `s3CredentialSecret` (TODO) change this
 
 The Helm chart **does not create secrets automatically**. You must create a Kubernetes Secret containing your S3 credentials before installing the chart. The secret must contain the following keys:
 
 - `access_key_id`: Your S3 Access Key ID.
 - `secret_access_key`: Your S3 Secret Access Key.
 - `session_token` (optional): Your S3 Session Token, if using temporary credentials.
-
-Example for creating the secret manually:
-
-```bash
-kubectl create secret generic my-s3-credentials \
-  --namespace kube-system \
-  --from-literal=access_key_id='YOUR_ACCESS_KEY_ID' \
-  --from-literal=secret_access_key='YOUR_SECRET_ACCESS_KEY'
-```
-
-Then in your `values.yaml`:
-
-```yaml
-s3CredentialSecret:
-  name: "my-s3-credentials"
-```
-
-!!! tip "Security Best Practices"
-    - Create secrets from files instead of command line arguments to avoid exposing credentials in shell history
-    - Use dedicated namespaces with appropriate RBAC policies
-
-### Global Configuration
-
-The `node.s3EndpointUrl` and `node.s3Region` parameters set the default S3 endpoint and region for all volumes provisioned by this driver instance.
-The `node.s3Region` can be overridden on a per-volume basis using the `region` mount option in the PersistentVolume definition.
-However, the `node.s3EndpointUrl` **cannot** be overridden at the volume level for security reasons; it is a global setting for the driver instance.
-
-The S3 credentials specified via `s3CredentialSecret` are also global by default but
-can be overridden on a per-volume basis if the `authenticationSource: secret` and `nodePublishSecretRef` are used in the `PersistentVolume.spec.csi` definition.

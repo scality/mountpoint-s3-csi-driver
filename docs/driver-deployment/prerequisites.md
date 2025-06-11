@@ -45,7 +45,7 @@ The deployment of the Scality S3 CSI Driver requires access to several container
 **IAM Credentials:**
 
 - IAM credentials consisting of access key ID and secret access key for an IAM entity. These credentials will be stored as a Kubernetes Secret and accessed by the driver.
-- The IAM entity whose credentials are used must have appropriate permissions. See [this document](../permissions.md) for detailed permission requirements.
+- The IAM entity whose credentials are used must have appropriate permissions. See [this document](../concepts-and-reference/permissions.md) for detailed permission requirements.
 - Optional: Session Token (required only when using temporary credentials).
 
 !!! note "Credentials Refresh"

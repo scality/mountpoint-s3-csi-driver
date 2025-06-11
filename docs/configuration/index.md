@@ -9,7 +9,7 @@ Configuration for the Scality S3 CSI Driver can be applied at different stages:
 1. **Driver Installation (Helm Chart `values.yaml`)**:
     Global settings for the driver, such as default S3 endpoint, region, and node plugin behavior, are configured when installing the Helm chart. These values establish the baseline for all volumes
     managed by this driver instance.
-    - See [Driver Configuration](driver-configuration.md) for details.
+    - See [Helm Chart Configuration Reference](../concepts-and-reference/helm-chart-configuration-reference.md) for details.
 
 2. **PersistentVolume (PV) Definition**:
     When using static provisioning, specific mount options, bucket names, and other volume-level attributes are defined directly in the `PersistentVolume` manifest.
@@ -26,7 +26,7 @@ Configuration for the Scality S3 CSI Driver can be applied at different stages:
 - **Node Plugin Behavior**: Settings related to the CSI node daemon, such as Kubelet path and log levels.
 - **Resource Limits/Requests**: Configure CPU and memory for the driver components.
 
-[Learn more about Driver Configuration &raquo;](driver-configuration.md)
+[Learn more about Driver Configuration &raquo;](../concepts-and-reference/helm-chart-configuration-reference.md)
 
 ### Volume Settings
 
