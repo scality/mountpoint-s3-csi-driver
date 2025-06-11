@@ -62,8 +62,8 @@ The deployment of the Scality S3 CSI Driver requires access to several container
 Once all prerequisites are verified and met, proceed with:
 
 - **[Quick Start Guide](quick-start.md)** – Fast deployment for testing
-- **[Detailed Installation](detailed-installation.md)** – Step-by-step installation with custom configuration
+- **[Installation Guide](installation-guide.md)** – Step-by-step installation with custom configuration
 
 !!! warning "Testing vs Production"
     The [quick start guide](quick-start.md) demonstrates basic installation and is recommended for testing purposes only.
-    For production deployments follow the steps outlined in the [detailed installation guide](detailed-installation.md).
+    For production deployments follow the steps outlined in the [installation guide](installation-guide.md).

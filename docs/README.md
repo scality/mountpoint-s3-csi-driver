@@ -25,7 +25,7 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 | **Driver Deployment** | | |
 | Prerequisites | Kubernetes cluster, RING storage, credentials, and network requirements before installation | [Prerequisites](driver-deployment/prerequisites.md) |
 | Quick Start | Three commands to install the driver and mount a test bucket | [Quick Start Guide](driver-deployment/quick-start.md) |
-| Detailed Installation | Step‑by‑step Helm install with custom values, upgrades, and rollbacks | [Installation Guide](driver-deployment/detailed-installation.md) |
+| Installation Guide | Step‑by‑step Helm install with custom values, upgrades, and rollbacks | [Installation Guide](driver-deployment/installation-guide.md) |
 | Uninstallation | Safely remove driver pods, CRDs, and secrets from the cluster | [Uninstallation Guide](driver-deployment/uninstallation.md) |
 
 ## Container Images

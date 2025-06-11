@@ -4,7 +4,7 @@ The Scality S3 CSI Driver allows you to mount multiple S3 buckets as separate vo
 
 ## Prerequisites
 
-- Scality S3 CSI Driver and S3 credentials secret(s) set up as described in the [Installation Guide](../driver-deployment/detailed-installation.md)
+- Scality S3 CSI Driver and S3 credentials secret(s) set up as described in the [Installation Guide](../driver-deployment/installation-guide.md)
 - Two or more S3 buckets
 
 ## Example: Two PVs, Two PVCs, One Pod
@@ -109,7 +109,7 @@ spec:
 ```
 
 !!! note
-    If using different credentials for each bucket, create a secret for each and reference them in the PVs as described in the [Installation Guide](../driver-deployment/detailed-installation.md).
+    If using different credentials for each bucket, create a secret for each and reference them in the PVs as described in the [Installation Guide](../driver-deployment/installation-guide.md).
 
 ## Verification
 
@@ -120,4 +120,4 @@ kubectl get pod multi-s3-volumes-pod
 ## References
 
 - [Volume Configuration](../configuration/volume-configuration.md)
-- [Installation Guide](../driver-deployment/detailed-installation.md)
+- [Installation Guide](../driver-deployment/installation-guide.md)

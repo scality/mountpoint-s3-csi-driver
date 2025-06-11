@@ -14,7 +14,7 @@ Before starting, ensure all requirements outlined in the **[Prerequisites](prere
     - Kubernetes S3 Credentials Secret name: `s3-secret`
     - Default S3 Region (can be overridden at volume level): `us-east-1`
 
-    For production deployments and to customize these values or use a different namespace, see the [detailed installation guide](detailed-installation.md).
+    For production deployments and to customize these values or use a different namespace, see the [installation guide](installation-guide.md).
 <!-- markdownlint-enable MD046 -->
 
 ## Installation
@@ -110,7 +110,7 @@ kubectl delete secret s3-secret
 
 **Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets with your applications.
 
-**For Production Deployments**: Follow the [detailed installation guide](detailed-installation.md) for:
+**For Production Deployments**: Follow the [installation guide](installation-guide.md) for:
 
 - Namespace isolation
 - Secure credential management

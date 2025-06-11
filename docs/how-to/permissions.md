@@ -4,7 +4,7 @@ The Scality S3 CSI Driver allows you to emulate file permissions and enable non-
 
 ## Prerequisites
 
-- Scality S3 CSI Driver and S3 credentials secret set up as described in the [Installation Guide](../driver-deployment/detailed-installation.md)
+- Scality S3 CSI Driver and S3 credentials secret set up as described in the [Installation Guide](../driver-deployment/installation-guide.md)
 - An existing S3 bucket
 
 ## Example: PV with Permission Mount Options
@@ -94,4 +94,4 @@ kubectl exec s3-app-nonroot -- ls -l /data
 ## References
 
 - [Volume Configuration](../configuration/volume-configuration.md)
-- [Installation Guide](../driver-deployment/detailed-installation.md)
+- [Installation Guide](../driver-deployment/installation-guide.md)

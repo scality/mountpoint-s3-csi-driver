@@ -98,7 +98,7 @@ nav:
   - Driver Deployment:
       - Prerequisites: driver-deployment/prerequisites.md
       - Quick Start: driver-deployment/quick-start.md
-      - Detailed Installation: driver-deployment/detailed-installation.md
+      - Installation Guide: driver-deployment/installation-guide.md
       - Uninstallation: driver-deployment/uninstallation.md
   - Volume Provisioning:
       - How-To Guides:
