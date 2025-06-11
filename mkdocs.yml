@@ -71,7 +71,7 @@ markdown_extensions:
   - md_in_html # For markdown in HTML. Usage: <div markdown="1">
   - meta # For metadata. Usage: --- title: "My Page" author: "John Doe" date: 2021-01-01 ---
   - toc:
-      permalink: # # Adds anchor links to headings. Usage: [Heading](#heading)
+      permalink: '#' # Adds anchor links to headings. Usage: [Heading](#heading)
       toc_depth: 2    # Depth of headings to include in the table of contents
       title: "On This Page"
   - pymdownx.highlight:
