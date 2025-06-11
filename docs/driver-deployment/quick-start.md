@@ -7,7 +7,7 @@ This guide provides a fast way to deploy the Scality S3 CSI Driver using Helm an
 Before starting, ensure all requirements outlined in the **[Prerequisites](prerequisites.md)** guide are met.
 
 !!! warning "Security Warning"
-    This guide demonstrates basic credential handling for testing purposes. For production deployments, please follow the security best practices outlined in the [Prerequisites](prerequisites.md) guide.
+    This guide demonstrates basic credential handling for testing purposes. For production deployments, please the [detailed installation guide](detailed-installation.md).
 
 ## Installation
 
