@@ -1,114 +1,66 @@
 # Quick Start Guide
 
-This guide provides a fast way to deploy the Scality S3 CSI Driver using Helm and mount an S3 bucket into a pod.
+This guide provides a fast way to deploy the Scality S3 CSI Driver using Helm. It's designed for testing and evaluation purposes.
 
 ## Prerequisites
 
 Before starting, ensure all requirements outlined in the **[Prerequisites](prerequisites.md)** guide are met.
 
-!!! warning "Security Warning"
-    This guide demonstrates basic credential handling for testing purposes. For production deployments, please the [detailed installation guide](detailed-installation.md).
+<!-- markdownlint-disable MD046 -->
+!!! warning "For Testing Only"
+    The quick start guide is intended for testing purposes only. The installation uses default values including:
+
+    - Kubernetes Namespace: default
+    - Kubernetes S3 Credentials Secret name: s3-secret
+    - DefaultS3 Region(can be overridden at volume level): us-east-1
+
+    For production deployments and to customize these values or use a different namespace, see the [detailed installation guide](detailed-installation.md).
+<!-- markdownlint-enable MD046 -->
 
 ## Installation
 
-### Step 1: Add the Scality Helm repository
+**Step 1. Set configuration variables:**
+
+Replace these values with actual S3 endpoint and credentials:
 
 ```bash
-helm repo add scality https://scality.github.io/mountpoint-s3-csi-driver/charts/
-```
-
-```bash
-helm repo update
-```
-
-### Step 2: Set configuration variables
-
-Replace these values with the actual S3 configuration:
-
-```bash
-# Required: S3-compatible endpoint URL
 export S3_ENDPOINT_URL="http://s3.example.com:8000"
-
-# Required: S3 credentials
-export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
-# export AWS_SESSION_TOKEN="YOUR_SESSION_TOKEN"  # Optional, uncomment if needed
-
-# Required: S3 bucket name for testing
-export S3_BUCKET_NAME="my-test-bucket"
-
-# Optional: Customize these if needed
-export S3_REGION="us-east-1"
-export SECRET_NAME="s3-secret"
-export NAMESPACE="scality-s3-csi"
+export ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+export SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
 ```
 
-### Step 3: Create namespace (recommended)
-
-Create a dedicated namespace for better security isolation:
+**Step 2. Create S3 credentials secret:**
 
 ```bash
-kubectl create namespace ${NAMESPACE}
+kubectl create secret generic s3-secret \
+  --from-literal=access_key_id="${ACCESS_KEY_ID}" \
+  --from-literal=secret_access_key="${SECRET_ACCESS_KEY}"
 ```
 
-### Step 4: Create S3 credentials secret
-
-Method 1: From environment variables (quick but less secure)
+**Step 3. Install the Scality S3 CSI driver:**
 
 ```bash
-kubectl create secret generic ${SECRET_NAME} \
-  --from-literal=access_key_id="${AWS_ACCESS_KEY_ID}" \
-  --from-literal=secret_access_key="${AWS_SECRET_ACCESS_KEY}" \
-  --namespace=${NAMESPACE}
+helm install \
+  scality-mountpoint-s3-csi-driver \
+  oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
+  --set node.s3EndpointUrl="${S3_ENDPOINT_URL}"
 ```
 
-If a session token is needed, add it:
+**Step 4. Verify installation:**
+
+Check the status of the Helm release:
 
 ```bash
-kubectl patch secret ${SECRET_NAME} -n ${NAMESPACE} --type='json' -p='[{"op": "add", "path": "/data/session_token", "value": "'$(echo -n "${AWS_SESSION_TOKEN}" | base64)'"}]'
+helm status scality-mountpoint-s3-csi-driver
 ```
-
-Method 2: From files (more secure alternative)
-
-Create credential files locally (these won't appear in shell history):
-
-```bash
-echo -n "${AWS_ACCESS_KEY_ID}" > /tmp/access_key_id
-echo -n "${AWS_SECRET_ACCESS_KEY}" > /tmp/secret_access_key
-```
-
-Create secret from files:
-
-```bash
-kubectl create secret generic ${SECRET_NAME} \
-  --from-file=access_key_id=/tmp/access_key_id \
-  --from-file=secret_access_key=/tmp/secret_access_key \
-  --namespace=${NAMESPACE}
-```
-
-Clean up temporary files:
-
-```bash
-rm /tmp/access_key_id /tmp/secret_access_key
-```
-
-### Step 5: Install the CSI driver
-
-```bash
-helm install mountpoint-s3-csi-driver scality/scality-mountpoint-s3-csi-driver \
-  --set node.s3EndpointUrl="${S3_ENDPOINT_URL}" \
-  --set node.s3Region="${S3_REGION}" \
-  --set s3CredentialSecret.name="${SECRET_NAME}" \
-  --namespace ${NAMESPACE}
-```
-
-### Step 6: Verify installation
 
 Check if the CSI driver pods are running:
 
 ```bash
-kubectl get pods -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
+kubectl get pods -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
 ```
+
+You should see one `s3-csi-node-*` pod per worker node, all in `Running` state.
 
 Check CSI driver registration:
 
@@ -116,126 +68,27 @@ Check CSI driver registration:
 kubectl get csidriver s3.csi.scality.com
 ```
 
-## Create and Test a Volume
+## Uninstallation
 
-### Step 1: Create PV and PVC
-
-```bash
-cat <<EOF | kubectl apply -f -
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: s3-pv-test
-spec:
-capacity:
-    storage: 1200Gi # This value is not enforced by S3 but required by Kubernetes
-  accessModes:
-    - ReadWriteMany
-  storageClassName: "" # Required for static provisioning
-  claimRef: # To ensure no other PVCs can claim this PV
-    namespace: default # Namespace is required even though it's in "default" namespace.
-    name: s3-pvc-test # Name of the PVC
-  mountOptions:
-    - allow-delete
-    - allow-overwrite
-  csi:
-    driver: s3.csi.scality.com
-    volumeHandle: s3-csi-driver-volume
-    volumeAttributes:
-      bucketName: s3-csi-driver
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: s3-pvc-test
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: "" # Required for static provisioning
-  resources:
-    requests:
-      storage: 1Gi
-  volumeName: s3-pv-test
-EOF
-```
-
-### Step 2: Create test pod
+If no volumes were provisioned, uninstall the driver using the following command:
 
 ```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Pod
-metadata:
-  name: s3-app
-spec:
-  containers:
-    - name: app
-      image: ubuntu
-      command: ["/bin/sh"]
-      args: ["-c", "echo 'Hello from the container!' >> /data/$(date -u).txt; tail -f /dev/null"]
-      volumeMounts:
-        - name: persistent-storage
-          mountPath: /data
-  volumes:
-    - name: persistent-storage
-      persistentVolumeClaim:
-        claimName: s3-pvc-test
-EOF
+helm uninstall scality-mountpoint-s3-csi-driver
 ```
 
-### Step 3: Wait for pod to be ready
+The S3 sredentials secret can be deleted using the following command:
 
 ```bash
-kubectl wait --for=condition=Ready pod/s3-test-pod --timeout=60s
+kubectl delete secret s3-secret
 ```
 
-## Verification
+If volumes were provisioned, the driver can be uninstalled using the [uninstallation guide](uninstallation.md).
 
-### Check the mount
+## Next Steps
 
-Verify the pod is running:
+- **For Production**: Follow the [detailed installation guide](detailed-installation.md) for:
+  - Namespace isolation
+  - Secure credential management  
+  - Custom configurations
 
-```bash
-kubectl get pod s3-test-pod
-```
-
-Check if S3 bucket is mounted:
-
-```bash
-kubectl exec s3-test-pod -- df -h /data
-```
-
-List contents of the bucket:
-
-```bash
-kubectl exec s3-test-pod -- ls -la /data
-```
-
-### Test read/write operations
-
-Write a test file:
-
-```bash
-kubectl exec s3-test-pod -- sh -c "echo 'Hello from Scality S3 CSI Driver!' > /data/test-file.txt"
-```
-
-Read the file back:
-
-```bash
-kubectl exec s3-test-pod -- cat /data/test-file.txt
-```
-
-Verify the file exists and check its details:
-
-```bash
-kubectl exec s3-test-pod -- ls -la /data/test-file.txt
-```
-
-This quick start provides a basic overview. For more advanced configurations and features, please refer to the full documentation.
-
-- **[Configuration Options](../configuration/index.md)** for detailed settings.
-- **[How-To Guides](../how-to/static-provisioning.md)** for common use cases.
-- **[Minimal Helm Example](../examples/minimal-helm.yaml)**: A self-contained example demonstrating a minimal deployment, PVC and Pod manifest.
-  (Note: this example YAML uses a local Helm chart path. Adapt as needed for the target environment).
+- **Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/how-to/index.md) to learn how to use S3 buckets with your applications
