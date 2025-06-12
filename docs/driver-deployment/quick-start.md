@@ -64,7 +64,7 @@ Check if the CSI driver pods are running:
 kubectl get pods -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
 ```
 
-You should see one `s3-csi-node-*` pod per worker node, all in `Running` state.
+Expected output: One `s3-csi-node-*` pod per worker node, all in `Running` state.
 
 Check CSI driver registration:
 
@@ -108,7 +108,7 @@ kubectl delete secret s3-secret
 
 ## Next Steps
 
-**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets with your applications.
+**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets as volumes with applications.
 
 **For Production Deployments**: Follow the [installation guide](installation-guide.md) for:
 

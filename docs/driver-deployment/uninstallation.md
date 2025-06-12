@@ -1,6 +1,6 @@
 # Uninstallation Guide
 
-This guide provides instructions for completely removing the Scality S3 CSI Driver and all associated resources from your Kubernetes cluster.
+This guide provides instructions for completely removing the Scality S3 CSI Driver and all associated resources from a Kubernetes cluster.
 
 ## Before You Begin
 
@@ -25,7 +25,7 @@ First, identify and delete all pods using S3 volumes:
 # Find pods with S3 PVCs
 kubectl get pods --all-namespaces -o json | jq -r '.items[] | select(.spec.volumes[]?.persistentVolumeClaim) | "\(.metadata.namespace)/\(.metadata.name)"'
 
-# Delete your application pods that use S3 volumes
+# Delete application pods that use S3 volumes
 ```
 
 ### Step 2: Remove PVCs and PVs
@@ -78,7 +78,7 @@ kubectl delete secret ${SECRET_NAME} -n ${NAMESPACE}
 
 ### Step 4: Remove Namespace (Optional)
 
-If you created a dedicated namespace and no longer need it:
+If a dedicated namespace was created and is no longer needed:
 
 ```bash
 # Verify namespace is empty first
