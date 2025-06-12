@@ -135,6 +135,14 @@ node:
   # Must match the region configured in the RING setup
   s3Region: "us-east-1"  # Adjust based on the RING configuration, default is `us-east-1`
 
+  # Optional: Log verbosity level for the CSI driver (higher numbers = more verbose)
+  # Default is 4.
+  # 1-2: Basic operational info (recommended for production)
+  # 3: Credential authentication info
+  # 4: All CSI operations and mount details (default)
+  # 5: Very detailed debug info (systemd signals, mount-s3 output)
+  logLevel: 2
+
   # Resource limits for the CSI node DaemonSet pods (one pod per worker node)
   # These apply to the main s3-plugin container that handles volume mount operations
   # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
