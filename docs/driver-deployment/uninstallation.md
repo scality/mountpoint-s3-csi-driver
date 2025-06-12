@@ -94,7 +94,7 @@ Ensure all CSI driver components are removed:
 
 ```bash
 # Check for remaining pods
-kubectl get pods --all-namespaces | grep scality-mountpoint-s3-csi-driver
+kubectl get pods --all-namespaces | grep s3-csi
 
 # Check CSI driver registration
 kubectl get csidriver s3.csi.scality.com

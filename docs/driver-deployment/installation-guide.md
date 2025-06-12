@@ -8,96 +8,119 @@ Before starting, ensure all requirements outlined in the [Prerequisites](prerequ
 
 ## Installation Overview
 
-
 The installation process consists of:
 
-1. Creating a namespace for the driver (recommended for production)
-2. Creating S3 credentials as a Kubernetes Secret
-3. Configuring and installing the Helm chart
-4. Verifying the installation of the driver
+1. Setting configuration variables
+2. Creating a namespace for the driver (recommended for production)
+3. Creating S3 credentials as a Kubernetes Secret
+4. Configuring and installing the Helm chart
+5. Verifying the installation of the driver
 
-## Option A: Minimal Installation (Helm)
+## Step 1. Set Configuration Variables
 
-If you need a quick deployment for development or evaluation, install the driver with the bare‑minimum Helm parameters.  
-Make sure you have exported—or replace inline—the following shell variables already used later in this guide:  
-`NAMESPACE`, `SECRET_NAME`, `S3_ENDPOINT_URL`, `ACCESS_KEY_ID`, and `SECRET_ACCESS_KEY`.
+- Set the namespace in which the s3 credentials secret will be created and the driver will be deployed. Replace `scality-s3-csi` with your preferred namespace name.
+
+    ```bash
+    export NAMESPACE="scality-s3-csi"
+    ```
+
+- Set the secret name in which the s3 credentials will be stored. Replace `s3-secret` with your preferred secret name.
+
+    ```bash
+    export SECRET_NAME="s3-secret"
+    ```
+
+- Set the access key ID. Replace `YOUR_ACCESS_KEY_ID` with your actual access key ID.
+
+    ```bash
+    export ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+    ```
+
+- Set the secret access key. Replace `YOUR_SECRET_ACCESS_KEY` with your actual secret access key.
+
+    ```bash
+    export SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
+    ```
+
+- Set the session token (optional). Replace `YOUR_SESSION_TOKEN` with your actual session token. The driver does not communicate with RING STS service to refresh the session token.
+
+    ```bash
+    # export SESSION_TOKEN="YOUR_SESSION_TOKEN"
+    ```
+
+## Step 2. Create Namespace
+
+Creating a dedicated namespace provides better security isolation and resource management:
 
 ```bash
-# 1  Create the namespace if it does not exist
-kubectl create namespace ${NAMESPACE} || true
+kubectl create namespace ${NAMESPACE}
+```
 
-# 2  Create the credentials secret (test‑only method)
+## Step 3. Create S3 Credentials Secret
+
+For production environments, use the secure method to avoid credentials in shell history:
+
+Create secret from files:
+
+```bash
 kubectl create secret generic ${SECRET_NAME} \
   --from-literal=access_key_id="${ACCESS_KEY_ID}" \
   --from-literal=secret_access_key="${SECRET_ACCESS_KEY}" \
   --namespace ${NAMESPACE}
+```
 
-# 3  Install the driver
-helm install scality-s3-csi \
+!!! warning "Temporary Credentials"
+    The driver does not communicate with RING STS service. If session tokens are used, the credentials will not be refreshed automatically.
+
+OR with session token (if needed):
+
+```bash
+kubectl create secret generic ${SECRET_NAME} \
+  --from-literal=access_key_id="${ACCESS_KEY_ID}" \
+  --from-literal=secret_access_key="${SECRET_ACCESS_KEY}" \
+  --from-literal=session_token="${SESSION_TOKEN}" \
+  --namespace ${NAMESPACE}
+```
+
+---
+
+## Step 4. Install the Driver
+
+Choose one of the following installation options:
+
+### Option A: Minimal Installation
+
+!!! note "S3 Endpoint URL"
+    For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
+    Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
+
+**Set the S3 endpoint URL:**
+
+Replace `https://s3.example.com` with the actual RING S3 endpoint URL.
+
+```bash
+export S3_ENDPOINT_URL="https://s3.example.com"
+```
+
+**Install the Helm Chart:**
+
+Deploy the driver with minimal configuration.
+
+```bash
+helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
   --set node.s3EndpointUrl="${S3_ENDPOINT_URL}" \
   --set s3CredentialSecret.name="${SECRET_NAME}" \
   --namespace ${NAMESPACE}
 ```
 
-> **Tip**  
-> Proceed to **Option B** for hardened, production‑ready settings.
+### Option B: Advanced Installation
 
----
+For environments requiring custom configuration:
 
-## Option B: Detailed Installation (Helm)
+**Create Custom Values File:**
 
-**Step 1: Confirm or Create Namespace (optional):**
-
-Creating a dedicated namespace provides better security isolation and resource management:
-
-```bash
-export NAMESPACE="scality-s3-csi"  # Or preferred namespace name
-kubectl create namespace ${NAMESPACE}
-```
-
-**Step 2: Create S3 Credentials Securely:**
-
-!!! warning "Temporary Credentials"
-    The driver does not communicate with RING STS service. If session tokens are used, the credentials will not be refreshed automatically.
-
-Set the secret name and create temporary credential files:
-
-```bash
-export SECRET_NAME="s3-credentials"  # Customize secret name if needed
-
-# Create credential files directly (avoids shell history)
-echo -n "YOUR_ACCESS_KEY_ID" > /tmp/access_key_id
-echo -n "YOUR_SECRET_ACCESS_KEY" > /tmp/secret_access_key
-# echo -n "YOUR_SESSION_TOKEN" > /tmp/session_token  # Only if using temporary credentials
-```
-
-Create the Kubernetes secret from files:
-
-```bash
-# Without session token
-kubectl create secret generic ${SECRET_NAME} \
-  --from-file=access_key_id=/tmp/access_key_id \
-  --from-file=secret_access_key=/tmp/secret_access_key \
-  --namespace ${NAMESPACE}
-
-# OR with session token (if needed)
-# kubectl create secret generic ${SECRET_NAME} \
-#   --from-file=access_key_id=/tmp/access_key_id \
-#   --from-file=secret_access_key=/tmp/secret_access_key \
-#   --from-file=session_token=/tmp/session_token \
-#   --namespace ${NAMESPACE}
-```
-
-**Important**: Clean up temporary files immediately:
-
-```bash
-rm -f /tmp/access_key_id /tmp/secret_access_key /tmp/session_token
-```
-
-**Step 3: Create Custom Values File:**
-
-Create a `values-production.yaml` file with your configuration:
+Create a `values-production.yaml` file with your configuration.
 
 ```yaml
 # values-production.yaml
@@ -107,14 +130,14 @@ node:
   # Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
   s3EndpointUrl: "https://s3.example.com"  # Replace with your actual endpoint
 
-
   # Optional: Default AWS region for S3 requests
-  # Can be overridden per-volume using PersistentVolume mountOptions
+  # Can be overridden per-volume at PersistentVolume level.
   # Must match the region configured in your RING setup
   s3Region: "us-east-1"  # Adjust based on your RING configuration, default is `us-east-1`
 
   # Resource limits for the CSI node DaemonSet pods (one pod per worker node)
   # These apply to the main s3-plugin container that handles volume mount operations
+  # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   # resources:
   #   requests:
   #     cpu: 50m        # Baseline CPU needed for volume operations
@@ -122,68 +145,57 @@ node:
   #   limits:
   #     cpu: 200m       # Maximum CPU during heavy I/O
   #     memory: 256Mi   # Memory limit to prevent resource contention
+  # Example for higher resource limits for production workloads
+  # resources:
+  #   requests:
+  #     cpu: 100m
+  #     memory: 256Mi
+  #   limits:
+  #     cpu: 500m
+  #     memory: 512Mi
 
   # Node selector for the CSI node DaemonSet - controls which nodes run the driver
   # The driver MUST run on every node where you want to mount S3 volumes
   # nodeSelector:
   #   node-role.kubernetes.io/worker: "true"     # Only run on worker nodes
-  #   storage-enabled: "true"                    # Only on storage-capable nodes
-
+  #
   # Tolerations for the CSI node DaemonSet - allows driver to run on tainted nodes
-  # Essential if you have tainted nodes where S3 volumes should be mountable
-  # tolerations:
-  # - key: "node-role.kubernetes.io/control-plane"  # Allow on control plane nodes
-  #   effect: "NoSchedule"
-  # - key: "dedicated"                               # Allow on dedicated storage nodes
-  #   operator: "Equal"
-  #   value: "storage"
-  #   effect: "NoSchedule"
+  # https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  # tolerations: []
 
 s3CredentialSecret:
   # Reference the Kubernetes Secret containing S3 credentials created in Step 2
   # This secret must exist in the same namespace as the driver installation
-  name: "s3-credentials"  # Must match the SECRET_NAME from Step 2
+  name: "s3-secret"  # Must match the SECRET_NAME from Step 1
 
 # Sidecar container resources - these run alongside the main s3-plugin in each node pod
 # Each node pod contains: s3-plugin (main) + 2 sidecars (node-driver-registrar & livenessprobe)
-sidecars:
-  nodeDriverRegistrar:
-    # Registers the CSI driver with kubelet on each node - required for volume operations
-    resources:
-      requests:
-        cpu: 10m        # Minimal CPU for registration operations
-        memory: 40Mi    # Memory for kubelet communication
-      limits:
-        cpu: 50m        # Burst CPU for initial registration
-        memory: 100Mi   # Memory limit for registration process
-  livenessProbe:
-    # Monitors health of the CSI driver and reports to Kubernetes
-    resources:
-      requests:
-        cpu: 10m        # Minimal CPU for health checks
-        memory: 40Mi    # Memory for probe operations
-      limits:
-        cpu: 50m        # Burst CPU during health checks
-        memory: 100Mi   # Memory limit for probe container
+# Resources are not set by default.
+# sidecars:
+  # nodeDriverRegistrar:
+  #   # Registers the CSI driver with kubelet on each node - required for volume operations
+  #   resources:
+  # livenessProbe:
+  #   # Monitors health of the CSI driver and reports to Kubernetes
+  #   resources:
 ```
 
 For a complete list of configurable parameters, see the [Helm Chart Configuration Reference](../concepts-and-reference/helm-chart-configuration-reference.md) reference.
 
-**Step 4: Install the Helm Chart:**
+**Install the Helm Chart:**
 
-Install the driver using the custom values file:
+Deploy the driver using the custom values file.
 
 ```bash
-helm install scality-s3-csi \
+helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
   --values values-production.yaml \
   --namespace ${NAMESPACE}
 ```
 
+## Step 5. Verification
 
-## Verification
-
-### Step 1: Check Driver Pods
+### Check Driver Pods
 
 Verify that the driver pods are running:
 
@@ -193,15 +205,13 @@ kubectl get pods -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3
 
 Expected output: One `s3-csi-node-*` pod per eligible worker node, all in `Running` state.
 
-### Step 2: Verify CSI Driver Registration
+### Verify CSI Driver Registration
 
 ```bash
 kubectl get csidriver s3.csi.scality.com
 ```
 
-Expected output should show the driver with `attachRequired: false`.
-
-### Step 3: Check Driver Logs (Optional)
+### Check Driver Logs (Optional)
 
 To troubleshoot or verify operation:
 
@@ -209,55 +219,6 @@ To troubleshoot or verify operation:
 # Get logs from a node plugin pod
 kubectl logs -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c s3-plugin
 ```
-
-## Advanced Configuration
-
-### Node Selectors and Tolerations
-
-To control where the driver pods run:
-
-```yaml
-# values-production.yaml
-node:
-  nodeSelector:
-    node-role.kubernetes.io/worker: "true"
-    storage-type: "ssd"
-
-  tolerations:
-  - key: "dedicated"
-    operator: "Equal"
-    value: "storage"
-    effect: "NoSchedule"
-```
-
-### Resource Limits
-
-For production workloads, adjust resource limits based on your requirements:
-
-```yaml
-node:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-```
-
-## Security Considerations
-
-<!-- markdownlint-disable MD046 -->
-!!! important "Production Security Checklist"
-    - ✅ Use dedicated namespace with appropriate RBAC
-    - ✅ Create secrets from files, not command line arguments
-    - ✅ Delete temporary credential files immediately after use
-    - ✅ Implement least-privilege IAM policies
-    - ✅ Enable audit logging for cluster operations
-    - ✅ Consider using IAM roles for service accounts (IRSA) where supported
-    - ✅ Regularly rotate credentials
-    - ✅ Use TLS/HTTPS for S3 endpoints
-<!-- markdownlint-enable MD046 -->
 
 ## Uninstallation
 
@@ -267,12 +228,12 @@ node:
 
 If no volumes were provisioned, you can uninstall the driver with these simple steps:
 
-These steps assume that environment variables, `NAMESPACE` and `SECRET_NAME` are set per step 2 of this guide.
+These steps assume that environment variables, `NAMESPACE` and `SECRET_NAME` are set per the [installation steps above](#step-1-set-configuration-variables).
 
 **Step 1. Uninstall the Helm release:**
 
 ```bash
-helm uninstall scality-s3-csi -n ${NAMESPACE}
+helm uninstall scality-mountpoint-s3-csi-driver -n ${NAMESPACE}
 ```
 
 **Step 2. Delete the S3 credentials secret:**
@@ -284,23 +245,22 @@ kubectl delete secret ${SECRET_NAME} -n ${NAMESPACE}
 **Step 3. Delete the namespace (if created):**
 
 ```bash
-# Only if you created a dedicated namespace and want to remove it
-kubectl delete namespace ${NAMESPACE}
+kubectl delete namespace ${NAMESPACE}  # Only if you created a dedicated namespace
 ```
 
 **Step 4. Verify removal:**
 
-- Check that CSI driver is removed
+Check that CSI driver is removed:
 
-    ```bash
-    kubectl get csidriver s3.csi.scality.com
-    ```
+```bash
+kubectl get csidriver s3.csi.scality.com
+```
 
-- Check that no driver pods remain
+Check that no driver pods remain:
 
-    ```bash
-    kubectl get pods --all-namespaces -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
-    ```
+```bash
+kubectl get pods --all-namespaces -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
+```
 
 ## Next Steps
 
