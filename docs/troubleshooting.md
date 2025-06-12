@@ -8,21 +8,13 @@ This guide helps diagnose and resolve common issues with the Scality S3 CSI Driv
 
 ```bash
 # Check driver pods status
-kubectl get pods -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
+kubectl get pods -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
 
 # View driver logs
-kubectl logs -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c s3-plugin --tail=50
+kubectl logs -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c s3-plugin --tail=50
 ```
 
-### 2. Check Mount Status
-
-```bash
-# On the node where the pod is scheduled
-systemctl list-units --all | grep mount-s3
-journalctl -u mount-s3-<unit-name> -f
-```
-
-### 3. Verify S3 Connectivity
+### 2. Check S3 Connectivity
 
 ```bash
 # Test endpoint connectivity
@@ -38,7 +30,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 
 | Symptom | Cause | Solution |
 |---------|-------|----------|
-| Pod stuck in `ContainerCreating` | Mount operation failed | 1. Check driver logs<br/>2. Verify S3 credentials<br/>3. Check mount options<br/>4. Ensure unique `volumeHandle` |
+| Pod stuck in `ContainerCreating` | Mount operation failed | 1. Check driver logs<br/>2. Check S3 credentials<br/>3. Check mount options<br/>4. Ensure unique `volumeHandle` |
 | Pod stuck in `Terminating` | Mount point busy or corrupted | 1. Force delete pod: `kubectl delete pod <name> --force`<br/>2. Check for `subPath` issues (see below) |
 | Pod fails with "Permission denied" | Missing mount permissions | Add `allow-other` to PV `mountOptions` |
 | Pod cannot write/delete files | Missing write permissions | Add `allow-delete` and/or `allow-overwrite` to PV `mountOptions` |
@@ -47,10 +39,10 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 
 | Error Message | Cause | Solution |
 |---------------|-------|----------|
-| "Transport endpoint not connected" | S3 endpoint unreachable | 1. Verify network connectivity<br/>2. Check endpoint URL configuration<br/>3. Verify security groups/firewall rules |
-| "Failed to create mount process" | Mountpoint binary issue | 1. Check initContainer logs<br/>2. Verify `/opt/mountpoint-s3-csi/bin/mount-s3` exists on node |
-| "Access Denied" | Invalid S3 credentials | 1. Verify secret contains `access_key_id` and `secret_access_key`<br/>2. Test credentials with AWS CLI<br/>3. Check bucket policy |
-| "InvalidBucketName" | Bucket name issue | 1. Verify bucket exists<br/>2. Check bucket name format<br/>3. Ensure no typos |
+| "Transport endpoint not connected" | S3 endpoint unreachable | 1. Check network connectivity<br/>2. Check endpoint URL configuration<br/>3. Check security groups/firewall rules |
+| "Failed to create mount process" | Mountpoint binary issue | 1. Check initContainer logs<br/>2. Check `/opt/mountpoint-s3-csi/bin/mount-s3` exists on node |
+| "Access Denied" | Invalid S3 credentials | 1. Check secret contains `access_key_id` and `secret_access_key`<br/>2. Test credentials with AWS CLI<br/>3. Check bucket policy |
+| "InvalidBucketName" | Bucket name issue | 1. Check bucket exists<br/>2. Check bucket name format<br/>3. Ensure no typos |
 | "AWS_ENDPOINT_URL environment variable must be set" | Missing endpoint configuration | Set `s3EndpointUrl` in Helm values or driver configuration |
 
 ### Volume Issues
@@ -59,7 +51,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 |-------|-------------|----------|
 | Multiple volumes fail in same pod | Duplicate `volumeHandle` | Ensure each PV has unique `volumeHandle` value |
 | `subPath` returns "No such file or directory" | Empty directory removed by Mountpoint | Use `prefix` mount option instead of `subPath` (see below) |
-| Volume not mounting | Misconfigured PV/PVC | Verify `storageClassName: ""` for static provisioning |
+| Volume not mounting | Misconfigured PV/PVC | Check `storageClassName: ""` for static provisioning |
 
 ## Known Limitations and Workarounds
 
