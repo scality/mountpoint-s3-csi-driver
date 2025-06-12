@@ -101,28 +101,29 @@ nav:
       - Installation Guide: driver-deployment/installation-guide.md
       - Uninstallation: driver-deployment/uninstallation.md
   - Volume Provisioning:
-      - How-To Guides:
-          - Overview: volume-provisioning/how-to/index.md
-          - Override Region: volume-provisioning/how-to/override-region.md
-      - Prerequisites: volume-provisioning/prerequisites.md
+      - Static Provisioning:
+          - Overview: volume-provisioning/static-provisioning/overview.md
+          - Mount Options: volume-provisioning/static-provisioning/mount-options.md
+          - Examples:
+              - Basic Static Provisioning: volume-provisioning/static-provisioning/examples/basic-static-provisioning.md
+              - Shared Cache Configuration: volume-provisioning/static-provisioning/examples/shared-cache.md
+              - Secret-Based Authentication: volume-provisioning/static-provisioning/examples/secret-authentication.md
+              - Non-Root User Access: volume-provisioning/static-provisioning/examples/non-root-user.md
+              - Multiple Pods Sharing Volume: volume-provisioning/static-provisioning/examples/multiple-pods-shared-volume.md
+              - Multiple Buckets in One Pod: volume-provisioning/static-provisioning/examples/multiple-buckets.md
+              - Local Caching: volume-provisioning/static-provisioning/examples/local-caching.md
+              - KMS Server-Side Encryption: volume-provisioning/static-provisioning/examples/kms-encryption.md
+              - Retry Configuration: volume-provisioning/static-provisioning/examples/retry-configuration.md
+              - Debug Logging: volume-provisioning/static-provisioning/examples/debug-logging.md
+              - File and Directory Permissions: volume-provisioning/static-provisioning/examples/file-permissions.md
+              - Allow Root Access: volume-provisioning/static-provisioning/examples/allow-root.md
+              - Bucket Prefix Mounting: volume-provisioning/static-provisioning/examples/bucket-prefix.md
+              - Override S3 Region: volume-provisioning/static-provisioning/examples/override-region.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
       - Permissions: concepts-and-reference/permissions.md
-  - Configuration:
-      - Overview: configuration/index.md
-      - Volume Configuration: configuration/volume-configuration.md
-      - Mount Options: configuration/mount-options.md
-  - How-To Guides:
-      - Static Provisioning: how-to/static-provisioning.md
-      - Mount Multiple Buckets: how-to/multi-volume.md
-      - Region Override: how-to/region-override.md
-      - Permissions & Non-Root Access: how-to/permissions.md
-  - Concepts:
-      - Filesystem Semantics: concepts/filesystem-semantics.md
-  - Reference:
-      - Compatibility Matrix: reference/compatibility-matrix.md
+      - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
+      - Filesystem Semantics: concepts-and-reference/filesystem-semantics.md
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Administrator and User Guide: admin-user-guide.md
-  - Reference:
-      - Minimal Helm Example: examples/minimal-helm.yaml

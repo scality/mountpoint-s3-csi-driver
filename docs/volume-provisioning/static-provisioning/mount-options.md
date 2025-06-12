@@ -76,6 +76,21 @@ Mount options are determined by a combination of factors. Understanding their pr
     - The driver adds a `--user-agent-prefix` for telemetry.
 3. **Mountpoint Client Defaults**: If an option is not specified by the PV or the CSI driver, the Mountpoint S3 client's own internal defaults will apply.
 
+## AWS Endpoint URL Configuration
+
+For security and consistency reasons, if `--endpoint-url` is specified in the `mountOptions` of a PersistentVolume, it will be ignored by the driver.
+This is enforced in both systemd and pod mounters to prevent potential security risks like endpoint redirection attacks.
+
+To configure a custom endpoint URL for S3 requests, set it at the driver level using one of the following methods:
+
+### Using Helm
+
+```yaml
+# values.yaml for Helm chart
+node:
+  s3EndpointUrl: "https://s3.example.com:8000"
+```
+
 ## Examples
 
 ### Read-Only Mount
@@ -152,4 +167,5 @@ spec:
     The CSI driver does not automatically manage the uniqueness or lifecycle of these host cache paths beyond passing the option to Mountpoint.
     Node-level disk space and permissions for the cache path are also your responsibility.
 
-For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../concepts/filesystem-semantics.md) and [Permissions (How-To)](../how-to/permissions.md) pages.
+For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../../concepts-and-reference/filesystem-semantics.md)
+and [Permissions](../../concepts-and-reference/permissions.md) pages.

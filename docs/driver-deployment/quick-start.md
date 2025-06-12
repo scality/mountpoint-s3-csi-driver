@@ -108,7 +108,7 @@ kubectl delete secret s3-secret
 
 ## Next Steps
 
-**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets as volumes with applications.
+**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/static-provisioning/overview.md) to learn how to use S3 buckets as volumes with applications.
 
 **For Production Deployments**: Follow the [installation guide](installation-guide.md) for:
 

@@ -257,4 +257,4 @@ kubectl get pods --all-namespaces -l app.kubernetes.io/name=scality-mountpoint-s
 
 ## Next Steps
 
-**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets as volumes with kubernetes applications.
+**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/static-provisioning/overview.md) to learn how to use S3 buckets as volumes with kubernetes applications.

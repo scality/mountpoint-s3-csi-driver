@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s3-pv
+spec:
+  capacity:
+    storage: 1200Gi # ignored, required
+  accessModes:
+    - ReadWriteMany # supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  claimRef: # To ensure no other PVCs can claim this PV
+    namespace: default # Namespace is required even though it's in "default" namespace.
+    name: s3-pvc # Name of your PVC
+  mountOptions:
+    - allow-delete
+    - allow-overwrite
+    - uid=1000
+    - gid=2000
+    - allow-other
+    - file-mode=0640 # Files: rw-r-----
+    - dir-mode=0750  # Directories: rwxr-x---
+  csi:
+    driver: s3.csi.scality.com # required
+    volumeHandle: s3-csi-file-perms-volume # Must be unique across all PVs
+    volumeAttributes:
+      bucketName: s3-csi-driver-test
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: s3-pvc
+spec:
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany
+  storageClassName: "" # Required for static provisioning
+  resources:
+    requests:
+      storage: 1200Gi # Ignored, required
+  volumeName: s3-pv # Name of your PV
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: s3-app
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 2000
+  containers:
+    - name: app
+      image: ubuntu
+      command: ["/bin/sh"]
+      args: ["-c", "echo 'Hello from the container!' > /data/test.txt; mkdir -p /data/testdir; ls -la /data; tail -f /dev/null"]
+      volumeMounts:
+        - name: persistent-storage
+          mountPath: /data
+  volumes:
+    - name: persistent-storage
+      persistentVolumeClaim:
+        claimName: s3-pvc

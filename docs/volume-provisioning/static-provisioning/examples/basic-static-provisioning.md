@@ -1,15 +1,17 @@
-# How-To: Static Provisioning of S3 Buckets
+# Basic Static Provisioning
 
-This guide demonstrates how to statically provision an existing S3 bucket as a PersistentVolume (PV) in Kubernetes using the Scality S3 CSI Driver.
+This example demonstrates the simplest static provisioning setup with an S3 bucket.
 
-## Prerequisites
+## Features
 
-- Scality S3 CSI Driver and S3 credentials secret set up as described in the [Installation Guide](../driver-deployment/installation-guide.md)
-- An existing S3 bucket
+- Basic S3 bucket mounting
+- Read-write access with delete permissions
+- Specific S3 region and prefix configuration
 
-## Example: Static Provisioning
+## Deploy
 
-```yaml
+```bash
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -18,19 +20,18 @@ spec:
   capacity:
     storage: 1200Gi # Ignored, required
   accessModes:
-    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+    - ReadWriteMany # Supported options: ReadWriteMany
   storageClassName: "" # Required for static provisioning
   claimRef: # To ensure no other PVCs can claim this PV
     namespace: default # Namespace is required even though it's in "default" namespace.
     name: s3-pvc # Name of your PVC
   mountOptions:
     - allow-delete
-    - allow-overwrite
-    # - region us-west-2 # Uncomment if needed to override the region specified in driver configuration
-    # - prefix some-s3-prefix/ # Uncomment if needed to mount a specific prefix of the bucket, remove if not needed
+    - region us-west-2
+    - prefix some-s3-prefix/
   csi:
     driver: s3.csi.scality.com # Required
-    volumeHandle: s3-csi-driver-volume
+    volumeHandle: s3-csi-basic-static-volume # Must be unique across all PVs
     volumeAttributes:
       bucketName: s3-csi-driver
 ---
@@ -40,7 +41,7 @@ metadata:
   name: s3-pvc
 spec:
   accessModes:
-    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+    - ReadWriteMany # Supported options: ReadWriteMany
   storageClassName: "" # Required for static provisioning
   resources:
     requests:
@@ -64,17 +65,24 @@ spec:
     - name: persistent-storage
       persistentVolumeClaim:
         claimName: s3-pvc
+EOF
 ```
 
-## 4. Verify the Setup
+## Verify
 
 ```bash
-kubectl get pv s3-pv
-kubectl get pvc s3-pvc
 kubectl get pod s3-app
+kubectl logs s3-app
 ```
 
-## 5. Next Steps
+## Cleanup
 
-- For advanced configuration, see [Volume Configuration](../configuration/volume-configuration.md)
-- For a full example, see [Minimal Helm Example](../examples/minimal-helm.yaml)
+```bash
+kubectl delete pod s3-app
+kubectl delete pvc s3-pvc
+kubectl delete pv s3-pv
+```
+
+## Download YAML
+
+[📁 static_provisioning.yaml](assets/static_provisioning.yaml)
