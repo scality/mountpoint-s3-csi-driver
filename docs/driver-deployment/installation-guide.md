@@ -18,31 +18,31 @@ The installation process consists of:
 
 ## Step 1. Set Configuration Variables
 
-- Set the namespace in which the s3 credentials secret will be created and the driver will be deployed. Replace `scality-s3-csi` with your preferred namespace name.
+- Set the namespace in which the s3 credentials secret will be created and the driver will be deployed. Replace `scality-s3-csi` with the preferred namespace name.
 
     ```bash
     export NAMESPACE="scality-s3-csi"
     ```
 
-- Set the secret name in which the s3 credentials will be stored. Replace `s3-secret` with your preferred secret name.
+- Set the secret name in which the s3 credentials will be stored. Replace `s3-secret` with the preferred secret name.
 
     ```bash
     export SECRET_NAME="s3-secret"
     ```
 
-- Set the access key ID. Replace `YOUR_ACCESS_KEY_ID` with your actual access key ID.
+- Set the access key ID. Replace `YOUR_ACCESS_KEY_ID` with the actual access key ID.
 
     ```bash
     export ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
     ```
 
-- Set the secret access key. Replace `YOUR_SECRET_ACCESS_KEY` with your actual secret access key.
+- Set the secret access key. Replace `YOUR_SECRET_ACCESS_KEY` with the actual secret access key.
 
     ```bash
     export SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
     ```
 
-- Set the session token (optional). Replace `YOUR_SESSION_TOKEN` with your actual session token. The driver does not communicate with RING STS service to refresh the session token.
+- Set the session token (optional). Replace `YOUR_SESSION_TOKEN` with the actual session token. The driver does not communicate with RING STS service to refresh the session token.
 
     ```bash
     # export SESSION_TOKEN="YOUR_SESSION_TOKEN"
@@ -120,7 +120,7 @@ For environments requiring custom configuration:
 
 **Create Custom Values File:**
 
-Create a `values-production.yaml` file with your configuration.
+Create a `values-production.yaml` file with preferred configuration.
 
 ```yaml
 # values-production.yaml
@@ -128,12 +128,12 @@ node:
   # REQUIRED: Scality RING S3 endpoint URL
   # For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
   # Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
-  s3EndpointUrl: "https://s3.example.com"  # Replace with your actual endpoint
+  s3EndpointUrl: "https://s3.example.com"  # Replace with the actual endpoint
 
   # Optional: Default AWS region for S3 requests
   # Can be overridden per-volume at PersistentVolume level.
-  # Must match the region configured in your RING setup
-  s3Region: "us-east-1"  # Adjust based on your RING configuration, default is `us-east-1`
+  # Must match the region configured in the RING setup
+  s3Region: "us-east-1"  # Adjust based on the RING configuration, default is `us-east-1`
 
   # Resource limits for the CSI node DaemonSet pods (one pod per worker node)
   # These apply to the main s3-plugin container that handles volume mount operations
@@ -155,7 +155,6 @@ node:
   #     memory: 512Mi
 
   # Node selector for the CSI node DaemonSet - controls which nodes run the driver
-  # The driver MUST run on every node where you want to mount S3 volumes
   # nodeSelector:
   #   node-role.kubernetes.io/worker: "true"     # Only run on worker nodes
   #
@@ -264,4 +263,4 @@ kubectl get pods --all-namespaces -l app.kubernetes.io/name=scality-mountpoint-s
 
 ## Next Steps
 
-**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets with your applications.
+**Volume Provisioning**: See the [volume provisioning guides](../volume-provisioning/prerequisites.md) to learn how to use S3 buckets as volumes with kubernetes applications.
