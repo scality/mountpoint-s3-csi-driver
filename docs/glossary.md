@@ -100,9 +100,9 @@ This glossary defines acronyms, technical terms, and concepts used throughout th
 
 | Option | Description |
 |--------|-------------|
-| `allow-delete` | Permits deletion of files and objects |
+| `allow-delete` | Allows deletion of files and objects |
 | `allow-other` | Allows other users to access the mounted file system |
-| `allow-overwrite` | Permits overwriting existing files |
+| `allow-overwrite` | Allows overwriting existing files |
 | `cache` | Enables local caching of file data |
 | `gid` | Sets the group ID for file ownership |
 | `metadata-ttl` | Sets cache duration for file metadata |
