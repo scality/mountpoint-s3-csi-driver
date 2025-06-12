@@ -93,21 +93,6 @@ node:
 
 ## Examples
 
-### Read-Only Mount
-
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-# ...
-spec:
-  accessModes:
-    - ReadOnlyMany # Ensure access mode also reflects read-only
-  mountOptions:
-    - "--read-only" # Mountpoint flag for read-only
-  csi:
-    # ...
-```
-
 ### Non-Root User Access
 
 To allow a pod running as a non-root user (e.g., UID 1001, GID 2002) to access the S3 mount:

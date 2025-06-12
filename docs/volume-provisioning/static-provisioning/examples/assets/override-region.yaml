@@ -1,17 +1,3 @@
-# Override S3 Region
-
-This example demonstrates how to override the S3 region for a specific volume using the `region` mount option.
-
-## Features
-
-- Override driver's global S3 region setting
-- Access buckets in different regions from same cluster
-- Useful for multi-region deployments
-
-## Deploy
-
-```bash
-kubectl apply -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -64,32 +50,3 @@ spec:
     - name: persistent-storage
       persistentVolumeClaim:
         claimName: s3-region-override-pvc
-EOF
-```
-
-## Key Mount Option
-
-- `region=eu-west-1` - Override S3 region for this specific volume
-
-## Important Notes
-
-⚠️ **Region Must Match**: The region specified must match the actual region where your S3 bucket is located.
-
-## Verify
-
-```bash
-kubectl get pod s3-region-app
-kubectl exec s3-region-app -- ls -la /data
-```
-
-## Cleanup
-
-```bash
-kubectl delete pod s3-region-app
-kubectl delete pvc s3-region-override-pvc
-kubectl delete pv s3-region-override-pv
-```
-
-## Download YAML
-
-[📁 override-region.yaml](assets/override-region.yaml)

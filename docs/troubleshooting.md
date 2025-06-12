@@ -2,83 +2,145 @@
 
 This guide helps diagnose and resolve common issues with the Scality S3 CSI Driver.
 
-## Common Issues
+## Quick Diagnostics
 
-| Symptom | Probable Cause | Fix |
-|---------|----------------|-----|
-| Pod stuck in `ContainerCreating` | Mount operation failed | Check driver logs: `kubectl logs -n kube-system <driver-pod>` |
-| "Permission denied" accessing files | Missing `allow-other` mount option | Add `allow-other` to PV mountOptions |
-| Cannot delete files | Missing `allow-delete` mount option | Add `allow-delete` to PV mountOptions |
-| Mount fails with "Transport endpoint not connected" | S3 endpoint unreachable | Verify network connectivity to S3 endpoint |
-
-## Diagnostic Commands
-
-### Check Driver Status
+### 1. Check Driver Health
 
 ```bash
+# Check driver pods status
 kubectl get pods -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
-kubectl logs -n kube-system <driver-pod-name> -c s3-plugin
+
+# View driver logs
+kubectl logs -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c s3-plugin --tail=50
 ```
 
-### Check Mount Status (on node)
+### 2. Check Mount Status
 
 ```bash
+# On the node where the pod is scheduled
 systemctl list-units --all | grep mount-s3
-journalctl -u <mount-unit-name> -f
+journalctl -u mount-s3-<unit-name> -f
 ```
 
-### Verify S3 Connectivity
+### 3. Verify S3 Connectivity
 
 ```bash
-curl -I https://s3.example.com
-aws s3 ls s3://bucket-name --endpoint-url https://s3.example.com
+# Test endpoint connectivity
+curl -I https://your-s3-endpoint.com
+
+# Test S3 access with AWS CLI
+aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 ```
 
-## Common Error Messages
+## Common Issues and Solutions
 
-### "Failed to create mount process"
+### Pod Issues
 
-- **Cause**: Mountpoint binary not found or not executable
-- **Solution**: Check initContainer logs, ensure `/opt/mountpoint-s3-csi/bin/mount-s3` exists
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Pod stuck in `ContainerCreating` | Mount operation failed | 1. Check driver logs<br/>2. Verify S3 credentials<br/>3. Check mount options<br/>4. Ensure unique `volumeHandle` |
+| Pod stuck in `Terminating` | Mount point busy or corrupted | 1. Force delete pod: `kubectl delete pod <name> --force`<br/>2. Check for `subPath` issues (see below) |
+| Pod fails with "Permission denied" | Missing mount permissions | Add `allow-other` to PV `mountOptions` |
+| Pod cannot write/delete files | Missing write permissions | Add `allow-delete` and/or `allow-overwrite` to PV `mountOptions` |
 
-### "Access Denied"
+### Mount Issues
 
-- **Cause**: Invalid S3 credentials or insufficient permissions
-- **Solution**: Verify secret, test credentials with AWS CLI, check bucket policy
+| Error Message | Cause | Solution |
+|---------------|-------|----------|
+| "Transport endpoint not connected" | S3 endpoint unreachable | 1. Verify network connectivity<br/>2. Check endpoint URL configuration<br/>3. Verify security groups/firewall rules |
+| "Failed to create mount process" | Mountpoint binary issue | 1. Check initContainer logs<br/>2. Verify `/opt/mountpoint-s3-csi/bin/mount-s3` exists on node |
+| "Access Denied" | Invalid S3 credentials | 1. Verify secret contains `access_key_id` and `secret_access_key`<br/>2. Test credentials with AWS CLI<br/>3. Check bucket policy |
+| "InvalidBucketName" | Bucket name issue | 1. Verify bucket exists<br/>2. Check bucket name format<br/>3. Ensure no typos |
+| "AWS_ENDPOINT_URL environment variable must be set" | Missing endpoint configuration | Set `s3EndpointUrl` in Helm values or driver configuration |
 
-### "InvalidBucketName"
+### Volume Issues
 
-- **Cause**: Bucket name doesn't meet S3 requirements
-- **Solution**: Verify bucket name, ensure bucket exists, check for typos
+| Issue | Description | Solution |
+|-------|-------------|----------|
+| Multiple volumes fail in same pod | Duplicate `volumeHandle` | Ensure each PV has unique `volumeHandle` value |
+| `subPath` returns "No such file or directory" | Empty directory removed by Mountpoint | Use `prefix` mount option instead of `subPath` (see below) |
+| Volume not mounting | Misconfigured PV/PVC | Verify `storageClassName: ""` for static provisioning |
 
-!!! tip
-    Enable debug logging before reproducing issues to capture detailed diagnostic information.
+## Known Limitations and Workarounds
 
+### SubPath Behavior
 
-25-06-11T19:46:19.797074429Z F0611 19:46:19.796880       1 main.go:74] failed to create driver: AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function
-2025-06-11T19:46:19.797097637Z F0611 19:46:19.796880       1 main.go:74] failed to create driver: AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function
-2025-06-11T19:46:19.797099387Z F0611 19:46:19.796880       1 main.go:74] failed to create driver: AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function
-2025-06-11T19:46:19.797100554Z F0611 19:46:19.796880       1 main.go:74] failed to create driver: AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function
-2025-06-11T19:46:19.797101512Z F0611 19:46:19.796880       1 main.go:74] failed to create driver: AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function
+When using `subPath` with S3 volumes, deleting all files in the directory causes the directory itself to disappear, making the mount unusable.
 
+**Instead of:**
 
-## Troubleshooting Uninstallation
+```yaml
+volumeMounts:
+  - mountPath: "/data"
+    subPath: some-prefix
+    name: vol
+```
 
-### Issue: Namespace Stuck in Terminating State
+**Use prefix mount option:**
 
-If the namespace is stuck deleting:
+```yaml
+# In PersistentVolume
+mountOptions:
+  - prefix=some-prefix/
+```
+
+### Multiple Volumes in Same Pod
+
+Each PersistentVolume must have a unique `volumeHandle`:
+
+```yaml
+# ❌ WRONG - Duplicate volumeHandle
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s3-pv-1
+spec:
+  csi:
+    volumeHandle: s3-csi-driver-volume # Duplicate!
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s3-pv-2
+spec:
+  csi:
+    volumeHandle: s3-csi-driver-volume # Duplicate!
+
+# ✅ CORRECT - Unique volumeHandles
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s3-pv-1
+spec:
+  csi:
+    volumeHandle: s3-csi-driver-volume-1 # Unique
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s3-pv-2
+spec:
+  csi:
+    volumeHandle: s3-csi-driver-volume-2 # Unique
+```
+
+## Uninstallation Issues
+
+### Namespace Stuck Terminating
 
 ```bash
-# Check what's blocking deletion
+# Check blocking conditions
 kubectl get namespace ${NAMESPACE} -o json | jq '.status.conditions'
 
-# Force remove finalizers if needed (use with caution)
-kubectl get namespace ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' | kubectl replace --raw /api/v1/namespaces/${NAMESPACE}/finalize -f -
+# Force remove finalizers (use with caution)
+kubectl get namespace ${NAMESPACE} -o json | \
+  jq '.spec = {"finalizers":[]}' | \
+  kubectl replace --raw /api/v1/namespaces/${NAMESPACE}/finalize -f -
 ```
 
-### Issue: PVs Stuck in Terminating State
-
-If PersistentVolumes won't delete:
+### PersistentVolumes Stuck Terminating
 
 ```bash
 # Check PV status
@@ -88,35 +150,72 @@ kubectl describe pv <pv-name>
 kubectl patch pv <pv-name> -p '{"metadata":{"finalizers":null}}'
 ```
 
-### Issue: Helm Release Not Found
-
-If Helm can't find the release:
+### Orphaned Helm Release
 
 ```bash
-# Check all namespaces
+# List all releases
 helm list --all-namespaces
 
-# If release is orphaned, manually clean up resources
+# Manual cleanup if release is orphaned
 kubectl delete all -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver --all-namespaces
 kubectl delete sa,clusterrole,clusterrolebinding -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver --all-namespaces
 ```
 
+## Debug Mode
 
-## Troubleshooting
+Enable debug logging for detailed diagnostics:
 
-### Common Issues
+```yaml
+# In PersistentVolume
+spec:
+  mountOptions:
+    - debug
+    - debug-crt  # For AWS CRT client logs
+```
 
-1. **Driver pods not starting**:
-   - Check node plugin logs: `kubectl logs -n ${NAMESPACE} <node-pod-name> -c s3-plugin`
-   - Verify credentials secret exists and contains correct keys
-   - Ensure S3 endpoint is reachable from nodes
+View debug logs:
 
-2. **CSI driver not registered**:
-   - Check kubelet logs on the nodes
-   - Verify the driver pods are running on all expected nodes
-   - Check for RBAC permission issues
+```bash
+# On the node
+journalctl -u mount-s3-* -f
+```
 
-3. **Performance issues**:
-   - Consider adjusting resource limits in values file
-   - Check network latency to S3 endpoint
-   - Monitor driver pod resource usage
+## Performance Troubleshooting
+
+| Symptom | Possible Cause | Action |
+|---------|----------------|--------|
+| Slow file operations | High S3 latency | 1. Check network latency to S3<br/>2. Enable caching with `cache` mount option<br/>3. Consider using closer S3 region |
+| High memory usage | Large cache size | Limit cache with `max-cache-size` mount option |
+| Slow directory listings | No metadata caching | Add `metadata-ttl` mount option (e.g., `metadata-ttl=60`) |
+
+## Getting Help
+
+If issues persist after following this guide:
+
+1. Collect diagnostic information:
+
+    ```bash
+    # CSI driver logs (all containers)
+    kubectl logs -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver --all-containers=true > csi-driver-logs.txt
+
+    # Node plugin logs specifically
+    kubectl logs -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c s3-plugin > node-plugin-logs.txt
+
+    # CSI node driver registrar logs
+    kubectl logs -n kube-system -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c node-driver-registrar > registrar-logs.txt
+
+    # Your pod description and events
+    kubectl describe pod <your-pod> > pod-description.txt
+
+    # PV and PVC details
+    kubectl describe pv <your-pv> > pv-description.txt
+    kubectl describe pvc <your-pvc> > pvc-description.txt
+
+    # S3 bucket configuration (if accessible)
+    aws s3api get-bucket-location --bucket <bucket-name> --endpoint-url <endpoint> > bucket-location.txt
+    aws s3api get-bucket-versioning --bucket <bucket-name> --endpoint-url <endpoint> > bucket-versioning.txt
+    aws s3api get-bucket-policy --bucket <bucket-name> --endpoint-url <endpoint> > bucket-policy.txt 2>&1
+    aws s3api list-objects-v2 --bucket <bucket-name> --max-items 10 --endpoint-url <endpoint> > bucket-list-sample.txt
+    ```
+
+2. Contact [Scality Support](https://support.scality.com/) with, Driver version, Kubernetes version, Error messages and all collected information in Step 1, PV/PVC/Pod YAML manifests (sanitized)

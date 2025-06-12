@@ -115,3 +115,4 @@ spec:
 - [File and Directory Permissions](examples/file-permissions.md) - Custom file/directory permissions
 - [Allow Root Access](examples/allow-root.md) - Root access with non-root UID/GID
 - [Bucket Prefix Mounting](examples/bucket-prefix.md) - Mount specific bucket prefix/folder
+- [Override S3 Region](examples/override-region.md) - Override S3 region for specific volumes

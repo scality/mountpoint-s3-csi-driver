@@ -21,7 +21,7 @@ spec:
   capacity:
     storage: 1200Gi # ignored, required
   accessModes:
-    - ReadWriteMany # supported options: ReadWriteMany / ReadOnlyMany
+    - ReadWriteMany # supported options: ReadWriteMany
   storageClassName: "" # Required for static provisioning
   claimRef: # To ensure no other PVCs can claim this PV
     namespace: default # Namespace is required even though it's in "default" namespace.
@@ -77,7 +77,7 @@ EOF
 
 **Bucket Structure:**
 
-```bash
+```text
 my-bucket/
 ├── app-data/           ← This becomes the mount root
 │   ├── file1.txt
@@ -90,7 +90,7 @@ my-bucket/
 
 **Mount View:**
 
-```bash
+```text
 /data/                  ← Mount point
 ├── file1.txt           ← Actually app-data/file1.txt in S3
 └── subdir/

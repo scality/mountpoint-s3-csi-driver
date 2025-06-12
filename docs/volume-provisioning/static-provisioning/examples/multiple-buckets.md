@@ -20,7 +20,7 @@ spec:
   capacity:
     storage: 1200Gi # ignored, required
   accessModes:
-    - ReadWriteMany # supported options: ReadWriteMany / ReadOnlyMany
+    - ReadWriteMany # supported options: ReadWriteMany
   storageClassName: "" # Required for static provisioning
   claimRef: # To ensure no other PVCs can claim this PV
     namespace: default # Namespace is required even though it's in "default" namespace.
@@ -55,7 +55,7 @@ spec:
   capacity:
     storage: 1200Gi # ignored, required
   accessModes:
-    - ReadWriteMany # supported options: ReadWriteMany / ReadOnlyMany
+    - ReadWriteMany # supported options: ReadWriteMany
   storageClassName: "" # Required for static provisioning
   claimRef: # To ensure no other PVCs can claim this PV
     namespace: default # Namespace is required even though it's in "default" namespace.
@@ -75,7 +75,7 @@ metadata:
   name: s3-pvc-2
 spec:
   accessModes:
-    - ReadWriteMany # supported options: ReadWriteMany / ReadOnlyMany
+    - ReadWriteMany # supported options: ReadWriteMany
   storageClassName: "" # required for static provisioning
   resources:
     requests:
