@@ -167,5 +167,4 @@ spec:
     The CSI driver does not automatically manage the uniqueness or lifecycle of these host cache paths beyond passing the option to Mountpoint.
     Node-level disk space and permissions for the cache path are also your responsibility.
 
-For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../../concepts-and-reference/filesystem-semantics.md)
-and [Permissions](../../concepts-and-reference/permissions.md) pages.
+For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../../concepts-and-reference/filesystem-semantics.md) page

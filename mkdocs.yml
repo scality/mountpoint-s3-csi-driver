@@ -121,7 +121,6 @@ nav:
               - Override S3 Region: volume-provisioning/static-provisioning/examples/override-region.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
-      - Permissions: concepts-and-reference/permissions.md
       - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
       - Filesystem Semantics: concepts-and-reference/filesystem-semantics.md
   - Operations:
