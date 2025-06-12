@@ -1,26 +1,50 @@
-# Default values for ..
+# Default values for scality-mountpoint-s3-csi-driver Helm chart.
 # This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Declare variables to be passed into templates.
 
+# Global Helm configuration
+nameOverride: ""
+fullnameOverride: ""
+imagePullSecrets: []
+
+# Container image configuration
 image:
   repository: ghcr.io/scality/mountpoint-s3-csi-driver
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "0.6.0"
 
+# Node plugin configuration (DaemonSet)
 node:
+  # Kubernetes configuration
   kubeletPath: /var/lib/kubelet
-  mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
   logLevel: 4
+
+  # S3 configuration (REQUIRED)
+  # S3 endpoint URL to use for all volume mounts (REQUIRED)
+  # This is a sample value, replace with RING S3 endpoint URL
+  s3EndpointUrl: "http://s3.example.com:8000"
+  # Default AWS region to use for all volume mounts
+  # The Region can be overridden at per volume at persistent volume level by setting spec.mountOptions.region
+  s3Region: "us-east-1"
+
+  # SystemD mounter configuration (default mounter)
+  mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
+
+  # Security context
   seLinuxOptions:
     user: system_u
     type: super_t
     role: system_r
     level: s0
+
+  # Service account
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
     name: s3-csi-driver-sa
+
+  # Scheduling and resources
   nodeSelector: {}
   resources:
     requests:
@@ -28,19 +52,18 @@ node:
       memory: 40Mi
     limits:
       memory: 256Mi
+
+  # Tolerations
   # Tolerates all taints and overrides defaultTolerations
   tolerateAllTaints: false
   defaultTolerations: true
   tolerations: []
+
+  # Compatibility
   podInfoOnMountCompat:
     enable: false
-  # S3 endpoint URL to use for all volume mounts (REQUIRED)
-  # This is a sample value, replace with your own S3 endpoint
-  s3EndpointUrl: "http://s3.example.com:8000"
-  # Default AWS region to use for all volume mounts
-  # The Region can be overridden at per volume at persistent volume level by setting spec.mountOptions.region
-  s3Region: "us-east-1"
 
+# Sidecar containers configuration
 sidecars:
   nodeDriverRegistrar:
     image:
@@ -68,31 +91,30 @@ sidecars:
         name: plugin-dir
     resources: {}
 
-
+# Init container configuration
 initContainer:
   installMountpoint:
     resources: {}
 
-controller:
-  serviceAccount:
-    # Specifies whether a service account should be created
-    create: true
-    name: s3-csi-driver-controller-sa
-
-mountpointPod:
-  namespace: mount-s3
-  priorityClassName: mount-s3-critical
-
-nameOverride: ""
-fullnameOverride: ""
-
-imagePullSecrets: []
-
+# S3 credentials secret configuration
 s3CredentialSecret:
   name: s3-secret
   accessKeyId: access_key_id
   secretAccessKey: secret_access_key
   sessionToken: session_token
 
+# Experimental features. To be used only in development environments.
 experimental:
   podMounter: false
+
+# Controller configuration (only used with experimental pod mounter)
+controller:
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    name: s3-csi-driver-controller-sa
+
+# Mountpoint pod configuration (only used with experimental pod mounter)
+mountpointPod:
+  namespace: mount-s3
+  priorityClassName: mount-s3-critical

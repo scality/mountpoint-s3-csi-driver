@@ -139,20 +139,6 @@ node:
   # These apply to the main s3-plugin container that handles volume mount operations
   # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   # resources:
-  #   requests:
-  #     cpu: 50m        # Baseline CPU needed for volume operations
-  #     memory: 128Mi   # Memory for caching and S3 operations
-  #   limits:
-  #     cpu: 200m       # Maximum CPU during heavy I/O
-  #     memory: 256Mi   # Memory limit to prevent resource contention
-  # Example for higher resource limits for production workloads
-  # resources:
-  #   requests:
-  #     cpu: 100m
-  #     memory: 256Mi
-  #   limits:
-  #     cpu: 500m
-  #     memory: 512Mi
 
   # Node selector for the CSI node DaemonSet - controls which nodes run the driver
   # nodeSelector:
@@ -165,11 +151,11 @@ node:
 s3CredentialSecret:
   # Reference the Kubernetes Secret containing S3 credentials created in Step 2
   # This secret must exist in the same namespace as the driver installation
-  name: "s3-secret"  # Must match the SECRET_NAME from Step 1
+  name: "s3-secret"
 
 # Sidecar container resources - these run alongside the main s3-plugin in each node pod
 # Each node pod contains: s3-plugin (main) + 2 sidecars (node-driver-registrar & livenessprobe)
-# Resources are not set by default.
+# Resources are not set by default and are inherited from the node.resources configuration.
 # sidecars:
   # nodeDriverRegistrar:
   #   # Registers the CSI driver with kubelet on each node - required for volume operations

@@ -1,57 +1,101 @@
-# Helm Chart Configuration Reference (TODO) verify this
+# Helm Chart Configuration Reference
 
 The Scality S3 CSI Driver is configured primarily through the [`values.yaml`](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml)
 file when deploying via Helm.
 These parameters configure the overall behavior of the CSI driver components.
 
+## Global Helm Configuration
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `nameOverride`                                       | Override the chart name.                                                                                                                           | `""`                                                   | No                          |
+| `fullnameOverride`                                   | Override the full name of the release.                                                                                                             | `""`                                                   | No                          |
+| `imagePullSecrets`                                   | Secrets for pulling images from private registries.                                                                                                | `[]`                                                   | No                          |
+
+## Container Image Configuration
+
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
 | `image.repository`                                   | The container image repository for the CSI driver.                                                                                                 | `ghcr.io/scality/mountpoint-s3-csi-driver`             | No                          |
 | `image.pullPolicy`                                   | The image pull policy.                                                                                                                             | `IfNotPresent`                                         | No                          |
-| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | Image version, eg, 1.0.0                   | No                          |
+| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `1.0.0`                                                | No                          |
+
+## S3 Credentials Secret Configuration
+
+<!-- markdownlint-disable MD046 -->
+!!! important "Security Note"
+    The Helm chart **does not create secrets automatically**. A Kubernetes Secret containing S3 credentials must be created before installing the chart. The secret must contain the following keys:
+
+    - `access_key_id`: S3 Access Key ID.
+    - `secret_access_key`: S3 Secret Access Key.
+    - `session_token` (optional): S3 Session Token, if using temporary credentials.
+<!-- markdownlint-enable MD046 -->
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `s3CredentialSecret.name`                            | Name of the Kubernetes Secret containing AWS credentials (`access_key_id`, `secret_access_key`, optionally `session_token`). The secret must be created manually. | `s3-secret`                                           | No                          |
+| `s3CredentialSecret.accessKeyId`                     | Key within the secret for Access Key ID.                                                                                                           | `access_key_id`                                        | No                          |
+| `s3CredentialSecret.secretAccessKey`                 | Key within the secret for Secret Access Key.                                                                                                       | `secret_access_key`                                    | No                          |
+| `s3CredentialSecret.sessionToken`                    | Key within the secret for Session Token (optional).                                                                                                | `session_token`                                        | No                          |
+
+## Node Plugin Configuration
+
+<!-- markdownlint-disable MD046 -->
+!!! note "SELinux Context Note"
+    The `node.seLinuxOptions.*` parameters define the SELinux security context for the CSI driver containers.
+    These settings are applied to CSI Node DaemonSet containers and allow the containers to interact with systemd and manage mount points in SELinux-enforced environments.
+    **Only the default SELinux values are tested and supported. Custom SELinux configurations are not supported.** The default values are:
+
+    - `user`: `system_u`
+    - `type`: `super_t`
+    - `role`: `system_r`
+    - `level`: `s0`
+<!-- markdownlint-enable MD046 -->
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
 | `node.kubeletPath`                                   | The path to the kubelet directory on the host node. Used by the node plugin to register itself and manage mount points.                               | `/var/lib/kubelet`                                     | No                          |
-| `node.mountpointInstallPath`                         | Path on the host where the `mount-s3` binary will be installed by the initContainer. Should end with a `/`. *Relevant for systemd mounter only.* | `/opt/mountpoint-s3-csi/bin/`                          | No                          |
 | `node.logLevel`                                      | Log level for the CSI driver node plugin. (0-5, 5 is most verbose).                                                                                | `4`                                                    | No                          |
-| `node.seLinuxOptions.user`                           | SELinux user for the node plugin container context. *Relevant for systemd mounter only.*                                                             | `system_u`                                             | No                          |
-| `node.seLinuxOptions.type`                           | SELinux type for the node plugin container context. *Relevant for systemd mounter only.*                                                             | `super_t`                                              | No                          |
-| `node.seLinuxOptions.role`                           | SELinux role for the node plugin container context. *Relevant for systemd mounter only.*                                                             | `system_r`                                             | No                          |
-| `node.seLinuxOptions.level`                          | SELinux level for the node plugin container context. *Relevant for systemd mounter only.*                                                            | `s0`                                                   | No                          |
+| `node.s3EndpointUrl`                                 | The S3 endpoint URL to be used by the driver for all mount operations.                                                                             | `"http://s3.example.com:8000"`                        | **Yes**                     |
+| `node.s3Region`                                      | The default AWS region to use for S3 requests. Can be overridden per-volume via PV `mountOptions`.                                               | `us-east-1`                                            | No                          |
+| `node.mountpointInstallPath`                         | Path on the host where the `mount-s3` binary will be installed by the initContainer. Should end with a `/`. *Only used with SystemD mounter (default).* | `/opt/mountpoint-s3-csi/bin/`                          | No                          |
+| `node.seLinuxOptions.user`                           | SELinux user for the CSI driver container security context.                                                                                        | `system_u`                                             | No                          |
+| `node.seLinuxOptions.type`                           | SELinux type for the CSI driver container security context.                                                                                        | `super_t`                                              | No                          |
+| `node.seLinuxOptions.role`                           | SELinux role for the CSI driver container security context.                                                                                        | `system_r`                                             | No                          |
+| `node.seLinuxOptions.level`                          | SELinux level for the CSI driver container security context.                                                                                       | `s0`                                                   | No                          |
 | `node.serviceAccount.create`                         | Specifies whether a ServiceAccount should be created for the node plugin.                                                                          | `true`                                                 | No                          |
-| `node.serviceAccount.name`                           | Name of the ServiceAccount to use for the node plugin. If not set and `create` is true, a name is generated.                                       | `s3-csi-driver-sa`                                     | No                          |
-| `node.serviceAccount.annotations`                    | Annotations to add to the created node ServiceAccount.                                                                                             | `{}`                                                   | No                          |
-| `node.serviceAccount.automountServiceAccountToken`   | Whether to automount the service account token for the node plugin.                                                                                | (not explicitly set, defaults to Kubernetes behavior)    | No                          |
+| `node.serviceAccount.name`                           | Name of the ServiceAccount to use for the node plugin.                                                                                             | `s3-csi-driver-sa`                                     | No                          |
 | `node.nodeSelector`                                  | Node selector for scheduling the node plugin DaemonSet.                                                                                            | `{}`                                                   | No                          |
-| `node.resources`                                     | Resource requests and limits for the node plugin container.                                                                                        | `requests: { cpu: 10m, memory: 40Mi }, limits: { memory: 256Mi }` | No                          |
+| `node.resources.requests.cpu`                        | CPU resource requests for the node plugin container.                                                                                               | `10m`                                                  | No                          |
+| `node.resources.requests.memory`                     | Memory resource requests for the node plugin container.                                                                                            | `40Mi`                                                 | No                          |
+| `node.resources.limits.memory`                       | Memory resource limits for the node plugin container.                                                                                              | `256Mi`                                                | No                          |
 | `node.tolerateAllTaints`                             | If true, the node plugin DaemonSet will tolerate all taints. Overrides `defaultTolerations`.                                                      | `false`                                                | No                          |
 | `node.defaultTolerations`                            | If true, adds default tolerations (`CriticalAddonsOnly`, `NoExecute` for 300s) to the node plugin.                                                 | `true`                                                 | No                          |
 | `node.tolerations`                                   | Custom tolerations for the node plugin DaemonSet.                                                                                                  | `[]`                                                   | No                          |
-| `node.podInfoOnMountCompat.enable`                   | Enable `podInfoOnMount` for older Kubernetes versions (&lt;1.30) if your API server supports it but Kubelet version in Helm doesn't reflect it.    | `false`                                                | No                          |
-| `node.s3EndpointUrl`                                 | The S3 endpoint URL to be used by the driver for all mount operations.                                                                             | `""`                                                   | **Yes**                     |
-| `node.s3Region`                                      | The default AWS region to use for S3 requests. Can be overridden per-volume via PV `mountOptions`.                                               | `us-east-1`                                            | No                          |
-| `s3CredentialSecret.name`                               | Name of the Kubernetes Secret containing AWS credentials (`access_key_id`, `secret_access_key`, optionally `session_token`). You must create this secret manually. | `s3-secret`                                           | No                          |
-| `s3CredentialSecret.accessKeyId`                              | Key within the secret for Access Key ID.                                                                                                       | `access_key_id`                                               | No                          |
-| `s3CredentialSecret.secretAccessKey`                          | Key within the secret for Secret Access Key.                                                                                                   | `secret_access_key`                                           | No                          |
-| `s3CredentialSecret.sessionToken`                       | Key within the secret for Session Token (optional).                                                                                            | `session_token`                                        | No                          |
-| `sidecars.nodeDriverRegistrar.image.repository`      | Image repository for the `csi-node-driver-registrar` sidecar.                                                                                      | `k8s.gcr.io/sig-storage/csi-node-driver-registrar`     | No                          |
-| `sidecars.nodeDriverRegistrar.image.tag`             | Image tag for the `csi-node-driver-registrar` sidecar.                                                                                             | `v2.13.0`                                              | No                          |
+| `node.podInfoOnMountCompat.enable`                   | Enable `podInfoOnMount` for older Kubernetes versions (&lt;1.30) if the API server supports it but Kubelet version in Helm doesn't reflect it.    | `false`                                                | No                          |
+
+## Sidecar and Init Container Configuration
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `sidecars.nodeDriverRegistrar.image.repository`      | Image repository for the `csi-node-driver-registrar` sidecar.                                                                                      | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar`     | No                          |
+| `sidecars.nodeDriverRegistrar.image.tag`             | Image tag for the `csi-node-driver-registrar` sidecar.                                                                                             | `v2.14.0`                                              | No                          |
 | `sidecars.nodeDriverRegistrar.image.pullPolicy`      | Image pull policy for the `csi-node-driver-registrar` sidecar.                                                                                     | `IfNotPresent`                                         | No                          |
 | `sidecars.nodeDriverRegistrar.resources`             | Resource requests and limits for the `csi-node-driver-registrar` sidecar.                                                                          | `{}` (inherits from `node.resources` if not set)       | No                          |
-| `sidecars.livenessProbe.image.repository`            | Image repository for the `livenessprobe` sidecar.                                                                                                  | `registry.k8s.io/sig-storage/livenessprobe`            | No                          |
-| `sidecars.livenessProbe.image.tag`                   | Image tag for the `livenessprobe` sidecar.                                                                                                         | `v2.15.0`                                              | No                          |
+| `sidecars.livenessProbe.image.repository`            | Image repository for the `livenessprobe` sidecar.                                                                                                  | `ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe`            | No                          |
+| `sidecars.livenessProbe.image.tag`                   | Image tag for the `livenessprobe` sidecar.                                                                                                         | `v2.16.0`                                              | No                          |
 | `sidecars.livenessProbe.image.pullPolicy`            | Image pull policy for the `livenessprobe` sidecar.                                                                                                 | `IfNotPresent`                                         | No                          |
 | `sidecars.livenessProbe.resources`                   | Resource requests and limits for the `livenessprobe` sidecar.                                                                                      | `{}` (inherits from `node.resources` if not set)       | No                          |
-| `initContainer.installMountpoint.resources`          | Resource requests and limits for the `install-mountpoint` initContainer. *Relevant for systemd mounter only.*                                      | `{}` (inherits from `node.resources` if not set)       | No                          |
-| `nameOverride`                                       | Override the chart name.                                                                                                                           | `""`                                                   | No                          |
-| `fullnameOverride`                                   | Override the full name of the release.                                                                                                             | `""`                                                   | No                          |
-| `imagePullSecrets`                                   | Secrets for pulling images from private registries.                                                                                                | `[]`                                                   | No                          |
-| `experimental.podMounter`                            | **EXPERIMENTAL:** Enables the Pod Mounter feature. Should be `false` for standard S3 configurations documented here.                               | `false`                                                | No                          |
-| `controller.*`                                       | Configuration for the CSI controller (Deployment, ServiceAccount). *Only used if `experimental.podMounter` is true.*                               | N/A (not documented)                                   | No                          |
-| `mountpointPod.*`                                    | Configuration for the Mountpoint pods spawned by the controller. *Only used if `experimental.podMounter` is true.*                                  | N/A (not documented)                                   | No                          |
+| `initContainer.installMountpoint.resources`          | Resource requests and limits for the `install-mountpoint` initContainer. *Only used with SystemD mounter (default).*                              | `{}` (inherits from `node.resources` if not set)       | No                          |
 
-## Security Notes on `s3CredentialSecret` (TODO) change this
+## Experimental Features (Unsupported)
 
-The Helm chart **does not create secrets automatically**. You must create a Kubernetes Secret containing your S3 credentials before installing the chart. The secret must contain the following keys:
+**Important:** The Pod Mounter feature is experimental and **not supported for production use**. It should only be used in development environments. The default SystemD mounter is the only supported configuration.
 
-- `access_key_id`: Your S3 Access Key ID.
-- `secret_access_key`: Your S3 Secret Access Key.
-- `session_token` (optional): Your S3 Session Token, if using temporary credentials.
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `experimental.podMounter`                            | **EXPERIMENTAL, DO NOT USE:** Enables the Pod Mounter feature instead of the default SystemD mounter. Should be `false` for standard configurations.          | `false`                                                | No                          |
+| `controller.serviceAccount.create`                   | Specifies whether a ServiceAccount should be created for the controller. *Only used if `experimental.podMounter` is true.*                        | `true`                                                 | No                          |
+| `controller.serviceAccount.name`                     | Name of the ServiceAccount to use for the controller. *Only used if `experimental.podMounter` is true.*                                           | `s3-csi-driver-controller-sa`                          | No                          |
+| `mountpointPod.namespace`                            | Namespace for Mountpoint pods spawned by the controller. *Only used if `experimental.podMounter` is true.*                                        | `mount-s3`                                             | No                          |
+| `mountpointPod.priorityClassName`                    | Priority class name for Mountpoint pods. *Only used if `experimental.podMounter` is true.*                                                        | `mount-s3-critical`                                    | No                          |
