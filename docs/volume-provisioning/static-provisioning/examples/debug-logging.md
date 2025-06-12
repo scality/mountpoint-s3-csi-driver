@@ -5,7 +5,7 @@ This example demonstrates how to enable debug logging for troubleshooting S3 CSI
 ## Features
 
 - Mountpoint debug logging enabled
-- AWS CRT client verbose logging
+- CRT client verbose logging
 - Useful for troubleshooting connectivity and performance issues
 
 ## Deploy

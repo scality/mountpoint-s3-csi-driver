@@ -28,14 +28,14 @@ type: Opaque
 data:
   # Using base64 encoded values. Example:
   # echo -n "ACCESS_KEY_ID" | base64
-  key_id: QUtJQVhYWFhYWFhYWFhYWFhY
+  access_key_id: QUtJQVhYWFhYWFhYWFhYWFhY
   # echo -n "SECRET_ACCESS_KEY" | base64
-  access_key: U0VDUkVUWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWA==
+  secret_access_key: U0VDUkVUWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWA==
 
   # You can also create the secret using kubectl:
   # kubectl create secret generic s3-credentials \
-  #     --from-literal=key_id="ACCESS_KEY_ID" \
-  #     --from-literal=access_key="SECRET_ACCESS_KEY"
+  #     --from-literal=access_key_id="ACCESS_KEY_ID" \
+  #     --from-literal=secret_access_key="SECRET_ACCESS_KEY"
 
 ---
 # Next, create a PersistentVolume that references the Secret
@@ -52,7 +52,6 @@ spec:
   storageClassName: "" # Required for static provisioning
   mountOptions:
     - allow-delete
-    - force-path-style
   csi:
     driver: s3.csi.scality.com
     volumeHandle: s3-csi-secret-auth-volume # Must be unique across all PVs
@@ -103,15 +102,14 @@ EOF
 
 ```bash
 kubectl create secret generic s3-credentials \
-    --from-literal=key_id="YOUR_ACCESS_KEY_ID" \
-    --from-literal=access_key="YOUR_SECRET_ACCESS_KEY"
+    --from-literal=access_key_id="YOUR_ACCESS_KEY_ID" \
+    --from-literal=secret_access_key="YOUR_SECRET_ACCESS_KEY"
 ```
 
 ## Key Configuration
 
 - `authenticationSource: secret` - Enables secret-based authentication
 - `nodePublishSecretRef` - References the Kubernetes Secret
-- `force-path-style` - Often required for non-AWS S3 endpoints
 
 ## Verify
 
@@ -132,4 +130,4 @@ kubectl delete secret s3-credentials
 
 ## Download YAML
 
-[📁 secret_authentication.yaml](assets/secret_authentication.yaml)
+[📁 secret_authentication.yaml](assets/secret_authentication.yaml){:download}

@@ -1,10 +1,10 @@
 # KMS Server-Side Encryption
 
-This example demonstrates using AWS KMS for server-side encryption of S3 objects.
+This example demonstrates using KMS for server-side encryption of S3 objects.
 
 ## Features
 
-- Server-side encryption with AWS KMS
+- Server-side encryption with KMS
 - Customer-managed KMS key
 - Secure data encryption at rest
 

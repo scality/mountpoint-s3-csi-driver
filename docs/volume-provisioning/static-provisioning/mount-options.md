@@ -58,9 +58,8 @@ Here's a list of commonly used Mountpoint S3 options relevant for the CSI driver
 | `cache <path>`       | Enable local disk caching for S3 objects. `<path>` is a directory on the host node's filesystem.                                                                       | `<path>` **must be unique per volume on each node**. Performance and consistency implications should be understood. Requires disk space on the node.                  |
 | `metadata-ttl <sec>` | Time-to-live (in seconds) for cached metadata. Default is Mountpoint's own default (typically low, e.g., 1 second).                                                      | Increase for improved performance on listings if eventual consistency is acceptable.                                                                               |
 | `max-cache-size <MB>`| Maximum size (in MiB) of the local disk cache specified by `cache <path>`.                                                                                             | Helps manage disk usage on nodes.                                                                                                                                  |
-| `force-path-style`   | Force S3 client to use path-style addressing.                                                                                                                        | Often necessary for non-AWS S3 endpoints, including Scality ARTESCA/RING.                                                                                        |
 | `debug`              | Enable Mountpoint's debug logging. Logs appear in the systemd journal on the node where the pod is running and the volume is mounted.                                    | Useful for troubleshooting.                                                                                                                                        |
-| `debug-crt`         | Enable verbose logging for the AWS Common Runtime (CRT) S3 client, which Mountpoint uses internally. Logs also go to systemd journal.                                       | Provides even more detailed S3 client logs.                                                                                                                        |
+| `debug-crt`         | Enable verbose logging for the AWS Common Runtime (CRT) S3 client, which AWS mountpoint-s3 uses internally. Logs also go to systemd journal.                                       | Provides even more detailed S3 client logs.                                                                                                                        |
 | `aws-max-attempts <N>`| Sets the `AWS_MAX_ATTEMPTS` environment variable for the Mountpoint process, configuring S3 request retries.                                                                | Useful for tuning resiliency in unstable network conditions.                                                                                                       |
 
 For a comprehensive list and explanation of all available Mountpoint S3 client options, refer to the [official Mountpoint for Amazon S3 documentation](https://github.com/awslabs/mountpoint-s3/blob/main/doc/CONFIGURATION.md).
@@ -76,7 +75,7 @@ Mount options are determined by a combination of factors. Understanding their pr
     - The driver adds a `--user-agent-prefix` for telemetry.
 3. **Mountpoint Client Defaults**: If an option is not specified by the PV or the CSI driver, the Mountpoint S3 client's own internal defaults will apply.
 
-## AWS Endpoint URL Configuration
+## S3 Endpoint URL Configuration
 
 For security and consistency reasons, if `--endpoint-url` is specified in the `mountOptions` of a PersistentVolume, it will be ignored by the driver.
 This is enforced in both systemd and pod mounters to prevent potential security risks like endpoint redirection attacks.
