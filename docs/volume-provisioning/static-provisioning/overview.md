@@ -110,16 +110,16 @@ kubectl exec s3-app -- ls -al /data
 ## Examples
 
 - [Basic Static Provisioning](examples/basic-static-provisioning.md) - Simple S3 bucket mounting
-- [Shared Cache Configuration](examples/shared-cache.md) - Basic shared cache setup
+- [Bucket Prefix Mounting](examples/bucket-prefix.md) - Mount specific bucket prefix/folder
+- [Override S3 Region](examples/override-region.md) - Override S3 region for specific volumes
 - [Secret-Based Authentication](examples/secret-authentication.md) - Volume-level credentials
-- [Non-Root User Access](examples/non-root-user.md) - Non-root user configuration
 - [Multiple Pods Sharing Volume](examples/multiple-pods-shared-volume.md) - Shared volume across pods
 - [Multiple Buckets in One Pod](examples/multiple-buckets.md) - Multiple buckets in single pod
-- [Local Caching](examples/local-caching.md) - Advanced caching with size limits
+- [Non-Root User Access](examples/non-root-user.md) - Non-root user configuration
+- [Local Cache](examples/local-cache.md) - Basic local caching
+- [Advanced Local Caching](examples/advanced-local-caching.md) - Advanced local caching with size limits
 - [KMS Server-Side Encryption](examples/kms-encryption.md) - AWS KMS encryption
 - [Retry Configuration](examples/retry-configuration.md) - S3 request retry settings
 - [Debug Logging](examples/debug-logging.md) - Enable debug and verbose logging
 - [File and Directory Permissions](examples/file-permissions.md) - Custom file/directory permissions
 - [Allow Root Access](examples/allow-root.md) - Root access with non-root UID/GID
-- [Bucket Prefix Mounting](examples/bucket-prefix.md) - Mount specific bucket prefix/folder
-- [Override S3 Region](examples/override-region.md) - Override S3 region for specific volumes
