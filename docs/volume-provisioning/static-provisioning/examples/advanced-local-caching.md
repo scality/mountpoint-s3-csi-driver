@@ -1,12 +1,13 @@
-# Local Caching
+# Advanced Local Caching
 
-This example demonstrates how to enable local disk caching for improved S3 performance.
+This example demonstrates how to enable local disk caching with advanced options for improved S3 performance.
 
 ## Features
 
 - Local disk caching at `/tmp/s3-pv1-cache`
 - Configurable cache size (500 MB)
-- Metadata TTL of 3 seconds
+- Metadata TTL presets: `minimal` and `indefinite`
+- Custom metadata TTL values in seconds (3 seconds in this example)
 
 ## Deploy
 
@@ -75,6 +76,28 @@ EOF
 - `metadata-ttl 3` - Cache metadata for 3 seconds
 - `max-cache-size 500` - Limit cache to 500 MB
 
+## Metadata TTL Configuration
+
+The `metadata-ttl` flag controls how long Mountpoint considers its file system metadata (file existence, size, object etag, etc) accurate before re-fetching from S3.
+Mountpoint will typically perform fewer requests to the mounted S3 bucket, but will not guarantee that the information it reports is up to date with the content of the mounted S3 bucket.
+
+With local caching enabled, the stored data is considered accurate until the metadata TTL expires.
+After this period, Mountpoint revalidates if the cached data is still accurate by verifying the object's etag hasn't changed.
+
+### TTL Presets
+
+Mountpoint provides two presets which trade off consistency and performance/cost optimization:
+
+- **`metadata-ttl minimal`** - For scenarios where the mounted S3 bucket content is modified by another client and you require recently up-to-date information
+- **`metadata-ttl indefinite`** - For workloads that don't require consistency, such as when the S3 bucket content doesn't change
+
+### Custom TTL Values
+
+You can also specify custom TTL values in seconds:
+
+- `metadata-ttl 300` - Allows Mountpoint to delay updates for up to 300 seconds, reducing S3 requests
+- `metadata-ttl 3` - Short TTL for more frequent validation (as shown in this example)
+
 ## Important Notes
 
 ⚠️ **Cache Path Uniqueness**: Each volume must use a unique cache path on each node to avoid conflicts.
@@ -85,6 +108,8 @@ EOF
 kubectl get pod s3-app
 # Check cache directory on the node
 kubectl exec s3-app -- ls -la /data
+# Check cache directory on the node as specified in the mountoption.
+# if copied from the example, it should be /tmp/s3-pv1-cache
 ```
 
 ## Cleanup
@@ -97,4 +122,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 caching.yaml](assets/caching.yaml)
+[📁 static_provisioning_with_advanced_local_caching.yaml](assets/advanced_local_caching.yaml)

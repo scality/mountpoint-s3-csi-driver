@@ -96,9 +96,9 @@ nav:
               - Secret-Based Authentication: volume-provisioning/static-provisioning/examples/secret-authentication.md
               - Multiple Pods Sharing Volume: volume-provisioning/static-provisioning/examples/multiple-pods-shared-volume.md
               - Multiple Buckets in One Pod: volume-provisioning/static-provisioning/examples/multiple-buckets.md
-              - Shared Cache Configuration: volume-provisioning/static-provisioning/examples/shared-cache.md
               - Non-Root User Access: volume-provisioning/static-provisioning/examples/non-root-user.md
-              - Local Caching: volume-provisioning/static-provisioning/examples/local-caching.md
+              - Local Cache: volume-provisioning/static-provisioning/examples/local-cache.md
+              - Advanced Local Caching: volume-provisioning/static-provisioning/examples/advanced-local-caching.md
               - KMS Server-Side Encryption: volume-provisioning/static-provisioning/examples/kms-encryption.md
               - Retry Configuration: volume-provisioning/static-provisioning/examples/retry-configuration.md
               - Debug Logging: volume-provisioning/static-provisioning/examples/debug-logging.md
