@@ -81,6 +81,3 @@ jobs:
             ## Scality S3 CSI Driver
 
             📚 **Documentation**: https://scality.github.io/mountpoint-s3-csi-driver/
-
-            ### 🔍 What's Changed
-            <!-- GitHub will auto-populate this section with commits and PRs -->

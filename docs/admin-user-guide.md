@@ -22,9 +22,3 @@ This guide defines roles and responsibilities for administrators managing the Sc
 1. User requests storage (bucket, access, requirements)
 2. Admin reviews, creates bucket/PV, provides PV name
 3. User creates PVC and deploys application
-
-## Troubleshooting
-
-- User: Check pod logs, PVC binding, file ops
-- Admin: Review driver logs, S3 connectivity, credentials
-- Storage admin: Collect Scality S3 diagnostics, open support ticket
