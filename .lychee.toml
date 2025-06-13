@@ -46,6 +46,9 @@ exclude = [
     # Exclude Scality artifacts URL (requires authentication)
     "^https?://artifacts\\.scality\\.net",
 
+    # Exclude Scality support URL (requires authentication)
+    "^https?://support\\.scality\\.com",
+
     # Exclude social media and platforms known to block link checkers
     "^https?://(www\\.)?(linkedin|twitter|x)\\.com",
     "^https?://(www\\.)?facebook\\.com",
