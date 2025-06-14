@@ -21,19 +21,79 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/vault"
 )
 
-const (
-	// Lisa's real test credentials per cloudserver without Vault
+var (
+	// Dynamic test accounts - will be created via VaultClient if available
+	// Otherwise fallback to hardcoded credentials for backward compatibility
+
+	// Lisa's credentials (Account 1)
 	lisaAK  = "accessKey2"
 	lisaSK  = "verySecretKey2"
 	lisaCID = "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf"
 
-	// Bart's canonical ID. Bart's credentials are being used in the tests
+	// Bart's credentials (Account 2)
 	bartAK  = "accessKey1"
 	bartSK  = "verySecretKey1"
 	bartCID = "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"
+
+	// Dynamic accounts created via Vault (will be set if Vault is available)
+	dynamicLisaAccount *vault.TestAccount
+	dynamicBartAccount *vault.TestAccount
+
+	// Global VaultClient for credentials tests (set by main e2e package)
+	credentialsVaultClient *vault.VaultTestClient
 )
+
+// SetVaultClient sets the VaultClient for credentials tests
+// This is called by the main e2e package to provide the VaultClient
+func SetVaultClient(client *vault.VaultTestClient) {
+	credentialsVaultClient = client
+}
+
+// getCredentialsTestAccounts returns the credentials for Lisa and Bart accounts.
+// If VaultClient is available, it creates dynamic accounts. Otherwise, uses hardcoded credentials.
+func getCredentialsTestAccounts(ctx context.Context, vaultClient *vault.VaultTestClient) (lisaAK, lisaSK, lisaCID, bartAK, bartSK, bartCID string, cleanup func() error) {
+	if vaultClient != nil {
+		framework.Logf("Creating dynamic test accounts via VaultClient for credentials tests")
+
+		// Create Lisa account
+		var err error
+		dynamicLisaAccount, err = vaultClient.CreateTestAccount("CredentialsTestLisa")
+		if err != nil {
+			framework.Failf("Failed to create Lisa test account: %v", err)
+		}
+
+		// Create Bart account
+		dynamicBartAccount, err = vaultClient.CreateTestAccount("CredentialsTestBart")
+		if err != nil {
+			framework.Failf("Failed to create Bart test account: %v", err)
+		}
+
+		framework.Logf("Created dynamic accounts - Lisa: %s, Bart: %s",
+			dynamicLisaAccount.Name, dynamicBartAccount.Name)
+
+		// Return dynamic credentials
+		return dynamicLisaAccount.AccessKey, dynamicLisaAccount.SecretKey, dynamicLisaAccount.CanonicalID,
+			dynamicBartAccount.AccessKey, dynamicBartAccount.SecretKey, dynamicBartAccount.CanonicalID,
+			func() error {
+				// Cleanup function - accounts will be cleaned up by the global VaultClient cleanup
+				framework.Logf("Dynamic accounts will be cleaned up by global VaultClient cleanup")
+				return nil
+			}
+	} else {
+		framework.Logf("Using hardcoded credentials for credentials tests (Vault not available)")
+
+		// Return hardcoded credentials
+		return lisaAK, lisaSK, lisaCID,
+			bartAK, bartSK, bartCID,
+			func() error {
+				// No cleanup needed for hardcoded credentials
+				return nil
+			}
+	}
+}
 
 // NegativeCredentialTestSpec defines parameters for a negative credential test.
 type NegativeCredentialTestSpec struct {
@@ -229,6 +289,14 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 	f.NamespacePodSecurityLevel = admissionapi.LevelRestricted
 
 	ginkgo.It("mounts with default driver credentials and sees Bart‑owned objects", func(ctx context.Context) {
+		// Get dynamic credentials if VaultClient is available
+		_, _, _, currentBartAK, currentBartSK, currentBartCID, cleanupAccounts := getCredentialsTestAccounts(ctx, credentialsVaultClient)
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			if err := cleanupAccounts(); err != nil {
+				framework.Logf("Warning: Failed to cleanup test accounts: %v", err)
+			}
+		})
+
 		type TestResourceRegistry struct {
 			resources []*storageframework.VolumeResource // tracks resources for cleanup
 			config    *storageframework.PerTestConfig    // storage framework configuration
@@ -244,7 +312,7 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 		testRegistry = TestResourceRegistry{}
 		testRegistry.config = driver.PrepareTest(ctx, f)
 		ginkgo.DeferCleanup(cleanup)
-		bartS3Client := s3client.New("", bartAK, bartSK)
+		bartS3Client := s3client.New("", currentBartAK, currentBartSK)
 
 		// Use createVolumeResourceWithMountOptions from utils
 		resource := createVolumeResourceWithMountOptions(ctx, testRegistry.config, pattern, getMountOptionsForNonRootUser())
@@ -271,18 +339,26 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 		ginkgo.By("Attempting to verify object has Bart's canonical ID (if owner info available)")
 		ownerID, err := bartS3Client.GetObjectOwnerID(ctx, bucketName, "pod-write-default.txt")
 		framework.ExpectNoError(err)
-		gomega.Expect(ownerID).To(gomega.Equal(bartCID),
+		gomega.Expect(ownerID).To(gomega.Equal(currentBartCID),
 			"Object owner ID should match Bart's canonical ID. Default credentials might be incorrect.")
 	})
 
 	ginkgo.It("mounts with Secret credentials and sees Lisa‑owned objects", func(ctx context.Context) {
+		// Get dynamic credentials if VaultClient is available
+		currentLisaAK, currentLisaSK, currentLisaCID, _, _, _, cleanupAccounts := getCredentialsTestAccounts(ctx, credentialsVaultClient)
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			if err := cleanupAccounts(); err != nil {
+				framework.Logf("Warning: Failed to cleanup test accounts: %v", err)
+			}
+		})
+
 		// Create a bucket with Lisa's credentials
-		lisaS3Client := s3client.New("", lisaAK, lisaSK)
+		lisaS3Client := s3client.New("", currentLisaAK, currentLisaSK)
 		bucketName, deleteBucket := lisaS3Client.CreateBucket(ctx)
 		ginkgo.DeferCleanup(deleteBucket)
 
 		// Make a Secret with Lisa's credentials in test namespace
-		secretName, err := CreateCredentialSecret(ctx, f, "lisa-cred", lisaAK, lisaSK)
+		secretName, err := CreateCredentialSecret(ctx, f, "lisa-cred", currentLisaAK, currentLisaSK)
 		framework.ExpectNoError(err)
 
 		// Build PV/PVC that use the Secret (authSource=secret)
@@ -310,11 +386,19 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 		ginkgo.By("Verifying object has Lisa's canonical ID")
 		ownerID, err := lisaS3Client.GetObjectOwnerID(ctx, bucketName, "pod-write.txt")
 		framework.ExpectNoError(err)
-		gomega.Expect(ownerID).To(gomega.Equal(lisaCID),
+		gomega.Expect(ownerID).To(gomega.Equal(currentLisaCID),
 			"object owner ID should match Lisa's canonical ID – Secret creds were not applied")
 	})
 
 	ginkgo.It("fails to mount with 'access key Id does not exist' error when using invalid credentials", func(ctx context.Context) {
+		// Get dynamic credentials if VaultClient is available
+		currentLisaAK, currentLisaSK, _, _, _, _, cleanupAccounts := getCredentialsTestAccounts(ctx, credentialsVaultClient)
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			if err := cleanupAccounts(); err != nil {
+				framework.Logf("Warning: Failed to cleanup test accounts: %v", err)
+			}
+		})
+
 		RunNegativeCredentialsTest(
 			ctx,
 			f,
@@ -322,8 +406,8 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 			pattern,
 			NegativeCredentialTestSpec{
 				// Use Lisa to create the bucket
-				BucketOwnerAK: lisaAK,
-				BucketOwnerSK: lisaSK,
+				BucketOwnerAK: currentLisaAK,
+				BucketOwnerSK: currentLisaSK,
 				// Use invalid credentials in the pod
 				PodAK:           "invalid" + uuid.NewString()[:8],
 				PodSK:           "veryInvalidKey" + uuid.NewString()[:8],
@@ -335,6 +419,14 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 	})
 
 	ginkgo.It("fails to mount with 'Access Denied Error: Failed to create mount process' error when using valid credentials without permissions", func(ctx context.Context) {
+		// Get dynamic credentials if VaultClient is available
+		currentLisaAK, currentLisaSK, _, currentBartAK, currentBartSK, _, cleanupAccounts := getCredentialsTestAccounts(ctx, credentialsVaultClient)
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			if err := cleanupAccounts(); err != nil {
+				framework.Logf("Warning: Failed to cleanup test accounts: %v", err)
+			}
+		})
+
 		RunNegativeCredentialsTest(
 			ctx,
 			f,
@@ -342,11 +434,11 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 			pattern,
 			NegativeCredentialTestSpec{
 				// Use Bart to create the bucket
-				BucketOwnerAK: bartAK,
-				BucketOwnerSK: bartSK,
+				BucketOwnerAK: currentBartAK,
+				BucketOwnerSK: currentBartSK,
 				// Use Lisa's credentials to try to access Bart's bucket
-				PodAK:           lisaAK,
-				PodSK:           lisaSK,
+				PodAK:           currentLisaAK,
+				PodSK:           currentLisaSK,
 				ErrorPattern:    "Access Denied Error: Failed to create mount process",
 				TestDescription: "valid credentials without permission to access bucket",
 				CustomPodName:   "test-access-denied-" + uuid.NewString()[:8],

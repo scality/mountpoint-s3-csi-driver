@@ -8,6 +8,7 @@ import (
 
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/customsuites"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/vault"
 
 	ginkgo "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -15,6 +16,17 @@ import (
 	"k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/kubernetes/test/e2e/storage/testsuites"
 	"k8s.io/kubernetes/test/e2e/storage/utils"
+)
+
+var (
+	// Vault configuration flags
+	VaultEndpoint       string
+	VaultAdminAccessKey string
+	VaultAdminSecretKey string
+
+	// Global vault client and default test account
+	vaultClient        *vault.VaultTestClient
+	defaultTestAccount *vault.TestAccount
 )
 
 func init() {
@@ -26,27 +38,88 @@ func init() {
 	// and ensures the E2E framework is ready to run tests.
 	f.AfterReadingAllFlags(&f.TestContext)
 
+	// Original S3 credential flags (for backward compatibility)
 	flag.StringVar(&AccessKeyId, "access-key-id", "", "S3 access key, e.g. accessKey1")
 	flag.StringVar(&SecretAccessKey, "secret-access-key", "", "S3 secret access key, e.g. verySecretKey1")
 	flag.StringVar(&S3EndpointUrl, "s3-endpoint-url", "", "S3 endpoint URL, e.g. https://s3.example.com:8000")
+
+	// New Vault configuration flags
+	flag.StringVar(&VaultEndpoint, "vault-endpoint", "", "Vault endpoint URL for dynamic account creation, e.g. https://vault.example.com")
+	flag.StringVar(&VaultAdminAccessKey, "vault-admin-access-key", "", "Vault admin access key for account management")
+	flag.StringVar(&VaultAdminSecretKey, "vault-admin-secret-key", "", "Vault admin secret key for account management")
+
 	flag.BoolVar(&Performance, "performance", false, "run performance tests")
 	flag.Parse()
 
-	// Check if mandatory flags are provided
-	if AccessKeyId == "" || SecretAccessKey == "" || S3EndpointUrl == "" {
-		fmt.Println("Error: --access-key-id, --secret-access-key, and --s3-endpoint-url are required flags")
+	// Initialize credentials based on available configuration
+	if VaultEndpoint != "" && VaultAdminAccessKey != "" && VaultAdminSecretKey != "" {
+		// Use Vault for dynamic credential generation
+		f.Logf("Initializing Vault client for dynamic credential generation")
+		f.Logf("Vault endpoint: %s", VaultEndpoint)
+
+		var err error
+		vaultClient, err = vault.NewVaultTestClient(VaultEndpoint, VaultAdminAccessKey, VaultAdminSecretKey)
+		if err != nil {
+			fmt.Printf("Error: Failed to initialize Vault client: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Create default test account for general use
+		defaultTestAccount, err = vaultClient.CreateTestAccount("E2EDefaultAccount")
+		if err != nil {
+			fmt.Printf("Error: Failed to create default test account: %v\n", err)
+			os.Exit(1)
+		}
+
+		f.Logf("Created default test account: %s", defaultTestAccount.Name)
+		f.Logf("Using dynamic credentials from Vault")
+
+		// Set the default S3 client credentials to use the dynamically generated ones
+		s3client.DefaultAccessKeyID = defaultTestAccount.AccessKey
+		s3client.DefaultSecretAccessKey = defaultTestAccount.SecretKey
+
+		// For backward compatibility, also set the global variables
+		AccessKeyId = defaultTestAccount.AccessKey
+		SecretAccessKey = defaultTestAccount.SecretKey
+
+		// S3 endpoint is still required
+		if S3EndpointUrl == "" {
+			fmt.Println("Error: --s3-endpoint-url is required even when using Vault")
+			os.Exit(1)
+		}
+		s3client.DefaultS3EndpointUrl = S3EndpointUrl
+
+		// Set the VaultClient for credentials tests
+		customsuites.SetVaultClient(vaultClient)
+
+	} else if AccessKeyId != "" && SecretAccessKey != "" && S3EndpointUrl != "" {
+		// Use traditional static credentials
+		f.Logf("Using static credentials (traditional mode)")
+		s3client.DefaultAccessKeyID = AccessKeyId
+		s3client.DefaultSecretAccessKey = SecretAccessKey
+		s3client.DefaultS3EndpointUrl = S3EndpointUrl
+
+	} else {
+		// Neither configuration is complete
+		fmt.Println("Error: Either provide static credentials (--access-key-id, --secret-access-key, --s3-endpoint-url) OR Vault configuration (--vault-endpoint, --vault-admin-access-key, --vault-admin-secret-key, --s3-endpoint-url)")
 		os.Exit(1)
 	}
-
-	s3client.DefaultAccessKeyID = AccessKeyId
-	s3client.DefaultSecretAccessKey = SecretAccessKey
-	s3client.DefaultS3EndpointUrl = S3EndpointUrl
 }
 
 func TestE2E(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	ginkgo.RunSpecs(t, "Scality S3 CSI Driver E2E Suite")
 }
+
+// Setup cleanup for Vault accounts using AfterSuite
+var _ = ginkgo.AfterSuite(func() {
+	if vaultClient != nil {
+		f.Logf("Cleaning up Vault accounts")
+		if err := vaultClient.CleanupAllAccounts(); err != nil {
+			f.Logf("Warning: Failed to cleanup Vault accounts: %v", err)
+		}
+	}
+})
 
 var CSITestSuites = []func() framework.TestSuite{
 	// [sig-storage] CSI Volumes Test: Basic Data Persistence with Pre-provisioned PV.
@@ -98,3 +171,13 @@ var _ = utils.SIGDescribe("CSI Volumes", func() {
 	})
 	f.Context(args...)
 })
+
+// GetVaultClient returns the global vault client instance (may be nil if not using Vault)
+func GetVaultClient() *vault.VaultTestClient {
+	return vaultClient
+}
+
+// GetDefaultTestAccount returns the default test account (may be nil if not using Vault)
+func GetDefaultTestAccount() *vault.TestAccount {
+	return defaultTestAccount
+}
