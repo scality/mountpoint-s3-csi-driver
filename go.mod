@@ -13,7 +13,7 @@ require (
 	github.com/kubernetes-csi/csi-test v2.2.0+incompatible
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.36.3
+	github.com/onsi/gomega v1.37.0
 	google.golang.org/grpc v1.73.0
 	k8s.io/api v0.33.1
 	k8s.io/client-go v0.33.1
