@@ -1,0 +1,24 @@
+{
+    "credentials": {
+        "account": {
+            "account1": {
+                "username": "account1",
+                "email": "sampleaccount1@sampling.com",
+                "id": "294419410754",
+                "canonicalId": "4fc0bf6eb804bb09e64a820096436e00ea334e6497c245a2cc536c66426d8253",
+                "arn": "arn:aws:iam::294419410754:/account1/",
+                "accessKey": "VC04IZ5ELSLI5CF1OE5E",
+                "secretKey": "08tPoZodjaVMVB/ecX8kV0eZexH2hCdxUid/Qfib"
+            },
+            "account2": {
+                "username": "account2",
+                "email": "account2@example.com",
+                "id": "649023639558",
+                "canonicalId": "51f281b3474231d197e22d3b2d14187c9472401dc1455ed6a1cab2b864912f67",
+                "arn": "arn:aws:iam::649023639558:/account2/",
+                "accessKey": "AD06TXLP6I8ZTGQGOIO6",
+                "secretKey": "i=CfpAKy0bLwSYUzAjg+7RmHMfw5i79UPgy95KDd"
+            }
+        }
+    }
+}

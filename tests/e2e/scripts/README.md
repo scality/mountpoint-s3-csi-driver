@@ -9,6 +9,7 @@ These scripts provide automation for installing, testing, and managing the Scali
 - `uninstall`: Removes the CSI driver from the cluster
 - `all`: Combines install, test, and uninstall operations
 - `go-test`: Runs only the Go-based end-to-end tests
+- `load-credentials.sh`: Loads S3 credentials from JSON configuration file and exports as environment variables
 
 ## Quick Examples
 
@@ -46,6 +47,7 @@ The scripts use a modular design with shared functionality in the `modules/` dir
 
 - `config/`: Default configuration templates
 - `templates/`: YAML templates for Kubernetes resources
+- `../integration_config.json`: S3 credentials configuration file for testing
 
 ## Current Structure
 
@@ -71,12 +73,61 @@ These parameters must be passed to both the `install` and `test` commands separa
 ## Environment Variables
 
 - `KUBECONFIG`: Path to the Kubernetes configuration file (required if not using the default ~/.kube/config)
+- `CREDENTIALS_CONFIG_FILE`: Path to custom credentials JSON file (optional, defaults to `../integration_config.json`)
 
 ## Optional Parameters
 
 - `--namespace`: Specify the namespace to use (default: kube-system)
 - `--skip-go-tests`: Skip executing Go-based end-to-end tests (for test command)
 - `--junit-report`: Generate JUnit XML report at specified path (for test command)
+
+## Credentials Management
+
+The `load-credentials.sh` script loads S3 credentials from JSON and exports them as `ACCOUNT1_*` and `ACCOUNT2_*` environment variables.
+
+### Quick Start
+
+```bash
+# Load credentials (uses ../integration_config.json by default)
+source ./load-credentials.sh
+
+# Use with tests
+./run.sh test --endpoint-url http://localhost:8000 --access-key-id "$ACCOUNT1_ACCESS_KEY" --secret-access-key "$ACCOUNT1_SECRET_KEY"
+
+# Clean up when done
+unset ACCOUNT1_ACCESS_KEY ACCOUNT1_SECRET_KEY ACCOUNT1_CANONICAL_ID ACCOUNT2_ACCESS_KEY ACCOUNT2_SECRET_KEY ACCOUNT2_CANONICAL_ID
+```
+
+### Custom Config File
+
+```bash
+# Use different config file
+source ./load-credentials.sh --config-file /path/to/config.json
+
+# Or with environment variable
+CREDENTIALS_CONFIG_FILE=/path/to/config.json source ./load-credentials.sh
+```
+
+### JSON Format
+
+```json
+{
+  "credentials": {
+    "account": {
+      "account1": {
+        "accessKey": "...",
+        "secretKey": "...",
+        "canonicalId": "..."
+      },
+      "account2": {
+        "accessKey": "...",
+        "secretKey": "...",
+        "canonicalId": "..."
+      }
+    }
+  }
+}
+```
 
 ## Usage
 
