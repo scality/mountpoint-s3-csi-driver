@@ -1,7 +1,8 @@
 #!/bin/bash
 # test.sh - Test functions for e2e scripts
 
-set -euxo pipefail
+# Basic error handling
+set -euo pipefail
 
 # Source common functions
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -15,8 +16,6 @@ run_go_tests() {
   local e2e_tests_dir="${project_root}/tests/e2e"
   local namespace="${1:-$DEFAULT_NAMESPACE}"
   local junit_report="${2:-}"
-  local access_key_id="${ACCESS_KEY_ID:-}"
-  local secret_access_key="${SECRET_ACCESS_KEY:-}"
   local s3_endpoint_url="${S3_ENDPOINT_URL:-}"
 
   log "Running Go-based end-to-end tests for Scality CSI driver in namespace: $namespace..."
@@ -34,26 +33,27 @@ run_go_tests() {
   fi
 
   # Validate required parameters
-  if [ -z "$access_key_id" ]; then
-    error "Missing S3 access key. Please set ACCESS_KEY_ID environment variable or provide --access-key-id parameter."
-    return 1
-  fi
-
-  if [ -z "$secret_access_key" ]; then
-    error "Missing S3 secret key. Please set SECRET_ACCESS_KEY environment variable or provide --secret-access-key parameter."
-    return 1
-  fi
-
   if [ -z "$s3_endpoint_url" ]; then
     error "Missing S3 endpoint URL. Please set S3_ENDPOINT_URL environment variable or provide --endpoint-url parameter."
     return 1
   fi
 
-  # Build the Go test command with required S3 credentials
-  # Convert go test flags to ginkgo flags: -v ./... becomes -v ./..., -ginkgo.v becomes -v
-  # Pass credential flags after --
+  # Check if KUBECONFIG is set or use default
+  local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
+
+  # Verify KUBECONFIG file exists
+  if [ ! -f "$kubeconfig" ]; then
+    error "KUBECONFIG file not found: $kubeconfig"
+    error "Please set KUBECONFIG environment variable or ensure ~/.kube/config exists"
+    return 1
+  fi
+
+  log "Using KUBECONFIG: $kubeconfig"
+
+  # Build the Go test command with S3 endpoint
+  # Tests will use credentials from environment variables or Kubernetes secrets
   # Add 15m timeout
-  local ginkgo_test_cmd="KUBECONFIG=${KUBECONFIG} ginkgo --procs=8 -timeout=15m -v ./... -- --access-key-id=${access_key_id} --secret-access-key=${secret_access_key} --s3-endpoint-url=${s3_endpoint_url}"
+  local ginkgo_test_cmd="KUBECONFIG=$kubeconfig ginkgo --procs=8 -timeout=15m -v ./... -- --s3-endpoint-url=${s3_endpoint_url}"
 
   # Add JUnit report if specified
   if [ -n "$junit_report" ]; then
@@ -88,7 +88,7 @@ run_go_tests() {
 
     # Use the correct format for Ginkgo JUnit report (-junit-report=...)
     # Keep -v flag for verbosity and add 15m timeout
-    ginkgo_test_cmd="KUBECONFIG=${KUBECONFIG} ginkgo --procs=8 -timeout=15m -v -junit-report='$junit_absolute_path' ./... -- --access-key-id=${access_key_id} --secret-access-key=${secret_access_key} --s3-endpoint-url=${s3_endpoint_url}"
+    ginkgo_test_cmd="KUBECONFIG=$kubeconfig ginkgo --procs=8 -timeout=15m -v -junit-report='$junit_absolute_path' ./... -- --s3-endpoint-url=${s3_endpoint_url}"
     log "Final JUnit report path: $junit_absolute_path"
   fi
 
@@ -238,16 +238,12 @@ do_test() {
           return 1
         fi
         ;;
-      --access-key-id)
-        export ACCESS_KEY_ID="$2"
-        shift 2
-        ;;
-      --secret-access-key)
-        export SECRET_ACCESS_KEY="$2"
-        shift 2
-        ;;
       --endpoint-url)
         export S3_ENDPOINT_URL="$2"
+        shift 2
+        ;;
+      --kubeconfig)
+        export KUBECONFIG="$2"
         shift 2
         ;;
       *)

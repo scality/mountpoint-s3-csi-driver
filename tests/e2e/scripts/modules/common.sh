@@ -1,39 +1,33 @@
 #!/bin/bash
 # common.sh - Shared functions for e2e scripts
 
-# Define colors for better readability
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Basic error handling - exit on error, undefined variables, pipe failures
+set -euo pipefail
 
 # Print with timestamp
 log() {
-  echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] $1${NC}"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
 warn() {
-  echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1"
 }
 
 error() {
-  echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}" >&2
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" >&2
   return 1
 }
 
 # Fatal error - logs and exits
 fatal() {
-  echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] FATAL: $1${NC}" >&2
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] FATAL: $1" >&2
   exit 1
 }
 
-# Execute a command
+# Execute a command with logging
 exec_cmd() {
-  # Execute the command
+  log "Executing: $*"
   "$@"
-
-  # Return the exit code from the command
-  return $?
 }
 
 # Check for required tools

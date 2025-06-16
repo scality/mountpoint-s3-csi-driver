@@ -120,6 +120,15 @@ install_csi_driver() {
     esac
   done
 
+  # Get credentials from environment variables if not provided as parameters
+  if [ -z "$ACCESS_KEY_ID" ]; then
+    ACCESS_KEY_ID="${ACCOUNT1_ACCESS_KEY:-}"
+  fi
+
+  if [ -z "$SECRET_ACCESS_KEY" ]; then
+    SECRET_ACCESS_KEY="${ACCOUNT1_SECRET_KEY:-}"
+  fi
+
   # Validate required parameters
   if [ -z "$ENDPOINT_URL" ]; then
     error "Missing required parameter: --endpoint-url"
@@ -127,12 +136,14 @@ install_csi_driver() {
   fi
 
   if [ -z "$ACCESS_KEY_ID" ]; then
-    error "Missing required parameter: --access-key-id"
+    error "Missing S3 access key. Provide via --access-key-id parameter or set ACCOUNT1_ACCESS_KEY environment variable."
+    error "Load credentials using: source tests/e2e/scripts/load-credentials.sh"
     exit 1
   fi
 
   if [ -z "$SECRET_ACCESS_KEY" ]; then
-    error "Missing required parameter: --secret-access-key"
+    error "Missing S3 secret key. Provide via --secret-access-key parameter or set ACCOUNT1_SECRET_KEY environment variable."
+    error "Load credentials using: source tests/e2e/scripts/load-credentials.sh"
     exit 1
   fi
 
@@ -151,10 +162,10 @@ install_csi_driver() {
 
   # Create S3 credentials secret if it doesn't exist
   log "Creating S3 credentials secret in namespace: $NAMESPACE..."
-  exec_cmd kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+  kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
   # Create or update the secret with provided values
-  exec_cmd kubectl create secret generic s3-secret \
+  kubectl create secret generic s3-secret \
     --from-literal=access_key_id="$ACCESS_KEY_ID" \
     --from-literal=secret_access_key="$SECRET_ACCESS_KEY" \
     -n $NAMESPACE \

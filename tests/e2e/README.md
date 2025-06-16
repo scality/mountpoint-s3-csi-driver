@@ -1,99 +1,76 @@
 # E2E Tests
 
-This directory contains end-to-end (e2e) tests for the Scality S3 CSI Driver. These tests validate the driver's
-functionality in real Kubernetes environments by performing complete workflows including installation, volume
-operations, and cleanup.
+End-to-end tests for the Scality S3 CSI Driver that validate functionality in real Kubernetes environments.
 
-## Running Tests
-
-Basic test execution:
+## Quick Start
 
 ```bash
-make e2e
+# 1. Load credentials (from integration_config.json)
+source tests/e2e/scripts/load-credentials.sh
+
+# 2. Run tests
+make e2e-all S3_ENDPOINT_URL=https://your-s3-endpoint.com
 ```
 
-## Test Structure
+## Available Commands
 
-The tests are organized into several components:
+| Command | Description |
+|---------|-------------|
+| `make e2e-all` | Install driver + run all tests |
+| `make e2e` | Run tests on existing driver |
+| `make e2e-go` | Run only Go-based tests |
 
-- S3 bucket creation and cleanup operations
-- CSI driver installation and verification  
-- Pod mounting and data operations
-- Volume lifecycle management
-- Cleanup and resource removal
+## Configuration
 
-## Test Configuration
+### Required
 
-Tests can be configured using environment variables or Make parameters:
+- **S3_ENDPOINT_URL**: Your S3 endpoint URL
+- **Credentials**: Load from `integration_config.json` using the load-credentials script
 
-- `CSI_NAMESPACE`: Kubernetes namespace for the driver (default: `kube-system`)
-- `S3_ENDPOINT_URL`: S3 endpoint URL for testing
-- `ACCESS_KEY_ID`: S3 access key for authentication
-- `SECRET_ACCESS_KEY`: S3 secret key for authentication
+### Optional
 
-Example with custom configuration:
+- **KUBECONFIG**: Path to kubeconfig (default: `~/.kube/config`)
+- **CSI_NAMESPACE**: Kubernetes namespace (default: `kube-system`)
+
+## Examples
 
 ```bash
-make e2e \
-  CSI_NAMESPACE=test-namespace \
-  S3_ENDPOINT_URL=https://s3.example.com \
-  ACCESS_KEY_ID=test_key \
-  SECRET_ACCESS_KEY=test_secret
+# Basic usage (loads from default integration_config.json)
+source tests/e2e/scripts/load-credentials.sh
+make e2e-all S3_ENDPOINT_URL=http://10.200.4.125:8000
+
+# Using custom credentials file
+source tests/e2e/scripts/load-credentials.sh --config-file /path/to/my-credentials.json
+make e2e-all S3_ENDPOINT_URL=https://s3.example.com
+
+# With custom kubeconfig
+make e2e-all S3_ENDPOINT_URL=https://s3.example.com KUBECONFIG=/path/to/config
+
+# Run only Go tests
+make e2e-go S3_ENDPOINT_URL=https://s3.example.com
 ```
 
-## Test Suites
+## Credential Configuration
 
-### Basic E2E Tests
+The `load-credentials.sh` script reads S3 credentials from a JSON configuration file and exports them as environment variables.
 
-Standard test suite that validates:
+### Default Configuration
 
-- Driver installation
-- Volume mounting
-- File operations
-- Cleanup procedures
+By default, credentials are loaded from `tests/e2e/integration_config.json`:
 
-### Go Test Suite
+### Using Custom Configuration File
 
-More comprehensive tests written in Go that include:
+```bash
+# Load from custom file
+source tests/e2e/scripts/load-credentials.sh --config-file /path/to/my-config.json
 
-- Multiple volume scenarios
-- Error handling validation
-- Performance benchmarks
-- Edge case testing
-
-## Custom Test Suites
-
-The `customsuites/` directory contains specialized test configurations for specific scenarios and environments.
-See [Custom Test Suites](./customsuites/README.md) for detailed information.
+# Or set environment variable
+export CREDENTIALS_CONFIG_FILE="/path/to/my-config.json"
+source tests/e2e/scripts/load-credentials.sh
+```
 
 ## Troubleshooting
 
-Common test failures and solutions:
-
-### Authentication Errors
-
-- Verify S3 credentials are correct
-- Check endpoint URL accessibility
-- Ensure bucket permissions are adequate
-
-### Network Issues
-
-- Validate cluster connectivity to S3 endpoint
-- Check firewall and security group settings
-- Verify DNS resolution
-
-### Resource Conflicts
-
-- Ensure namespace is clean before testing
-- Check for existing CSI driver installations
-- Verify sufficient cluster resources
-
-## Test Artifacts
-
-Tests generate artifacts in the following locations:
-
-- Test logs: `./test-logs/`
-- Generated manifests: `./generated/`
-- Temporary files: `/tmp/e2e-tests/`
-
-For development and debugging purposes, artifacts are preserved after test completion unless explicitly cleaned up.
+- **Authentication errors**: Check credentials in `integration_config.json`
+- **Network issues**: Verify S3 endpoint is accessible
+- **KUBECONFIG errors**: Ensure kubectl can connect to your cluster
