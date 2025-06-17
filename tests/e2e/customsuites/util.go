@@ -38,6 +38,18 @@ const (
 )
 
 /*──────────────────────────────
+  Environment variable helpers
+  ──────────────────────────────*/
+
+// GetEnv retrieves an environment variable value or returns a fallback
+func GetEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+/*──────────────────────────────
   Batched creation primitives
   ──────────────────────────────*/
 

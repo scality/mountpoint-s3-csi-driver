@@ -191,11 +191,8 @@ CSI_NAMESPACE ?=
 # Example: https://s3.your-scality.com
 S3_ENDPOINT_URL ?=
 
-# AWS/S3 access key for authentication (REQUIRED)
-ACCESS_KEY_ID ?=
-
-# AWS/S3 secret key for authentication (REQUIRED)
-SECRET_ACCESS_KEY ?=
+# Note: AWS/S3 credentials are loaded from environment variables (ACCOUNT1_ACCESS_KEY, ACCOUNT1_SECRET_KEY)
+# Run 'source tests/e2e/scripts/load-credentials.sh' before using these targets
 
 # Set to 'true' to validate S3 credentials before installation (optional)
 # Checks endpoint connectivity and validates credentials (if AWS CLI is available)
@@ -208,12 +205,43 @@ ADDITIONAL_ARGS ?=
 # Scality CSI driver commands
 ################################################################
 
+# Show help for CSI driver commands
+.PHONY: help-csi
+help-csi:
+	@echo "Scality CSI Driver Make Targets:"
+	@echo ""
+	@echo "Installation:"
+	@echo "  csi-install         - Install the CSI driver"
+	@echo "  csi-uninstall       - Uninstall the CSI driver (interactive)"
+	@echo "  csi-uninstall-clean - Uninstall and delete custom namespace"
+	@echo "  csi-uninstall-force - Force uninstall the CSI driver"
+	@echo ""
+	@echo "Testing:"
+	@echo "  e2e                - Run tests on installed driver"
+	@echo "  e2e-go             - Run only Go-based tests"
+	@echo "  e2e-verify         - Run only verification tests"
+	@echo "  e2e-all            - Install driver and run all tests"
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  1. Run 'source tests/e2e/scripts/load-credentials.sh' to load credentials"
+	@echo "  2. Provide S3_ENDPOINT_URL parameter to installation/test commands"
+	@echo "  3. Ensure KUBECONFIG is set or ~/.kube/config exists"
+	@echo ""
+	@echo "Example workflow:"
+	@echo "  source tests/e2e/scripts/load-credentials.sh"
+	@echo "  make e2e-all S3_ENDPOINT_URL=https://s3.example.com"
+	@echo "  # Or with custom kubeconfig:"
+	@echo "  make e2e-all S3_ENDPOINT_URL=https://s3.example.com KUBECONFIG=/path/to/kubeconfig"
+
+
+
 # Install the Scality CSI driver
+#
+# Prerequisites:
+#   Run 'source tests/e2e/scripts/load-credentials.sh' to load credentials
 #
 # Required parameters:
 #   S3_ENDPOINT_URL - Your Scality S3 endpoint
-#   ACCESS_KEY_ID - Your S3 access key
-#   SECRET_ACCESS_KEY - Your S3 secret key
 #
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
@@ -221,19 +249,13 @@ ADDITIONAL_ARGS ?=
 #   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
-# Example: make csi-install S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
+# Example:
+#   source tests/e2e/scripts/load-credentials.sh
+#   make csi-install S3_ENDPOINT_URL=https://s3.example.com
 .PHONY: csi-install
 csi-install:
 	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
 		echo "Error: S3_ENDPOINT_URL is required. Please provide it with 'make S3_ENDPOINT_URL=https://s3.example.com csi-install'"; \
-		exit 1; \
-	fi; \
-	if [ -z "$(ACCESS_KEY_ID)" ]; then \
-		echo "Error: ACCESS_KEY_ID is required. Please provide it with 'make ACCESS_KEY_ID=your_access_key csi-install'"; \
-		exit 1; \
-	fi; \
-	if [ -z "$(SECRET_ACCESS_KEY)" ]; then \
-		echo "Error: SECRET_ACCESS_KEY is required. Please provide it with 'make SECRET_ACCESS_KEY=your_secret_key csi-install'"; \
 		exit 1; \
 	fi; \
 	INSTALL_ARGS=""; \
@@ -247,8 +269,6 @@ csi-install:
 		INSTALL_ARGS="$$INSTALL_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
 	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
-	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
-	INSTALL_ARGS="$$INSTALL_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
 	fi; \
@@ -295,6 +315,7 @@ csi-uninstall-force:
 ################################################################
 
 # Run tests on an already installed CSI driver
+# Tests use credentials from Kubernetes secrets created during installation
 .PHONY: e2e
 e2e:
 	@TEST_ARGS=""; \
@@ -304,15 +325,13 @@ e2e:
 	if [ ! -z "$(S3_ENDPOINT_URL)" ]; then \
 		TEST_ARGS="$$TEST_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
 	fi; \
-	if [ ! -z "$(ACCESS_KEY_ID)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
-	fi; \
-	if [ ! -z "$(SECRET_ACCESS_KEY)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
+	if [ ! -z "$(KUBECONFIG)" ]; then \
+		TEST_ARGS="$$TEST_ARGS --kubeconfig $(KUBECONFIG)"; \
 	fi; \
 	./tests/e2e/scripts/run.sh test $$TEST_ARGS
 
 # Run only the Go-based e2e tests (skips verification checks)
+# Tests use credentials from Kubernetes secrets created during installation
 #
 # Usage: make e2e-go
 .PHONY: e2e-go
@@ -324,11 +343,8 @@ e2e-go:
 	if [ ! -z "$(S3_ENDPOINT_URL)" ]; then \
 		TEST_ARGS="$$TEST_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
 	fi; \
-	if [ ! -z "$(ACCESS_KEY_ID)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
-	fi; \
-	if [ ! -z "$(SECRET_ACCESS_KEY)" ]; then \
-		TEST_ARGS="$$TEST_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
+	if [ ! -z "$(KUBECONFIG)" ]; then \
+		TEST_ARGS="$$TEST_ARGS --kubeconfig $(KUBECONFIG)"; \
 	fi; \
 	./tests/e2e/scripts/run.sh go-test $$TEST_ARGS
 
@@ -344,10 +360,11 @@ e2e-verify:
 
 # Install CSI driver and run all tests in one command
 #
+# Prerequisites:
+#   Run 'source tests/e2e/scripts/load-credentials.sh' to load credentials
+#
 # Required parameters:
 #   S3_ENDPOINT_URL - Your Scality S3 endpoint
-#   ACCESS_KEY_ID - Your S3 access key
-#   SECRET_ACCESS_KEY - Your S3 secret key
 #
 # Optional parameters:
 #   CSI_IMAGE_TAG - Specific version of the driver
@@ -355,19 +372,13 @@ e2e-verify:
 #   CSI_NAMESPACE - Namespace to deploy the CSI driver in (defaults to kube-system)
 #   VALIDATE_S3 - Set to "true" to verify S3 credentials
 #
-# Example: make e2e-all S3_ENDPOINT_URL=https://s3.example.com ACCESS_KEY_ID=key SECRET_ACCESS_KEY=secret
+# Example:
+#   source tests/e2e/scripts/load-credentials.sh
+#   make e2e-all S3_ENDPOINT_URL=https://s3.example.com
 .PHONY: e2e-all
 e2e-all:
 	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
 		echo "Error: S3_ENDPOINT_URL is required. Please provide it with 'make S3_ENDPOINT_URL=https://s3.example.com e2e-all'"; \
-		exit 1; \
-	fi; \
-	if [ -z "$(ACCESS_KEY_ID)" ]; then \
-		echo "Error: ACCESS_KEY_ID is required. Please provide it with 'make ACCESS_KEY_ID=your_access_key e2e-all'"; \
-		exit 1; \
-	fi; \
-	if [ -z "$(SECRET_ACCESS_KEY)" ]; then \
-		echo "Error: SECRET_ACCESS_KEY is required. Please provide it with 'make SECRET_ACCESS_KEY=your_secret_key e2e-all'"; \
 		exit 1; \
 	fi; \
 	INSTALL_ARGS=""; \
@@ -381,8 +392,6 @@ e2e-all:
 		INSTALL_ARGS="$$INSTALL_ARGS --namespace $(CSI_NAMESPACE)"; \
 	fi; \
 	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
-	INSTALL_ARGS="$$INSTALL_ARGS --access-key-id $(ACCESS_KEY_ID)"; \
-	INSTALL_ARGS="$$INSTALL_ARGS --secret-access-key $(SECRET_ACCESS_KEY)"; \
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
 	fi; \

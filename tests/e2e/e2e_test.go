@@ -26,17 +26,21 @@ func init() {
 	// and ensures the E2E framework is ready to run tests.
 	f.AfterReadingAllFlags(&f.TestContext)
 
-	flag.StringVar(&AccessKeyId, "access-key-id", "", "S3 access key, e.g. accessKey1")
-	flag.StringVar(&SecretAccessKey, "secret-access-key", "", "S3 secret access key, e.g. verySecretKey1")
+	flag.StringVar(&AccessKeyId, "access-key-id", "", "S3 access key (or use ACCOUNT1_ACCESS_KEY env var)")
+	flag.StringVar(&SecretAccessKey, "secret-access-key", "", "S3 secret access key (or use ACCOUNT1_SECRET_KEY env var)")
 	flag.StringVar(&S3EndpointUrl, "s3-endpoint-url", "", "S3 endpoint URL, e.g. https://s3.example.com:8000")
 	flag.BoolVar(&Performance, "performance", false, "run performance tests")
 	flag.Parse()
 
-	// Check if mandatory flags are provided
-	if AccessKeyId == "" || SecretAccessKey == "" || S3EndpointUrl == "" {
-		fmt.Println("Error: --access-key-id, --secret-access-key, and --s3-endpoint-url are required flags")
-		os.Exit(1)
-	}
+	// Try to get configuration from environment variables if not provided via flags
+	AccessKeyId = customsuites.GetEnv("ACCOUNT1_ACCESS_KEY", AccessKeyId)
+	SecretAccessKey = customsuites.GetEnv("ACCOUNT1_SECRET_KEY", SecretAccessKey)
+	S3EndpointUrl = customsuites.GetEnv("S3_ENDPOINT_URL", S3EndpointUrl)
+
+	// Validate all required configuration after trying both flags and environment variables
+	validateRequiredTestConfig("S3 endpoint URL", S3EndpointUrl, "--s3-endpoint-url", "S3_ENDPOINT_URL")
+	validateRequiredTestConfig("S3 access key ID", AccessKeyId, "--access-key-id", "ACCOUNT1_ACCESS_KEY")
+	validateRequiredTestConfig("S3 secret access key", SecretAccessKey, "--secret-access-key", "ACCOUNT1_SECRET_KEY")
 
 	s3client.DefaultAccessKeyID = AccessKeyId
 	s3client.DefaultSecretAccessKey = SecretAccessKey
@@ -77,15 +81,9 @@ var CSITestSuites = []func() framework.TestSuite{
 	customsuites.InitS3CredentialsTestSuite,
 }
 
-// initS3Driver initializes and returns an S3 CSI driver implementation for E2E testing.
-// This function creates a test driver that implements required Kubernetes framework interfaces
-// (TestDriver, PreprovisionedVolumeTestDriver, PreprovisionedPVTestDriver). The framework
-// orchestrates testing by calling the driver's methods to:
-// - Create S3 buckets via CreateVolume
-// - Configure the buckets as CSI persistent volumes via GetPersistentVolumeSource
-// - Clean up by deleting buckets via DeleteVolume
-// This implementation supports both ReadWriteMany and ReadOnlyMany access modes and only works
-// with pre-provisioned persistent volumes.
+// CSI test suite registration and execution.
+// This registers the CSI driver with the Kubernetes E2E framework and defines which test suites to run.
+// In performance mode, only performance tests are executed.
 var _ = utils.SIGDescribe("CSI Volumes", func() {
 	if Performance {
 		CSITestSuites = []func() framework.TestSuite{customsuites.InitS3PerformanceTestSuite}
@@ -98,3 +96,14 @@ var _ = utils.SIGDescribe("CSI Volumes", func() {
 	})
 	f.Context(args...)
 })
+
+// validateRequiredTestConfig checks if a required test configuration value is set and exits with helpful error message if not
+func validateRequiredTestConfig(description, value, flagName, envVarName string) {
+	if value == "" {
+		fmt.Printf("Error: %s is required for running tests but not provided via flags or environment variables.\n", description)
+		fmt.Printf("To provide %s:\n", description)
+		fmt.Printf("  - Use flag: %s\n", flagName)
+		fmt.Printf("  - Or set environment variable: %s\n", envVarName)
+		os.Exit(1)
+	}
+}

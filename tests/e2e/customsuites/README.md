@@ -101,13 +101,30 @@ go test -v ./... \
 
 ## Configuration
 
-Custom tests use the same configuration as the main E2E test suite but support additional S3-specific parameters:
+### Credential Management
+
+Custom tests use the same credential loading system as the main E2E test suite. Load credentials before running tests:
+
+```bash
+# Load credentials from default config file
+source ../scripts/load-credentials.sh
+
+# Then run custom tests
+go test -v ./...
+```
+
+The credential loading script exports environment variables that the tests automatically use:
+
+- `ACCOUNT1_ACCESS_KEY`, `ACCOUNT1_SECRET_KEY`, `ACCOUNT1_CANONICAL_ID`
+- `ACCOUNT2_ACCESS_KEY`, `ACCOUNT2_SECRET_KEY`, `ACCOUNT2_CANONICAL_ID`
 
 ### Standard Parameters
 
+Custom tests support additional S3-specific parameters:
+
 - `--s3-endpoint-url`: S3 endpoint URL (required)
-- `--access-key-id`: S3 access key (required)  
-- `--secret-access-key`: S3 secret key (required)
+- `--access-key-id`: S3 access key (if not using credential loading)  
+- `--secret-access-key`: S3 secret key (if not using credential loading)
 
 ### Custom Parameters
 
@@ -176,13 +193,16 @@ Custom tests are integrated into the CI pipeline:
 
 ```yaml
 # Example CI configuration  
+- name: Load Test Credentials
+  run: |
+    cd tests/e2e/scripts
+    source ./load-credentials.sh
+
 - name: Run Custom Test Suites
   run: |
     cd tests/e2e/customsuites
     go test -v ./... \
       --s3-endpoint-url=${{ secrets.S3_ENDPOINT }} \
-      --access-key-id=${{ secrets.ACCESS_KEY_ID }} \
-      --secret-access-key=${{ secrets.SECRET_ACCESS_KEY }} \
       --cleanup-policy=always
 ```
 

@@ -1,6 +1,8 @@
 #!/bin/bash
 # run.sh - Main entry point for e2e scripts
-set -e
+
+# Basic error handling
+set -euo pipefail
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -31,34 +33,33 @@ show_help() {
   echo "  --image-tag VALUE         Specify custom image tag for the CSI driver"
   echo "  --image-repository VALUE  Specify custom image repository for the CSI driver"
   echo "  --endpoint-url VALUE      Specify custom S3 endpoint URL (REQUIRED)"
-  echo "  --access-key-id VALUE     Specify S3 access key ID for authentication (REQUIRED)"
-  echo "  --secret-access-key VALUE Specify S3 secret access key for authentication (REQUIRED)"
+  echo "  --access-key-id VALUE     Specify S3 access key ID (or use ACCOUNT1_ACCESS_KEY env var)"
+  echo "  --secret-access-key VALUE Specify S3 secret access key (or use ACCOUNT1_SECRET_KEY env var)"
   echo "  --validate-s3             Validate S3 endpoint and credentials before installation"
   echo
   echo "Options for test command:"
   echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
   echo "  --endpoint-url VALUE      Specify custom S3 endpoint URL for tests (REQUIRED)"
-  echo "  --access-key-id VALUE     Specify S3 access key ID for tests (REQUIRED)"
-  echo "  --secret-access-key VALUE Specify S3 secret access key for tests (REQUIRED)"
   echo "  --junit-report VALUE      Generate JUnit XML report at specified path"
+  echo "  --kubeconfig VALUE        Specify path to kubeconfig file (default: ~/.kube/config)"
   echo
   echo "Options for uninstall command:"
   echo "  --delete-ns               Delete the CSI driver namespace without prompting (only for custom namespaces, not kube-system)"
   echo "  --force                   Force delete all resources including CSI driver registration"
   echo
   echo "Examples:"
+  echo "  source ./load-credentials.sh && $0 install --endpoint-url https://s3.example.com"
   echo "  $0 install --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
-  echo "  $0 install --namespace custom-namespace --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
-  echo "  $0 install --image-tag v1.14.0 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
-  echo "  $0 install --image-repository myrepo/csi-driver --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
-  echo "  $0 install --validate-s3 --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx"
-  echo "  $0 test                                 # Run all tests including Go-based e2e tests"
-  echo "  $0 test --namespace custom-namespace    # Run tests in a custom namespace"
-  echo "  $0 test --skip-go-tests                 # Run only basic verification tests"
-  echo "  $0 test --endpoint-url https://s3.example.com --access-key-id AKIAXXXXXXXX --secret-access-key xxxxxxxx  # Run tests with custom S3 credentials"
+  echo "  $0 install --namespace custom-namespace --endpoint-url https://s3.example.com"
+  echo "  $0 install --image-tag v1.14.0 --endpoint-url https://s3.example.com"
+  echo "  $0 install --validate-s3 --endpoint-url https://s3.example.com"
+  echo "  $0 test --endpoint-url https://s3.example.com                                 # Run all tests including Go-based e2e tests"
+  echo "  $0 test --namespace custom-namespace --endpoint-url https://s3.example.com    # Run tests in a custom namespace"
+  echo "  $0 test --skip-go-tests --endpoint-url https://s3.example.com                 # Run only basic verification tests"
+  echo "  $0 test --kubeconfig /path/to/kubeconfig --endpoint-url https://s3.example.com # Run tests with custom kubeconfig"
   echo "  $0 go-test                              # Run Go tests directly (skips verification)"
-  echo "  $0 all                                  # Install driver and run tests"
-  echo "  $0 all --namespace custom-namespace     # Install driver and run tests in a custom namespace"
+  echo "  source ./load-credentials.sh && $0 all --endpoint-url https://s3.example.com    # Install driver and run tests"
+  echo "  $0 all --namespace custom-namespace --endpoint-url https://s3.example.com     # Install and test in custom namespace"
   echo "  $0 uninstall                            # Uninstall driver from kube-system namespace"
   echo "  $0 uninstall --namespace custom-namespace  # Uninstall driver from a custom namespace"
   echo "  $0 uninstall --namespace custom-namespace --delete-ns  # Uninstall driver and delete custom namespace"
@@ -72,8 +73,6 @@ show_help() {
 parse_install_parameters() {
   local params=""
   local has_endpoint_url=false
-  local has_access_key_id=false
-  local has_secret_access_key=false
 
   # Process options
   while [[ $# -gt 0 ]]; do
@@ -101,13 +100,11 @@ parse_install_parameters() {
       --access-key-id)
         ACCESS_KEY_ID="$2"
         params="$params --access-key-id $2"
-        has_access_key_id=true
         shift 2
         ;;
       --secret-access-key)
         SECRET_ACCESS_KEY="$2"
         params="$params --secret-access-key $2"
-        has_secret_access_key=true
         shift 2
         ;;
       --validate-s3)
@@ -129,17 +126,7 @@ parse_install_parameters() {
     exit 1
   fi
 
-  if [ "$has_access_key_id" = false ]; then
-    error "Missing required parameter: --access-key-id"
-    show_help
-    exit 1
-  fi
-
-  if [ "$has_secret_access_key" = false ]; then
-    error "Missing required parameter: --secret-access-key"
-    show_help
-    exit 1
-  fi
+  # Note: credentials are validated in install.sh module (can come from env vars)
 
   # Return parameters
   echo "$params"
@@ -199,12 +186,8 @@ parse_test_parameters() {
         params="$params --endpoint-url $2"
         shift 2
         ;;
-      --access-key-id)
-        params="$params --access-key-id $2"
-        shift 2
-        ;;
-      --secret-access-key)
-        params="$params --secret-access-key $2"
+      --kubeconfig)
+        params="$params --kubeconfig $2"
         shift 2
         ;;
       *)
@@ -216,16 +199,8 @@ parse_test_parameters() {
   done
 
   # Pass environment variables if set and not already passed as parameters
-  if [[ -n "$ENDPOINT_URL" && ! "$params" =~ "--endpoint-url" ]]; then
+  if [[ -n "${ENDPOINT_URL:-}" && ! "$params" =~ "--endpoint-url" ]]; then
     params="$params --endpoint-url $ENDPOINT_URL"
-  fi
-
-  if [[ -n "$ACCESS_KEY_ID" && ! "$params" =~ "--access-key-id" ]]; then
-    params="$params --access-key-id $ACCESS_KEY_ID"
-  fi
-
-  if [[ -n "$SECRET_ACCESS_KEY" && ! "$params" =~ "--secret-access-key" ]]; then
-    params="$params --secret-access-key $SECRET_ACCESS_KEY"
   fi
 
   # Return parameters
@@ -369,17 +344,9 @@ main() {
 
       source "${MODULES_DIR}/test.sh"
 
-      # Add S3 credentials to test args if specified
+      # Add S3 endpoint to test args if specified
       if [ -n "$endpoint_url" ]; then
         test_args="$test_args --endpoint-url $endpoint_url"
-      fi
-
-      if [ -n "$access_key_id" ]; then
-        test_args="$test_args --access-key-id $access_key_id"
-      fi
-
-      if [ -n "$secret_access_key" ]; then
-        test_args="$test_args --secret-access-key $secret_access_key"
       fi
 
       # Run tests with same namespace and any test-specific arguments

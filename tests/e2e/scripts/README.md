@@ -9,6 +9,7 @@ These scripts provide automation for installing, testing, and managing the Scali
 - `uninstall`: Removes the CSI driver from the cluster
 - `all`: Combines install, test, and uninstall operations
 - `go-test`: Runs only the Go-based end-to-end tests
+- `load-credentials.sh`: Loads S3 credentials from JSON configuration file and exports as environment variables
 
 ## Quick Examples
 
@@ -46,6 +47,7 @@ The scripts use a modular design with shared functionality in the `modules/` dir
 
 - `config/`: Default configuration templates
 - `templates/`: YAML templates for Kubernetes resources
+- `../integration_config.json`: S3 credentials configuration file for testing
 
 ## Current Structure
 
@@ -60,23 +62,58 @@ The main entry point is `run.sh` which supports the following commands:
 
 ## Required Parameters
 
-For tests that interact with S3, the following parameters are required:
+For installation, the following parameters are required:
 
 - `--endpoint-url`: S3 endpoint URL (e.g., <http://localhost:8000>)
-- `--access-key-id`: S3 access key for authentication
-- `--secret-access-key`: S3 secret key for authentication, S3 endpoint should be operational
+- `--access-key-id`: S3 access key for authentication (used to create Kubernetes secret)
+- `--secret-access-key`: S3 secret key for authentication (used to create Kubernetes secret)
 
-These parameters must be passed to both the `install` and `test` commands separately, or to the `all` command which will handle both steps.
+For tests, only the endpoint URL is required:
+
+- `--endpoint-url`: S3 endpoint URL (e.g., <http://localhost:8000>)
+
+Tests use the credentials stored in the Kubernetes secret created during installation.
 
 ## Environment Variables
 
 - `KUBECONFIG`: Path to the Kubernetes configuration file (required if not using the default ~/.kube/config)
+- `CREDENTIALS_CONFIG_FILE`: Path to custom credentials JSON file (optional, defaults to `../integration_config.json`)
 
 ## Optional Parameters
 
 - `--namespace`: Specify the namespace to use (default: kube-system)
 - `--skip-go-tests`: Skip executing Go-based end-to-end tests (for test command)
 - `--junit-report`: Generate JUnit XML report at specified path (for test command)
+
+## Credentials Management
+
+The `load-credentials.sh` script loads S3 credentials from JSON and exports them as `ACCOUNT1_*` and `ACCOUNT2_*` environment variables.
+
+### Quick Start
+
+```bash
+# Load credentials (uses ../integration_config.json by default)
+source ./load-credentials.sh
+
+# Install driver with credentials (creates Kubernetes secret)
+./run.sh install --endpoint-url http://localhost:8000
+
+# Run tests (uses credentials from Kubernetes secret)
+./run.sh test --endpoint-url http://localhost:8000
+
+# Clean up when done
+unset ACCOUNT1_ACCESS_KEY ACCOUNT1_SECRET_KEY ACCOUNT1_CANONICAL_ID ACCOUNT2_ACCESS_KEY ACCOUNT2_SECRET_KEY ACCOUNT2_CANONICAL_ID
+```
+
+### Custom Config File
+
+```bash
+# Use different config file
+source ./load-credentials.sh --config-file /path/to/config.json
+
+# Or with environment variable
+CREDENTIALS_CONFIG_FILE=/path/to/config.json source ./load-credentials.sh
+```
 
 ## Usage
 
@@ -85,31 +122,40 @@ Scripts in this directory can be called directly or from the Makefile targets.
 ### Direct script usage
 
 ```bash
-# Install the driver
-./run.sh install --endpoint-url http://localhost:8000 --access-key-id accessKey1 --secret-access-key verySecretKey1
+# Load credentials first
+source ./load-credentials.sh
 
-# Run tests
-./run.sh test --endpoint-url http://localhost:8000 --access-key-id accessKey1 --secret-access-key verySecretKey1
+# Install the driver (creates Kubernetes secret with credentials)
+./run.sh install --endpoint-url http://localhost:8000
+
+# Run tests (uses credentials from Kubernetes secret)
+./run.sh test --endpoint-url http://localhost:8000
 
 # Run only Go tests
-./run.sh go-test --endpoint-url http://localhost:8000 --access-key-id accessKey1 --secret-access-key verySecretKey1
+./run.sh go-test --endpoint-url http://localhost:8000
 
 # Install and test in one command
-./run.sh all --endpoint-url http://localhost:8000 --access-key-id accessKey1 --secret-access-key verySecretKey1
+./run.sh all --endpoint-url http://localhost:8000
 ```
 
 ### Using Makefile targets
 
 ```bash
-# Install the driver
-make csi-install S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1
+# Show all available CSI commands
+make help-csi
 
-# Run tests
-make e2e S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1
+# Load credentials (required)
+source tests/e2e/scripts/load-credentials.sh
+
+# Install the driver (only endpoint URL needed)
+make csi-install S3_ENDPOINT_URL=http://localhost:8000
+
+# Run tests (uses credentials from Kubernetes secret)
+make e2e S3_ENDPOINT_URL=http://localhost:8000
 
 # Run only Go tests
-make e2e-go S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1
+make e2e-go S3_ENDPOINT_URL=http://localhost:8000
 
 # Install and test in one command
-KUBECONFIG=/Users/anurag4dsb/.kube/config make csi-all S3_ENDPOINT_URL=http://localhost:8000 ACCESS_KEY_ID=accessKey1 SECRET_ACCESS_KEY=verySecretKey1  CSI_IMAGE_TAG=<image-tag> CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver
+make e2e-all S3_ENDPOINT_URL=http://localhost:8000 CSI_IMAGE_TAG=<image-tag> CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver
 ```

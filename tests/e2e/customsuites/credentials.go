@@ -23,17 +23,21 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 )
 
-const (
-	// Lisa's real test credentials per cloudserver without Vault
-	lisaAK  = "accessKey2"
-	lisaSK  = "verySecretKey2"
-	lisaCID = "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf"
+// getCredentialsFromEnv retrieves credentials from environment variables
+// Falls back to hardcoded values if environment variables are not set
+func getCredentialsFromEnv() (account1AK, account1SK, account1CID, account2AK, account2SK, account2CID string) {
+	// Account1 credentials (previously Bart)
+	account1AK = GetEnv("ACCOUNT1_ACCESS_KEY", "accessKey1")
+	account1SK = GetEnv("ACCOUNT1_SECRET_KEY", "verySecretKey1")
+	account1CID = GetEnv("ACCOUNT1_CANONICAL_ID", "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be")
 
-	// Bart's canonical ID. Bart's credentials are being used in the tests
-	bartAK  = "accessKey1"
-	bartSK  = "verySecretKey1"
-	bartCID = "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"
-)
+	// Account2 credentials (previously Lisa)
+	account2AK = GetEnv("ACCOUNT2_ACCESS_KEY", "accessKey2")
+	account2SK = GetEnv("ACCOUNT2_SECRET_KEY", "verySecretKey2")
+	account2CID = GetEnv("ACCOUNT2_CANONICAL_ID", "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf")
+
+	return
+}
 
 // NegativeCredentialTestSpec defines parameters for a negative credential test.
 type NegativeCredentialTestSpec struct {
@@ -228,7 +232,10 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 	f := framework.NewFrameworkWithCustomTimeouts("credentials", storageframework.GetDriverTimeouts(driver))
 	f.NamespacePodSecurityLevel = admissionapi.LevelRestricted
 
-	ginkgo.It("mounts with default driver credentials and sees Bart‑owned objects", func(ctx context.Context) {
+	ginkgo.It("mounts with default driver credentials and sees Account1‑owned objects", func(ctx context.Context) {
+		// Get credentials from environment variables
+		account1AK, account1SK, account1CID, _, _, _ := getCredentialsFromEnv()
+
 		type TestResourceRegistry struct {
 			resources []*storageframework.VolumeResource // tracks resources for cleanup
 			config    *storageframework.PerTestConfig    // storage framework configuration
@@ -244,7 +251,7 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 		testRegistry = TestResourceRegistry{}
 		testRegistry.config = driver.PrepareTest(ctx, f)
 		ginkgo.DeferCleanup(cleanup)
-		bartS3Client := s3client.New("", bartAK, bartSK)
+		account1S3Client := s3client.New("", account1AK, account1SK)
 
 		// Use createVolumeResourceWithMountOptions from utils
 		resource := createVolumeResourceWithMountOptions(ctx, testRegistry.config, pattern, getMountOptionsForNonRootUser())
@@ -264,25 +271,28 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 		// List all objects in the bucket to verify the file exists
 		ginkgo.By("Listing all objects in the bucket to verify file exists")
 		framework.Logf("Bucket name: %s, Looking for object: pod-write-default.txt", bucketName)
-		_, err = bartS3Client.ListObjects(ctx, bucketName)
+		_, err = account1S3Client.ListObjects(ctx, bucketName)
 		framework.ExpectNoError(err)
 
 		// Attempt to verify owner ID, but handle potential errors gracefully
-		ginkgo.By("Attempting to verify object has Bart's canonical ID (if owner info available)")
-		ownerID, err := bartS3Client.GetObjectOwnerID(ctx, bucketName, "pod-write-default.txt")
+		ginkgo.By("Attempting to verify object has Account1's canonical ID (if owner info available)")
+		ownerID, err := account1S3Client.GetObjectOwnerID(ctx, bucketName, "pod-write-default.txt")
 		framework.ExpectNoError(err)
-		gomega.Expect(ownerID).To(gomega.Equal(bartCID),
-			"Object owner ID should match Bart's canonical ID. Default credentials might be incorrect.")
+		gomega.Expect(ownerID).To(gomega.Equal(account1CID),
+			"Object owner ID should match Account1's canonical ID. Default credentials might be incorrect.")
 	})
 
-	ginkgo.It("mounts with Secret credentials and sees Lisa‑owned objects", func(ctx context.Context) {
-		// Create a bucket with Lisa's credentials
-		lisaS3Client := s3client.New("", lisaAK, lisaSK)
-		bucketName, deleteBucket := lisaS3Client.CreateBucket(ctx)
+	ginkgo.It("mounts with Secret credentials and sees Account2‑owned objects", func(ctx context.Context) {
+		// Get credentials from environment variables
+		_, _, _, account2AK, account2SK, account2CID := getCredentialsFromEnv()
+
+		// Create a bucket with Account2's credentials
+		account2S3Client := s3client.New("", account2AK, account2SK)
+		bucketName, deleteBucket := account2S3Client.CreateBucket(ctx)
 		ginkgo.DeferCleanup(deleteBucket)
 
-		// Make a Secret with Lisa's credentials in test namespace
-		secretName, err := CreateCredentialSecret(ctx, f, "lisa-cred", lisaAK, lisaSK)
+		// Make a Secret with Account2's credentials in test namespace
+		secretName, err := CreateCredentialSecret(ctx, f, "account2-cred", account2AK, account2SK)
 		framework.ExpectNoError(err)
 
 		// Build PV/PVC that use the Secret (authSource=secret)
@@ -304,26 +314,29 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 
 		// Write a test file
 		filePath := "/mnt/volume1/pod-write.txt"
-		WriteAndVerifyFile(f, pod, filePath, "hello lisa")
+		WriteAndVerifyFile(f, pod, filePath, "hello account2")
 
-		// Verify Lisa's canonical ID as owner via ListObjectsV2 FetchOwner
-		ginkgo.By("Verifying object has Lisa's canonical ID")
-		ownerID, err := lisaS3Client.GetObjectOwnerID(ctx, bucketName, "pod-write.txt")
+		// Verify Account2's canonical ID as owner via ListObjectsV2 FetchOwner
+		ginkgo.By("Verifying object has Account2's canonical ID")
+		ownerID, err := account2S3Client.GetObjectOwnerID(ctx, bucketName, "pod-write.txt")
 		framework.ExpectNoError(err)
-		gomega.Expect(ownerID).To(gomega.Equal(lisaCID),
-			"object owner ID should match Lisa's canonical ID – Secret creds were not applied")
+		gomega.Expect(ownerID).To(gomega.Equal(account2CID),
+			"object owner ID should match Account2's canonical ID – Secret creds were not applied")
 	})
 
 	ginkgo.It("fails to mount with 'access key Id does not exist' error when using invalid credentials", func(ctx context.Context) {
+		// Get credentials from environment variables
+		_, _, _, account2AK, account2SK, _ := getCredentialsFromEnv()
+
 		RunNegativeCredentialsTest(
 			ctx,
 			f,
 			driver,
 			pattern,
 			NegativeCredentialTestSpec{
-				// Use Lisa to create the bucket
-				BucketOwnerAK: lisaAK,
-				BucketOwnerSK: lisaSK,
+				// Use Account2 to create the bucket
+				BucketOwnerAK: account2AK,
+				BucketOwnerSK: account2SK,
 				// Use invalid credentials in the pod
 				PodAK:           "invalid" + uuid.NewString()[:8],
 				PodSK:           "veryInvalidKey" + uuid.NewString()[:8],
@@ -335,18 +348,21 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 	})
 
 	ginkgo.It("fails to mount with 'Access Denied Error: Failed to create mount process' error when using valid credentials without permissions", func(ctx context.Context) {
+		// Get credentials from environment variables
+		account1AK, account1SK, _, account2AK, account2SK, _ := getCredentialsFromEnv()
+
 		RunNegativeCredentialsTest(
 			ctx,
 			f,
 			driver,
 			pattern,
 			NegativeCredentialTestSpec{
-				// Use Bart to create the bucket
-				BucketOwnerAK: bartAK,
-				BucketOwnerSK: bartSK,
-				// Use Lisa's credentials to try to access Bart's bucket
-				PodAK:           lisaAK,
-				PodSK:           lisaSK,
+				// Use Account1 to create the bucket
+				BucketOwnerAK: account1AK,
+				BucketOwnerSK: account1SK,
+				// Use Account2's credentials to try to access Account1's bucket
+				PodAK:           account2AK,
+				PodSK:           account2SK,
 				ErrorPattern:    "Access Denied Error: Failed to create mount process",
 				TestDescription: "valid credentials without permission to access bucket",
 				CustomPodName:   "test-access-denied-" + uuid.NewString()[:8],
