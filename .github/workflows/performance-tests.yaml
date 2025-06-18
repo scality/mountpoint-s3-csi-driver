@@ -109,6 +109,14 @@ jobs:
           fallocate=none
           EOF
 
+      - name: Load test credentials
+        run: |
+          # Load credentials from the integration config
+          source tests/e2e/scripts/load-credentials.sh
+          # Export them for subsequent steps
+          echo "ACCOUNT1_ACCESS_KEY=$ACCOUNT1_ACCESS_KEY" >> $GITHUB_ENV
+          echo "ACCOUNT1_SECRET_KEY=$ACCOUNT1_SECRET_KEY" >> $GITHUB_ENV
+
       - name: Install CSI Driver
         run: |
           make csi-install \
@@ -124,9 +132,6 @@ jobs:
       - name: Run Performance Tests
         run: |
           mkdir -p test-results
-
-          # Load credentials from the integration config
-          source tests/e2e/scripts/load-credentials.sh
 
           # Export CI-specific environment variables
           export FIO_CONFIG_DIR=${{ env.PERF_TEST_MODE == 'light' && 'tests/e2e/fio-ci' || 'tests/e2e/fio' }}
