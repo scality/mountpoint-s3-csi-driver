@@ -1,0 +1,190 @@
+name: Performance Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'mkdocs.yml'
+      - 'requirements.txt'
+      - 'NOTICE'
+  workflow_dispatch:
+    inputs:
+      full_test:
+        description: 'Run full performance tests (larger files, longer duration)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  KUBECONFIG: "/home/runner/.kube/config"
+
+jobs:
+  dev-image:
+    name: Dev Image
+    permissions:
+      contents: read
+      packages: write
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
+    with:
+      context: .
+      name: mountpoint-s3-csi-driver
+      namespace: ${{ github.repository_owner }}
+      tag: ${{ github.sha }}
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-22.04-8core  # Need more cores for concurrent pods
+    needs: dev-image
+    env:
+      CLOUDSERVER_TAG: ${{ vars.CLOUDSERVER_RING_9_5 }}
+      # CI-friendly performance test settings
+      PERF_TEST_MODE: ${{ github.event.inputs.full_test && 'full' || 'light' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Common Setup
+        uses: ./.github/actions/e2e-setup-common
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Get Host IP Address
+        id: get_ip
+        run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Create lightweight FIO configs for CI
+        if: env.PERF_TEST_MODE == 'light'
+        run: |
+          mkdir -p tests/e2e/fio-ci
+
+          # Create lightweight versions of FIO configs
+          cat > tests/e2e/fio-ci/seq_write.fio <<EOF
+          [global]
+          name=fs_bench
+          bs=256k
+          runtime=10s
+          time_based
+          group_reporting
+          filename=\${FILENAME}
+
+          [sequential_write]
+          size=100M
+          rw=write
+          ioengine=sync
+          fallocate=none
+          create_on_open=1
+          fsync_on_close=1
+          unlink=1
+          EOF
+
+          cat > tests/e2e/fio-ci/seq_read.fio <<EOF
+          [global]
+          name=fs_bench
+          bs=256k
+          runtime=10s
+          time_based
+          group_reporting
+          filename=\${FILENAME}
+
+          [sequential_read]
+          size=100M
+          rw=read
+          ioengine=sync
+          fallocate=none
+          EOF
+
+          cat > tests/e2e/fio-ci/rand_read.fio <<EOF
+          [global]
+          name=fs_bench
+          bs=256k
+          runtime=10s
+          time_based
+          group_reporting
+          filename=\${FILENAME}
+
+          [random_read]
+          size=100M
+          rw=randread
+          ioengine=sync
+          fallocate=none
+          EOF
+
+      - name: Install CSI Driver
+        run: |
+          make csi-install \
+            CSI_IMAGE_TAG=${{ github.sha }} \
+            CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
+            S3_ENDPOINT_URL=http://${{ steps.get_ip.outputs.host_ip }}:8000
+
+      - name: Wait for CSI Driver to be ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app=s3-csi-node -n kube-system --timeout=300s
+          kubectl get pods -n kube-system | grep s3-csi
+
+      - name: Run Performance Tests
+        run: |
+          mkdir -p test-results
+
+          # Load credentials from the integration config
+          source tests/e2e/scripts/load-credentials.sh
+
+          # Export CI-specific environment variables
+          export FIO_CONFIG_DIR=${{ env.PERF_TEST_MODE == 'light' && 'tests/e2e/fio-ci' || 'tests/e2e/fio' }}
+          export PERF_TEST_TIMEOUT=20m
+
+          # Run only the performance test suite
+          cd tests/e2e
+          go test -v -timeout 30m \
+            --s3-endpoint-url=http://${{ steps.get_ip.outputs.host_ip }}:8000 \
+            --access-key-id=$ACCOUNT1_ACCESS_KEY \
+            --secret-access-key=$ACCOUNT1_SECRET_KEY \
+            --performance=true \
+            --ginkgo.focus="performance" \
+            --ginkgo.junit-report=../test-results/performance-test-results.xml \
+            ./...
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: |
+            tests/e2e/test-results/
+            test-results/
+
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-metrics
+          path: test-results/output.json
+
+      - name: Generate Performance Report
+        if: always()
+        run: |
+          if [ -f "test-results/output.json" ]; then
+            echo "## Performance Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Benchmark | Throughput |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|------------|" >> $GITHUB_STEP_SUMMARY
+
+            # Parse JSON and generate markdown table
+            jq -r '.[] | "| \(.name) | \(.value) \(.unit) |"' test-results/output.json >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./tests/e2e/test-results/performance-test-results.xml
+          flags: performance_tests
+          slug: scality/mountpoint-s3-csi-driver

@@ -399,3 +399,65 @@ e2e-all:
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
 	fi; \
 	./tests/e2e/scripts/run.sh all $$INSTALL_ARGS
+
+################################################################
+# Performance test commands for Scality
+################################################################
+
+# Performance test configuration
+PERF_MODE ?= light
+PERF_POD_COUNT ?= 3
+PERF_FIO_IMAGE ?=
+
+# Run performance tests with lightweight configuration (CI-friendly)
+#
+# Prerequisites:
+#   Run 'source tests/e2e/scripts/load-credentials.sh' to load credentials
+#   Install CSI driver first with 'make csi-install'
+#
+# Required parameters:
+#   S3_ENDPOINT_URL - Your Scality S3 endpoint
+#
+# Optional parameters:
+#   PERF_MODE - 'light' (default) or 'full' for test configuration
+#   PERF_POD_COUNT - Number of concurrent pods (default: 3)
+#   PERF_FIO_IMAGE - Custom FIO image (optional)
+#
+# Example:
+#   make perf-test S3_ENDPOINT_URL=https://s3.example.com
+.PHONY: perf-test
+perf-test:
+	@if [ -z "$(S3_ENDPOINT_URL)" ]; then \
+		echo "Error: S3_ENDPOINT_URL is required."; \
+		exit 1; \
+	fi; \
+	echo "Running performance tests in $(PERF_MODE) mode..."; \
+	export FIO_CONFIG_DIR=$$([ "$(PERF_MODE)" = "light" ] && echo "tests/e2e/fio-ci" || echo "tests/e2e/fio"); \
+	export PERF_TEST_POD_COUNT=$(PERF_POD_COUNT); \
+	if [ ! -z "$(PERF_FIO_IMAGE)" ]; then \
+		export FIO_IMAGE=$(PERF_FIO_IMAGE); \
+	fi; \
+	if [ "$(PERF_MODE)" = "light" ] && [ ! -d "tests/e2e/fio-ci" ]; then \
+		echo "Creating lightweight FIO configs for CI..."; \
+		mkdir -p tests/e2e/fio-ci; \
+		./tests/e2e/scripts/create-light-fio-configs.sh; \
+	fi; \
+	cd tests/e2e && \
+	go test -v -timeout 30m \
+		--s3-endpoint-url=$(S3_ENDPOINT_URL) \
+		--access-key-id=$${ACCOUNT1_ACCESS_KEY} \
+		--secret-access-key=$${ACCOUNT1_SECRET_KEY} \
+		--performance=true \
+		--ginkgo.focus="performance" \
+		./...
+
+# Build FIO container image for performance testing
+.PHONY: perf-image
+perf-image:
+	docker build -t mountpoint-s3-csi-fio:latest -f tests/e2e/fio.Dockerfile tests/e2e/
+
+# Run full performance tests with production configuration
+# WARNING: This requires significant resources and time
+.PHONY: perf-test-full
+perf-test-full:
+	@$(MAKE) perf-test PERF_MODE=full

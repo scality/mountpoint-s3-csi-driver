@@ -25,13 +25,29 @@ import (
 )
 
 const (
-	FioCfgHostDir = "fio/"
-	OutputPath    = "test-results/output.json"
+	// Use environment variable for FIO config directory, default to fio/
 	FioCfgPodFile = "/c.fio"
-	// For now using AWS recommended Ubuntu image, this might change in the future to
-	// use a custom image with FIO pre-installed.
-	ubuntuImage = "public.ecr.aws/docker/library/ubuntu:22.04"
+	OutputPath    = "test-results/output.json"
+	// For CI environments, we can use a custom image with FIO pre-installed
+	// Otherwise fall back to Ubuntu and install at runtime
+	defaultFioImage = "public.ecr.aws/docker/library/ubuntu:22.04"
 )
+
+// getFioCfgHostDir returns the FIO config directory path, checking environment variable first
+func getFioCfgHostDir() string {
+	if dir := os.Getenv("FIO_CONFIG_DIR"); dir != "" {
+		return dir
+	}
+	return "fio/"
+}
+
+// getFioImage returns the container image to use for FIO testing
+func getFioImage() string {
+	if image := os.Getenv("FIO_IMAGE"); image != "" {
+		return image
+	}
+	return defaultFioImage
+}
 
 // s3CSIPerformanceTestSuite implements a test suite for measuring I/O performance
 // with the S3 CSI driver using FIO benchmarks. It measures basic read/write throughput
@@ -97,7 +113,7 @@ func (t *s3CSIPerformanceTestSuite) DefineTests(driver storageframework.TestDriv
 
 	// getFioCfgNames returns a list of FIO configuration names by reading the directory
 	getFioCfgNames := func() []string {
-		entries, err := os.ReadDir(FioCfgHostDir)
+		entries, err := os.ReadDir(getFioCfgHostDir())
 		framework.ExpectNoError(err)
 		names := []string{}
 		for _, entry := range entries {
@@ -124,7 +140,14 @@ func (t *s3CSIPerformanceTestSuite) DefineTests(driver storageframework.TestDriv
 		resource := createVolumeResourceWithMountOptions(ctx, l.config, pattern, []string{})
 		l.resources = append(l.resources, resource)
 
-		const podsNum = 3
+		// Allow configuration of pod count via environment variable for CI
+		podsNum := 3
+		if envPods := os.Getenv("PERF_TEST_POD_COUNT"); envPods != "" {
+			var err error
+			podsNum, err = fmt.Sscanf(envPods, "%d", &podsNum)
+			framework.ExpectNoError(err)
+		}
+
 		var pods []*v1.Pod
 		nodeName := ""
 		for i := 0; i < podsNum; i++ {
@@ -135,7 +158,7 @@ func (t *s3CSIPerformanceTestSuite) DefineTests(driver storageframework.TestDriv
 				nodeSelector["kubernetes.io/hostname"] = nodeName
 			}
 			pod := e2epod.MakePod(f.Namespace.Name, nodeSelector, []*v1.PersistentVolumeClaim{resource.Pvc}, admissionapi.LevelBaseline, "")
-			pod.Spec.Containers[0].Image = ubuntuImage
+			pod.Spec.Containers[0].Image = getFioImage()
 			var err error
 			pod, err = createPod(ctx, f.ClientSet, f.Namespace.Name, pod)
 			framework.ExpectNoError(err)
@@ -147,23 +170,26 @@ func (t *s3CSIPerformanceTestSuite) DefineTests(driver storageframework.TestDriv
 			}
 		}
 
-		ginkgo.By("Installing fio in pods")
-		var wg sync.WaitGroup
-		wg.Add(podsNum)
-		for i := 0; i < podsNum; i++ {
-			go func(podId int) {
-				defer ginkgo.GinkgoRecover()
-				defer wg.Done()
-				e2evolume.VerifyExecInPodSucceed(f, pods[podId], "apt-get update && apt-get install fio -y")
-			}(i)
+		// Only install FIO if using the default Ubuntu image
+		if getFioImage() == defaultFioImage {
+			ginkgo.By("Installing fio in pods")
+			var wg sync.WaitGroup
+			wg.Add(podsNum)
+			for i := 0; i < podsNum; i++ {
+				go func(podId int) {
+					defer ginkgo.GinkgoRecover()
+					defer wg.Done()
+					e2evolume.VerifyExecInPodSucceed(f, pods[podId], "apt-get update && apt-get install fio -y")
+				}(i)
+			}
+			wg.Wait()
 		}
-		wg.Wait()
 
 		var output []benchmarkEntry
 		for _, cfgName := range getFioCfgNames() {
 			ginkgo.By(fmt.Sprintf("Running benchmark with config: %s", cfgName))
 			for i := 0; i < podsNum; i++ {
-				copySmallFileToPod(ctx, f, pods[i], FioCfgHostDir+cfgName+".fio", FioCfgPodFile)
+				copySmallFileToPod(ctx, f, pods[i], getFioCfgHostDir()+cfgName+".fio", FioCfgPodFile)
 			}
 			throughputs := make([]float32, podsNum)
 			var wg sync.WaitGroup
