@@ -3,16 +3,8 @@ name: Performance Tests
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
       - '**'
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'mkdocs.yml'
-      - 'requirements.txt'
-      - 'NOTICE'
+
   workflow_dispatch:
     inputs:
       full_test:
