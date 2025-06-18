@@ -55,10 +55,12 @@ jobs:
       - name: Create lightweight FIO configs for CI
         if: env.PERF_TEST_MODE == 'light'
         run: |
-          mkdir -p tests/e2e/fio-ci
+          # Create configs relative to where we'll run the tests
+          cd tests/e2e
+          mkdir -p fio-ci
 
           # Create lightweight versions of FIO configs
-          cat > tests/e2e/fio-ci/seq_write.fio <<EOF
+          cat > fio-ci/seq_write.fio <<EOF
           [global]
           name=fs_bench
           bs=256k
@@ -77,7 +79,7 @@ jobs:
           unlink=1
           EOF
 
-          cat > tests/e2e/fio-ci/seq_read.fio <<EOF
+          cat > fio-ci/seq_read.fio <<EOF
           [global]
           name=fs_bench
           bs=256k
@@ -93,7 +95,7 @@ jobs:
           fallocate=none
           EOF
 
-          cat > tests/e2e/fio-ci/rand_read.fio <<EOF
+          cat > fio-ci/rand_read.fio <<EOF
           [global]
           name=fs_bench
           bs=256k
@@ -134,7 +136,8 @@ jobs:
           mkdir -p test-results
 
           # Export CI-specific environment variables
-          export FIO_CONFIG_DIR=${{ env.PERF_TEST_MODE == 'light' && 'tests/e2e/fio-ci' || 'tests/e2e/fio' }}
+          # Use relative path since we cd into tests/e2e
+          export FIO_CONFIG_DIR=${{ env.PERF_TEST_MODE == 'light' && 'fio-ci' || 'fio' }}
           export PERF_TEST_TIMEOUT=20m
 
           # Run only the performance test suite
