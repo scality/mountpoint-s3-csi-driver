@@ -36,6 +36,10 @@ const (
 // getFioCfgHostDir returns the FIO config directory path, checking environment variable first
 func getFioCfgHostDir() string {
 	if dir := os.Getenv("FIO_CONFIG_DIR"); dir != "" {
+		// Ensure the path ends with a trailing slash
+		if !strings.HasSuffix(dir, "/") {
+			return dir + "/"
+		}
 		return dir
 	}
 	return "fio/"
