@@ -183,10 +183,18 @@ func (t *s3CSIPerformanceTestSuite) DefineTests(driver storageframework.TestDriv
 				go func(podId int) {
 					defer ginkgo.GinkgoRecover()
 					defer wg.Done()
-					e2evolume.VerifyExecInPodSucceed(f, pods[podId], "apt-get update && apt-get install fio -y")
+					// Use PodExec to get stdout/stderr for debugging
+					stdout, stderr, err := e2evolume.PodExec(f, pods[podId], "apt-get update && apt-get install fio -y")
+					if err != nil {
+						framework.Logf("FIO installation failed in pod%d: stdout=[%s], stderr=[%s], err=[%v]", podId, stdout, stderr, err)
+						framework.ExpectNoError(err, "Failed to install FIO")
+					}
+					framework.Logf("FIO installed successfully in pod%d", podId)
 				}(i)
 			}
 			wg.Wait()
+		} else {
+			ginkgo.By(fmt.Sprintf("Using pre-built FIO image: %s", getFioImage()))
 		}
 
 		var output []benchmarkEntry
@@ -202,11 +210,19 @@ func (t *s3CSIPerformanceTestSuite) DefineTests(driver storageframework.TestDriv
 				go func(podId int) {
 					defer ginkgo.GinkgoRecover()
 					defer wg.Done()
-					stdout, stderr, err := e2evolume.PodExec(f, pods[podId], fmt.Sprintf("FILENAME=/mnt/volume1/%s_%d fio %s --output-format=json", cfgName, podId, FioCfgPodFile))
+
+					// First check if FIO is available and the config file exists
+					checkCmd := fmt.Sprintf("which fio && ls -la %s && ls -la /mnt/volume1/", FioCfgPodFile)
+					stdout, stderr, err := e2evolume.PodExec(f, pods[podId], checkCmd)
+					framework.Logf("pod%d pre-check: stdout=[%s], stderr=[%s], err=[%v]", podId, stdout, stderr, err)
+
+					// Run the FIO benchmark
+					fioCmd := fmt.Sprintf("FILENAME=/mnt/volume1/%s_%d fio %s --output-format=json", cfgName, podId, FioCfgPodFile)
+					stdout, stderr, err = e2evolume.PodExec(f, pods[podId], fioCmd)
 					if err != nil {
-						fmt.Printf("pod%d: [%s] [%s] [%s] [%v]", podId, cfgName, stdout, stderr, err)
+						framework.Logf("pod%d FIO execution failed: [%s] stdout=[%s] stderr=[%s] err=[%v]", podId, cfgName, stdout, stderr, err)
+						framework.ExpectNoError(err, fmt.Sprintf("FIO execution failed in pod%d", podId))
 					}
-					framework.ExpectNoError(err)
 					var fioResult fioResult
 					framework.ExpectNoError(json.Unmarshal([]byte(stdout), &fioResult))
 					var throughputMB float32

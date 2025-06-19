@@ -52,6 +52,12 @@ jobs:
         id: get_ip
         run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
 
+      - name: Build FIO Docker image
+        run: |
+          docker build -t fio-test:latest -f tests/e2e/fio.Dockerfile tests/e2e/
+          # Load the image into kind cluster
+          kind load docker-image fio-test:latest --name e2e
+
       - name: Create lightweight FIO configs for CI
         if: env.PERF_TEST_MODE == 'light'
         run: |
@@ -139,6 +145,13 @@ jobs:
           # Use relative path since we cd into tests/e2e
           export FIO_CONFIG_DIR=${{ env.PERF_TEST_MODE == 'light' && 'fio-ci' || 'fio' }}
           export PERF_TEST_TIMEOUT=20m
+
+          # Use the FIO image we built
+          export FIO_IMAGE="fio-test:latest"
+
+          # For debugging - show what we're using
+          echo "Using FIO_CONFIG_DIR=$FIO_CONFIG_DIR"
+          echo "Using FIO_IMAGE=$FIO_IMAGE"
 
           # Run only the performance test suite
           cd tests/e2e
