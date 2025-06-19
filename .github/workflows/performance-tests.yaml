@@ -55,8 +55,6 @@ jobs:
       - name: Build FIO Docker image
         run: |
           docker build -t fio-test:latest -f tests/e2e/fio.Dockerfile tests/e2e/
-          # Load the image into kind cluster
-          kind load docker-image fio-test:latest --name e2e
 
       - name: Create lightweight FIO configs for CI
         if: env.PERF_TEST_MODE == 'light'
@@ -124,6 +122,11 @@ jobs:
           # Export them for subsequent steps
           echo "ACCOUNT1_ACCESS_KEY=$ACCOUNT1_ACCESS_KEY" >> $GITHUB_ENV
           echo "ACCOUNT1_SECRET_KEY=$ACCOUNT1_SECRET_KEY" >> $GITHUB_ENV
+
+      - name: Load FIO image into kind cluster
+        run: |
+          # Now that the cluster exists (created in Run Common Setup), load the image
+          kind load docker-image fio-test:latest --name e2e
 
       - name: Install CSI Driver
         run: |
