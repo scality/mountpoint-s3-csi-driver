@@ -65,6 +65,26 @@ jobs:
           # Verify the hosts entry
           cat /etc/hosts | grep s3.scality.com
 
+      - name: Configure CoreDNS for S3 FQDN
+        run: |
+          # Get the current CoreDNS ConfigMap
+          kubectl get configmap coredns -n kube-system -o yaml > coredns-original.yaml
+
+          # Add custom hosts entry to CoreDNS
+          kubectl get configmap coredns -n kube-system -o json | \
+          jq --arg ip "${{ steps.get_ip.outputs.host_ip }}" \
+          '.data.Corefile |= sub("ready"; "ready\n        hosts {\n            " + $ip + " s3.scality.com\n            fallthrough\n        }")' | \
+          kubectl apply -f -
+
+          # Restart CoreDNS to pick up changes
+          kubectl rollout restart deployment coredns -n kube-system
+
+          # Wait for CoreDNS to be ready
+          kubectl rollout status deployment coredns -n kube-system --timeout=60s
+
+          # Verify DNS resolution works from within a pod
+          kubectl run dns-test --image=busybox:1.28 --rm -it --restart=Never -- nslookup s3.scality.com
+
       - name: Run Scality Tests
         run: |
           mkdir -p test-results
