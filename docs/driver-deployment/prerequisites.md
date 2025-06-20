@@ -11,7 +11,7 @@ Before installing the Scality S3 CSI Driver, ensure the environment meets the fo
 **Tools:**
 
 - `kubectl` configured to communicate with the cluster.
-- [Helm](https://helm.sh/docs/intro/install/) v3 installed.
+- [Helm](https://helm.sh/docs/intro/install/) v3.8.0 or newer installed.
 - `jq` (optional but recommended) for parsing JSON output in troubleshooting commands.
 
 **RBAC (Role-Based Access Control):**
