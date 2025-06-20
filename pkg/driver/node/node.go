@@ -141,6 +141,10 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 		args.SetIfAbsent(mountpoint.ArgAllowRoot, mountpoint.ArgNoValue)
 	}
 
+	// Ensure path-style addressing is used by default unless the caller already
+	// specified it explicitly.
+	args.SetIfAbsent(mountpoint.ArgForcePathStyle, mountpoint.ArgNoValue)
+
 	klog.V(4).Infof("NodePublishVolume: mounting %s at %s with options %v", bucket, target, args.SortedList())
 
 	credentialCtx := credentialProvideContextFromPublishRequest(req, args)
