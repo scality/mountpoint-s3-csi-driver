@@ -67,6 +67,7 @@ jobs:
 
       - name: Configure CoreDNS for S3 FQDN
         run: |
+          set -e -o pipefail
           # Get the current CoreDNS ConfigMap
           kubectl get configmap coredns -n kube-system -o yaml > coredns-original.yaml
 
