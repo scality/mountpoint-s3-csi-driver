@@ -45,6 +45,9 @@ theme:
 extra_css:
   - assets/css/custom.css
 
+extra:
+  generator: false
+
 plugins:
   - search
   - mermaid2
@@ -75,7 +78,7 @@ markdown_extensions:
           format: pymdownx.superfences.fence_div_format
 
 copyright: |
-  Copyright &copy; 2025 Scality, Inc. All rights reserved. |
+  Copyright © 2025 Scality, Inc. Licensed under the
   <a href="https://github.com/scality/mountpoint-s3-csi-driver/blob/main/LICENSE">Apache License 2.0</a>
 
 nav:
