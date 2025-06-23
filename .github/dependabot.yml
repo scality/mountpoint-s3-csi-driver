@@ -9,7 +9,8 @@ updates:
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     commit-message:
-      prefix: "pip"
+      prefix: "chore"
+      prefix-development: "deps-pip"
       include: "scope"
     labels:
       - "dependencies"
@@ -23,7 +24,8 @@ updates:
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     commit-message:
-      prefix: "gomod"
+      prefix: "chore"
+      prefix-development: "deps-gomod"
       include: "scope"
     labels:
       - "gomod"
@@ -66,7 +68,8 @@ updates:
       timezone: "Europe/Paris"
     open-pull-requests-limit: 10
     commit-message:
-      prefix: "gomod"
+      prefix: "chore"
+      prefix-development: "deps-gomod-e2e"
       include: "scope"
     labels:
       - "gomod"
@@ -103,7 +106,8 @@ updates:
       time: "08:00"
       timezone: "Europe/Paris"
     commit-message:
-      prefix: "github-actions"
+      prefix: "chore"
+      prefix-development: "deps-actions"
       include: "scope"
     labels:
       - "github-actions"
