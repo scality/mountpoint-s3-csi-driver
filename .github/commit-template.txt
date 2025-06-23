@@ -1,0 +1,36 @@
+# <type>(<scope>): <description>
+#
+# [optional body]
+#
+# [optional footer(s)]
+
+# Type (choose one):
+#   feat      New feature (user-facing, REQUIRES issue ID)
+#   fix       Bug fix (user-facing, REQUIRES issue ID)
+#   perf      Performance improvement (user-facing, REQUIRES issue ID)
+#   security  Security update (user-facing, REQUIRES issue ID)
+#   breaking  Breaking change (user-facing, REQUIRES issue ID)
+#   docs      Documentation changes
+#   style     Code formatting, no logic changes
+#   refactor  Code refactoring
+#   test      Adding or updating tests
+#   build     Build system or dependencies
+#   ci        CI/CD pipeline changes
+#   chore     Maintenance tasks
+#   revert    Revert a previous commit
+
+# Scope:
+#   - For user-facing changes: MUST be issue ID (S3CSI-123)
+#   - For development changes: Optional (component name, issue ID, or omit)
+
+# Description:
+#   - Use imperative mood: "add" not "added"
+#   - Start with lowercase letter
+#   - No period at the end
+#   - Keep under 72 characters
+
+# Examples:
+#   feat(S3CSI-123): add custom S3 endpoint support
+#   fix(S3CSI-456): resolve authentication timeout with RING
+#   docs: update installation guide for v1.1.0
+#   chore(deps): bump mkdocs from 1.5.0 to 1.6.0
