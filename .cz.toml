@@ -1,0 +1,106 @@
+# Commitizen configuration for Scality S3 CSI Driver conventional commits
+# Enforces standardized commit messages with issue ID validation for automated changelog generation
+
+[tool.commitizen]
+# Core commitizen settings for conventional commits and versioning
+# https://www.conventionalcommits.org/en/v1.0.0/
+name = "cz_conventional_commits"                # Use conventional commits specification
+tag_format = "$version"                         # Git tag format without 'v' prefix (matches project standard)
+version_scheme = "semver"                       # Semantic versioning (major.minor.patch)
+version_provider = "git"                        # Derive version from git tags
+update_changelog_on_bump = true                 # Auto-update CHANGELOG.md on version bumps
+major_version_zero = true                       # Allow 0.x.x versions for pre-1.0 releases
+
+[tool.commitizen.customize]
+# Custom commit message template and validation rules
+message_template = "{{change_type}}{% if scope %}({{scope}}){% endif %}: {{subject}}{% if body %}\n\n{{body}}{% endif %}{% if footer %}\n\n{{footer}}{% endif %}"
+example = "feat(S3CSI-123): add custom S3 endpoint support"
+
+# Commit message schema documentation for developers
+schema = """
+<type>(<scope>): <subject>
+<BLANK LINE>
+<body>
+<BLANK LINE>
+<footer>
+"""
+
+# Regex pattern to validate commit message format (enforces conventional commits)
+schema_pattern = "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|breaking)(?:\\([A-Z]+-\\d+\\))?(?:\\([^)]*\\))?: .{1,50}"
+
+# Order of change types in generated changelogs (user-facing changes first)
+change_type_order = ["BREAKING CHANGE", "feat", "fix", "refactor", "perf"]
+
+# Interactive prompts for guided commit creation with `cz commit`
+[[tool.commitizen.customize.questions]]
+type = "list"
+name = "change_type"
+message = "Select the type of change you are committing:"
+choices = [
+    # User-facing changes (require issue ID for traceability)
+    { value = "feat", name = "feat: A new feature (user-facing)" },
+    { value = "fix", name = "fix: A bug fix (user-facing)" },
+    { value = "perf", name = "perf: A performance improvement (user-facing)" },
+    { value = "security", name = "security: A security update (user-facing)" },
+    { value = "breaking", name = "breaking: A breaking change (user-facing)" },
+    # Development changes (issue ID optional)
+    { value = "docs", name = "docs: Documentation only changes" },
+    { value = "style", name = "style: Code style changes (formatting, etc)" },
+    { value = "refactor", name = "refactor: Code refactoring" },
+    { value = "test", name = "test: Adding or updating tests" },
+    { value = "build", name = "build: Build system or dependencies" },
+    { value = "ci", name = "ci: CI/CD pipeline changes" },
+    { value = "chore", name = "chore: Maintenance tasks" },
+    { value = "revert", name = "revert: Revert a previous commit" }
+]
+
+# Prompt for issue ID or component scope
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "scope"
+message = "Issue ID (e.g., S3CSI-123) [REQUIRED for feat/fix/perf/security/breaking]:"
+
+# Prompt for commit subject line (imperative mood, concise description)
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "subject"
+message = "Write a short, imperative description of the change:"
+
+# Optional commit body for additional context
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "body"
+message = "Provide additional contextual information (optional):"
+
+# Optional footer for breaking changes and issue references
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "footer"
+message = "Information about breaking changes, issue references (optional):"
+
+# Parser configuration for analyzing existing commits in changelog generation
+[tool.commitizen.customize.commit_parser]
+pattern = "^(?P<change_type>feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|breaking)(?:\\((?P<scope>[^)]+)\\))?:?\\s(?P<message>.*)"
+schema = "<type>(<scope>): <subject>"
+
+# Template for generating structured changelogs from conventional commits
+[tool.commitizen.customize.changelog]
+template = """
+## {{version}} ({{date}})
+
+{% for group, commits in commits | groupby("change_type") -%}
+### {{group | title}}
+{% for commit in commits %}
+- {{commit.scope}}: {{commit.message}} {% if commit.scope %}({{commit.scope}}){% endif %}
+{%- endfor %}
+
+{% endfor %}
+"""
+
+# Semantic versioning rules based on commit types for automated version bumping
+[tool.commitizen.customize.bump_pattern]
+"^BREAKING CHANGE" = "MAJOR"                    # Breaking changes increment major version (1.0.0 → 2.0.0)
+"^feat" = "MINOR"                               # New features increment minor version (1.0.0 → 1.1.0)
+"^fix" = "PATCH"                                # Bug fixes increment patch version (1.0.0 → 1.0.1)
+"^perf" = "PATCH"                               # Performance improvements increment patch version
+"^security" = "PATCH"                           # Security updates increment patch version

@@ -22,6 +22,13 @@ repos:
         args: [--config, .markdownlint.yaml, --fix]
         types: [markdown]
 
+  # Conventional Commits validation
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.8.3  # Latest version as of June 2025
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
   - repo: https://github.com/lycheeverse/lychee
     rev: lychee-v0.18.1  # Latest stable version
     hooks:
@@ -30,6 +37,15 @@ repos:
 
   - repo: local
     hooks:
+      # Advanced commit message validation with issue ID support
+      # Validates conventional commits with stricter rules than default commitizen
+      # Requires issue IDs for user-facing changes (feat, fix, perf, security, breaking)
+      # Optional issue IDs for development changes (docs, test, ci, chore, etc.)
+      - id: validate-commit-message
+        name: validate commit message
+        entry: python3 .github/scripts/validate-commit.py
+        language: system
+        stages: [commit-msg]
       # golangci-lint with Linux build environment to match CI
       # Uses .golangci.yaml configuration automatically
       # GOOS=linux ensures we analyze the same files as CI (including Linux-specific files)
