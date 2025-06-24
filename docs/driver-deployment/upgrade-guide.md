@@ -93,9 +93,11 @@ kubectl get pods -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3
 
 ## Rollback (If Needed)
 
-If issues occur after upgrade:
+!!! warning
+    If any application pods using the S3 buckets as filesystems are restarted during the rollback they will lose access to the buckets.
+    Once the rollback is complete, the application pods will automatically regain access to the buckets.
 
-**Option A: Helm rollback:**
+If issues occur after upgrade you can rollback to the previous version using the following steps:
 
 ```bash
 # Check rollback history
@@ -103,20 +105,6 @@ helm history scality-mountpoint-s3-csi-driver -n ${NAMESPACE}
 
 # Rollback to previous version
 helm rollback scality-mountpoint-s3-csi-driver -n ${NAMESPACE}
-```
-
-**Option B: Reinstall previous version:**
-
-```bash
-# Uninstall current version
-helm uninstall scality-mountpoint-s3-csi-driver -n ${NAMESPACE}
-
-# Reinstall previous version
-helm install scality-mountpoint-s3-csi-driver \
-  oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version <PREVIOUS_VERSION> \
-  --values values-production.yaml \
-  --namespace ${NAMESPACE}
 ```
 
 ## Troubleshooting
