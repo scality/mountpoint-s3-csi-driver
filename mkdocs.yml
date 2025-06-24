@@ -47,6 +47,11 @@ theme:
 extra_css:
   - assets/css/custom.css
 
+extra:
+  generator: false
+  version:
+    provider: mike
+
 plugins:
   - search
   - mermaid2
