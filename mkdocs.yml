@@ -116,4 +116,5 @@ nav:
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Administrator and User Guide: admin-user-guide.md
+  - Release Notes: release-notes.md
   - Glossary: glossary.md
