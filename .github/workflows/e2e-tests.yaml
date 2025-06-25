@@ -13,6 +13,8 @@ on:
       - 'mkdocs.yml'
       - 'requirements.txt'  # MkDocs requirements
       - 'NOTICE'
+      - '.lychee.toml'
+      - '.markdownlint.yaml'
 
 env:
   KUBECONFIG: "/home/runner/.kube/config"
