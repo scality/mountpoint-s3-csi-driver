@@ -7,7 +7,7 @@ June 13, 2025
 ### What's New
 
 - General Availability (GA) release of the Scality S3 CSI Driver.
-- Production‑ready [Helm chart](https://scality.github.io/mountpoint-s3-csi-driver/driver-deployment/installation-guide/) for production deployment.
+- Production‑ready [Helm chart](https://github.com/scality/mountpoint-s3-csi-driver/tree/main/charts/scality-mountpoint-s3-csi-driver) for production deployment.
 - Static provisioning allows seamless integration of existing S3 buckets as Kubernetes PersistentVolumes.
 - Flexible credential strategies: driver‑level credentials and per‑volume credentials managed with Kubernetes Secrets.
 - Optimized for Scality RING with advanced configuration options.
