@@ -68,6 +68,10 @@ jobs:
           echo "Deploying version ${{ steps.version.outputs.version }} as latest"
           mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
 
+          # Set this version as the default (updates root redirect)
+          echo "Setting ${{ steps.version.outputs.version }} as default"
+          mike set-default ${{ steps.version.outputs.version }} --push --branch=gh-pages
+
       - name: List deployed versions
         run: mike list --branch=gh-pages
 
