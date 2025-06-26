@@ -78,6 +78,9 @@ exclude = [
     "github\\.com/.*/edit/",
     "github\\.com/.*/blob/.*/.*\\.(md|txt)$",
 
+    # Exclude GitHub release URLs for this repository (allows merging docs before release)
+    "github\\.com/scality/mountpoint-s3-csi-driver/releases/",
+
     # Exclude URLs with placeholders
     "<[^>]+>",
     "\\$\\{[^}]+\\}",

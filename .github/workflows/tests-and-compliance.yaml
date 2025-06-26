@@ -12,6 +12,8 @@ on:
       - '*.md'
       - 'mkdocs.yml'
       - 'requirements.txt'
+      - '.lychee.toml'
+      - '.markdownlint.yaml'
 
 jobs:
   code-quality-tests:
