@@ -1,0 +1,100 @@
+# Shared Bucket Dynamic Provisioning Example
+# Multiple PVCs share a single pre-existing bucket with unique prefixes
+#
+# Prerequisites:
+# - Scality S3 CSI driver must be installed
+# - Shared bucket "my-shared-s3-bucket" must be created manually:
+#   aws s3 mb s3://my-shared-s3-bucket --region us-west-2 --endpoint-url https://s3.your-scality.com
+#
+# Usage:
+#   kubectl apply -f shared_bucket_provisioning.yaml
+
+# StorageClass for shared bucket dynamic provisioning
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: s3-csi-shared
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: s3.csi.scality.com
+parameters:
+  # Shared bucket configuration
+  bucketNaming: shared
+  bucketPrefix: my-shared-s3-bucket  # Pre-existing bucket name
+  s3Region: us-west-2
+volumeBindingMode: Immediate
+reclaimPolicy: Delete
+---
+# First PVC - will get prefix "volumes/app1-storage-{uuid}/"
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app1-storage
+  labels:
+    app: app1
+    provisioning: shared-bucket
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: s3-csi-shared
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Second PVC - will get prefix "volumes/app2-storage-{uuid}/"
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app2-storage
+  labels:
+    app: app2
+    provisioning: shared-bucket
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: s3-csi-shared
+  resources:
+    requests:
+      storage: 75Gi
+---
+# First application using its own prefix
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app1
+  labels:
+    app: app1
+spec:
+  containers:
+    - name: app1
+      image: ubuntu
+      command: ["/bin/sh"]
+      args: ["-c", "echo 'Data from App 1' > /data/app1-data.txt; ls -la /data/; tail -f /dev/null"]
+      volumeMounts:
+        - name: storage
+          mountPath: /data
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: app1-storage
+---
+# Second application using its own prefix
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app2
+  labels:
+    app: app2
+spec:
+  containers:
+    - name: app2
+      image: ubuntu
+      command: ["/bin/sh"]
+      args: ["-c", "echo 'Data from App 2' > /data/app2-data.txt; ls -la /data/; tail -f /dev/null"]
+      volumeMounts:
+        - name: storage
+          mountPath: /data
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: app2-storage

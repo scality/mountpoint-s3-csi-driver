@@ -1,0 +1,60 @@
+# Basic Dynamic Provisioning Example
+# This example creates a dedicated S3 bucket for each PVC automatically
+#
+# Prerequisites: 
+# - Scality S3 CSI driver must be installed
+# - Driver must have S3 bucket creation permissions
+#
+# Usage:
+#   kubectl apply -f basic_dynamic_provisioning.yaml
+
+# StorageClass for dynamic provisioning
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: s3-csi
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: s3.csi.scality.com
+parameters:
+  # Default configuration - creates dedicated buckets
+  bucketNaming: dedicated
+  s3Region: us-east-1
+volumeBindingMode: Immediate
+reclaimPolicy: Delete
+---
+# PersistentVolumeClaim requesting storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: s3-dynamic-pvc
+  labels:
+    app: s3-dynamic-example
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: s3-csi
+  resources:
+    requests:
+      storage: 100Gi  # Arbitrary value - S3 storage is unlimited
+---
+# Pod using the dynamically provisioned volume
+apiVersion: v1
+kind: Pod
+metadata:
+  name: s3-dynamic-app
+  labels:
+    app: s3-dynamic-example
+spec:
+  containers:
+    - name: app
+      image: ubuntu
+      command: ["/bin/sh"]
+      args: ["-c", "echo 'Hello from dynamic S3 storage!' > /data/hello.txt; cat /data/hello.txt; tail -f /dev/null"]
+      volumeMounts:
+        - name: s3-storage
+          mountPath: /data
+  volumes:
+    - name: s3-storage
+      persistentVolumeClaim:
+        claimName: s3-dynamic-pvc

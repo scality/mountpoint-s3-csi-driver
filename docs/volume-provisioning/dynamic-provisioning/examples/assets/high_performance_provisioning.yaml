@@ -1,0 +1,115 @@
+# High-Performance Dynamic Provisioning Example
+# Optimized StorageClass for high-performance workloads with advanced caching
+#
+# Prerequisites:
+# - Scality S3 CSI driver must be installed
+# - Nodes should have sufficient storage for cache
+#
+# Usage:
+#   kubectl apply -f high_performance_provisioning.yaml
+
+# StorageClass optimized for high-performance workloads
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: s3-csi-high-performance
+  labels:
+    performance: high
+    cache: enabled
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: s3.csi.scality.com
+parameters:
+  bucketNaming: dedicated
+  s3Region: us-west-2
+volumeBindingMode: WaitForFirstConsumer  # Better pod placement
+reclaimPolicy: Delete
+mountOptions:
+  - allow-delete
+  - allow-overwrite
+  - cache /tmp/s3-high-perf-cache
+  - metadata-ttl 600  # 10 minutes
+  - max-cache-size 2048  # 2GB cache
+  - part-size 16  # 16MB parts for better performance
+---
+# PVC for high-performance workload
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: high-perf-storage
+  labels:
+    workload: high-performance
+    cache: enabled
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: s3-csi-high-performance
+  resources:
+    requests:
+      storage: 500Gi
+---
+# Deployment using high-performance storage
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-processing-app
+  labels:
+    app: data-processing
+    performance: high
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: data-processing
+  template:
+    metadata:
+      labels:
+        app: data-processing
+    spec:
+      containers:
+        - name: processor
+          image: ubuntu
+          command: ["/bin/sh"]
+          args: 
+            - -c
+            - |
+              echo "Starting high-performance data processing..."
+              while true; do
+                timestamp=$(date +%s)
+                hostname=$(hostname)
+                echo "Processing data at $timestamp on $hostname" > /data/processing-$hostname-$timestamp.log
+                # Simulate data processing
+                dd if=/dev/zero of=/data/test-$timestamp.dat bs=1M count=10 2>/dev/null
+                rm -f /data/test-$timestamp.dat
+                sleep 10
+              done
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: high-perf-storage
+---
+# Service to expose the application (optional)
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-processing-service
+  labels:
+    app: data-processing
+spec:
+  selector:
+    app: data-processing
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
