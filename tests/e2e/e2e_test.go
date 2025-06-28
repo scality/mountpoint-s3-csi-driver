@@ -79,6 +79,7 @@ var CSITestSuites = []func() framework.TestSuite{
 	customsuites.InitS3FilePermissionsTestSuite,
 	customsuites.InitS3DirectoryPermissionsTestSuite,
 	customsuites.InitS3CredentialsTestSuite,
+	customsuites.InitS3DynamicProvisioningTestSuite,
 }
 
 // CSI test suite registration and execution.
