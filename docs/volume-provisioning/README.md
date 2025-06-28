@@ -68,7 +68,7 @@ volumeBindingMode: Immediate
 reclaimPolicy: Delete
 ```
 
-2. Create a PVC:
+1. Create a PVC:
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -102,7 +102,7 @@ spec:
       bucketName: my-existing-bucket
 ```
 
-2. Create a PVC that references the PV:
+1. Create a PVC that references the PV:
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim

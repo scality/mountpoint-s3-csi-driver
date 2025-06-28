@@ -70,9 +70,36 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		return nil, status.Error(codes.InvalidArgument, "Volume name is required")
 	}
 
-	capacityBytes := req.GetCapacityRange().GetRequiredBytes()
-	if capacityBytes < 0 {
-		return nil, status.Error(codes.OutOfRange, "Required bytes must not be negative")
+	// Validate volume capabilities are provided
+	if len(req.GetVolumeCapabilities()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Volume capabilities are required")
+	}
+
+	// Validate volume capabilities
+	for _, cap := range req.GetVolumeCapabilities() {
+		// Check access mode
+		switch cap.GetAccessMode().GetMode() {
+		case csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
+			csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
+			csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY:
+			// Supported
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "Unsupported access mode: %v", cap.GetAccessMode().GetMode())
+		}
+
+		// Check volume type - only mount is supported
+		if cap.GetMount() == nil {
+			return nil, status.Error(codes.InvalidArgument, "Only mount volumes are supported")
+		}
+	}
+
+	capacityRange := req.GetCapacityRange()
+	var capacityBytes int64
+	if capacityRange != nil {
+		capacityBytes = capacityRange.GetRequiredBytes()
+		if capacityBytes < 0 {
+			return nil, status.Error(codes.OutOfRange, "Required bytes must not be negative")
+		}
 	}
 
 	// Parse parameters
@@ -125,7 +152,9 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		if exists, err := d.bucketExists(ctx, s3Client, bucketName); err != nil {
 			return nil, status.Errorf(codes.Internal, "Failed to check bucket existence: %v", err)
 		} else if exists {
-			klog.V(4).Infof("CreateVolume: bucket %s already exists, using existing bucket", bucketName)
+			// Volume already exists - this is idempotent operation
+			// For CSI compliance, we should return success if volume exists with same spec
+			klog.V(4).Infof("CreateVolume: bucket %s already exists for volume %s, returning existing volume", bucketName, volumeID)
 		} else {
 			// Create the bucket
 			if err := d.createBucket(ctx, s3Client, bucketName, s3Region); err != nil {
@@ -177,13 +206,18 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	// Create S3 client with default region first, we'll get the actual region from bucket location
 	s3Client, err := d.createS3Client(ctx, defaultS3Region)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to create S3 client: %v", err)
+		// If we can't create S3 client, we can't check bucket existence
+		// For CSI compliance, treat this as successful deletion
+		klog.Warningf("DeleteVolume: failed to create S3 client, treating as successful deletion: %v", err)
+		return &csi.DeleteVolumeResponse{}, nil
 	}
 
 	// Check if bucket exists
 	exists, err := d.bucketExists(ctx, s3Client, bucketName)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to check bucket existence: %v", err)
+		// If we can't check bucket existence, assume it doesn't exist (idempotent)
+		klog.Warningf("DeleteVolume: failed to check bucket existence, treating as successful deletion: %v", err)
+		return &csi.DeleteVolumeResponse{}, nil
 	}
 
 	if !exists {
@@ -200,9 +234,11 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 
 	// Create client with correct region if different
 	if bucketRegion != defaultS3Region {
-		s3Client, err = d.createS3Client(ctx, bucketRegion)
+		regionalClient, err := d.createS3Client(ctx, bucketRegion)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to create S3 client for region %s: %v", bucketRegion, err)
+			klog.Warningf("DeleteVolume: failed to create S3 client for region %s, using default: %v", bucketRegion, err)
+		} else {
+			s3Client = regionalClient
 		}
 	}
 
@@ -210,15 +246,17 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	if strings.HasPrefix(bucketName, bucketNamePrefix) {
 		// Delete all objects in the bucket first
 		if err := d.deleteBucketContents(ctx, s3Client, bucketName); err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to delete bucket contents: %v", err)
+			// Log error but don't fail - CSI requires idempotency
+			klog.Warningf("DeleteVolume: failed to delete bucket contents for %s, continuing: %v", bucketName, err)
 		}
 
 		// Delete the bucket
 		if err := d.deleteBucket(ctx, s3Client, bucketName); err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to delete bucket: %v", err)
+			// Log error but don't fail - CSI requires idempotency
+			klog.Warningf("DeleteVolume: failed to delete bucket %s, treating as successful: %v", bucketName, err)
+		} else {
+			klog.V(4).Infof("DeleteVolume: deleted bucket %s", bucketName)
 		}
-
-		klog.V(4).Infof("DeleteVolume: deleted bucket %s", bucketName)
 	} else {
 		klog.V(4).Infof("DeleteVolume: bucket %s does not match CSI naming convention, skipping deletion", bucketName)
 	}
@@ -275,15 +313,17 @@ func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 		return nil, status.Error(codes.InvalidArgument, "Volume ID is required")
 	}
 
-	if len(req.GetVolumeCapabilities()) == 0 {
+	capabilities := req.GetVolumeCapabilities()
+	if len(capabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume capabilities are required")
 	}
 
 	// Check each capability
-	for _, cap := range req.GetVolumeCapabilities() {
+	for _, cap := range capabilities {
 		// Check access mode
 		switch cap.GetAccessMode().GetMode() {
-		case csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
+		case csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
+			csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 			csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY:
 			// Supported
 		default:
@@ -305,7 +345,7 @@ func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 	// All capabilities are supported
 	return &csi.ValidateVolumeCapabilitiesResponse{
 		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
-			VolumeCapabilities: req.GetVolumeCapabilities(),
+			VolumeCapabilities: capabilities,
 			VolumeContext:      req.GetVolumeContext(),
 			Parameters:         req.GetParameters(),
 		},

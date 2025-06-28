@@ -164,7 +164,7 @@ mountOptions:
 
 With shared bucket provisioning, your S3 bucket will have a structure like:
 
-```
+```text
 my-shared-s3-bucket/
 ├── volumes/
 │   ├── app1-storage-abc123/

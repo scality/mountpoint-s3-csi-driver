@@ -92,7 +92,7 @@ The test suite includes 6 comprehensive test scenarios:
 
 ## Test Structure
 
-```
+```text
 Dynamic Provisioning Test Suite
 ├── Basic dedicated bucket provisioning
 ├── Shared bucket provisioning  
