@@ -70,7 +70,7 @@ spec:
         - name: processor
           image: ubuntu
           command: ["/bin/sh"]
-          args: 
+          args:
             - -c
             - |
               echo "Starting high-performance data processing..."

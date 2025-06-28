@@ -1,7 +1,7 @@
 # Basic Dynamic Provisioning Example
 # This example creates a dedicated S3 bucket for each PVC automatically
 #
-# Prerequisites: 
+# Prerequisites:
 # - Scality S3 CSI driver must be installed
 # - Driver must have S3 bucket creation permissions
 #

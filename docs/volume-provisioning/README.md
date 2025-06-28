@@ -135,7 +135,7 @@ Both provisioning methods support the same volume features:
 - [Secret Authentication](static-provisioning/examples/secret-authentication.md)
 - [Advanced Local Caching](static-provisioning/examples/advanced-local-caching.md)
 
-### Dynamic Provisioning Examples  
+### Dynamic Provisioning Examples
 - [Basic Dynamic Provisioning](dynamic-provisioning/examples/basic-dynamic-provisioning.md)
 - [Shared Bucket Provisioning](dynamic-provisioning/examples/shared-bucket-provisioning.md)
 - [Advanced Dynamic Provisioning](dynamic-provisioning/examples/advanced-dynamic-provisioning.md)
@@ -158,7 +158,7 @@ Both provisioning methods support the same volume features:
 
 ### Choose Dynamic When:
 - Building new cloud-native applications
-- Need standardized storage configurations  
+- Need standardized storage configurations
 - Want automated lifecycle management
 - Working in development/testing environments
 
@@ -184,6 +184,6 @@ Common issues and solutions are documented in each provisioning method's section
 
 1. **Understand your requirements**: Determine whether static or dynamic provisioning fits your use case
 2. **Review examples**: Study the relevant examples for your chosen approach
-3. **Plan your implementation**: Design your StorageClass/PV configurations  
+3. **Plan your implementation**: Design your StorageClass/PV configurations
 4. **Test thoroughly**: Validate configurations in a development environment
 5. **Deploy incrementally**: Roll out storage configurations gradually in production

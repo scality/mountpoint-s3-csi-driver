@@ -3,7 +3,8 @@
 !!! note "Automatic Bucket Creation"
     With dynamic provisioning, S3 buckets are automatically created and deleted by the CSI driver based on StorageClass parameters.
 
-Dynamic provisioning allows the Scality S3 CSI driver to automatically create S3 buckets or bucket prefixes when a PersistentVolumeClaim (PVC) is created, eliminating the need to manually pre-create buckets.
+Dynamic provisioning allows the Scality S3 CSI driver to automatically create S3 buckets or bucket prefixes when a PersistentVolumeClaim (PVC) is created,
+eliminating the need to manually pre-create buckets.
 
 ## Key Features
 

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Successfully implemented dynamic provisioning for the Scality Mountpoint S3 CSI driver according to CSI specifications. 
+Successfully implemented dynamic provisioning for the Scality Mountpoint S3 CSI driver according to CSI specifications.
 The implementation adds automatic S3 bucket creation and management capabilities while maintaining compatibility with existing static provisioning functionality.
 
 ## Current State Analysis
@@ -51,7 +51,7 @@ The dynamic provisioning implementation includes:
 ```go
 const (
     parameterBucketNaming     = "bucketNaming"
-    parameterS3Region         = "s3Region"  
+    parameterS3Region         = "s3Region"
     parameterBucketPrefix     = "bucketPrefix"
     bucketNamingDedicated     = "dedicated"
     bucketNamingShared        = "shared"
@@ -99,7 +99,7 @@ Added permissions for dynamic provisioning:
     "Effect": "Allow",
     "Action": [
         "s3:CreateBucket",
-        "s3:DeleteBucket", 
+        "s3:DeleteBucket",
         "s3:GetBucketLocation",
         "s3:HeadBucket",
         "s3:ListBucket",
@@ -277,7 +277,7 @@ mountOptions:
 
 ## Conclusion
 
-The dynamic provisioning implementation successfully extends the Scality Mountpoint S3 CSI driver to support automatic S3 bucket management while 
+The dynamic provisioning implementation successfully extends the Scality Mountpoint S3 CSI driver to support automatic S3 bucket management while
 maintaining full backward compatibility. The implementation follows CSI specifications and provides a solid foundation for cloud-native applications using S3 storage.
 
 ### Key Achievements:

@@ -402,7 +402,7 @@ echo "Development cleanup completed!"
 
 - **Volume Binding Modes**: Use `WaitForFirstConsumer` for production to ensure optimal pod placement
 - **Reclaim Policies**: Use `Retain` for production data, `Delete` for development
-- **Cache Configuration**: Adjust cache size and TTL based on workload patterns  
+- **Cache Configuration**: Adjust cache size and TTL based on workload patterns
 - **Regional Placement**: Choose regions close to your compute resources for better performance
 - **Security**: Use appropriate UID/GID settings for non-root containers
 - **Monitoring**: Add labels and annotations for cost tracking and monitoring

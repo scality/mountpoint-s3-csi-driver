@@ -12,7 +12,7 @@ The test suite includes 6 comprehensive test scenarios:
 
 #### 1. **Basic Dedicated Bucket Dynamic Provisioning**
 - **Purpose**: Validates that each PVC gets its own S3 bucket
-- **Tests**: 
+- **Tests**:
   - StorageClass creation with `bucketNaming: dedicated`
   - Automatic S3 bucket creation upon PVC creation
   - Pod mounting and file operations
@@ -95,7 +95,7 @@ The test suite includes 6 comprehensive test scenarios:
 ```text
 Dynamic Provisioning Test Suite
 ├── Basic dedicated bucket provisioning
-├── Shared bucket provisioning  
+├── Shared bucket provisioning
 ├── Volume deletion with Delete reclaim policy
 ├── Multiple StorageClass configurations
 ├── Error scenarios (invalid parameters)
