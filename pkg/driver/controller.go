@@ -85,7 +85,8 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	bucketNaming := getParameterWithDefault(params, parameterBucketNaming, defaultBucketNaming)
 	s3Region := getParameterWithDefault(params, parameterS3Region, defaultS3Region)
 	bucketPrefix := params[parameterBucketPrefix]
-	reclaimPolicy := getParameterWithDefault(params, parameterReclaimPolicy, defaultReclaimPolicy)
+	// TODO: Use reclaimPolicy to determine volume deletion behavior
+	_ = getParameterWithDefault(params, parameterReclaimPolicy, defaultReclaimPolicy)
 
 	// Validate parameters
 	if bucketNaming != bucketNamingDedicated && bucketNaming != bucketNamingShared {
