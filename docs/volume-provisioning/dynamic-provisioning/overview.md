@@ -113,22 +113,22 @@ See the [examples section](examples/) for detailed YAML configurations.
 
 ### Common Issues
 
-**PVC stays in Pending state**
+#### PVC stays in Pending state
 - Check StorageClass parameters are valid
 - Verify IAM permissions for bucket creation
 - Check driver logs for S3 connection errors
 
-**Bucket creation fails**
+#### Bucket creation fails
 - Ensure S3 region is accessible
 - Verify AWS credentials have bucket creation permissions
 - Check for bucket naming conflicts
 
-**Volume mounting fails**
+#### Volume mounting fails
 - Verify bucket was created successfully
 - Check mount options compatibility
 - Review pod security context settings
 
-**For more troubleshooting help:**
+#### For more troubleshooting help
 - Check driver logs: `kubectl logs -n kube-system -l app=s3-csi-driver`
 - Review S3 service status and permissions
 - Validate StorageClass parameter syntax

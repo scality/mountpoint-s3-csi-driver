@@ -189,14 +189,14 @@ kubectl delete pvc app1-storage app2-storage
 
 ## Use Cases
 
-**Shared bucket provisioning is ideal for:**
+### Shared bucket provisioning is ideal for
 
 - **Multi-tenant environments**: Where different applications need isolated storage within shared infrastructure
 - **Cost optimization**: Reducing the number of S3 buckets while maintaining isolation
 - **Centralized management**: Having all application data in a single, well-known bucket
 - **Limited permissions**: When you can't create new buckets but can use existing ones
 
-**Consider dedicated buckets when:**
+### Consider dedicated buckets when
 
 - **Strict isolation** is required between applications
 - **Independent lifecycle** management is needed for different volumes

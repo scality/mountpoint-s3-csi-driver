@@ -128,22 +128,22 @@ kubectl exec s3-app -- ls -al /data
 
 ### Common Issues
 
-**PVC stays in Pending state**
+#### PVC stays in Pending state
 - Check PV and PVC `storageClassName` are both empty string (`""`)
 - Verify `volumeName` in PVC matches PV `metadata.name`
 - Check that S3 bucket exists and is accessible
 
-**Pod fails to mount volume**
+#### Pod fails to mount volume
 - Verify S3 bucket name is correct in PV
 - Check S3 credentials and permissions
 - Review mount options for compatibility
 
-**Permission denied errors**
+#### Permission denied errors
 - Verify pod security context settings
 - Check file/directory permissions configuration
 - Ensure proper UID/GID mapping
 
-**For more troubleshooting help:**
+#### For more troubleshooting help
 - Check driver logs: `kubectl logs -n kube-system -l app=s3-csi-driver`
 - Review S3 service status and connectivity
 - Validate bucket permissions and access policies
