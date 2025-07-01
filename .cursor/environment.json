@@ -1,0 +1,46 @@
+{
+  "name": "Scality S3 CSI Driver Development Environment",
+  "user": "root",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+
+  "install": "cd /workspace && ./.cursor/scripts/install-deps.sh",
+
+  "start": "cd /workspace && ./.cursor/scripts/start-services.sh",
+
+  "repositoryDependencies": [
+    "github.com/scality/mountpoint-s3-csi-driver"
+  ],
+
+  "ports": [
+    {
+      "name": "mkdocs-dev-server",
+      "port": 8000
+    },
+    {
+      "name": "debug-port",
+      "port": 2345
+    }
+  ],
+
+  "terminals": [
+    {
+      "name": "Build & Test",
+      "command": "cd /workspace && echo 'Ready for Go development and testing'",
+      "description": "Main terminal for building, testing, and general development tasks"
+    },
+    {
+      "name": "Documentation",
+      "command": "cd /workspace && source .venv/bin/activate 2>/dev/null || echo 'Virtual environment not ready yet'",
+      "description": "Terminal for documentation development with mkdocs"
+    },
+    {
+      "name": "Monitoring",
+      "command": "cd /workspace && watch -n 2 'echo \"Git Status:\" && git status --porcelain'",
+      "description": "Monitor git changes and project status"
+    }
+  ]
+}
