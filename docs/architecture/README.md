@@ -21,6 +21,23 @@ The documentation includes multiple Mermaid diagrams to illustrate:
 - Process flows and decision trees
 - Data flow and control flow patterns
 
+### [Systemd Mounter Operations](systemd-mounter-operations.md)
+
+End-user operational guide covering lifecycle scenarios and mount persistence:
+
+- **Pod-to-Host Access**: How pods communicate with host systemd mounter
+- **Pod Startup Workflow**: Complete pod creation and volume mounting process
+- **CSI Driver Restart Scenarios**: Behavior with `requiresRepublish: true`
+- **Pod Restart Scenarios**: Mount persistence and data availability
+- **System Recovery**: Node restart and orphaned service handling
+- **Troubleshooting**: Operational monitoring and recovery procedures
+
+This guide focuses on practical scenarios including:
+- Mount persistence during restarts
+- Automatic recovery mechanisms
+- Health monitoring commands
+- Best practices for different user roles
+
 ## Using Architecture Diagrams
 
 All diagrams in this documentation are created using [Mermaid](https://mermaid.js.org/), which is already configured in the project's MkDocs setup. The diagrams are fully interactive and will render automatically when viewing the documentation.

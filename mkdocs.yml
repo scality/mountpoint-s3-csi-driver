@@ -115,6 +115,7 @@ nav:
   - Architecture:
       - Overview: architecture/README.md
       - Systemd Mounter Architecture: architecture/systemd-mounter-architecture.md
+      - Systemd Mounter Operations: architecture/systemd-mounter-operations.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
       - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
