@@ -112,6 +112,9 @@ nav:
               - Debug Logging: volume-provisioning/static-provisioning/examples/debug-logging.md
               - File and Directory Permissions: volume-provisioning/static-provisioning/examples/file-permissions.md
               - Allow Root Access: volume-provisioning/static-provisioning/examples/allow-root.md
+  - Architecture:
+      - Overview: architecture/README.md
+      - Systemd Mounter Architecture: architecture/systemd-mounter-architecture.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
       - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
