@@ -1,5 +1,5 @@
 {
-  "name": "Scality S3 CSI Driver Development Environment",
+  "name": "Pre-commit and MkDocs Development Environment",
   "user": "root",
 
   "build": {
@@ -19,22 +19,18 @@
     {
       "name": "mkdocs-dev-server",
       "port": 8000
-    },
-    {
-      "name": "debug-port",
-      "port": 2345
     }
   ],
 
   "terminals": [
     {
-      "name": "Build & Test",
-      "command": "cd /workspace && echo 'Ready for Go development and testing'",
-      "description": "Main terminal for building, testing, and general development tasks"
+      "name": "Pre-commit",
+      "command": "cd /workspace && source .venv/bin/activate && echo 'Ready for pre-commit hooks'",
+      "description": "Terminal for running pre-commit hooks and linting"
     },
     {
       "name": "Documentation",
-      "command": "cd /workspace && source .venv/bin/activate 2>/dev/null || echo 'Virtual environment not ready yet'",
+      "command": "cd /workspace && source .venv/bin/activate && echo 'Ready for mkdocs development'",
       "description": "Terminal for documentation development with mkdocs"
     },
     {
