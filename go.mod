@@ -3,7 +3,7 @@ module github.com/scality/mountpoint-s3-csi-driver
 go 1.24.5
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.36.5
+	github.com/aws/aws-sdk-go-v2 v1.36.6
 	github.com/aws/aws-sdk-go-v2/config v1.27.43
 	github.com/container-storage-interface/spec v1.11.0
 	github.com/godbus/dbus/v5 v5.1.0
