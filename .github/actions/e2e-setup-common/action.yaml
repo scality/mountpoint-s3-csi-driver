@@ -32,7 +32,7 @@ runs:
 
     - name: Install Ginkgo CLI
       shell: bash
-      run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
+      run: go install github.com/onsi/ginkgo/v2/ginkgo@v2.23.4
 
     - name: Create Kind Cluster
       uses: helm/kind-action@v1.12.0
