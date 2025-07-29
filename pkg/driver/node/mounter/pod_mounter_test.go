@@ -699,6 +699,7 @@ func TestPodMounter(t *testing.T) {
 			testCtx := setup(t)
 
 			var mountCount atomic.Int32
+			done := make(chan struct{})
 
 			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
 				mountCount.Add(1)
@@ -707,6 +708,7 @@ func TestPodMounter(t *testing.T) {
 			}
 
 			go func() {
+				defer close(done)
 				mpPod := createMountpointPod(testCtx)
 				mpPod.run()
 				mpPod.receiveMountOptions(testCtx.ctx)
@@ -721,6 +723,7 @@ func TestPodMounter(t *testing.T) {
 			}
 
 			assert.Equals(t, int32(1), mountCount.Load())
+			<-done // Wait for goroutine to complete
 		})
 
 		t.Run("Unmounts target if Mountpoint Pod does not receive mount options", func(t *testing.T) {
