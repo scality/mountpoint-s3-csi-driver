@@ -191,7 +191,6 @@ func TestPodMounter(t *testing.T) {
 			assertMountOptionsEqual(t, mountoptions.Options{
 				BucketName: testCtx.bucketName,
 				Args: []string{
-					"--read-only",
 					"--user-agent-prefix=" + mounter.UserAgent(credentialprovider.AuthenticationSourceDriver, testK8sVersion),
 				},
 				Env: envprovider.Default().List(),
@@ -355,7 +354,6 @@ func TestPodMounter(t *testing.T) {
 			assertMountOptionsEqual(t, mountoptions.Options{
 				BucketName: testCtx.bucketName,
 				Args: []string{
-					"--read-only",
 					"--user-agent-prefix=" + mounter.UserAgent(credentialprovider.AuthenticationSourceDriver, testK8sVersion),
 				},
 				Env: envprovider.Default().List(),
@@ -663,6 +661,36 @@ func TestPodMounter(t *testing.T) {
 					strings.Contains(arg, "--profile") ||
 					arg == "-o" {
 					t.Fatalf("Expected policy-disallowed options to be removed from args, but found: %s", arg)
+				}
+			}
+		})
+
+		t.Run("Strips --read-only flag for FUSE compatibility", func(t *testing.T) {
+			testCtx := setup(t)
+
+			args := mountpoint.ParseArgs([]string{mountpoint.ArgReadOnly})
+
+			mountRes := make(chan error)
+			go func() {
+				err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+					VolumeID:             testCtx.volumeID,
+					PodID:                testCtx.podUID,
+				}, args)
+				mountRes <- err
+			}()
+
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+			got := mpPod.receiveMountOptions(testCtx.ctx)
+
+			err := <-mountRes
+			assert.NoError(t, err)
+
+			// Verify --read-only is NOT in the args sent to pod
+			for _, arg := range got.Args {
+				if arg == "--read-only" {
+					t.Error("Expected --read-only to be stripped from args")
 				}
 			}
 		})

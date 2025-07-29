@@ -123,6 +123,11 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 
 	enforceCSIDriverMountArgPolicy(&args)
 
+	// Remove the read-only argument from the list as mount-s3 does not support it when using FUSE
+	if args.Has(mountpoint.ArgReadOnly) {
+		args.Remove(mountpoint.ArgReadOnly)
+	}
+
 	args.Set(mountpoint.ArgUserAgentPrefix, UserAgent(authenticationSource, pm.kubernetesVersion))
 	podMountSockPath := mppod.PathOnHost(podPath, mppod.KnownPathMountSock)
 	podMountErrorPath := mppod.PathOnHost(podPath, mppod.KnownPathMountError)
