@@ -18,6 +18,7 @@ import (
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	admissionapi "k8s.io/pod-security-admission/api"
 
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 )
 
@@ -110,7 +111,7 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 			DefaultNonRootUser,
 			DefaultNonRootGroup,
 			"", // No specific file mode
-			"debug",
+			mountpoint.ArgDebug,
 		)
 		l.resources = append(l.resources, resource)
 
