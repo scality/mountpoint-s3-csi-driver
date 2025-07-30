@@ -110,7 +110,6 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 			DefaultNonRootUser,
 			DefaultNonRootGroup,
 			"", // No specific file mode
-			"debug",
 		)
 		l.resources = append(l.resources, resource)
 

@@ -295,6 +295,8 @@ func BuildVolumeWithOptions(
 		fmt.Sprintf("uid=%d", uid),
 		fmt.Sprintf("gid=%d", gid),
 		"allow-other",
+		"debug",
+		"debug-crt",
 	}
 	if fileModeOption != "" {
 		opts = append(opts, fmt.Sprintf("file-mode=%s", fileModeOption))
