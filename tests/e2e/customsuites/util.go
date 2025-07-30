@@ -26,8 +26,6 @@ import (
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	admissionapi "k8s.io/pod-security-admission/api"
 	"k8s.io/utils/ptr"
-
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
 )
 
 /*──────────────────────────────
@@ -297,8 +295,8 @@ func BuildVolumeWithOptions(
 		fmt.Sprintf("uid=%d", uid),
 		fmt.Sprintf("gid=%d", gid),
 		"allow-other",
-		mountpoint.ArgDebug,
-		mountpoint.ArgDebugCRT,
+		"debug",
+		"debug-crt",
 	}
 	if fileModeOption != "" {
 		opts = append(opts, fmt.Sprintf("file-mode=%s", fileModeOption))
