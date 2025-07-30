@@ -84,3 +84,8 @@ func CheckMountpoint(mounter mount.Interface, target string) (bool, error) {
 func (m *Mounter) CheckMountpoint(target string) (bool, error) {
 	return CheckMountpoint(m.mountutils, target)
 }
+
+// UnmountTarget performs unmount operation on the given target path.
+func UnmountTarget(mounter mount.Interface, target string) error {
+	return mounter.Unmount(target)
+}

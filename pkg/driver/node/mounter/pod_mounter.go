@@ -358,7 +358,7 @@ func (pm *PodMounter) mountSyscallWithDefault(target string, args mountpoint.Arg
 
 // unmountTarget calls `unmount` syscall on `target`.
 func (pm *PodMounter) unmountTarget(target string) error {
-	return pm.mount.Unmount(target)
+	return mpmounter.UnmountTarget(pm.mount, target)
 }
 
 // volumeNameFromTargetPath tries to extract PersistentVolume's name from `target` path.
