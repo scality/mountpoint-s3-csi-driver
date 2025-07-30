@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"syscall"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/targetpath"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
+	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mountoptions"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
@@ -156,7 +156,7 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	// This function can either fail or successfully send mount options to Mountpoint Pod - in which
 	// Mountpoint Pod will get its own fd referencing the same underlying file description.
 	// In both case we need to close the fd in this process.
-	defer pm.closeFUSEDevFD(fuseDeviceFD)
+	defer mpmounter.CloseFUSEDevice(fuseDeviceFD)
 
 	// Remove old mount error file if exists
 	_ = os.Remove(podMountErrorPath)
@@ -230,7 +230,7 @@ func (pm *PodMounter) Unmount(ctx context.Context, target string, credentialCtx 
 // IsMountPoint returns whether given `target` is a `mount-s3` mount.
 func (pm *PodMounter) IsMountPoint(target string) (bool, error) {
 	// TODO: Can we just use regular `IsMountPoint` check from `mounter` with containerization?
-	return isMountPoint(pm.mount, target)
+	return mpmounter.CheckMountpoint(pm.mount, target)
 }
 
 // waitForMountpointPod waints until Mountpoint Pod for given `podID` and `volumeName` is in `Running` state.
@@ -295,19 +295,11 @@ func (pm *PodMounter) waitForMount(parentCtx context.Context, target, podName, p
 	return err
 }
 
-// closeFUSEDevFD closes given FUSE file descriptor.
-func (pm *PodMounter) closeFUSEDevFD(fd int) {
-	err := syscall.Close(fd)
-	if err != nil {
-		klog.V(4).Infof("Mount: failed to close /dev/fuse file descriptor %d: %v\n", fd, err)
-	}
-}
-
 // verifyOrSetupMountTarget checks target path for existence and corrupted mount error.
 // If the target dir does not exists it tries to create it.
 // If the target dir is corrupted (decided with `mount.IsCorruptedMnt`) it tries to unmount it to have a clean mount.
 func (pm *PodMounter) verifyOrSetupMountTarget(target string) error {
-	err := verifyMountPointStatx(target)
+	err := mpmounter.VerifyMountPoint(target)
 	if err == nil {
 		return nil
 	}

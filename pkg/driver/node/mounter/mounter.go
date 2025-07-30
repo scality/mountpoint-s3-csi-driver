@@ -5,16 +5,10 @@ import (
 	"context"
 	"os"
 
-	"k8s.io/mount-utils"
-
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
-	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/system"
 )
-
-// https://github.com/awslabs/mountpoint-s3/blob/9ed8b6243f4511e2013b2f4303a9197c3ddd4071/mountpoint-s3/src/cli.rs#L421
-const mountpointDeviceName = "mountpoint-s3"
 
 type ServiceRunner interface {
 	StartService(ctx context.Context, config *system.ExecConfig) (string, error)
@@ -39,10 +33,4 @@ func MountS3Path() string {
 		mountS3Path = defaultMountS3Path
 	}
 	return mountS3Path
-}
-
-// isMountPoint returns whether given `target` is a `mount-s3` mount.
-// Deprecated: Use mpmounter.CheckMountpoint instead. This function is kept for backward compatibility.
-func isMountPoint(mounter mount.Interface, target string) (bool, error) {
-	return mpmounter.CheckMountpoint(mounter, target)
 }
