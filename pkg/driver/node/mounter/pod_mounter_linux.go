@@ -6,10 +6,10 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/sys/unix"
 	"k8s.io/klog/v2"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
+	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 )
 
 // mountSyscallDefault creates a FUSE file descriptor and performs a `mount` syscall with given `target` and mount arguments.
@@ -65,15 +65,8 @@ func (pm *PodMounter) mountSyscallDefault(target string, args mountpoint.Args) (
 	return fd, nil
 }
 
+// verifyMountPointStatx verifies that the given path is accessible using statx syscall.
+// Deprecated: Use mpmounter.VerifyMountPoint instead. This function is kept for backward compatibility.
 func verifyMountPointStatx(path string) error {
-	var stat unix.Statx_t
-	if err := unix.Statx(unix.AT_FDCWD, path, unix.AT_STATX_FORCE_SYNC, 0, &stat); err != nil {
-		if err == unix.ENOSYS {
-			// statx() syscall is not supported, retry with regular os.Stat
-			_, err = os.Stat(path)
-		}
-		return err
-	}
-
-	return nil
+	return mpmounter.VerifyMountPoint(path)
 }
