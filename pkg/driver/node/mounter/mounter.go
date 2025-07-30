@@ -3,14 +3,13 @@ package mounter
 
 import (
 	"context"
-	"fmt"
 	"os"
 
-	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
+	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/system"
 )
 
@@ -43,27 +42,7 @@ func MountS3Path() string {
 }
 
 // isMountPoint returns whether given `target` is a `mount-s3` mount.
-// We implement additional check on top of `mounter.IsMountPoint` because we need
-// to verify not only that the target is a mount point but also that it is specifically a mount-s3 mount point.
-// This is achieved by calling the `mounter.List()` method to enumerate all mount points.
+// Deprecated: Use mpmounter.CheckMountpoint instead. This function is kept for backward compatibility.
 func isMountPoint(mounter mount.Interface, target string) (bool, error) {
-	if _, err := os.Stat(target); os.IsNotExist(err) {
-		return false, err
-	}
-
-	mountPoints, err := mounter.List()
-	if err != nil {
-		return false, fmt.Errorf("failed to list mounts: %w", err)
-	}
-	for _, mp := range mountPoints {
-		if mp.Path == target {
-			if mp.Device != mountpointDeviceName {
-				klog.V(4).Infof("IsMountPoint: %s is not a `mount-s3` mount. Expected device type to be %s but got %s, skipping unmount", target, mountpointDeviceName, mp.Device)
-				continue
-			}
-
-			return true, nil
-		}
-	}
-	return false, nil
+	return mpmounter.CheckMountpoint(mounter, target)
 }

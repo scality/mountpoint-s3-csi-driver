@@ -5,11 +5,18 @@ package mounter
 
 import (
 	"fmt"
+	"os"
 
+	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
 )
 
-// Common constants for mount operations will be added as needed
+// Common constants for mount operations
+const (
+	// MountpointDeviceName is the device name used by mountpoint-s3
+	// https://github.com/awslabs/mountpoint-s3/blob/9ed8b6243f4511e2013b2f4303a9197c3ddd4071/mountpoint-s3/src/cli.rs#L421
+	MountpointDeviceName = "mountpoint-s3"
+)
 
 // Common errors for mount operations
 var (
@@ -47,4 +54,33 @@ func NewDefaultMounter() *Mounter {
 	return NewMounter(mount.New(""))
 }
 
-// Additional utility functions will be added as needed in subsequent commits
+// CheckMountpoint returns whether given `target` is a `mount-s3` mount.
+// We implement additional check on top of `mounter.IsMountPoint` because we need
+// to verify not only that the target is a mount point but also that it is specifically a mount-s3 mount point.
+// This is achieved by calling the `mounter.List()` method to enumerate all mount points.
+func CheckMountpoint(mounter mount.Interface, target string) (bool, error) {
+	if _, err := os.Stat(target); os.IsNotExist(err) {
+		return false, err
+	}
+
+	mountPoints, err := mounter.List()
+	if err != nil {
+		return false, fmt.Errorf("failed to list mounts: %w", err)
+	}
+	for _, mp := range mountPoints {
+		if mp.Path == target {
+			if mp.Device != MountpointDeviceName {
+				klog.V(4).Infof("CheckMountpoint: %s is not a `mount-s3` mount. Expected device type to be %s but got %s, skipping unmount", target, MountpointDeviceName, mp.Device)
+				continue
+			}
+
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// CheckMountpointWithMounter is a convenience function that uses the Mounter's internal mount interface.
+func (m *Mounter) CheckMountpoint(target string) (bool, error) {
+	return CheckMountpoint(m.mountutils, target)
+}
