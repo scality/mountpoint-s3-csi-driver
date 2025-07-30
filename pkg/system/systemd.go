@@ -58,6 +58,18 @@ type SystemdOsConnection struct {
 	Object DbusObject
 }
 
+// SystemdSupervisorFactory creates SystemdSupervisor instances
+type SystemdSupervisorFactory interface {
+	Create() (*SystemdSupervisor, error)
+}
+
+// OsSystemdSupervisorFactory implements SystemdSupervisorFactory for OS-level SystemD
+type OsSystemdSupervisorFactory struct{}
+
+func (f OsSystemdSupervisorFactory) Create() (*SystemdSupervisor, error) {
+	return StartOsSystemdSupervisor()
+}
+
 // Connect to the systemd dbus socket and return a SystemdOsConnection
 func NewSystemdOsConnection() (*SystemdOsConnection, error) {
 	conn, err := dbus.Dial(systemdSocket)
@@ -198,6 +210,97 @@ type SystemdSupervisor struct {
 	serviceWatchers    map[string][]chan<- *UnitProperties
 	watchersMutex      sync.Mutex
 	dbusServiceNameMap map[string]string
+}
+
+// SystemdRunner provides a resilient interface to SystemD operations with connection recreation
+type SystemdRunner struct {
+	factory         SystemdSupervisorFactory
+	supervisor      *SystemdSupervisor
+	supervisorMutex sync.Mutex
+}
+
+// StartSystemdRunner creates a new SystemdRunner with the given factory
+func StartSystemdRunner(factory SystemdSupervisorFactory) (*SystemdRunner, error) {
+	supervisor, err := factory.Create()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create initial SystemD supervisor: %w", err)
+	}
+
+	return &SystemdRunner{
+		factory:    factory,
+		supervisor: supervisor,
+	}, nil
+}
+
+// recreateSupervisor recreates the SystemD supervisor when D-Bus connection fails
+// NOTE: Caller must hold supervisorMutex
+func (r *SystemdRunner) recreateSupervisor() error {
+	// Close existing supervisor if it exists
+	if r.supervisor != nil {
+		if err := r.supervisor.Stop(); err != nil {
+			klog.V(4).Infof("Error stopping existing SystemD supervisor during recreation: %v", err)
+		}
+	}
+
+	// Create new supervisor
+	supervisor, err := r.factory.Create()
+	if err != nil {
+		return fmt.Errorf("failed to recreate SystemD supervisor: %w", err)
+	}
+
+	r.supervisor = supervisor
+	return nil
+}
+
+// isConnectionError checks if an error indicates a D-Bus connection issue
+func isConnectionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return bytes.Contains([]byte(errStr), []byte("connection closed")) ||
+		bytes.Contains([]byte(errStr), []byte("connection is closed")) ||
+		bytes.Contains([]byte(errStr), []byte("use of closed network connection"))
+}
+
+// withRetry executes a function with connection recreation on D-Bus connection errors
+func (r *SystemdRunner) withRetry(operation func(*SystemdSupervisor) error) error {
+	r.supervisorMutex.Lock()
+	defer r.supervisorMutex.Unlock()
+
+	err := operation(r.supervisor)
+	if isConnectionError(err) {
+		klog.V(4).Infof("D-Bus connection error detected, recreating connection: %v", err)
+		if recreateErr := r.recreateSupervisor(); recreateErr != nil {
+			return fmt.Errorf("failed to recreate D-Bus connection: %w", recreateErr)
+		}
+
+		// Retry with new supervisor
+		err = operation(r.supervisor)
+	}
+	return err
+}
+
+// StartService implements ServiceRunner interface with D-Bus connection resilience
+func (r *SystemdRunner) StartService(ctx context.Context, config *ExecConfig) (string, error) {
+	var result string
+	err := r.withRetry(func(supervisor *SystemdSupervisor) error {
+		var err error
+		result, err = supervisor.StartService(ctx, config)
+		return err
+	})
+	return result, err
+}
+
+// RunOneshot implements ServiceRunner interface with D-Bus connection resilience
+func (r *SystemdRunner) RunOneshot(ctx context.Context, config *ExecConfig) (string, error) {
+	var result string
+	err := r.withRetry(func(supervisor *SystemdSupervisor) error {
+		var err error
+		result, err = supervisor.RunOneshot(ctx, config)
+		return err
+	})
+	return result, err
 }
 
 func StartOsSystemdSupervisor() (*SystemdSupervisor, error) {
