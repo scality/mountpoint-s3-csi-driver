@@ -191,7 +191,6 @@ func TestPodMounter(t *testing.T) {
 			assertMountOptionsEqual(t, mountoptions.Options{
 				BucketName: testCtx.bucketName,
 				Args: []string{
-					"--read-only",
 					"--user-agent-prefix=" + mounter.UserAgent(credentialprovider.AuthenticationSourceDriver, testK8sVersion),
 				},
 				Env: envprovider.Default().List(),
@@ -355,7 +354,6 @@ func TestPodMounter(t *testing.T) {
 			assertMountOptionsEqual(t, mountoptions.Options{
 				BucketName: testCtx.bucketName,
 				Args: []string{
-					"--read-only",
 					"--user-agent-prefix=" + mounter.UserAgent(credentialprovider.AuthenticationSourceDriver, testK8sVersion),
 				},
 				Env: envprovider.Default().List(),
@@ -667,10 +665,41 @@ func TestPodMounter(t *testing.T) {
 			}
 		})
 
+		t.Run("Strips --read-only flag for FUSE compatibility", func(t *testing.T) {
+			testCtx := setup(t)
+
+			args := mountpoint.ParseArgs([]string{mountpoint.ArgReadOnly})
+
+			mountRes := make(chan error)
+			go func() {
+				err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+					VolumeID:             testCtx.volumeID,
+					PodID:                testCtx.podUID,
+				}, args)
+				mountRes <- err
+			}()
+
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+			got := mpPod.receiveMountOptions(testCtx.ctx)
+
+			err := <-mountRes
+			assert.NoError(t, err)
+
+			// Verify --read-only is NOT in the args sent to pod
+			for _, arg := range got.Args {
+				if arg == "--read-only" {
+					t.Error("Expected --read-only to be stripped from args")
+				}
+			}
+		})
+
 		t.Run("Does not duplicate mounts if target is already mounted", func(t *testing.T) {
 			testCtx := setup(t)
 
 			var mountCount atomic.Int32
+			done := make(chan struct{})
 
 			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
 				mountCount.Add(1)
@@ -679,6 +708,7 @@ func TestPodMounter(t *testing.T) {
 			}
 
 			go func() {
+				defer close(done)
 				mpPod := createMountpointPod(testCtx)
 				mpPod.run()
 				mpPod.receiveMountOptions(testCtx.ctx)
@@ -693,6 +723,7 @@ func TestPodMounter(t *testing.T) {
 			}
 
 			assert.Equals(t, int32(1), mountCount.Load())
+			<-done // Wait for goroutine to complete
 		})
 
 		t.Run("Unmounts target if Mountpoint Pod does not receive mount options", func(t *testing.T) {
