@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 
+	"k8s.io/klog/v2"
+
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
 )
 
@@ -52,7 +54,11 @@ func RunInForeground(opts ForegroundOptions) (ExitCode, []byte, error) {
 	if fuseDev == nil {
 		return 0, nil, fmt.Errorf("runner: passed file descriptor %d is not a valid FUSE file descriptor", opts.Fd)
 	}
-	defer func() { _ = fuseDev.Close() }()
+	defer func() {
+		if err := fuseDev.Close(); err != nil {
+			klog.Warningf("Failed to close FUSE device: %v", err)
+		}
+	}()
 
 	mountpointArgs := opts.Args
 
