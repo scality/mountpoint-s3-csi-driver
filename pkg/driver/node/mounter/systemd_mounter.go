@@ -13,6 +13,7 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
+	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/system"
 )
 
@@ -42,7 +43,7 @@ func NewSystemdMounter(credProvider *credentialprovider.Provider, mpVersion stri
 
 // IsMountPoint returns whether given `target` is a `mount-s3` mount.
 func (m *SystemdMounter) IsMountPoint(target string) (bool, error) {
-	return isMountPoint(m.Mounter, target)
+	return mpmounter.CheckMountpoint(m.Mounter, target)
 }
 
 // Mount mounts the given bucket at the target path using provided credentials.
@@ -70,7 +71,7 @@ func (m *SystemdMounter) Mount(ctx context.Context, bucketName string, target st
 	cleanupDir := false
 
 	// check if the target path exists and is a directory
-	mountpointErr := verifyMountPointStatx(target)
+	mountpointErr := mpmounter.VerifyMountPoint(target)
 	if mountpointErr != nil {
 		// does not exist, create the directory
 		if os.IsNotExist(mountpointErr) {

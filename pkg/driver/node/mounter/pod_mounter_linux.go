@@ -1,22 +1,16 @@
 package mounter
 
 import (
-	"fmt"
-	"os"
-	"strings"
-	"syscall"
-
-	"golang.org/x/sys/unix"
-	"k8s.io/klog/v2"
-
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
+	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 )
 
 // mountSyscallDefault creates a FUSE file descriptor and performs a `mount` syscall with given `target` and mount arguments.
+// Deprecated: This function uses the new centralized mount operations from pkg/mountpoint/mounter.
 func (pm *PodMounter) mountSyscallDefault(target string, args mountpoint.Args) (int, error) {
-	fd, err := syscall.Open("/dev/fuse", os.O_RDWR, 0)
+	fd, err := mpmounter.OpenFUSEDevice()
 	if err != nil {
-		return 0, fmt.Errorf("failed to open /dev/fuse: %w", err)
+		return 0, err
 	}
 
 	// This will set false on a success condition and will stay true
@@ -25,55 +19,23 @@ func (pm *PodMounter) mountSyscallDefault(target string, args mountpoint.Args) (
 	closeFd := true
 	defer func() {
 		if closeFd {
-			pm.closeFUSEDevFD(fd)
+			mpmounter.CloseFUSEDevice(fd)
 		}
 	}()
 
-	var stat syscall.Stat_t
-	err = syscall.Stat(target, &stat)
+	options, err := mpmounter.CreateMountOptions(fd, target, args)
 	if err != nil {
-		return 0, fmt.Errorf("failed to stat mount point %s: %w", target, err)
+		return 0, err
 	}
 
-	options := []string{
-		fmt.Sprintf("fd=%d", fd),
-		fmt.Sprintf("rootmode=%o", stat.Mode&syscall.S_IFMT),
-		fmt.Sprintf("user_id=%d", os.Geteuid()),
-		fmt.Sprintf("group_id=%d", os.Getegid()),
-		"default_permissions",
-	}
+	flags := mpmounter.CreateMountFlags(args)
 
-	flags := uintptr(syscall.MS_NODEV | syscall.MS_NOSUID | syscall.MS_NOATIME)
-
-	if args.Has(mountpoint.ArgReadOnly) {
-		flags |= syscall.MS_RDONLY
-	}
-
-	if args.Has(mountpoint.ArgAllowOther) || args.Has(mountpoint.ArgAllowRoot) {
-		options = append(options, "allow_other")
-	}
-
-	optionsJoined := strings.Join(options, ",")
-	klog.V(4).Infof("Mounting %s with options %s", target, optionsJoined)
-	err = syscall.Mount(mountpointDeviceName, target, "fuse", flags, optionsJoined)
+	err = mpmounter.PerformMount(target, options, flags)
 	if err != nil {
-		return 0, fmt.Errorf("failed to mount %s: %w", target, err)
+		return 0, err
 	}
 
 	// We successfully performed the mount operation, ensure to not close the FUSE file descriptor.
 	closeFd = false
 	return fd, nil
-}
-
-func verifyMountPointStatx(path string) error {
-	var stat unix.Statx_t
-	if err := unix.Statx(unix.AT_FDCWD, path, unix.AT_STATX_FORCE_SYNC, 0, &stat); err != nil {
-		if err == unix.ENOSYS {
-			// statx() syscall is not supported, retry with regular os.Stat
-			_, err = os.Stat(path)
-		}
-		return err
-	}
-
-	return nil
 }
