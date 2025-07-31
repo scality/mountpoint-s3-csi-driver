@@ -1,0 +1,42 @@
+{
+  "name": "Pre-commit and MkDocs Development Environment",
+  "user": "root",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+
+  "install": "cd /workspace && ./.cursor/scripts/install-deps.sh",
+
+  "start": "cd /workspace && ./.cursor/scripts/start-services.sh",
+
+  "repositoryDependencies": [
+    "github.com/scality/mountpoint-s3-csi-driver"
+  ],
+
+  "ports": [
+    {
+      "name": "mkdocs-dev-server",
+      "port": 8000
+    }
+  ],
+
+  "terminals": [
+    {
+      "name": "Pre-commit",
+      "command": "cd /workspace && source .venv/bin/activate && echo 'Ready for pre-commit hooks'",
+      "description": "Terminal for running pre-commit hooks and linting"
+    },
+    {
+      "name": "Documentation",
+      "command": "cd /workspace && source .venv/bin/activate && echo 'Ready for mkdocs development'",
+      "description": "Terminal for documentation development with mkdocs"
+    },
+    {
+      "name": "Monitoring",
+      "command": "cd /workspace && watch -n 2 'echo \"Git Status:\" && git status --porcelain'",
+      "description": "Monitor git changes and project status"
+    }
+  ]
+}
