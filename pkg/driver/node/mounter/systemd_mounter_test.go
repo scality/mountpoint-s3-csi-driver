@@ -410,6 +410,53 @@ func TestS3MounterMount(t *testing.T) {
 	}
 }
 
+// TestNewSystemdMounter tests the SystemdMounter constructor error handling
+// This test focuses on verifying proper error handling when SystemD is unavailable
+func TestNewSystemdMounter(t *testing.T) {
+	credProvider := &credentialprovider.Provider{}
+	mpVersion := "1.0.0"
+	kubernetesVersion := "1.28.0"
+
+	mounter, err := mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
+
+	if err != nil {
+		// On systems without SystemD, verify we get a proper error
+		t.Logf("SystemdMounter creation failed (expected on non-SystemD systems): %v", err)
+
+		// Verify error message indicates SystemD runner failure (not generic error)
+		expectedText := "failed to start systemd runner"
+		if !strings.Contains(err.Error(), expectedText) {
+			t.Errorf("Expected error to contain %q, got: %v", expectedText, err)
+		}
+
+		// Verify mounter is nil on error
+		if mounter != nil {
+			t.Errorf("Expected nil mounter on error, got: %v", mounter)
+		}
+	} else {
+		// On systems with SystemD, verify proper initialization
+		t.Log("SystemdMounter created successfully - SystemD is available")
+
+		if mounter == nil {
+			t.Errorf("Expected non-nil mounter")
+			return
+		}
+
+		// Verify proper field initialization
+		if mounter.MpVersion != mpVersion {
+			t.Errorf("Expected MpVersion %s, got %s", mpVersion, mounter.MpVersion)
+		}
+
+		if mounter.Runner == nil {
+			t.Errorf("Expected non-nil Runner")
+		}
+
+		if mounter.Mounter == nil {
+			t.Errorf("Expected non-nil Mounter")
+		}
+	}
+}
+
 func TestIsMountPoint(t *testing.T) {
 	testDir := t.TempDir()
 	mountpointS3MountPath := filepath.Join(testDir, "/var/lib/kubelet/pods/46efe8aa-75d9-4b12-8fdd-0ce0c2cabd99/volumes/kubernetes.io~csi/s3-mp-csi-pv/mount")
