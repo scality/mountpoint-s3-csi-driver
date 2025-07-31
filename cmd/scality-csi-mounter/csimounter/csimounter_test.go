@@ -11,6 +11,7 @@ import (
 
 	"github.com/scality/mountpoint-s3-csi-driver/cmd/scality-csi-mounter/csimounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/mounter/mountertest"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/runner"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mountoptions"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/util/testutil/assert"
 )
@@ -21,7 +22,7 @@ func TestRunningMountpoint(t *testing.T) {
 	t.Run("Passes bucket name and FUSE device as mount point", func(t *testing.T) {
 		dev := mountertest.OpenDevNull(t)
 
-		runner := func(c *exec.Cmd) (int, error) {
+		runner := func(c *exec.Cmd) (runner.ExitCode, error) {
 			mountertest.AssertSameFile(t, dev, c.ExtraFiles[0])
 			assert.Equals(t, mountpointPath, c.Path)
 			assert.Equals(t, []string{mountpointPath, "test-bucket", "/dev/fd/3"}, c.Args[:3])
@@ -41,7 +42,7 @@ func TestRunningMountpoint(t *testing.T) {
 	})
 
 	t.Run("Passes bucket name", func(t *testing.T) {
-		runner := func(c *exec.Cmd) (int, error) {
+		runner := func(c *exec.Cmd) (runner.ExitCode, error) {
 			assert.Equals(t, mountpointPath, c.Path)
 			assert.Equals(t, []string{mountpointPath, "test-bucket"}, c.Args[:2])
 			return 0, nil
@@ -62,7 +63,7 @@ func TestRunningMountpoint(t *testing.T) {
 	t.Run("Passes environment variables", func(t *testing.T) {
 		env := []string{"FOO=bar", "BAZ=qux"}
 
-		runner := func(c *exec.Cmd) (int, error) {
+		runner := func(c *exec.Cmd) (runner.ExitCode, error) {
 			assert.Equals(t, env, c.Env)
 			return 0, nil
 		}
@@ -70,8 +71,9 @@ func TestRunningMountpoint(t *testing.T) {
 		exitCode, err := csimounter.Run(csimounter.Options{
 			MountpointPath: mountpointPath,
 			MountOptions: mountoptions.Options{
-				Fd:  int(mountertest.OpenDevNull(t).Fd()),
-				Env: env,
+				Fd:         int(mountertest.OpenDevNull(t).Fd()),
+				BucketName: "test-bucket",
+				Env:        env,
 			},
 			CmdRunner: runner,
 		})
@@ -80,7 +82,7 @@ func TestRunningMountpoint(t *testing.T) {
 	})
 
 	t.Run("Adds `--foreground` argument if not passed", func(t *testing.T) {
-		runner := func(c *exec.Cmd) (int, error) {
+		runner := func(c *exec.Cmd) (runner.ExitCode, error) {
 			assert.Equals(t, []string{
 				mountpointPath,
 				"test-bucket", "/dev/fd/3",
@@ -130,7 +132,7 @@ func TestRunningMountpoint(t *testing.T) {
 		mountpointErr := errors.New("Mountpoint failed due to missing credentials")
 
 		dev := mountertest.OpenDevNull(t)
-		runner := func(c *exec.Cmd) (int, error) {
+		runner := func(c *exec.Cmd) (runner.ExitCode, error) {
 			mountertest.AssertSameFile(t, dev, c.ExtraFiles[0])
 			assert.Equals(t, mountpointPath, c.Path)
 			assert.Equals(t, []string{mountpointPath, "test-bucket", "/dev/fd/3"}, c.Args[:3])
@@ -164,7 +166,7 @@ func TestRunningMountpoint(t *testing.T) {
 		mountExitPath := filepath.Join(basepath, "mount.exit")
 
 		dev := mountertest.OpenDevNull(t)
-		runner := func(c *exec.Cmd) (int, error) {
+		runner := func(c *exec.Cmd) (runner.ExitCode, error) {
 			mountertest.AssertSameFile(t, dev, c.ExtraFiles[0])
 			assert.Equals(t, mountpointPath, c.Path)
 			assert.Equals(t, []string{mountpointPath, "test-bucket", "/dev/fd/3"}, c.Args[:3])
