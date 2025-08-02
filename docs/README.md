@@ -30,7 +30,7 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 
 ## Container Images
 
-Container images for the Scality S3 CSI Driver are hosted on GHCR:
+Container images for the Scality CSI Driver for S3 are hosted on GHCR:
 
 | Driver Version | Image URL                                                                 |
 |----------------|---------------------------------------------------------------------------|

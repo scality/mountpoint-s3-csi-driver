@@ -1,6 +1,6 @@
 # Troubleshooting
 
-This guide helps diagnose and resolve common issues with the Scality S3 CSI Driver.
+This guide helps diagnose and resolve common issues with the Scality CSI Driver for S3.
 
 ## Quick Diagnostics
 

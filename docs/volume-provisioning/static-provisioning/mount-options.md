@@ -1,6 +1,6 @@
 # Mount Options Deep Dive
 
-The Scality S3 CSI Driver allows you to customize how S3 buckets are mounted by specifying mount options in the `PersistentVolume` (PV) specification.
+The Scality CSI Driver for S3 allows you to customize how S3 buckets are mounted by specifying mount options in the `PersistentVolume` (PV) specification.
 These options are passed directly to the underlying Mountpoint for Amazon S3 client.
 
 ## How Mount Options are Applied
@@ -69,7 +69,7 @@ For a comprehensive list and explanation of all available Mountpoint S3 client o
 Mount options are determined by a combination of factors. Understanding their precedence is key:
 
 1. **`PersistentVolume.spec.mountOptions`**: These have the highest precedence for volume-specific behavior. Options defined here will be directly passed to the Mountpoint client for that specific volume.
-2. **CSI Driver Defaults**: The Scality S3 CSI Driver may apply certain default options or interpret some PV/PVC parameters to derive mount options. For example:
+2. **CSI Driver Defaults**: The Scality CSI Driver for S3 may apply certain default options or interpret some PV/PVC parameters to derive mount options. For example:
     - If a volume is marked as `readOnly: true` in the PV or PVC, the driver implicitly adds a read-only behavior (conceptually similar to a `--read-only` flag for
     - Mountpoint, although Mountpoint's actual flag might be managed differently by the driver).
     - The driver adds a `--user-agent-prefix` for telemetry.

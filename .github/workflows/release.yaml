@@ -78,6 +78,6 @@ jobs:
           name: Release ${{ inputs.tag }}
           generate_release_notes: true
           body: |
-            ## Scality S3 CSI Driver
+            ## Scality CSI Driver for S3
 
             📚 **Documentation**: https://scality.github.io/mountpoint-s3-csi-driver/

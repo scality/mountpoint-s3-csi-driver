@@ -45,7 +45,7 @@ func init() {
 
 func TestE2E(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
-	ginkgo.RunSpecs(t, "Scality S3 CSI Driver E2E Suite")
+	ginkgo.RunSpecs(t, "Scality CSI Driver for S3 E2E Suite")
 }
 
 var CSITestSuites = []func() framework.TestSuite{
@@ -68,7 +68,7 @@ var CSITestSuites = []func() framework.TestSuite{
 	// used to verify functional support for static provisioning with S3 storage.
 	testsuites.InitVolumesTestSuite,
 
-	// Custom test suites specific to Scality S3 CSI driver.
+	// Custom test suites specific to Scality CSI Driver for S3.
 	customsuites.InitS3MountOptionsTestSuite,
 	customsuites.InitS3MultiVolumeTestSuite,
 	customsuites.InitS3CSICacheTestSuite,

@@ -1,5 +1,5 @@
 ###############################################################################
-# Scality S3 CSI Driver – Markdownlint ruleset
+# Scality CSI Driver for S3 – Markdownlint ruleset
 # Every rule reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 ###############################################################################
 default: true

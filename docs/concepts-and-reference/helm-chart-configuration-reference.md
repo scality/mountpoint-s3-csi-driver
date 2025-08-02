@@ -1,6 +1,6 @@
 # Helm Chart Configuration Reference
 
-The Scality S3 CSI Driver is configured primarily through the [`values.yaml`](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml)
+The Scality CSI Driver for S3 is configured primarily through the [`values.yaml`](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml)
 file when deploying via Helm.
 These parameters configure the overall behavior of the CSI driver components.
 

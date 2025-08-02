@@ -1,6 +1,6 @@
 # Glossary
 
-This glossary defines acronyms, technical terms, and concepts used throughout the Scality S3 CSI Driver documentation.
+This glossary defines acronyms, technical terms, and concepts used throughout the Scality CSI Driver for S3 documentation.
 
 ## Acronyms and Abbreviations
 
@@ -83,7 +83,7 @@ This glossary defines acronyms, technical terms, and concepts used throughout th
 | Term | Definition |
 |------|------------|
 | **Scality RING** | Scality's software-defined storage platform |
-| **Scality S3 CSI Driver** | Container Storage Interface driver for Scality S3 storage |
+| **Scality CSI Driver for S3** | Container Storage Interface driver for Scality S3 storage |
 
 ### Operational Terms
 

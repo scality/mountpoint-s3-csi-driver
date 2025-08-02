@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This page documents version compatibility between the Scality S3 CSI Driver, Kubernetes, and related components.
+This page documents version compatibility between the Scality CSI Driver for S3, Kubernetes, and related components.
 
 !!! note
     This compatibility matrix is updated as new versions are tested.
