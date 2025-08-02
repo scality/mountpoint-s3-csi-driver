@@ -56,6 +56,9 @@ plugins:
   - search
   - mermaid2
   - awesome-pages
+  - panzoom:
+      full_screen: true # Enable full screen mode
+      key: "ctrl" # Enable keyboard shortcuts
 
 markdown_extensions:
   - admonition # Enables notes, warnings, etc. Usage: !!! note
@@ -79,7 +82,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: pymdownx.superfences.fence_div_format
+          format: !!python/name:mermaid2.fence_mermaid_custom
 
 copyright: |
   Copyright © 2025 Scality, Inc. Licensed under the
@@ -87,6 +90,12 @@ copyright: |
 
 nav:
   - Home: README.md
+  - Architecture:
+      - Overview: architecture/README.md
+      - System Architecture: architecture/system-architecture.md
+      - Deployment Architecture: architecture/deployment-architecture.md
+      - Static Provisioning: architecture/static-provisioning-workflow.md
+      - Credentials: architecture/credential-management.md
   - Driver Deployment:
       - Prerequisites: driver-deployment/prerequisites.md
       - Quick Start: driver-deployment/quick-start.md
