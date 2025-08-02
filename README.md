@@ -1,4 +1,4 @@
-# Scality S3 CSI Driver
+# Scality CSI Driver for S3
 
 This repository hosts the Container Storage Interface (CSI) driver enabling Kubernetes applications to mount Scality S3 buckets as file system volumes.
 

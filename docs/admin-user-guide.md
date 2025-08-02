@@ -1,6 +1,6 @@
 # Administrator and User Guide
 
-This guide defines roles and responsibilities for administrators managing the Scality S3 CSI Driver and users consuming S3 storage in Kubernetes.
+This guide defines roles and responsibilities for administrators managing the Scality CSI Driver for S3 and users consuming S3 storage in Kubernetes.
 
 ## Administrator Responsibilities
 

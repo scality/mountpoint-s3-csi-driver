@@ -1,6 +1,6 @@
 # Mountpoint for Amazon S3 File System Behavior
 
-The Scality S3 CSI Driver uses Mountpoint for Amazon S3 to present S3-compatible buckets as filesystems.
+The Scality CSI Driver for S3 uses Mountpoint for Amazon S3 to present S3-compatible buckets as filesystems.
 All file system semantics are inherited from Mountpoint for Amazon S3, and are compatible with Scality S3 and any S3-compatible storage.
 This documentation describes only the behavior relevant to S3 Standard buckets.
 Features specific to AWS services other than S3, such as S3 Express One Zone, Glacier, or Archive storage classes, are not supported nor relevant.
