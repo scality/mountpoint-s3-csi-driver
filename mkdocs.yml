@@ -90,6 +90,9 @@ copyright: |
 
 nav:
   - Home: README.md
+  - Architecture:
+      - System Overview: architecture/system-overview.md
+      - Deployment Architecture: architecture/deployment-architecture.md
   - Driver Deployment:
       - Prerequisites: driver-deployment/prerequisites.md
       - Quick Start: driver-deployment/quick-start.md
