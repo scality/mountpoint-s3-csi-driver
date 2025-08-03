@@ -56,6 +56,9 @@ plugins:
   - search
   - mermaid2
   - awesome-pages
+  - panzoom:
+      full_screen: true # Enable full screen mode
+      key: "ctrl" # keyboard shortcuts
 
 markdown_extensions:
   - admonition # Enables notes, warnings, etc. Usage: !!! note
@@ -79,7 +82,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: pymdownx.superfences.fence_div_format
+          format: !!python/name:mermaid2.fence_mermaid_custom
 
 copyright: |
   Copyright © 2025 Scality, Inc. Licensed under the
