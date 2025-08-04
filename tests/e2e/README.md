@@ -1,6 +1,6 @@
 # E2E Tests
 
-End-to-end tests for the Scality S3 CSI Driver that validate functionality in real Kubernetes environments.
+End-to-end tests for the Scality CSI Driver for S3 that validate functionality in real Kubernetes environments.
 
 ## Quick Start
 

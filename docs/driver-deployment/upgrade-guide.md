@@ -1,6 +1,6 @@
 # Upgrade Guide
 
-This guide provides instructions for upgrading the Scality S3 CSI Driver to newer versions.
+This guide provides instructions for upgrading the Scality CSI Driver for S3 to newer versions.
 
 ## Prerequisites
 
