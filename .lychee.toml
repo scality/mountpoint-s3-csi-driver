@@ -77,6 +77,9 @@ exclude = [
     "github\\.com/.*/edit/",
     "github\\.com/.*/blob/.*/.*\\.(md|txt)$",
 
+    # Exclude GitHub release URLs that don't exist yet (future releases)
+    "github\\.com/.*/releases/tag/",
+
     # Exclude URLs with placeholders
     "<[^>]+>",
     "\\$\\{[^}]+\\}",
