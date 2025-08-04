@@ -3,6 +3,7 @@ mkdocs-material==9.6.14                  # theme
 mkdocs-mermaid2-plugin==1.2.1            # diagrams
 mkdocs-awesome-pages-plugin==2.10.1      # sidebar ordering
 mkdocs-enumerate-headings-plugin==0.6.2  # auto-number headings
+mkdocs-panzoom-plugin==0.3.0             # diagram zoom functionality
 mike==2.1.3                              # versioned documentation
 codespell==2.4.1                         # spelling linter
 pre-commit                               # precommit

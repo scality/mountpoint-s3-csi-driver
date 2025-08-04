@@ -44,7 +44,8 @@ MD033:
     - details
     - summary
     - svg
-    - pathh                         # Permit only safe inline HTML tags used in docs styling (<kbd>, <details>, <svg> etc.)
+    - pathh
+    - div                           # Permit only safe inline HTML tags used in docs styling (<kbd>, <details>, <svg> etc.)
 
 # Bare URLs should be wrapped in < > or markdown link
 MD034: true
