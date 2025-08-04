@@ -93,6 +93,8 @@ nav:
   - Architecture:
       - System Overview: architecture/system-overview.md
       - Deployment Architecture: architecture/deployment-architecture.md
+      - Static Provisioning Flow: architecture/static-provisioning-flow.md
+      - RING S3 Credential management: architecture/ring-s3-credentials-management.md
   - Driver Deployment:
       - Prerequisites: driver-deployment/prerequisites.md
       - Quick Start: driver-deployment/quick-start.md
