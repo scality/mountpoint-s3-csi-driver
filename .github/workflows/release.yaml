@@ -62,11 +62,12 @@ jobs:
           # Fetch the gh-pages branch
           git fetch origin gh-pages:gh-pages || true
 
-          # Deploy the new version as latest
+          # Deploy the new version using major.minor as alias
           # The version identifier and title both use major.minor format (e.g., "1.1")
           # This ensures URLs like /1.1/ and dropdown shows "1.1" not "1.1.1"
-          echo "Deploying version ${{ steps.version.outputs.version }} as latest"
-          mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
+          # The major.minor alias acts as "latest" for that version series (e.g., 1.0.1 becomes latest for 1.0.x)
+          echo "Deploying version ${{ steps.version.outputs.version }} with alias ${{ steps.version.outputs.version }}"
+          mike deploy ${{ steps.version.outputs.version }} ${{ steps.version.outputs.version }} --title="${{ steps.version.outputs.version }}" --update-aliases --push
 
       - name: List deployed versions
         run: mike list --branch=gh-pages
