@@ -26,7 +26,7 @@ metadata:
   namespace: default
 type: Opaque
 stringData:
-  # Using plain text values - CSI driver expects non-base64 encoded credentials
+  # Using plain text values
   access_key_id: "AKIAXXXXXXXXXXXXXXXXX"
   secret_access_key: "SECRETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 

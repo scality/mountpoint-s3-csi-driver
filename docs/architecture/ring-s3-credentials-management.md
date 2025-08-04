@@ -51,8 +51,7 @@ Default key names are:
 - `session_token` (optional) for Session Token
 
 !!! Note
-    Use `stringData` (not `data`) because the Scality CSI driver for S3 expects plain text credentials, not base64 encoded values.
-    This does not reduce security - base64 is encoding (not encryption), and both methods store credentials identically in Kubernetes. Secret security is controlled by Kubernetes RBAC permissions.
+    Use `stringData` (not `data`) because the Scality CSI driver for S3 expects plain text credential. Secret security is controlled by Kubernetes RBAC permissions.
 
 ```yaml
 apiVersion: v1
