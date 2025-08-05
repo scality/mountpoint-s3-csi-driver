@@ -67,7 +67,15 @@ jobs:
           # This ensures URLs like /1.1/ and dropdown shows "1.1" not "1.1.1"
           # The major.minor alias acts as "latest" for that version series (e.g., 1.0.1 becomes latest for 1.0.x)
           echo "Deploying version ${{ steps.version.outputs.version }} with alias ${{ steps.version.outputs.version }}"
-          mike deploy ${{ steps.version.outputs.version }} ${{ steps.version.outputs.version }} --title="${{ steps.version.outputs.version }}" --update-aliases --push
+
+          # Check if version already exists to avoid duplicate error
+          if mike list --branch=gh-pages | grep -q "^${{ steps.version.outputs.version }}"; then
+            echo "Version ${{ steps.version.outputs.version }} already exists, updating it"
+            mike deploy ${{ steps.version.outputs.version }} --title="${{ steps.version.outputs.version }}" --update-aliases --push
+          else
+            echo "Creating new version ${{ steps.version.outputs.version }}"
+            mike deploy ${{ steps.version.outputs.version }} ${{ steps.version.outputs.version }} --title="${{ steps.version.outputs.version }}" --update-aliases --push
+          fi
 
       - name: List deployed versions
         run: mike list --branch=gh-pages
