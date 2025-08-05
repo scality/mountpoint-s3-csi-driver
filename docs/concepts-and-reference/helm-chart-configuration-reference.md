@@ -1,6 +1,6 @@
 # Helm Chart Configuration Reference
 
-The Scality S3 CSI Driver is configured primarily through the [`values.yaml`](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml)
+The Scality CSI Driver for S3 is configured primarily through the [`values.yaml`](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml)
 file when deploying via Helm.
 These parameters configure the overall behavior of the CSI driver components.
 
@@ -18,7 +18,7 @@ These parameters configure the overall behavior of the CSI driver components.
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
 | `image.repository`                                   | The container image repository for the CSI driver.                                                                                                 | `ghcr.io/scality/mountpoint-s3-csi-driver`             | No                          |
 | `image.pullPolicy`                                   | The image pull policy.                                                                                                                             | `IfNotPresent`                                         | No                          |
-| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `1.0.0`                                                | No                          |
+| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `1.0.1`                                                | No                          |
 
 ## S3 Credentials Secret Configuration
 

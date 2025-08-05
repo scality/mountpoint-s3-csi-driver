@@ -1,6 +1,6 @@
 # Prerequisites
 
-Before installing the Scality S3 CSI Driver, ensure the environment meets the following requirements:
+Before installing the Scality CSI Driver for S3, ensure the environment meets the following requirements:
 
 ## Kubernetes Requirements
 
@@ -21,11 +21,11 @@ Before installing the Scality S3 CSI Driver, ensure the environment meets the fo
 
 ## Container Image Requirements
 
-The deployment of the Scality S3 CSI Driver requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:
+The deployment of the Scality CSI Driver for S3 requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:
 
 | Component | Image | Registry | Purpose |
 |-----------|-------|----------|---------|
-| **Scality S3 CSI Driver** | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.0` | GitHub Container Registry (GHCR) | Main CSI driver functionality |
+| **Scality CSI Driver for S3** | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.1` | GitHub Container Registry (GHCR) | Main CSI driver functionality |
 | **CSI Node Driver Registrar** | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0` | GitHub Container Registry (GHCR) | Registers CSI driver with kubelet |
 | **Liveness Probe** | `ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.15.0` | GitHub Container Registry (GHCR) | Health monitoring for CSI driver pods |
 

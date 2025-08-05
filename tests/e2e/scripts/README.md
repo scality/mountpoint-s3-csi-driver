@@ -1,6 +1,6 @@
 # E2E Test Scripts
 
-These scripts provide automation for installing, testing, and managing the Scality S3 CSI Driver in Kubernetes environments.
+These scripts provide automation for installing, testing, and managing the Scality CSI Driver for S3 in Kubernetes environments.
 
 ## Scripts
 

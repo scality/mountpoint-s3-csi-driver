@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This guide provides a fast way to deploy the Scality S3 CSI Driver using Helm. It's designed for testing and evaluation purposes.
+This guide provides a fast way to deploy the Scality CSI Driver for S3 using Helm. It's designed for testing and evaluation purposes.
 
 ## Prerequisites
 

@@ -130,7 +130,7 @@ validate_s3_region() {
 main() {
   # Display banner
   echo -e "${BLUE}===============================================${NC}"
-  echo -e "${BLUE}   Scality S3 CSI Driver Helm Validation Tool   ${NC}"
+  echo -e "${BLUE}   Scality CSI Driver for S3 Helm Validation Tool   ${NC}"
   echo -e "${BLUE}===============================================${NC}"
 
   # Check if helm is installed

@@ -1,7 +1,9 @@
-site_name: "Scality S3 CSI Driver"
-site_url: https://scality.github.io/mountpoint-s3-csi-driver
-repo_url: https://github.com/scality/mountpoint-s3-csi-driver
-edit_uri: edit/main/docs/            # ← branch that holds Markdown
+site_name: 'Scality CSI Driver for S3'
+site_description: 'Documentation for Scality CSI Driver for S3'
+site_author: 'Scality Engineering'
+site_url: 'https://scality.github.io/mountpoint-s3-csi-driver/'
+repo_url: 'https://github.com/scality/mountpoint-s3-csi-driver'
+edit_uri: 'edit/main/docs/'            # ← branch that holds Markdown
 
 theme:
   logo: assets/images/Scality_logo.png
@@ -44,6 +46,11 @@ theme:
 
 extra_css:
   - assets/css/custom.css
+
+extra:
+  generator: false
+  version:
+    provider: mike
 
 plugins:
   - search
@@ -111,4 +118,5 @@ nav:
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Administrator and User Guide: admin-user-guide.md
+  - Release Notes: release-notes.md
   - Glossary: glossary.md

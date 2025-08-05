@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide provides comprehensive instructions for installing the Scality S3 CSI Driver in a Kubernetes cluster with production-ready configurations and security best practices.
+This guide provides comprehensive instructions for installing the Scality CSI Driver for S3 in a Kubernetes cluster with production-ready configurations and security best practices.
 
 ## Prerequisites
 

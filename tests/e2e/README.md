@@ -1,8 +1,6 @@
 # E2E Tests
 
-This directory contains end-to-end (e2e) tests for the Scality S3 CSI Driver. These tests validate the driver's
-functionality in real Kubernetes environments by performing complete workflows including installation, volume
-operations, and cleanup.
+End-to-end tests for the Scality CSI Driver for S3 that validate functionality in real Kubernetes environments.
 
 ## Running Tests
 

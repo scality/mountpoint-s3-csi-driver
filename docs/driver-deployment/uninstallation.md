@@ -1,6 +1,6 @@
 # Uninstallation Guide
 
-This guide provides instructions for completely removing the Scality S3 CSI Driver and all associated resources from a Kubernetes cluster.
+This guide provides instructions for completely removing the Scality CSI Driver for S3 and all associated resources from a Kubernetes cluster.
 
 ## Before You Begin
 
@@ -54,7 +54,7 @@ Detect the namespace where the driver is installed and export it as an environme
 
 ```bash
 export NAMESPACE=$(kubectl get pods --all-namespaces -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -o jsonpath='{.items[0].metadata.namespace}')
-echo "Scality S3 CSI Driver found in namespace: ${NAMESPACE}"
+echo "Scality CSI Driver for S3 found in namespace: ${NAMESPACE}"
 ```
 
 Get the secret name from the Helm release:
