@@ -28,12 +28,26 @@ import (
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	klog.V(4).Infof("CreateVolume: called with args %s", protosanitizer.StripSecrets(req))
-	return nil, status.Error(codes.Unimplemented, "")
+
+	// TODO: S3CSI-141 - Implement real S3 volume provisioning
+	// This will include:
+	// 1. Parse StorageClass parameters for bucket configuration
+	// 2. Create S3 bucket with proper naming and policies
+	// 3. Set up credential management for bucket access
+	// 4. Return volume with actual S3 bucket information
+	return nil, status.Error(codes.Unimplemented, "CreateVolume will be implemented in S3CSI-141")
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	klog.V(4).Infof("DeleteVolume: called with args: %s", protosanitizer.StripSecrets(req))
-	return nil, status.Error(codes.Unimplemented, "")
+
+	// TODO: S3CSI-142 - Implement real S3 volume deletion
+	// This will include:
+	// 1. Validate volume ID and parse bucket information
+	// 2. Safely delete S3 bucket only if empty
+	// 3. Clean up bucket policies and access credentials
+	// 4. Handle idempotent deletion of non-existent volumes
+	return nil, status.Error(codes.Unimplemented, "DeleteVolume will be implemented in S3CSI-142")
 }
 
 func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
@@ -47,7 +61,7 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	klog.V(4).Infof("ControllerGetCapabilities: called with args %s", protosanitizer.StripSecrets(req))
 	caps := []csi.ControllerServiceCapability_RPC_Type{
-		csi.ControllerServiceCapability_RPC_UNKNOWN, // not required, but our testing framework expects some controller capabilities to be returned: https://github.com/kubernetes-csi/csi-test/blob/v2.0.1/pkg/sanity/controller.go#L71
+		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 	}
 	var capsResponse []*csi.ControllerServiceCapability
 	for _, cap := range caps {
