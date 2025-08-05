@@ -66,7 +66,15 @@ jobs:
           # The version identifier and title both use major.minor format (e.g., "1.1")
           # This ensures URLs like /1.1/ and dropdown shows "1.1" not "1.1.1"
           echo "Deploying version ${{ steps.version.outputs.version }} as latest"
-          mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
+
+          # Check if version already exists to avoid duplicate error
+          if mike list --branch=gh-pages | grep -q "^${{ steps.version.outputs.version }}"; then
+            echo "Version ${{ steps.version.outputs.version }} already exists, updating it"
+            mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
+          else
+            echo "Creating new version ${{ steps.version.outputs.version }}"
+            mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
+          fi
 
           # Set this version as the default (updates root redirect)
           echo "Setting ${{ steps.version.outputs.version }} as default"
