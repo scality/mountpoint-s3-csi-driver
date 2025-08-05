@@ -12,28 +12,28 @@
         <meta name="author" content="Scality Engineering">
       
       
-        <link rel="canonical" href="https://scality.github.io/mountpoint-s3-csi-driver/1.0/driver-deployment/uninstallation/">
+        <link rel="canonical" href="https://scality.github.io/mountpoint-s3-csi-driver/1.0/volume-provisioning/static-provisioning/examples/local-caching/">
       
       
-        <link rel="prev" href="../installation-guide/">
+        <link rel="prev" href="../non-root-user/">
       
       
-        <link rel="next" href="../../volume-provisioning/static-provisioning/overview/">
+        <link rel="next" href="../kms-encryption/">
       
       
-      <link rel="icon" href="../../assets/images/Scality_logo.png">
+      <link rel="icon" href="../../../../assets/images/Scality_logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
-        <title>Uninstallation - Scality CSI Driver for S3</title>
+        <title>Local Caching - Scality CSI Driver for S3</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.342714a4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -52,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/css/custom.css">
+      <link rel="stylesheet" href="../../../../assets/css/custom.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#uninstallation-guide" class="md-skip">
+        <a href="#local-caching" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +100,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Scality CSI Driver for S3" class="md-header__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
+    <a href="../../../.." title="Scality CSI Driver for S3" class="md-header__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
-  <img src="../../assets/images/Scality_logo.png" alt="logo">
+  <img src="../../../../assets/images/Scality_logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Uninstallation
+              Local Caching
             
           </span>
         </div>
@@ -256,9 +256,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Scality CSI Driver for S3" class="md-nav__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
+    <a href="../../../.." title="Scality CSI Driver for S3" class="md-nav__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
-  <img src="../../assets/images/Scality_logo.png" alt="logo">
+  <img src="../../../../assets/images/Scality_logo.png" alt="logo">
 
     </a>
     Scality CSI Driver for S3
@@ -285,7 +285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -304,20 +304,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -333,7 +331,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Driver Deployment
@@ -347,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../prerequisites/" class="md-nav__link">
+      <a href="../../../../driver-deployment/prerequisites/" class="md-nav__link">
         
   
   
@@ -370,7 +368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quick-start/" class="md-nav__link">
+      <a href="../../../../driver-deployment/quick-start/" class="md-nav__link">
         
   
   
@@ -393,12 +391,392 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation-guide/" class="md-nav__link">
+      <a href="../../../../driver-deployment/installation-guide/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     Installation Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../driver-deployment/uninstallation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Uninstallation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Volume Provisioning
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Volume Provisioning
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Static Provisioning
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            Static Provisioning
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mount-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mount Options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_1_3" id="__nav_3_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Examples
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            Examples
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../basic-static-provisioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic Static Provisioning
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bucket-prefix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Bucket Prefix Mounting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../override-region/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Override S3 Region
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secret-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Secret-Based Authentication
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple-pods-shared-volume/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Multiple Pods Sharing Volume
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple-buckets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Multiple Buckets in One Pod
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shared-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Shared Cache Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../non-root-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Non-Root User Access
     
   </span>
   
@@ -430,7 +808,7 @@
   
   
   <span class="md-ellipsis">
-    Uninstallation
+    Local Caching
     
   </span>
   
@@ -443,7 +821,7 @@
   
   
   <span class="md-ellipsis">
-    Uninstallation
+    Local Caching
     
   </span>
   
@@ -468,18 +846,63 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#before-you-begin" class="md-nav__link">
+  <a href="#features" class="md-nav__link">
     <span class="md-ellipsis">
-      Before You Begin
+      Features
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#uninstallation-steps" class="md-nav__link">
+  <a href="#deploy" class="md-nav__link">
     <span class="md-ellipsis">
-      Uninstallation Steps
+      Deploy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-mount-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Mount Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#important-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Important Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-pod-level-access-to-the-mounted-s3-volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Pod-Level Access to the Mounted S3 Volume
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cleanup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#download-yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download YAML
     </span>
   </a>
   
@@ -494,89 +917,6 @@
 
               
             
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    Volume Provisioning
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            Volume Provisioning
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    Static Provisioning
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_1">
-            <span class="md-nav__icon md-icon"></span>
-            Static Provisioning
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
               
                 
   
@@ -584,298 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/mount-options/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Mount Options
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_1_3" id="__nav_3_1_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    Examples
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_1_3">
-            <span class="md-nav__icon md-icon"></span>
-            Examples
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/basic-static-provisioning/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Basic Static Provisioning
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/bucket-prefix/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Bucket Prefix Mounting
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/override-region/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Override S3 Region
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/secret-authentication/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Secret-Based Authentication
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/multiple-pods-shared-volume/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Multiple Pods Sharing Volume
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/multiple-buckets/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Multiple Buckets in One Pod
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/shared-cache/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Shared Cache Configuration
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/non-root-user/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Non-Root User Access
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/local-caching/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Local Caching
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/kms-encryption/" class="md-nav__link">
+      <a href="../kms-encryption/" class="md-nav__link">
         
   
   
@@ -898,7 +947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/retry-configuration/" class="md-nav__link">
+      <a href="../retry-configuration/" class="md-nav__link">
         
   
   
@@ -921,7 +970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/debug-logging/" class="md-nav__link">
+      <a href="../debug-logging/" class="md-nav__link">
         
   
   
@@ -944,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/file-permissions/" class="md-nav__link">
+      <a href="../file-permissions/" class="md-nav__link">
         
   
   
@@ -967,7 +1016,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/allow-root/" class="md-nav__link">
+      <a href="../allow-root/" class="md-nav__link">
         
   
   
@@ -1051,7 +1100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts-and-reference/helm-chart-configuration-reference/" class="md-nav__link">
+      <a href="../../../../concepts-and-reference/helm-chart-configuration-reference/" class="md-nav__link">
         
   
   
@@ -1074,7 +1123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts-and-reference/compatibility-matrix/" class="md-nav__link">
+      <a href="../../../../concepts-and-reference/compatibility-matrix/" class="md-nav__link">
         
   
   
@@ -1097,7 +1146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts-and-reference/filesystem-semantics/" class="md-nav__link">
+      <a href="../../../../concepts-and-reference/filesystem-semantics/" class="md-nav__link">
         
   
   
@@ -1165,7 +1214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1188,7 +1237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../admin-user-guide/" class="md-nav__link">
+      <a href="../../../../admin-user-guide/" class="md-nav__link">
         
   
   
@@ -1218,7 +1267,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
+      <a href="../../../../release-notes/" class="md-nav__link">
         
   
   
@@ -1240,7 +1289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../glossary/" class="md-nav__link">
+      <a href="../../../../glossary/" class="md-nav__link">
         
   
   
@@ -1284,18 +1333,63 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#before-you-begin" class="md-nav__link">
+  <a href="#features" class="md-nav__link">
     <span class="md-ellipsis">
-      Before You Begin
+      Features
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#uninstallation-steps" class="md-nav__link">
+  <a href="#deploy" class="md-nav__link">
     <span class="md-ellipsis">
-      Uninstallation Steps
+      Deploy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-mount-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Mount Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#important-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Important Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-pod-level-access-to-the-mounted-s3-volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Pod-Level Access to the Mounted S3 Volume
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cleanup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#download-yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download YAML
     </span>
   </a>
   
@@ -1320,86 +1414,15 @@
   
 
 
-<h1 id="uninstallation-guide">Uninstallation Guide</h1>
-<p>This guide provides instructions for completely removing the Scality CSI Driver for S3 and all associated resources from a Kubernetes cluster.</p>
-<h2 id="before-you-begin">Before You Begin</h2>
-<!-- markdownlint-disable MD046 -->
-<div class="admonition warning">
-<p class="admonition-title">Data Persistence</p>
+<h1 id="local-caching">Local Caching</h1>
+<p>This example demonstrates how to enable local disk caching for improved S3 performance.</p>
+<h2 id="features">Features</h2>
 <ul>
-<li>Uninstalling the CSI driver does <strong>not</strong> delete data in S3 buckets</li>
-<li>Existing PersistentVolumes with <code>Retain</code> policy will preserve bucket data</li>
-<li>Kubernetes pod applications using S3 buckets as volumes will still be able to access their data after the driver is uninstalled deleted as the driver is responsible for mounting S3 when the pod starts.</li>
-<li>If the driver is re-installed, pods which lost access to S3 will be able to access their data again.</li>
+<li>Local disk caching at <code>/tmp/s3-pv1-cache</code></li>
+<li>Configurable cache size (500 MB)</li>
+<li>Metadata TTL of 3 seconds</li>
 </ul>
-</div>
-<!-- markdownlint-enable MD046 -->
-
-<div class="admonition danger">
-<p class="admonition-title">Access to Data</p>
-<p>If the driver is uninstalled while applications are still using S3 volumes, those applications will lose access to their to S3 if the kubernetes pods are deleted. This is due to orphaned FUSE processes.</p>
-</div>
-<h2 id="uninstallation-steps">Uninstallation Steps</h2>
-<h3 id="step-1-remove-workloads-using-s3-volumes">Step 1: Remove Workloads Using S3 Volumes</h3>
-<p>First, identify and delete all pods using S3 volumes:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><span class="c1"># Find pods with S3 PVCs</span>
-</span><span id="__span-0-2">kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.items[] | select(.spec.volumes[]?.persistentVolumeClaim) | &quot;\(.metadata.namespace)/\(.metadata.name)&quot;&#39;</span>
-</span><span id="__span-0-3">
-</span><span id="__span-0-4"><span class="c1"># Delete application pods that use S3 volumes</span>
-</span></code></pre></div></td></tr></table></div>
-<h3 id="step-2-remove-pvcs-and-pvs">Step 2: Remove PVCs and PVs</h3>
-<p>Delete all PersistentVolumeClaims using the S3 CSI driver:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><span class="c1"># List PVCs using S3 volumes</span>
-</span><span id="__span-1-2">kubectl<span class="w"> </span>get<span class="w"> </span>pvc<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.items[] | select(.spec.volumeName | startswith(&quot;s3-&quot;)) | &quot;\(.metadata.namespace)/\(.metadata.name)&quot;&#39;</span>
-</span><span id="__span-1-3">
-</span><span id="__span-1-4"><span class="c1"># Delete PVCs as needed</span>
-</span></code></pre></div></td></tr></table></div>
-<p>Delete PersistentVolumes:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><span class="c1"># List PVs using the S3 CSI driver</span>
-</span><span id="__span-2-2">kubectl<span class="w"> </span>get<span class="w"> </span>pv<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.items[] | select(.spec.csi.driver == &quot;s3.csi.scality.com&quot;) | .metadata.name&#39;</span>
-</span><span id="__span-2-3">
-</span><span id="__span-2-4"><span class="c1"># Delete PVs as needed</span>
-</span></code></pre></div></td></tr></table></div>
-<h3 id="step-3-uninstall-the-s3-csi-driver-helm-release">Step 3: Uninstall the S3 CSI Driver Helm Release</h3>
-<p>Detect the namespace where the driver is installed and export it as an environment variable:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><span class="nb">export</span><span class="w"> </span><span class="nv">NAMESPACE</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>--all-namespaces<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>scality-mountpoint-s3-csi-driver<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].metadata.namespace}&#39;</span><span class="k">)</span>
-</span><span id="__span-3-2"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Scality CSI Driver for S3 found in namespace: </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="s2">&quot;</span>
-</span></code></pre></div></td></tr></table></div>
-<p>Get the secret name from the Helm release:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><span class="nb">export</span><span class="w"> </span><span class="nv">SECRET_NAME</span><span class="o">=</span><span class="k">$(</span>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.s3CredentialSecret.name // &quot;s3-secret&quot;&#39;</span><span class="k">)</span>
-</span><span id="__span-4-2"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Secret name: </span><span class="si">${</span><span class="nv">SECRET_NAME</span><span class="si">}</span><span class="s2">&quot;</span>
-</span></code></pre></div></td></tr></table></div>
-<p><strong>Uninstall the release:</strong></p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1">helm<span class="w"> </span>uninstall<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
-</span></code></pre></div></td></tr></table></div>
-<p><strong>Delete the S3 credentials secret:</strong></p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1">kubectl<span class="w"> </span>delete<span class="w"> </span>secret<span class="w"> </span><span class="si">${</span><span class="nv">SECRET_NAME</span><span class="si">}</span><span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
-</span></code></pre></div></td></tr></table></div>
-<h3 id="step-4-remove-namespace-optional">Step 4: Remove Namespace (Optional)</h3>
-<p>If a dedicated namespace was created and is no longer needed:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><span class="c1"># Check namespace is empty first</span>
-</span><span id="__span-7-2">kubectl<span class="w"> </span>get<span class="w"> </span>all<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
-</span><span id="__span-7-3">
-</span><span id="__span-7-4"><span class="c1"># Delete namespace</span>
-</span><span id="__span-7-5">kubectl<span class="w"> </span>delete<span class="w"> </span>namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
-</span></code></pre></div></td></tr></table></div>
-<h3 id="step-5-check-complete-removal">Step 5: Check Complete Removal</h3>
-<p>Ensure all CSI driver components are removed:</p>
+<h2 id="deploy">Deploy</h2>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -1411,19 +1434,131 @@
 <span class="normal"> 9</span>
 <span class="normal">10</span>
 <span class="normal">11</span>
-<span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><span class="c1"># Check for remaining pods</span>
-</span><span id="__span-8-2">kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>--all-namespaces<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>s3-csi
-</span><span id="__span-8-3">
-</span><span id="__span-8-4"><span class="c1"># Check CSI driver registration</span>
-</span><span id="__span-8-5">kubectl<span class="w"> </span>get<span class="w"> </span>csidriver<span class="w"> </span>s3.csi.scality.com
-</span><span id="__span-8-6">
-</span><span id="__span-8-7"><span class="c1"># Check for remaining service accounts</span>
-</span><span id="__span-8-8">kubectl<span class="w"> </span>get<span class="w"> </span>sa<span class="w"> </span>--all-namespaces<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>s3-csi
-</span><span id="__span-8-9">
-</span><span id="__span-8-10"><span class="c1"># Check for remaining cluster roles</span>
-</span><span id="__span-8-11">kubectl<span class="w"> </span>get<span class="w"> </span>clusterrole<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>s3-csi
-</span><span id="__span-8-12">kubectl<span class="w"> </span>get<span class="w"> </span>clusterrolebinding<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>s3-csi
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="__span-0-2"><span class="s">apiVersion: v1</span>
+</span><span id="__span-0-3"><span class="s">kind: PersistentVolume</span>
+</span><span id="__span-0-4"><span class="s">metadata:</span>
+</span><span id="__span-0-5"><span class="s">  name: s3-pv</span>
+</span><span id="__span-0-6"><span class="s">spec:</span>
+</span><span id="__span-0-7"><span class="s">  capacity:</span>
+</span><span id="__span-0-8"><span class="s">    storage: 1200Gi # ignored, required</span>
+</span><span id="__span-0-9"><span class="s">  accessModes:</span>
+</span><span id="__span-0-10"><span class="s">    - ReadWriteMany # supported options: ReadWriteMany</span>
+</span><span id="__span-0-11"><span class="s">  storageClassName: &quot;&quot; # Required for static provisioning</span>
+</span><span id="__span-0-12"><span class="s">  claimRef: # To ensure no other PVCs can claim this PV</span>
+</span><span id="__span-0-13"><span class="s">    namespace: default # Namespace is required even though it&#39;s in &quot;default&quot; namespace.</span>
+</span><span id="__span-0-14"><span class="s">    name: s3-pvc # Name of your PVC</span>
+</span><span id="__span-0-15"><span class="s">  mountOptions:</span>
+</span><span id="__span-0-16"><span class="s">    - cache /tmp/s3-pv1-cache # specify cache directory, relative to root host filesystem</span>
+</span><span id="__span-0-17"><span class="s">                              # the directory must be unique per mount on a host</span>
+</span><span id="__span-0-18"><span class="s">    - metadata-ttl 3 # 3 second time to live</span>
+</span><span id="__span-0-19"><span class="s">    - max-cache-size 500 # 500 MB maximum size</span>
+</span><span id="__span-0-20"><span class="s">  csi:</span>
+</span><span id="__span-0-21"><span class="s">    driver: s3.csi.scality.com # required</span>
+</span><span id="__span-0-22"><span class="s">    volumeHandle: s3-csi-caching-volume # Must be unique across all PVs</span>
+</span><span id="__span-0-23"><span class="s">    volumeAttributes:</span>
+</span><span id="__span-0-24"><span class="s">      bucketName: s3-csi-driver</span>
+</span><span id="__span-0-25"><span class="s">---</span>
+</span><span id="__span-0-26"><span class="s">apiVersion: v1</span>
+</span><span id="__span-0-27"><span class="s">kind: PersistentVolumeClaim</span>
+</span><span id="__span-0-28"><span class="s">metadata:</span>
+</span><span id="__span-0-29"><span class="s">  name: s3-pvc</span>
+</span><span id="__span-0-30"><span class="s">spec:</span>
+</span><span id="__span-0-31"><span class="s">  accessModes:</span>
+</span><span id="__span-0-32"><span class="s">    - ReadWriteMany # Supported options: ReadWriteMany</span>
+</span><span id="__span-0-33"><span class="s">  storageClassName: &quot;&quot; # Required for static provisioning</span>
+</span><span id="__span-0-34"><span class="s">  resources:</span>
+</span><span id="__span-0-35"><span class="s">    requests:</span>
+</span><span id="__span-0-36"><span class="s">      storage: 1200Gi # Ignored, required</span>
+</span><span id="__span-0-37"><span class="s">  volumeName: s3-pv # Name of your PV</span>
+</span><span id="__span-0-38"><span class="s">---</span>
+</span><span id="__span-0-39"><span class="s">apiVersion: v1</span>
+</span><span id="__span-0-40"><span class="s">kind: Pod</span>
+</span><span id="__span-0-41"><span class="s">metadata:</span>
+</span><span id="__span-0-42"><span class="s">  name: s3-app</span>
+</span><span id="__span-0-43"><span class="s">spec:</span>
+</span><span id="__span-0-44"><span class="s">  containers:</span>
+</span><span id="__span-0-45"><span class="s">    - name: app</span>
+</span><span id="__span-0-46"><span class="s">      image: ubuntu</span>
+</span><span id="__span-0-47"><span class="s">      command: [&quot;/bin/sh&quot;]</span>
+</span><span id="__span-0-48"><span class="s">      args: [&quot;-c&quot;, &quot;echo &#39;Hello from the container!&#39; &gt;&gt; /data/$(date -u).txt; tail -f /dev/null&quot;]</span>
+</span><span id="__span-0-49"><span class="s">      volumeMounts:</span>
+</span><span id="__span-0-50"><span class="s">        - name: persistent-storage</span>
+</span><span id="__span-0-51"><span class="s">          mountPath: /data</span>
+</span><span id="__span-0-52"><span class="s">  volumes:</span>
+</span><span id="__span-0-53"><span class="s">    - name: persistent-storage</span>
+</span><span id="__span-0-54"><span class="s">      persistentVolumeClaim:</span>
+</span><span id="__span-0-55"><span class="s">        claimName: s3-pvc</span>
+</span><span id="__span-0-56"><span class="s">EOF</span>
 </span></code></pre></div></td></tr></table></div>
+<h2 id="key-mount-options">Key Mount Options</h2>
+<ul>
+<li><code>cache /tmp/s3-pv1-cache</code> - Cache directory path (must be unique per volume)</li>
+<li><code>metadata-ttl 3</code> - Cache metadata for 3 seconds</li>
+<li><code>max-cache-size 500</code> - Limit cache to 500 MB</li>
+</ul>
+<h2 id="important-notes">Important Notes</h2>
+<p>⚠️ <strong>Cache Path Uniqueness</strong>: Each volume must use a unique cache path on each node to avoid conflicts.</p>
+<h2 id="check-pod-level-access-to-the-mounted-s3-volume">Check Pod-Level Access to the Mounted S3 Volume</h2>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1">kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>s3-app
+</span><span id="__span-1-2"><span class="c1"># Check cache directory on the node</span>
+</span><span id="__span-1-3">kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>s3-app<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/data
+</span></code></pre></div></td></tr></table></div>
+<h2 id="cleanup">Cleanup</h2>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1">kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>s3-app
+</span><span id="__span-2-2">kubectl<span class="w"> </span>delete<span class="w"> </span>pvc<span class="w"> </span>s3-pvc
+</span><span id="__span-2-3">kubectl<span class="w"> </span>delete<span class="w"> </span>pv<span class="w"> </span>s3-pv
+</span></code></pre></div></td></tr></table></div>
+<h2 id="download-yaml">Download YAML</h2>
+<p><a href="../assets/caching.yaml">📁 caching.yaml</a></p>
 
 
 
@@ -1479,10 +1614,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "navigation.top", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
     
   </body>

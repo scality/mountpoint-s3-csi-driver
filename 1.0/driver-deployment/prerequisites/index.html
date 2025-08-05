@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Documentation for Scality S3 CSI Driver">
+        <meta name="description" content="Documentation for Scality CSI Driver for S3">
       
       
         <meta name="author" content="Scality Engineering">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Prerequisites - Scality S3 CSI Driver</title>
+        <title>Prerequisites - Scality CSI Driver for S3</title>
       
     
     
@@ -100,7 +100,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Scality S3 CSI Driver" class="md-header__button md-logo" aria-label="Scality S3 CSI Driver" data-md-component="logo">
+    <a href="../.." title="Scality CSI Driver for S3" class="md-header__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
   <img src="../../assets/images/Scality_logo.png" alt="logo">
 
@@ -113,7 +113,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Scality S3 CSI Driver
+            Scality CSI Driver for S3
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -256,12 +256,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Scality S3 CSI Driver" class="md-nav__button md-logo" aria-label="Scality S3 CSI Driver" data-md-component="logo">
+    <a href="../.." title="Scality CSI Driver for S3" class="md-nav__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
   <img src="../../assets/images/Scality_logo.png" alt="logo">
 
     </a>
-    Scality S3 CSI Driver
+    Scality CSI Driver for S3
   </label>
   
     <div class="md-nav__source">
@@ -824,6 +824,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../volume-provisioning/static-provisioning/examples/shared-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Shared Cache Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../volume-provisioning/static-provisioning/examples/non-root-user/" class="md-nav__link">
         
   
@@ -847,35 +870,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/local-cache/" class="md-nav__link">
+      <a href="../../volume-provisioning/static-provisioning/examples/local-caching/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Local Cache
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../volume-provisioning/static-provisioning/examples/advanced-local-caching/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Advanced Local Caching
+    Local Caching
     
   </span>
   
@@ -1357,7 +1357,7 @@
 
 
 <h1 id="prerequisites">Prerequisites</h1>
-<p>Before installing the Scality S3 CSI Driver, ensure the environment meets the following requirements:</p>
+<p>Before installing the Scality CSI Driver for S3, ensure the environment meets the following requirements:</p>
 <h2 id="kubernetes-requirements">Kubernetes Requirements</h2>
 <p><strong>Kubernetes Version:</strong></p>
 <ul>
@@ -1366,7 +1366,7 @@
 <p><strong>Tools:</strong></p>
 <ul>
 <li><code>kubectl</code> configured to communicate with the cluster.</li>
-<li><a href="https://helm.sh/docs/intro/install/">Helm</a> v3.8.0 or newer installed.</li>
+<li><a href="https://helm.sh/docs/intro/install/">Helm</a> v3 installed.</li>
 <li><code>jq</code> (optional but recommended) for parsing JSON output in troubleshooting commands.</li>
 </ul>
 <p><strong>RBAC (Role-Based Access Control):</strong></p>
@@ -1375,7 +1375,7 @@
 <li>Ensure the user or tool performing the Helm installation has sufficient permissions to create these RBAC resources at the cluster scope.</li>
 </ul>
 <h2 id="container-image-requirements">Container Image Requirements</h2>
-<p>The deployment of the Scality S3 CSI Driver requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:</p>
+<p>The deployment of the Scality CSI Driver for S3 requires access to several container images. Ensure the Kubernetes cluster can pull images from the following registries:</p>
 <table>
 <thead>
 <tr>
@@ -1387,8 +1387,8 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Scality S3 CSI Driver</strong></td>
-<td><code>ghcr.io/scality/mountpoint-s3-csi-driver:1.0.0</code></td>
+<td><strong>Scality CSI Driver for S3</strong></td>
+<td><code>ghcr.io/scality/mountpoint-s3-csi-driver:1.0.1</code></td>
 <td>GitHub Container Registry (GHCR)</td>
 <td>Main CSI driver functionality</td>
 </tr>
@@ -1480,7 +1480,7 @@ For production deployments follow the steps outlined in the <a href="../installa
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright © 2025 Scality, Inc. Licensed under the
+      Copyright &copy; 2025 Scality, Inc. All rights reserved. |
 <a href="https://github.com/scality/mountpoint-s3-csi-driver/blob/main/LICENSE">Apache License 2.0</a>
 
     </div>

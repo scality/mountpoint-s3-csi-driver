@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Documentation for Scality S3 CSI Driver">
+        <meta name="description" content="Documentation for Scality CSI Driver for S3">
       
       
         <meta name="author" content="Scality Engineering">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Overview - Scality S3 CSI Driver</title>
+        <title>Overview - Scality CSI Driver for S3</title>
       
     
     
@@ -100,7 +100,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Scality S3 CSI Driver" class="md-header__button md-logo" aria-label="Scality S3 CSI Driver" data-md-component="logo">
+    <a href="../../.." title="Scality CSI Driver for S3" class="md-header__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
   <img src="../../../assets/images/Scality_logo.png" alt="logo">
 
@@ -113,7 +113,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Scality S3 CSI Driver
+            Scality CSI Driver for S3
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -256,12 +256,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Scality S3 CSI Driver" class="md-nav__button md-logo" aria-label="Scality S3 CSI Driver" data-md-component="logo">
+    <a href="../../.." title="Scality CSI Driver for S3" class="md-nav__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
   <img src="../../../assets/images/Scality_logo.png" alt="logo">
 
     </a>
-    Scality S3 CSI Driver
+    Scality CSI Driver for S3
   </label>
   
     <div class="md-nav__source">
@@ -835,6 +835,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/shared-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Shared Cache Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/non-root-user/" class="md-nav__link">
         
   
@@ -858,35 +881,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/local-cache/" class="md-nav__link">
+      <a href="../examples/local-caching/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Local Cache
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/advanced-local-caching/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Advanced Local Caching
+    Local Caching
     
   </span>
   
@@ -1606,19 +1606,19 @@
 <h2 id="examples">Examples</h2>
 <ul>
 <li><a href="../examples/basic-static-provisioning/">Basic Static Provisioning</a> - Simple S3 bucket mounting</li>
-<li><a href="../examples/bucket-prefix/">Bucket Prefix Mounting</a> - Mount specific bucket prefix/folder</li>
-<li><a href="../examples/override-region/">Override S3 Region</a> - Override S3 region for specific volumes</li>
+<li><a href="../examples/shared-cache/">Shared Cache Configuration</a> - Basic shared cache setup</li>
 <li><a href="../examples/secret-authentication/">Secret-Based Authentication</a> - Volume-level credentials</li>
+<li><a href="../examples/non-root-user/">Non-Root User Access</a> - Non-root user configuration</li>
 <li><a href="../examples/multiple-pods-shared-volume/">Multiple Pods Sharing Volume</a> - Shared volume across pods</li>
 <li><a href="../examples/multiple-buckets/">Multiple Buckets in One Pod</a> - Multiple buckets in single pod</li>
-<li><a href="../examples/non-root-user/">Non-Root User Access</a> - Non-root user configuration</li>
-<li><a href="../examples/local-cache/">Local Cache</a> - Basic local caching</li>
-<li><a href="../examples/advanced-local-caching/">Advanced Local Caching</a> - Advanced local caching with size limits</li>
+<li><a href="../examples/local-caching/">Local Caching</a> - Advanced caching with size limits</li>
 <li><a href="../examples/kms-encryption/">KMS Server-Side Encryption</a> - AWS KMS encryption</li>
 <li><a href="../examples/retry-configuration/">Retry Configuration</a> - S3 request retry settings</li>
 <li><a href="../examples/debug-logging/">Debug Logging</a> - Enable debug and verbose logging</li>
 <li><a href="../examples/file-permissions/">File and Directory Permissions</a> - Custom file/directory permissions</li>
 <li><a href="../examples/allow-root/">Allow Root Access</a> - Root access with non-root UID/GID</li>
+<li><a href="../examples/bucket-prefix/">Bucket Prefix Mounting</a> - Mount specific bucket prefix/folder</li>
+<li><a href="../examples/override-region/">Override S3 Region</a> - Override S3 region for specific volumes</li>
 </ul>
 
 
@@ -1655,7 +1655,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright © 2025 Scality, Inc. Licensed under the
+      Copyright &copy; 2025 Scality, Inc. All rights reserved. |
 <a href="https://github.com/scality/mountpoint-s3-csi-driver/blob/main/LICENSE">Apache License 2.0</a>
 
     </div>

@@ -6,19 +6,19 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Documentation for Scality S3 CSI Driver">
+        <meta name="description" content="Documentation for Scality CSI Driver for S3">
       
       
         <meta name="author" content="Scality Engineering">
       
       
-        <link rel="canonical" href="https://scality.github.io/mountpoint-s3-csi-driver/1.0/volume-provisioning/static-provisioning/examples/advanced-local-caching/">
+        <link rel="canonical" href="https://scality.github.io/mountpoint-s3-csi-driver/1.0/volume-provisioning/static-provisioning/examples/shared-cache/">
       
       
-        <link rel="prev" href="../local-cache/">
+        <link rel="prev" href="../multiple-buckets/">
       
       
-        <link rel="next" href="../kms-encryption/">
+        <link rel="next" href="../non-root-user/">
       
       
       <link rel="icon" href="../../../../assets/images/Scality_logo.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Advanced Local Caching - Scality S3 CSI Driver</title>
+        <title>Shared Cache Configuration - Scality CSI Driver for S3</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#advanced-local-caching" class="md-skip">
+        <a href="#shared-cache-configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +100,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Scality S3 CSI Driver" class="md-header__button md-logo" aria-label="Scality S3 CSI Driver" data-md-component="logo">
+    <a href="../../../.." title="Scality CSI Driver for S3" class="md-header__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
   <img src="../../../../assets/images/Scality_logo.png" alt="logo">
 
@@ -113,13 +113,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Scality S3 CSI Driver
+            Scality CSI Driver for S3
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Advanced Local Caching
+              Shared Cache Configuration
             
           </span>
         </div>
@@ -256,12 +256,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Scality S3 CSI Driver" class="md-nav__button md-logo" aria-label="Scality S3 CSI Driver" data-md-component="logo">
+    <a href="../../../.." title="Scality CSI Driver for S3" class="md-nav__button md-logo" aria-label="Scality CSI Driver for S3" data-md-component="logo">
       
   <img src="../../../../assets/images/Scality_logo.png" alt="logo">
 
     </a>
-    Scality S3 CSI Driver
+    Scality CSI Driver for S3
   </label>
   
     <div class="md-nav__source">
@@ -745,52 +745,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../non-root-user/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Non-Root User Access
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../local-cache/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Local Cache
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -808,7 +762,7 @@
   
   
   <span class="md-ellipsis">
-    Advanced Local Caching
+    Shared Cache Configuration
     
   </span>
   
@@ -821,7 +775,7 @@
   
   
   <span class="md-ellipsis">
-    Advanced Local Caching
+    Shared Cache Configuration
     
   </span>
   
@@ -864,18 +818,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#key-mount-options" class="md-nav__link">
+  <a href="#key-mount-option" class="md-nav__link">
     <span class="md-ellipsis">
-      Key Mount Options
+      Key Mount Option
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#metadata-ttl-configuration" class="md-nav__link">
+  <a href="#benefits" class="md-nav__link">
     <span class="md-ellipsis">
-      Metadata TTL Configuration
+      Benefits
     </span>
   </a>
   
@@ -921,6 +875,52 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../non-root-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Non-Root User Access
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../local-caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Local Caching
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1360,18 +1360,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#key-mount-options" class="md-nav__link">
+  <a href="#key-mount-option" class="md-nav__link">
     <span class="md-ellipsis">
-      Key Mount Options
+      Key Mount Option
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#metadata-ttl-configuration" class="md-nav__link">
+  <a href="#benefits" class="md-nav__link">
     <span class="md-ellipsis">
-      Metadata TTL Configuration
+      Benefits
     </span>
   </a>
   
@@ -1432,14 +1432,13 @@
   
 
 
-<h1 id="advanced-local-caching">Advanced Local Caching</h1>
-<p>This example demonstrates how to enable local disk caching with advanced options for improved S3 performance.</p>
+<h1 id="shared-cache-configuration">Shared Cache Configuration</h1>
+<p>This example demonstrates basic shared cache configuration for improved S3 performance.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li>Local disk caching at <code>/tmp/s3-pv1-cache</code></li>
-<li>Configurable cache size (500 MB)</li>
-<li>Metadata TTL presets: <code>minimal</code> and <code>indefinite</code></li>
-<li>Custom metadata TTL values in seconds (3 seconds in this example)</li>
+<li>Shared cache directory at <code>/tmp/s3-csi-driver-cache</code></li>
+<li>Improved read performance through local caching</li>
+<li>Simple cache setup without size limits</li>
 </ul>
 <h2 id="deploy">Deploy</h2>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
@@ -1496,99 +1495,80 @@
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+<span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 </span><span id="__span-0-2"><span class="s">apiVersion: v1</span>
 </span><span id="__span-0-3"><span class="s">kind: PersistentVolume</span>
 </span><span id="__span-0-4"><span class="s">metadata:</span>
 </span><span id="__span-0-5"><span class="s">  name: s3-pv</span>
 </span><span id="__span-0-6"><span class="s">spec:</span>
 </span><span id="__span-0-7"><span class="s">  capacity:</span>
-</span><span id="__span-0-8"><span class="s">    storage: 1200Gi # ignored, required</span>
+</span><span id="__span-0-8"><span class="s">    storage: 1200Gi # Ignored, required</span>
 </span><span id="__span-0-9"><span class="s">  accessModes:</span>
-</span><span id="__span-0-10"><span class="s">    - ReadWriteMany # supported options: ReadWriteMany</span>
+</span><span id="__span-0-10"><span class="s">    - ReadWriteMany # Supported options: ReadWriteMany</span>
 </span><span id="__span-0-11"><span class="s">  storageClassName: &quot;&quot; # Required for static provisioning</span>
 </span><span id="__span-0-12"><span class="s">  claimRef: # To ensure no other PVCs can claim this PV</span>
 </span><span id="__span-0-13"><span class="s">    namespace: default # Namespace is required even though it&#39;s in &quot;default&quot; namespace.</span>
 </span><span id="__span-0-14"><span class="s">    name: s3-pvc # Name of your PVC</span>
 </span><span id="__span-0-15"><span class="s">  mountOptions:</span>
-</span><span id="__span-0-16"><span class="s">    - cache /tmp/s3-pv1-cache # specify cache directory, relative to root host filesystem</span>
-</span><span id="__span-0-17"><span class="s">                              # the directory must be unique per mount on a host</span>
-</span><span id="__span-0-18"><span class="s">    - metadata-ttl 3 # 3 second time to live</span>
-</span><span id="__span-0-19"><span class="s">    - max-cache-size 500 # 500 MB maximum size</span>
-</span><span id="__span-0-20"><span class="s">  csi:</span>
-</span><span id="__span-0-21"><span class="s">    driver: s3.csi.scality.com # required</span>
-</span><span id="__span-0-22"><span class="s">    volumeHandle: s3-csi-caching-volume # Must be unique across all PVs</span>
-</span><span id="__span-0-23"><span class="s">    volumeAttributes:</span>
-</span><span id="__span-0-24"><span class="s">      bucketName: s3-csi-driver</span>
-</span><span id="__span-0-25"><span class="s">---</span>
-</span><span id="__span-0-26"><span class="s">apiVersion: v1</span>
-</span><span id="__span-0-27"><span class="s">kind: PersistentVolumeClaim</span>
-</span><span id="__span-0-28"><span class="s">metadata:</span>
-</span><span id="__span-0-29"><span class="s">  name: s3-pvc</span>
-</span><span id="__span-0-30"><span class="s">spec:</span>
-</span><span id="__span-0-31"><span class="s">  accessModes:</span>
-</span><span id="__span-0-32"><span class="s">    - ReadWriteMany # Supported options: ReadWriteMany</span>
-</span><span id="__span-0-33"><span class="s">  storageClassName: &quot;&quot; # Required for static provisioning</span>
-</span><span id="__span-0-34"><span class="s">  resources:</span>
-</span><span id="__span-0-35"><span class="s">    requests:</span>
-</span><span id="__span-0-36"><span class="s">      storage: 1200Gi # Ignored, required</span>
-</span><span id="__span-0-37"><span class="s">  volumeName: s3-pv # Name of your PV</span>
-</span><span id="__span-0-38"><span class="s">---</span>
-</span><span id="__span-0-39"><span class="s">apiVersion: v1</span>
-</span><span id="__span-0-40"><span class="s">kind: Pod</span>
-</span><span id="__span-0-41"><span class="s">metadata:</span>
-</span><span id="__span-0-42"><span class="s">  name: s3-app</span>
-</span><span id="__span-0-43"><span class="s">spec:</span>
-</span><span id="__span-0-44"><span class="s">  containers:</span>
-</span><span id="__span-0-45"><span class="s">    - name: app</span>
-</span><span id="__span-0-46"><span class="s">      image: ubuntu</span>
-</span><span id="__span-0-47"><span class="s">      command: [&quot;/bin/sh&quot;]</span>
-</span><span id="__span-0-48"><span class="s">      args: [&quot;-c&quot;, &quot;echo &#39;Hello from the container!&#39; &gt;&gt; /data/$(date -u).txt; tail -f /dev/null&quot;]</span>
-</span><span id="__span-0-49"><span class="s">      volumeMounts:</span>
-</span><span id="__span-0-50"><span class="s">        - name: persistent-storage</span>
-</span><span id="__span-0-51"><span class="s">          mountPath: /data</span>
-</span><span id="__span-0-52"><span class="s">  volumes:</span>
-</span><span id="__span-0-53"><span class="s">    - name: persistent-storage</span>
-</span><span id="__span-0-54"><span class="s">      persistentVolumeClaim:</span>
-</span><span id="__span-0-55"><span class="s">        claimName: s3-pvc</span>
-</span><span id="__span-0-56"><span class="s">EOF</span>
+</span><span id="__span-0-16"><span class="s">    - allow-delete</span>
+</span><span id="__span-0-17"><span class="s">    - region us-west-2</span>
+</span><span id="__span-0-18"><span class="s">    - cache /tmp/s3-csi-driver-cache # Local cache option for improved performance. More information: https://github.com/awslabs/mountpoint-s3/blob/main/doc/CONFIGURATION.md#caching-configuration</span>
+</span><span id="__span-0-19"><span class="s">  csi:</span>
+</span><span id="__span-0-20"><span class="s">    driver: s3.csi.scality.com # Required</span>
+</span><span id="__span-0-21"><span class="s">    volumeHandle: s3-csi-shared-cache-volume # Must be unique across all PVs</span>
+</span><span id="__span-0-22"><span class="s">    volumeAttributes:</span>
+</span><span id="__span-0-23"><span class="s">      bucketName: s3-csi-driver</span>
+</span><span id="__span-0-24"><span class="s">---</span>
+</span><span id="__span-0-25"><span class="s">apiVersion: v1</span>
+</span><span id="__span-0-26"><span class="s">kind: PersistentVolumeClaim</span>
+</span><span id="__span-0-27"><span class="s">metadata:</span>
+</span><span id="__span-0-28"><span class="s">  name: s3-pvc</span>
+</span><span id="__span-0-29"><span class="s">spec:</span>
+</span><span id="__span-0-30"><span class="s">  accessModes:</span>
+</span><span id="__span-0-31"><span class="s">    - ReadWriteMany # Supported options: ReadWriteMany</span>
+</span><span id="__span-0-32"><span class="s">  storageClassName: &quot;&quot; # Required for static provisioning</span>
+</span><span id="__span-0-33"><span class="s">  resources:</span>
+</span><span id="__span-0-34"><span class="s">    requests:</span>
+</span><span id="__span-0-35"><span class="s">      storage: 1200Gi # Ignored, required</span>
+</span><span id="__span-0-36"><span class="s">  volumeName: s3-pv # Name of your PV</span>
+</span><span id="__span-0-37"><span class="s">---</span>
+</span><span id="__span-0-38"><span class="s">apiVersion: v1</span>
+</span><span id="__span-0-39"><span class="s">kind: Pod</span>
+</span><span id="__span-0-40"><span class="s">metadata:</span>
+</span><span id="__span-0-41"><span class="s">  name: s3-app</span>
+</span><span id="__span-0-42"><span class="s">spec:</span>
+</span><span id="__span-0-43"><span class="s">  containers:</span>
+</span><span id="__span-0-44"><span class="s">    - name: app</span>
+</span><span id="__span-0-45"><span class="s">      image: ubuntu</span>
+</span><span id="__span-0-46"><span class="s">      command: [&quot;/bin/sh&quot;]</span>
+</span><span id="__span-0-47"><span class="s">      args: [&quot;-c&quot;, &quot;echo &#39;Hello from the container!&#39; &gt;&gt; /data/$(date -u).txt; echo &#39;Shared cache test&#39; &gt;&gt; /data/shared_cache_test.txt; cat /data/shared_cache_test.txt; tail -f /dev/null&quot;]</span>
+</span><span id="__span-0-48"><span class="s">      volumeMounts:</span>
+</span><span id="__span-0-49"><span class="s">        - name: persistent-storage</span>
+</span><span id="__span-0-50"><span class="s">          mountPath: /data</span>
+</span><span id="__span-0-51"><span class="s">  volumes:</span>
+</span><span id="__span-0-52"><span class="s">    - name: persistent-storage</span>
+</span><span id="__span-0-53"><span class="s">      persistentVolumeClaim:</span>
+</span><span id="__span-0-54"><span class="s">        claimName: s3-pvc</span>
+</span><span id="__span-0-55"><span class="s">EOF</span>
 </span></code></pre></div></td></tr></table></div>
-<h2 id="key-mount-options">Key Mount Options</h2>
+<h2 id="key-mount-option">Key Mount Option</h2>
 <ul>
-<li><code>cache /tmp/s3-pv1-cache</code> - Cache directory path (must be unique per volume)</li>
-<li><code>metadata-ttl 3</code> - Cache metadata for 3 seconds</li>
-<li><code>max-cache-size 500</code> - Limit cache to 500 MB</li>
+<li><code>cache /tmp/s3-csi-driver-cache</code> - Enables shared caching at specified directory</li>
 </ul>
-<h2 id="metadata-ttl-configuration">Metadata TTL Configuration</h2>
-<p>The <code>metadata-ttl</code> flag controls how long Mountpoint considers its file system metadata (file existence, size, object etag, etc) accurate before re-fetching from S3.
-Mountpoint will typically perform fewer requests to the mounted S3 bucket, but will not guarantee that the information it reports is up to date with the content of the mounted S3 bucket.</p>
-<p>With local caching enabled, the stored data is considered accurate until the metadata TTL expires.
-After this period, Mountpoint revalidates if the cached data is still accurate by verifying the object's etag hasn't changed.</p>
-<h3 id="ttl-presets">TTL Presets</h3>
-<p>Mountpoint provides two presets which trade off consistency and performance/cost optimization:</p>
+<h2 id="benefits">Benefits</h2>
 <ul>
-<li><strong><code>metadata-ttl minimal</code></strong> - For scenarios where the mounted S3 bucket content is modified by another client and you require recently up-to-date information</li>
-<li><strong><code>metadata-ttl indefinite</code></strong> - For workloads that don't require consistency, such as when the S3 bucket content doesn't change</li>
-</ul>
-<h3 id="custom-ttl-values">Custom TTL Values</h3>
-<p>You can also specify custom TTL values in seconds:</p>
-<ul>
-<li><code>metadata-ttl 300</code> - Allows Mountpoint to delay updates for up to 300 seconds, reducing S3 requests</li>
-<li><code>metadata-ttl 3</code> - Short TTL for more frequent validation (as shown in this example)</li>
+<li>Faster read access for frequently accessed files</li>
+<li>Reduced S3 API calls</li>
+<li>Improved application performance</li>
 </ul>
 <h2 id="important-notes">Important Notes</h2>
-<p>⚠️ <strong>Cache Path Uniqueness</strong>: Each volume must use a unique cache path on each node to avoid conflicts.</p>
+<p>⚠️ <strong>Cache Directory</strong>: Ensure the cache directory has sufficient disk space and proper permissions.</p>
 <h2 id="check-pod-level-access-to-the-mounted-s3-volume">Check Pod-Level Access to the Mounted S3 Volume</h2>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1">kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>s3-app
-</span><span id="__span-1-2"><span class="c1"># Check cache directory on the node</span>
-</span><span id="__span-1-3">kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>s3-app<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/data
-</span><span id="__span-1-4"><span class="c1"># Check cache directory on the node as specified in the mountoption.</span>
-</span><span id="__span-1-5"><span class="c1"># if copied from the example, it should be /tmp/s3-pv1-cache</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1">kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>s3-app
+</span><span id="__span-1-2">kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>s3-app<span class="w"> </span>--<span class="w"> </span>cat<span class="w"> </span>/data/shared_cache_test.txt
+</span><span id="__span-1-3"><span class="c1"># Check cache directory on the node</span>
 </span></code></pre></div></td></tr></table></div>
 <h2 id="cleanup">Cleanup</h2>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
@@ -1598,7 +1578,7 @@ After this period, Mountpoint revalidates if the cached data is still accurate b
 </span><span id="__span-2-3">kubectl<span class="w"> </span>delete<span class="w"> </span>pv<span class="w"> </span>s3-pv
 </span></code></pre></div></td></tr></table></div>
 <h2 id="download-yaml">Download YAML</h2>
-<p><a href="../assets/advanced_local_caching.yaml">📁 static_provisioning_with_advanced_local_caching.yaml</a></p>
+<p><a href="../assets/static_provisioning_with_shared_cache.yaml">📁 static_provisioning_with_shared_cache.yaml</a></p>
 
 
 
@@ -1634,7 +1614,7 @@ After this period, Mountpoint revalidates if the cached data is still accurate b
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright © 2025 Scality, Inc. Licensed under the
+      Copyright &copy; 2025 Scality, Inc. All rights reserved. |
 <a href="https://github.com/scality/mountpoint-s3-csi-driver/blob/main/LICENSE">Apache License 2.0</a>
 
     </div>
