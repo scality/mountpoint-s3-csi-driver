@@ -7,12 +7,12 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="Documentation for Scality CSI Driver for S3" name="description"/>
 <meta content="Scality Engineering" name="author"/>
-<link href="https://scality.github.io/mountpoint-s3-csi-driver/1.1/concepts-and-reference/filesystem-semantics/" rel="canonical"/>
-<link href="../compatibility-matrix/" rel="prev"/>
-<link href="../../troubleshooting/" rel="next"/>
+<link href="https://scality.github.io/mountpoint-s3-csi-driver/1.1/architecture/deployment-architecture/" rel="canonical"/>
+<link href="../system-overview/" rel="prev"/>
+<link href="../static-provisioning-flow/" rel="next"/>
 <link href="../../assets/images/Scality_logo.png" rel="icon"/>
 <meta content="mkdocs-1.6.1, mkdocs-material-9.6.14" name="generator"/>
-<title>Filesystem Semantics - Scality CSI Driver for S3</title>
+<title>Deployment Architecture - Scality CSI Driver for S3</title>
 <link href="../../assets/stylesheets/main.342714a4.min.css" rel="stylesheet"/>
 <link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -26,7 +26,7 @@
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
 <label class="md-overlay" for="__drawer"></label>
 <div data-md-component="skip">
-<a class="md-skip" href="#mountpoint-for-amazon-s3-file-system-behavior">
+<a class="md-skip" href="#deployment-architecture">
           Skip to content
         </a>
 </div>
@@ -52,7 +52,7 @@
 <div class="md-header__topic" data-md-component="header-topic">
 <span class="md-ellipsis">
             
-              Filesystem Semantics
+              Deployment Architecture
             
           </span>
 </div>
@@ -155,8 +155,8 @@
   </span>
 </a>
 </li>
-<li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<li class="md-nav__item md-nav__item--active md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
 <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
 <span class="md-ellipsis">
     Architecture
@@ -164,30 +164,60 @@
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
-<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<nav aria-expanded="true" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
 <label class="md-nav__title" for="__nav_2">
 <span class="md-nav__icon md-icon"></span>
             Architecture
           </label>
 <ul class="md-nav__list" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="../../architecture/system-overview/">
+<a class="md-nav__link" href="../system-overview/">
 <span class="md-ellipsis">
     System Overview
     
   </span>
 </a>
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../architecture/deployment-architecture/">
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Deployment Architecture
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
 <span class="md-ellipsis">
     Deployment Architecture
     
   </span>
 </a>
+<nav aria-label="On This Page" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      On This Page
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#deployment-components">
+<span class="md-ellipsis">
+      Deployment Components
+    </span>
+</a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="../../architecture/static-provisioning-flow/">
+<a class="md-nav__link" href="#key-deployment-characteristics">
+<span class="md-ellipsis">
+      Key Deployment Characteristics
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../static-provisioning-flow/">
 <span class="md-ellipsis">
     Static Provisioning Flow
     
@@ -195,7 +225,7 @@
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="../../architecture/ring-s3-credentials-management/">
+<a class="md-nav__link" href="../ring-s3-credentials-management/">
 <span class="md-ellipsis">
     RING S3 Credential management
     
@@ -445,8 +475,8 @@
 </ul>
 </nav>
 </li>
-<li class="md-nav__item md-nav__item--active md-nav__item--nested">
-<input checked="" class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
 <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
 <span class="md-ellipsis">
     Concepts and Reference
@@ -454,14 +484,14 @@
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
-<nav aria-expanded="true" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
 <label class="md-nav__title" for="__nav_5">
 <span class="md-nav__icon md-icon"></span>
             Concepts and Reference
           </label>
 <ul class="md-nav__list" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="../helm-chart-configuration-reference/">
+<a class="md-nav__link" href="../../concepts-and-reference/helm-chart-configuration-reference/">
 <span class="md-ellipsis">
     Helm Chart Configuration Reference
     
@@ -469,99 +499,20 @@
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="../compatibility-matrix/">
+<a class="md-nav__link" href="../../concepts-and-reference/compatibility-matrix/">
 <span class="md-ellipsis">
     Compatibility Matrix
     
   </span>
 </a>
 </li>
-<li class="md-nav__item md-nav__item--active">
-<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
-<label class="md-nav__link md-nav__link--active" for="__toc">
-<span class="md-ellipsis">
-    Filesystem Semantics
-    
-  </span>
-<span class="md-nav__icon md-icon"></span>
-</label>
-<a class="md-nav__link md-nav__link--active" href="./">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../concepts-and-reference/filesystem-semantics/">
 <span class="md-ellipsis">
     Filesystem Semantics
     
   </span>
 </a>
-<nav aria-label="On This Page" class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">
-<span class="md-nav__icon md-icon"></span>
-      On This Page
-    </label>
-<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#behavior-tenets">
-<span class="md-ellipsis">
-      Behavior Tenets
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#reading-and-writing-files">
-<span class="md-ellipsis">
-      Reading and Writing Files
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#directories">
-<span class="md-ellipsis">
-      Directories
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#permissions-and-metadata">
-<span class="md-ellipsis">
-      Permissions and Metadata
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#consistency-and-concurrency">
-<span class="md-ellipsis">
-      Consistency and Concurrency
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#caching">
-<span class="md-ellipsis">
-      Caching
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#durability">
-<span class="md-ellipsis">
-      Durability
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#error-handling">
-<span class="md-ellipsis">
-      Error Handling
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#detailed-semantics">
-<span class="md-ellipsis">
-      Detailed Semantics
-    </span>
-</a>
-</li>
-</ul>
-</nav>
 </li>
 </ul>
 </nav>
@@ -631,65 +582,16 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#behavior-tenets">
+<a class="md-nav__link" href="#deployment-components">
 <span class="md-ellipsis">
-      Behavior Tenets
+      Deployment Components
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#reading-and-writing-files">
+<a class="md-nav__link" href="#key-deployment-characteristics">
 <span class="md-ellipsis">
-      Reading and Writing Files
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#directories">
-<span class="md-ellipsis">
-      Directories
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#permissions-and-metadata">
-<span class="md-ellipsis">
-      Permissions and Metadata
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#consistency-and-concurrency">
-<span class="md-ellipsis">
-      Consistency and Concurrency
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#caching">
-<span class="md-ellipsis">
-      Caching
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#durability">
-<span class="md-ellipsis">
-      Durability
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#error-handling">
-<span class="md-ellipsis">
-      Error Handling
-    </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#detailed-semantics">
-<span class="md-ellipsis">
-      Detailed Semantics
+      Key Deployment Characteristics
     </span>
 </a>
 </li>
@@ -700,106 +602,299 @@
 </div>
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
-<h1 id="mountpoint-for-amazon-s3-file-system-behavior">Mountpoint for Amazon S3 File System Behavior</h1>
-<p>The Scality CSI Driver for S3 uses Mountpoint for Amazon S3 to present S3-compatible buckets as filesystems.
-All file system semantics are inherited from Mountpoint for Amazon S3, and are compatible with Scality S3 and any S3-compatible storage.
-This documentation describes only the behavior relevant to S3 Standard buckets.
-Features specific to AWS services other than S3, such as S3 Express One Zone, Glacier, or Archive storage classes, are not supported nor relevant.</p>
-<h2 id="behavior-tenets">Behavior Tenets</h2>
-<ol>
-<li>Mountpoint does not support file behaviors that cannot be implemented efficiently against S3's object APIs.
-   It does not emulate operations like <code>rename</code> that would require many API calls to S3 to perform.</li>
-<li>Mountpoint presents a common view of S3 object data through both file and object APIs.
-   It does not emulate POSIX file features that have no close analog in S3's object APIs, such as mutable ownership and permissions.</li>
-<li>When these tenets conflict with POSIX requirements, Mountpoint fails early and explicitly.
-   It will cause end user applications to fail with IO errors rather than silently accept operations that will never succeed, such as extended attributes.</li>
-</ol>
-<h2 id="reading-and-writing-files">Reading and Writing Files</h2>
-<ul>
-<li>Supports opening and reading existing objects, optimized for large sequential reads.</li>
-<li>Supports random reads and seeking within existing objects.</li>
-<li>Supports creating new objects by writing new files.</li>
-<li>With <code>--allow-overwrite</code>, supports replacing existing objects (must use <code>O_TRUNC</code> to truncate).</li>
-<li>Writes must always start from the beginning and be sequential.</li>
-<li>Uploads are asynchronous and optimized for throughput; use <code>fsync</code> to guarantee upload before closing.</li>
-<li>Cannot continue writing after <code>fsync</code>.</li>
-<li>New or overwritten objects are visible to other S3 clients only after closing or <code>fsync</code>.</li>
-<li>By default, deleting objects (<code>rm</code>) is not allowed; enable with <code>--allow-delete</code>.</li>
-<li>Delete operations immediately remove the object from S3.</li>
-<li>Cannot delete a file while it is being written.</li>
-<li>Renaming files is not supported.</li>
-</ul>
-<h2 id="directories">Directories</h2>
-<ul>
-<li>S3 is flat; Mountpoint infers directories from <code>/</code> in object keys.</li>
-<li>Not all S3 object keys correspond to valid file names; some objects may not be accessible.</li>
-<li>If a directory and file share a name, only the directory is accessible.</li>
-<li>Creating directories (<code>mkdir</code>) is local and not persisted to S3 until a file is written inside.</li>
-<li>Cannot remove or rename existing directories; can remove new local directories if empty.</li>
-<li>No support for hard or symbolic links.</li>
-</ul>
-<h2 id="permissions-and-metadata">Permissions and Metadata</h2>
-<ul>
-<li>By default, files/directories are readable only by the mounting user.</li>
-<li>Use <code>--allow-other</code> to allow access by other users.</li>
-<li>Default permissions and owners can be overridden at mount time with <code>--uid</code>, <code>--gid</code>, <code>--file-mode</code>, <code>--dir-mode</code>.</li>
-<li>Permissions are emulated and cannot be changed after mount.</li>
-<li>Mountpoint respects S3 IAM, bucket policies, and ACLs.</li>
-<li>Limited support for file metadata (modification times, sizes); cannot modify metadata.</li>
-</ul>
-<h2 id="consistency-and-concurrency">Consistency and Concurrency</h2>
-<ul>
-<li>S3 provides strong read-after-write consistency for PUT and DELETE.</li>
-<li>Mountpoint provides strong read-after-write consistency for file writes, directory listings, and new object creation.</li>
-<li>Modifying/deleting an object with another client may result in stale metadata for up to 1 second.</li>
-<li>Directory listings are always up-to-date.</li>
-<li>Multiple readers can access the same object, but only one writer can do so at a time.</li>
-<li>Files being written are not available for reading until closed.</li>
-<li>No coordination between multiple Mountpoint mounts for the same bucket; do not write to the same object from multiple instances.</li>
-<li>New file uploads are atomic by default.</li>
-</ul>
-<h2 id="caching">Caching</h2>
-<ul>
-<li>Optional metadata and object content caching is available.</li>
-<li>With caching, strong consistency is relaxed; may see stale data for up to the cache's TTL.</li>
-<li>Use <code>O_DIRECT</code> to force up-to-date reads.</li>
-<li>Caching does not affect write behavior; files being written are unavailable until closed.</li>
-</ul>
-<h2 id="durability">Durability</h2>
-<ul>
-<li>Mountpoint translates file operations into S3 API calls, relying on S3's data integrity mechanisms.</li>
-<li>For end-to-end integrity, use SDKs and checksums.</li>
-</ul>
-<h2 id="error-handling">Error Handling</h2>
-<ul>
-<li>File operations may fail due to network or S3 errors; Mountpoint uses retries and backoff.</li>
-<li>Use <code>fsync</code> to ensure files are uploaded; errors on <code>fsync</code> mean the file may not be uploaded.</li>
-</ul>
-<h2 id="detailed-semantics">Detailed Semantics</h2>
-<h3 id="mapping-s3-object-keys-to-files-and-directories">Mapping S3 Object Keys to Files and Directories</h3>
-<ul>
-<li>Keys are split on <code>/</code> to form file system paths.</li>
-<li>Some S3 keys (null bytes, <code>.</code>/<code>..</code>, trailing <code>/</code>, conflicts) are not accessible.</li>
-<li>Directories shadow files of the same name.</li>
-<li>Remote directories shadow local directories/files.</li>
-<li>Windows-style path delimiters (<code>\</code>) are not supported.</li>
-</ul>
-<h3 id="file-operations">File Operations</h3>
-<ul>
-<li><strong>Reads</strong>: Fully supported, including sequential and random reads.</li>
-<li><strong>Writes</strong>: Sequential only; must start at beginning. Overwrites require <code>O_TRUNC</code> and <code>--allow-overwrite</code>.</li>
-<li><strong>Deletes</strong>: Enabled with <code>--allow-delete</code>; immediate removal from S3.</li>
-<li><strong>Renames</strong>: Not supported.</li>
-<li><strong>Directory operations</strong>: Read-only operations supported; <code>mkdir</code> is local until a file is written. <code>rmdir</code> only deletes empty local directories.</li>
-<li><strong>Metadata</strong>: Reading supported with limitations; modifying not supported.</li>
-<li><strong>Links</strong>: Hard and symbolic links are not supported.</li>
-</ul>
-<h3 id="consistency">Consistency</h3>
-<ul>
-<li>Strong read-after-write for new objects and writes.</li>
-<li>Stale metadata possible for up to 1 second after concurrent modification/deletion by another client.</li>
-</ul>
-<p>For more details, see the <a href="https://github.com/awslabs/mountpoint-s3/blob/main/doc/SEMANTICS.md">Mountpoint for Amazon S3 documentation</a>.</p>
+<h1 id="deployment-architecture">Deployment Architecture</h1>
+<p>This document illustrates the deployment topology of the Scality CSI Driver for S3, showing how components are distributed across a Kubernetes cluster.</p>
+<div align="center">
+<div class="panzoom-box" data-key="ctrl" id="panzoom0" oncontextmenu="return false;"><nav class="panzoom-top-nav"><button class="panzoom-info panzoom-button"><svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path></svg></button><button class="panzoom-reset panzoom-button"><svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M125.7 160l50.3 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L48 224c-17.7 0-32-14.3-32-32L16 64c0-17.7 14.3-32 32-32s32 14.3 32 32l0 51.2L97.6 97.6c87.5-87.5 229.3-87.5 316.8 0s87.5 229.3 0 316.8s-229.3 87.5-316.8 0c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0c62.5 62.5 163.8 62.5 226.3 0s62.5-163.8 0-226.3s-163.8-62.5-226.3 0L125.7 160z"></path></svg></button><button class="panzoom-max panzoom-button"><svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path></svg></button><button class="panzoom-min panzoom-button panzoom-hidden"><svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 320c-17.7 0-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0z"></path></svg></button></nav><pre class="mermaid"><code>graph TB
+    subgraph cluster["Kubernetes Cluster"]
+        subgraph node1["Kubernetes Node 1"]
+            K1[Kubelet]
+            subgraph ds1["CSI Driver Pod (DaemonSet)"]
+                N1[CSI Driver Node Service]
+                R1[CSI Driver Registrar Sidecar]
+                L1[CSI Driver Liveness Probe]
+            end
+            subgraph init1["CSI Driver Init Container"]
+                I1[mount-s3 Installer: Copies binary to host]
+            end
+            S1[Host systemd]
+            M1[mount-s3 FUSE processes: One per mounted volume]
+            A1[Application Pods]
+        end
+
+        subgraph node2["Kubernetes Node 2"]
+            K2[Kubelet]
+            subgraph ds2["CSI Driver Pod (DaemonSet)"]
+                N2[CSI Driver Node Service]
+                R2[CSI Driver Registrar Sidecar]
+                L2[CSI Driver Liveness Probe]
+            end
+            subgraph init2["CSI Driver Init Container"]
+                I2[mount-s3 Installer: Copies binary to host]
+            end
+            S2[Host systemd]
+            M2[mount-s3 FUSE processes: One per mounted volume]
+            A2[Application Pods]
+        end
+
+        subgraph node3["Kubernetes Node N..."]
+            K3[Kubelet]
+            subgraph ds3["CSI Driver Pod (DaemonSet)"]
+                N3[CSI Driver Node Service]
+                R3[CSI Driver Registrar Sidecar]
+                L3[CSI Driver Liveness Probe]
+            end
+            subgraph init3["CSI Driver Init Container"]
+                I3[mount-s3 Installer: Copies binary to host]
+            end
+            S3[Host systemd]
+            M3[mount-s3 FUSE processes: One per mounted volume]
+            A3[Application Pods]
+        end
+
+
+    end
+
+    S3Storage[S3 Storage Endpoint]
+
+    %% Init container flow
+    I1 -.-&gt;|Install binary to /opt/mountpoint-s3-csi/bin/| S1
+    I2 -.-&gt;|Install binary to /opt/mountpoint-s3-csi/bin/| S2
+    I3 -.-&gt;|Install binary to /opt/mountpoint-s3-csi/bin/| S3
+
+    %% CSI Driver Registration
+    R1 --&gt;|Register via /registration/ entry| K1
+    R2 --&gt;|Register via /registration/ entry| K2
+    R3 --&gt;|Register via /registration/ entry| K3
+
+    %% Health monitoring
+    L1 --&gt;|Monitor Unix socket /csi/csi.sock| N1
+    L2 --&gt;|Monitor Unix socket /csi/csi.sock| N2
+    L3 --&gt;|Monitor Unix socket /csi/csi.sock| N3
+
+    %% Node operations
+    K1 --&gt;|Volume requests via gRPC on host Unix socket| N1
+    K2 --&gt;|Volume requests via gRPC on host Unix socket| N2
+    K3 --&gt;|Volume requests via gRPC on host Unix socket| N3
+
+    N1 --&gt;|Create/stop services via D-Bus| S1
+    N2 --&gt;|Create/stop services via D-Bus| S2
+    N3 --&gt;|Create/stop services via D-Bus| S3
+
+    S1 --&gt;|Start/stop/monitor processes| M1
+    S2 --&gt;|Start/stop/monitor processes| M2
+    S3 --&gt;|Start/stop/monitor processes| M3
+
+    %% Application access
+    A1 --&gt;|File I/O| M1
+    A2 --&gt;|File I/O| M2
+    A3 --&gt;|File I/O| M3
+
+    %% S3 connections
+    M1 --&gt;|S3 API| S3Storage
+    M2 --&gt;|S3 API| S3Storage
+    M3 --&gt;|S3 API| S3Storage
+
+    %% Styling for clarity without colors
+    classDef optional stroke-dasharray: 5 5
+</code></pre><div class="panzoom-info-box panzoom-hidden">Press "Ctrl" to enable Pan &amp; Zoom</div></div>
+</div>
+<h2 id="deployment-components">Deployment Components</h2>
+<h3 id="pod-components">Pod Components</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Type</th>
+<th>Purpose</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>mount-s3 Installer</strong></td>
+<td>Init Container</td>
+<td>Binary deployment</td>
+<td>• Copies <code>mount-s3</code> binary from container to host at <code>/opt/mountpoint-s3-csi/bin/</code><br/>• Runs first and must complete successfully before main containers start<br/>• Required because systemd executes processes on host filesystem<br/>• Sets appropriate file permissions for systemd execution</td>
+</tr>
+<tr>
+<td><strong>CSI Driver Node Service</strong></td>
+<td>Main Container</td>
+<td>Core CSI functionality</td>
+<td>• Binary: <code>scality-s3-csi-driver</code><br/>• Creates gRPC server on <code>/csi/csi.sock</code> Unix socket file<br/>• Exposes HTTP <code>/healthz</code> endpoint for Kubernetes liveness probe<br/>• Pod restart triggered if HTTP health check fails<br/>• Handles volume mount/unmount operations by launching <code>mount-s3</code> binary installed by init container<br/>• Manages systemd services via D-Bus that execute the <code>mount-s3</code> binary installed by init container</td>
+</tr>
+<tr>
+<td><strong>CSI Driver Registrar</strong></td>
+<td>Sidecar</td>
+<td>Kubelet registration</td>
+<td>• Creates registration entry in <code>/registration/</code> directory watched by kubelet<br/>• Registration entry announces CSI driver name <code>s3.csi.scality.com</code> and Unix socket location <code>/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock</code><br/>• Maintains registration while driver is deployed on node<br/>• Has own liveness probe for registration health<br/>• Uses standard Kubernetes CSI node-driver-registrar sidecar</td>
+</tr>
+<tr>
+<td><strong>CSI Driver Liveness Probe</strong></td>
+<td>Sidecar</td>
+<td>CSI socket health logging</td>
+<td>• Checks CSI Driver Node Service via <code>/csi/csi.sock</code> Unix socket file<br/>• Logs health status to container logs for troubleshooting<br/>• Does NOT trigger pod restarts (logging only)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="host-level-components">Host-Level Components</h3>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Component</th>
+<th>Purpose</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Per Kubernetes Node</strong></td>
+<td>Host systemd</td>
+<td>Service management</td>
+<td>• Host's service manager receiving D-Bus commands from CSI Driver Node Service<br/>• Creates transient systemd services that execute <code>mount-s3</code> binary installed by init container<br/>• Manages service lifecycle: start, stop, monitor mount processes<br/>• Provides process supervision and cleanup on service failures<br/>• Runs on host filesystem context, not in container</td>
+</tr>
+<tr>
+<td><strong>Per Volume</strong></td>
+<td>mount-s3 FUSE processes</td>
+<td>S3 filesystem mounting</td>
+<td>• One process per mounted volume using <code>mount-s3</code> binary installed by init container<br/>• Executed by systemd services created via D-Bus by CSI Driver Node Service<br/>• Creates FUSE mount presenting S3 bucket as POSIX filesystem<br/>• Handles S3 API communication, caching, and file system semantics</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-deployment-characteristics">Key Deployment Characteristics</h2>
+<h3 id="resource-distribution">Resource Distribution</h3>
+<table>
+<thead>
+<tr>
+<th>Resource Scope</th>
+<th>What Gets Deployed</th>
+<th>Deployment Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Per Kubernetes Node</strong></td>
+<td>One CSI Driver pod</td>
+<td>DaemonSet</td>
+</tr>
+<tr>
+<td><strong>Per Volume</strong></td>
+<td>One mount-s3 process</td>
+<td>systemd service</td>
+</tr>
+</tbody>
+</table>
+<h3 id="communication-paths">Communication Paths</h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>From</th>
+<th>To</th>
+<th>Protocol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CSI Driver Registration</strong></td>
+<td>CSI Driver Registrar</td>
+<td>Kubelet</td>
+<td>Unix socket <code>/registration/</code></td>
+<td>Register driver per Kubernetes node</td>
+</tr>
+<tr>
+<td><strong>Volume Operations</strong></td>
+<td>Kubelet</td>
+<td>CSI Driver Node Service</td>
+<td>gRPC on Unix socket <code>/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock</code></td>
+<td>Mount/unmount requests</td>
+</tr>
+<tr>
+<td><strong>Health Monitoring</strong></td>
+<td>CSI Driver Liveness Probe</td>
+<td>CSI Driver Node Service</td>
+<td>gRPC on Unix socket <code>/csi/csi.sock</code></td>
+<td>Health status checks</td>
+</tr>
+<tr>
+<td><strong>Service Management</strong></td>
+<td>CSI Driver Node Service</td>
+<td>systemd</td>
+<td>D-Bus on <code>/run/systemd/</code></td>
+<td>Create/stop services</td>
+</tr>
+<tr>
+<td><strong>File I/O</strong></td>
+<td>Application pods</td>
+<td>mount-s3 processes</td>
+<td>FUSE</td>
+<td>File system operations</td>
+</tr>
+<tr>
+<td><strong>Storage Access</strong></td>
+<td>mount-s3 processes</td>
+<td>S3 endpoint</td>
+<td>HTTPS</td>
+<td>S3 API calls</td>
+</tr>
+</tbody>
+</table>
+<h3 id="host-mounts-required">Host Mounts Required</h3>
+<table>
+<thead>
+<tr>
+<th>Host Path</th>
+<th>Purpose</th>
+<th>Used By</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/var/lib/kubelet/plugins/s3.csi.scality.com/</code></td>
+<td>CSI driver Unix socket creation and registration info storage</td>
+<td>CSI Driver Node Service (creates gRPC socket), kubelet (volume operations), CSI Driver Registrar (driver registration), CSI Driver Liveness Probe (health checks)</td>
+</tr>
+<tr>
+<td><code>/var/lib/kubelet/pods/&lt;pod-id&gt;/volumes/kubernetes.io~csi/&lt;volume-id&gt;/mount/</code></td>
+<td>S3 bucket content mount point for application access</td>
+<td>kubelet (creates mount point directory), mount-s3 processes (FUSE filesystem), Application pods (file I/O)</td>
+</tr>
+<tr>
+<td><code>/run/systemd/</code></td>
+<td>D-Bus socket for systemd service lifecycle management</td>
+<td>systemd (owns D-Bus sockets), CSI Driver Node Service (D-Bus client for service management)</td>
+</tr>
+<tr>
+<td><code>/opt/mountpoint-s3-csi/bin/mount-s3</code></td>
+<td>FUSE mount binary executable storage</td>
+<td>mount-s3 Installer (creates binary file), systemd transient services (execute FUSE mounts)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scaling-behavior">Scaling Behavior</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Scaling Behavior</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Kubernetes Nodes</strong></td>
+<td>Automatic deployment to new nodes</td>
+<td>DaemonSet controller</td>
+</tr>
+<tr>
+<td><strong>Volumes</strong></td>
+<td>One process per volume</td>
+<td>systemd service creation</td>
+</tr>
+</tbody>
+</table>
 </article>
 </div>
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
@@ -827,5 +922,8 @@ Features specific to AWS services other than S3, such as S3 Express One Zone, Gl
 </div>
 <script id="__config" type="application/json">{"base": "../..", "features": ["search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
 <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
-<script src="../../assets/javascripts/panzoom.min.js"></script><script src="../../assets/javascripts/zoompan.js"></script></body>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script><script src="../../assets/javascripts/panzoom.min.js"></script><script src="../../assets/javascripts/zoompan.js"></script></body>
 </html>
