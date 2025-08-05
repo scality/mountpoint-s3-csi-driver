@@ -2,7 +2,7 @@
 
 ## [1.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.1.1)
 
-August 4, 2025
+August 5, 2025
 
 ### What's New
 
@@ -24,6 +24,15 @@ June 26, 2025
 ### What's New
 
 - Enabled `force-path-style` at the driver level to support fully qualified domain names (FQDNs) for RING S3 endpoints.
+
+## [1.0.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.0.1)
+
+August 5, 2025
+
+### What's Changed
+
+- Documentation update: Renamed from "Scality S3 CSI Driver" to "Scality CSI Driver for S3" to comply with AWS copyright policies.
+- No functional changes to the service or driver behavior.
 
 ## [1.0.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.0.0)
 

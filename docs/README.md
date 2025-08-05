@@ -42,6 +42,7 @@ Review [release notes](release-notes.md) for breaking changes and the [releases 
     | Driver Version | Image URL                                                                 |
     |---------------|----------------------------------------------------------------------------|
     | 1.1.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.1.0`                           |
+    | 1.0.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.1`                           |
     | 1.0.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.0`                           |
 
 ## Support and Community
