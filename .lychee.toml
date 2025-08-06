@@ -85,6 +85,10 @@ exclude = [
     "<[^>]+>",
     "\\$\\{[^}]+\\}",
     "\\{\\{[^}]+\\}\\}",
+
+    # Exclude problematic installation URLs in Dockerfile
+    "^https?://baltocdn\\.com/helm/stable/debian/",
+    "^https?://dl\\.k8s\\.io/release/\\$\\(",
 ]
 
 # Include patterns (regex) - only check these if specified
