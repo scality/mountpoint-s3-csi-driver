@@ -2,6 +2,8 @@ package storageclass
 
 import (
 	"testing"
+
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 )
 
 func TestParseAndValidate(t *testing.T) {
@@ -30,8 +32,8 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "static secret parameters - secret credentials",
 			parameters: map[string]string{
-				ProvisionerSecretNameKey:      "tenant-a-creds",
-				ProvisionerSecretNamespaceKey: "tenant-a",
+				constants.ProvisionerSecretNameKey:      "tenant-a-creds",
+				constants.ProvisionerSecretNamespaceKey: "tenant-a",
 			},
 			expected: &Parameters{
 				ProvisionerSecretName:      "tenant-a-creds",
@@ -43,8 +45,8 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "secret parameters - secret credentials",
 			parameters: map[string]string{
-				ProvisionerSecretNameKey:      "web-app-storage-creds",
-				ProvisionerSecretNamespaceKey: "production",
+				constants.ProvisionerSecretNameKey:      "web-app-storage-creds",
+				constants.ProvisionerSecretNamespaceKey: "production",
 			},
 			expected: &Parameters{
 				ProvisionerSecretName:      "web-app-storage-creds",
@@ -56,8 +58,8 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "mixed secret parameters - secret credentials",
 			parameters: map[string]string{
-				ProvisionerSecretNameKey:      "app-specific-creds",
-				ProvisionerSecretNamespaceKey: "default",
+				constants.ProvisionerSecretNameKey:      "app-specific-creds",
+				constants.ProvisionerSecretNamespaceKey: "default",
 			},
 			expected: &Parameters{
 				ProvisionerSecretName:      "app-specific-creds",
@@ -69,7 +71,7 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "secret name without namespace - should error",
 			parameters: map[string]string{
-				ProvisionerSecretNameKey: "tenant-a-creds",
+				constants.ProvisionerSecretNameKey: "tenant-a-creds",
 			},
 			expected:  nil,
 			shouldErr: true,
@@ -77,7 +79,7 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "secret namespace without name - should error",
 			parameters: map[string]string{
-				ProvisionerSecretNamespaceKey: "tenant-a",
+				constants.ProvisionerSecretNamespaceKey: "tenant-a",
 			},
 			expected:  nil,
 			shouldErr: true,
@@ -85,12 +87,12 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "unsupported parameters are stripped",
 			parameters: map[string]string{
-				ProvisionerSecretNameKey:      "test-creds",
-				ProvisionerSecretNamespaceKey: "default",
-				NodePublishSecretNameKey:      "test-creds",
-				NodePublishSecretNamespaceKey: "default",
-				"customParam":                 "ignored-value",
-				"anotherParam":                "also-ignored",
+				constants.ProvisionerSecretNameKey:      "test-creds",
+				constants.ProvisionerSecretNamespaceKey: "default",
+				constants.NodePublishSecretNameKey:      "test-creds",
+				constants.NodePublishSecretNamespaceKey: "default",
+				"customParam":                           "ignored-value",
+				"anotherParam":                          "also-ignored",
 			},
 			expected: &Parameters{
 				ProvisionerSecretName:      "test-creds",
@@ -104,8 +106,8 @@ func TestParseAndValidate(t *testing.T) {
 		{
 			name: "whitespace trimming",
 			parameters: map[string]string{
-				ProvisionerSecretNameKey:      "  test-creds  ",
-				ProvisionerSecretNamespaceKey: "  default  ",
+				constants.ProvisionerSecretNameKey:      "  test-creds  ",
+				constants.ProvisionerSecretNamespaceKey: "  default  ",
 			},
 			expected: &Parameters{
 				ProvisionerSecretName:      "test-creds",
