@@ -23,6 +23,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
@@ -31,6 +32,7 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
@@ -60,6 +62,11 @@ type Driver struct {
 
 	// Controller credential provider for dynamic provisioning
 	controllerCredProvider *controllerCredProvider.Provider
+
+	// Test S3 client factory for dependency injection in tests.
+	// When set, this function is used instead of the real S3 client to enable
+	// mocking during unit tests, preventing real S3 API calls in unit test scenarios.
+	testS3ClientFactory func(context.Context, *aws.Config) (s3client.Client, error)
 
 	stopCh chan struct{}
 
