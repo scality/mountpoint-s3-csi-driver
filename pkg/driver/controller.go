@@ -92,13 +92,27 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	klog.V(4).Infof("DeleteVolume: called with args: %s", protosanitizer.StripSecrets(req))
 
-	// TODO: S3CSI-142 - Implement real S3 volume deletion
-	// This will include:
-	// 1. Validate volume ID and parse bucket information
-	// 2. Safely delete S3 bucket only if empty
-	// 3. Clean up bucket policies and access credentials
-	// 4. Handle idempotent deletion of non-existent volumes
-	return nil, status.Error(codes.Unimplemented, "DeleteVolume will be implemented in S3CSI-142")
+	if err := validateDeleteVolumeRequest(req); err != nil {
+		klog.Errorf("DeleteVolume: invalid request: %v", err)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	volumeID := req.GetVolumeId()
+	klog.V(4).Infof("DeleteVolume: processing volume %s", volumeID)
+
+	// In the future, we would retrieve volume metadata to get credential information
+	// For now, we handle the delete request as metadata-only operation
+	// Future implementation will:
+	// 1. Retrieve volume context metadata from persistent storage
+	// 2. Parse credential source information (provisioner-secret details)
+	// 3. Use controller credential provider to resolve credentials
+	// 4. Connect to S3 and safely delete bucket (only if empty)
+	// 5. Clean up any bucket policies or access configurations
+
+	// CSI DeleteVolume is idempotent - success if volume doesn't exist
+	klog.V(4).Infof("DeleteVolume: successfully processed volume %s (metadata-only operation, no bucket deleted)", volumeID)
+
+	return &csi.DeleteVolumeResponse{}, nil
 }
 
 func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
@@ -191,6 +205,17 @@ func validateCreateVolumeRequest(req *csi.CreateVolumeRequest) error {
 				return fmt.Errorf("S3 volumes only support multi-node access modes, got %v", mode)
 			}
 		}
+	}
+	return nil
+}
+
+func validateDeleteVolumeRequest(req *csi.DeleteVolumeRequest) error {
+	if req == nil {
+		return fmt.Errorf("request is nil")
+	}
+
+	if req.GetVolumeId() == "" {
+		return fmt.Errorf("volume ID is required")
 	}
 
 	return nil

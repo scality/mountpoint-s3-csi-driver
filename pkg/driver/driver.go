@@ -186,7 +186,9 @@ func (d *Driver) Stop() {
 		close(d.stopCh)
 		d.stopCh = nil
 	}
-	d.Srv.Stop()
+	if d.Srv != nil {
+		d.Srv.Stop()
+	}
 }
 
 func kubernetesVersion(clientset *kubernetes.Clientset) (string, error) {
