@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
@@ -56,6 +57,9 @@ type Driver struct {
 	NodeID   string
 
 	NodeServer *node.S3NodeServer
+
+	// Controller credential provider for dynamic provisioning
+	controllerCredProvider *controllerCredProvider.Provider
 
 	stopCh chan struct{}
 
@@ -116,11 +120,15 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 
 	nodeServer := node.NewS3NodeServer(nodeID, mounterImpl)
 
+	// Initialize controller credential provider for dynamic provisioning
+	controllerCredProvider := controllerCredProvider.New(clientset)
+
 	return &Driver{
-		Endpoint:   endpoint,
-		NodeID:     nodeID,
-		NodeServer: nodeServer,
-		stopCh:     stopCh,
+		Endpoint:               endpoint,
+		NodeID:                 nodeID,
+		NodeServer:             nodeServer,
+		controllerCredProvider: controllerCredProvider,
+		stopCh:                 stopCh,
 	}, nil
 }
 

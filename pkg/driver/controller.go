@@ -18,24 +18,75 @@ package driver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/google/uuid"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
+
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/storageclass"
 )
+
+const defaultVolumeCapacityBytes int64 = 1 << 30 // 1 GiB
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	klog.V(4).Infof("CreateVolume: called with args %s", protosanitizer.StripSecrets(req))
 
-	// TODO: S3CSI-141 - Implement real S3 volume provisioning
-	// This will include:
-	// 1. Parse StorageClass parameters for bucket configuration
-	// 2. Create S3 bucket with proper naming and policies
-	// 3. Set up credential management for bucket access
-	// 4. Return volume with actual S3 bucket information
-	return nil, status.Error(codes.Unimplemented, "CreateVolume will be implemented in S3CSI-141")
+	if err := validateCreateVolumeRequest(req); err != nil {
+		klog.Errorf("CreateVolume: invalid request: %v", err)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	params, err := storageclass.ParseAndValidate(req.GetParameters())
+	if err != nil {
+		klog.Errorf("CreateVolume: failed to parse StorageClass parameters: %v", err)
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("failed to parse StorageClass parameters: %v", err))
+	}
+
+	volumeID := generateVolumeID()
+	klog.V(4).Infof("Generated volume ID: %s", volumeID)
+
+	creds, err := d.controllerCredProvider.ProvideForCreateVolume(ctx, params)
+	if err != nil {
+		klog.Errorf("CreateVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to resolve credentials: %v", err))
+	}
+
+	klog.V(4).Infof("Resolved credentials for volume %s using authentication tier: %s", volumeID, params.AuthTier)
+	_ = creds // Credentials resolved but not used right now, we will use them once we implement the actual bucket creation
+
+	volumeContext := map[string]string{
+		"dynamicProvisioning": "true",
+		"bucketName":          volumeID,
+	}
+
+	if params.HasProvisionerSecret() {
+		volumeContext[constants.VolumeContextProvisionerSecretNameKey] = params.ProvisionerSecretName
+		volumeContext[constants.VolumeContextProvisionerSecretNamespaceKey] = params.ProvisionerSecretNamespace
+	}
+
+	if params.HasNodePublishSecret() {
+		volumeContext["node-publish-secret-name"] = params.NodePublishSecretName
+		volumeContext["node-publish-secret-namespace"] = params.NodePublishSecretNamespace
+	}
+
+	capacity := req.GetCapacityRange().GetRequiredBytes()
+	if capacity == 0 {
+		capacity = defaultVolumeCapacityBytes
+	}
+
+	klog.V(4).Infof("CreateVolume: successfully created volume %s with metadata only (no bucket created)", volumeID)
+	return &csi.CreateVolumeResponse{
+		Volume: &csi.Volume{
+			VolumeId:      volumeID,
+			CapacityBytes: capacity,
+			VolumeContext: volumeContext,
+		},
+	}, nil
 }
 
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
@@ -114,4 +165,37 @@ func (d *Driver) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 
 func (d *Driver) ControllerModifyVolume(context.Context, *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func validateCreateVolumeRequest(req *csi.CreateVolumeRequest) error {
+	if req == nil {
+		return fmt.Errorf("request is nil")
+	}
+
+	if req.GetName() == "" {
+		return fmt.Errorf("volume name is required")
+	}
+
+	if len(req.GetVolumeCapabilities()) > 0 {
+		for _, cap := range req.GetVolumeCapabilities() {
+			if cap.GetAccessMode() == nil {
+				return fmt.Errorf("volume capability access mode is required")
+			}
+			mode := cap.GetAccessMode().GetMode()
+			// S3 only supports multi-node access modes since it's object storage
+			// Single-node modes don't make sense for S3
+			if mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER ||
+				mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY ||
+				mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER ||
+				mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER {
+				return fmt.Errorf("S3 volumes only support multi-node access modes, got %v", mode)
+			}
+		}
+	}
+
+	return nil
+}
+
+func generateVolumeID() string {
+	return fmt.Sprintf("csi-s3-%s", uuid.NewString())
 }
