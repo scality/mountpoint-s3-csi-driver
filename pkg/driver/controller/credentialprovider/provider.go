@@ -7,12 +7,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,9 +32,8 @@ type CredentialCacheEntry struct {
 type Provider struct {
 	client kubernetes.Interface
 
-	// Credential cache for performance optimization and Kubernetes API rate limiting
-	credentialCache map[string]*CredentialCacheEntry
-	cacheMutex      sync.RWMutex
+	// TTL-based, size-bounded cache for credentials
+	cache *expirable.LRU[string, aws.Config]
 
 	// Cache TTL for credential validation results
 	cacheTTL time.Duration
@@ -42,19 +41,22 @@ type Provider struct {
 
 // New creates a new controller credential provider
 func New(client kubernetes.Interface) *Provider {
+	ttl := 5 * time.Minute
+	lruCache := expirable.NewLRU[string, aws.Config](512, nil, ttl)
 	return &Provider{
-		client:          client,
-		credentialCache: make(map[string]*CredentialCacheEntry),
-		cacheTTL:        5 * time.Minute, // Default cache TTL
+		client:   client,
+		cache:    lruCache,
+		cacheTTL: ttl,
 	}
 }
 
 // NewWithCacheTTL creates a new controller credential provider with custom cache TTL
 func NewWithCacheTTL(client kubernetes.Interface, cacheTTL time.Duration) *Provider {
+	lruCache := expirable.NewLRU[string, aws.Config](512, nil, cacheTTL)
 	return &Provider{
-		client:          client,
-		credentialCache: make(map[string]*CredentialCacheEntry),
-		cacheTTL:        cacheTTL,
+		client:   client,
+		cache:    lruCache,
+		cacheTTL: cacheTTL,
 	}
 }
 
@@ -118,13 +120,10 @@ func (p *Provider) getSecretCredentials(ctx context.Context, secretName, secretN
 	cacheKey := fmt.Sprintf("%s/%s", secretNamespace, secretName)
 
 	// Check cache first
-	p.cacheMutex.RLock()
-	if entry, exists := p.credentialCache[cacheKey]; exists && time.Now().Before(entry.ExpiresAt) {
-		p.cacheMutex.RUnlock()
+	if cfg, ok := p.cache.Get(cacheKey); ok {
 		klog.V(5).InfoS("Using cached credentials", "secretName", secretName, "secretNamespace", secretNamespace)
-		return entry.Config, nil
+		return cfg, nil
 	}
-	p.cacheMutex.RUnlock()
 
 	// Retrieve secret from Kubernetes API
 	secret, err := p.client.CoreV1().Secrets(secretNamespace).Get(ctx, secretName, metav1.GetOptions{})
@@ -138,18 +137,13 @@ func (p *Provider) getSecretCredentials(ctx context.Context, secretName, secretN
 	}
 
 	// Create AWS config from secret data
-	awsConfig, err := p.CreateAWSConfigFromSecret(secret)
+	awsConfig, err := p.CreateAWSConfigFromSecret(ctx, secret)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to create AWS config from secret %s/%s: %w", secretNamespace, secretName, err)
 	}
 
 	// Cache the credentials
-	p.cacheMutex.Lock()
-	p.credentialCache[cacheKey] = &CredentialCacheEntry{
-		Config:    awsConfig,
-		ExpiresAt: time.Now().Add(p.cacheTTL),
-	}
-	p.cacheMutex.Unlock()
+	p.cache.Add(cacheKey, awsConfig)
 
 	klog.V(4).InfoS("Retrieved and cached secret credentials", "secretName", secretName, "secretNamespace", secretNamespace)
 	return awsConfig, nil
@@ -160,13 +154,10 @@ func (p *Provider) getDriverCredentials(ctx context.Context) (aws.Config, error)
 	cacheKey := "driver-credentials"
 
 	// Check cache first
-	p.cacheMutex.RLock()
-	if entry, exists := p.credentialCache[cacheKey]; exists && time.Now().Before(entry.ExpiresAt) {
-		p.cacheMutex.RUnlock()
+	if cfg, ok := p.cache.Get(cacheKey); ok {
 		klog.V(5).InfoS("Using cached driver credentials")
-		return entry.Config, nil
+		return cfg, nil
 	}
-	p.cacheMutex.RUnlock()
 
 	// Load driver credentials using default credential chain
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -175,46 +166,32 @@ func (p *Provider) getDriverCredentials(ctx context.Context) (aws.Config, error)
 	}
 
 	// Cache the driver credentials
-	p.cacheMutex.Lock()
-	p.credentialCache[cacheKey] = &CredentialCacheEntry{
-		Config:    cfg,
-		ExpiresAt: time.Now().Add(p.cacheTTL),
-	}
-	p.cacheMutex.Unlock()
+	p.cache.Add(cacheKey, cfg)
 
 	klog.V(4).InfoS("Loaded and cached driver credentials")
 	return cfg, nil
 }
 
-// ClearCache clears the credential cache (useful for testing or forced refresh)
-func (p *Provider) ClearCache() {
-	p.cacheMutex.Lock()
-	defer p.cacheMutex.Unlock()
-
-	p.credentialCache = make(map[string]*CredentialCacheEntry)
+func (p *Provider) clearCache() {
+	if p.cache != nil {
+		p.cache.Purge()
+	}
 	klog.V(4).InfoS("Cleared credential cache")
 }
 
 // GetCacheStats returns cache statistics for monitoring
 func (p *Provider) GetCacheStats() (total int, expired int) {
-	p.cacheMutex.RLock()
-	defer p.cacheMutex.RUnlock()
-
-	now := time.Now()
-	total = len(p.credentialCache)
-
-	for _, entry := range p.credentialCache {
-		if now.After(entry.ExpiresAt) {
-			expired++
-		}
+	if p.cache == nil {
+		return 0, 0
 	}
-
-	return total, expired
+	return p.cache.Len(), 0
 }
 
 // SetCacheTTL updates the cache TTL (useful for testing or runtime configuration)
 func (p *Provider) SetCacheTTL(ttl time.Duration) {
 	p.cacheTTL = ttl
+	lruCache := expirable.NewLRU[string, aws.Config](512, nil, ttl)
+	p.cache = lruCache
 	klog.V(4).InfoS("Updated credential cache TTL", "ttl", ttl)
 }
 
@@ -247,7 +224,7 @@ func (p *Provider) ValidateSecretCredentials(secret *corev1.Secret) error {
 // CreateAWSConfigFromSecret creates an AWS configuration using credentials from a Kubernetes secret.
 // The secret must contain at least access_key_id and secret_access_key fields.
 // Optional fields include session_token and region.
-func (p *Provider) CreateAWSConfigFromSecret(secret *corev1.Secret) (aws.Config, error) {
+func (p *Provider) CreateAWSConfigFromSecret(ctx context.Context, secret *corev1.Secret) (aws.Config, error) {
 	// Validate the secret first
 	if err := p.ValidateSecretCredentials(secret); err != nil {
 		return aws.Config{}, err
@@ -273,7 +250,7 @@ func (p *Provider) CreateAWSConfigFromSecret(secret *corev1.Secret) (aws.Config,
 	credsProvider := credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, sessionToken)
 
 	// Load base config with static credentials
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
+	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credsProvider),
 	)
 	if err != nil {

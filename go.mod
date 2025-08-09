@@ -99,6 +99,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/moby/sys/mountinfo v0.7.2 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	golang.org/x/net v0.42.0 // indirect

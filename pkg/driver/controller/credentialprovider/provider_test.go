@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,13 +18,14 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
 	if provider.client != client {
 		t.Error("Expected client to be set correctly")
 	}
-	if provider.credentialCache == nil {
+	if provider.cache == nil {
 		t.Error("Expected credential cache to be initialized")
 	}
 	if provider.cacheTTL != 5*time.Minute {
@@ -34,6 +34,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewWithCacheTTL(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	customTTL := 10 * time.Minute
 	provider := NewWithCacheTTL(client, customTTL)
@@ -44,6 +45,7 @@ func TestNewWithCacheTTL(t *testing.T) {
 }
 
 func TestProvideForCreateVolume_DriverCredentials(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -63,6 +65,7 @@ func TestProvideForCreateVolume_DriverCredentials(t *testing.T) {
 }
 
 func TestProvideForCreateVolume_ProvisionerSecret(t *testing.T) {
+	t.Parallel()
 	// Create a secret with valid AWS credentials
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -97,6 +100,7 @@ func TestProvideForCreateVolume_ProvisionerSecret(t *testing.T) {
 }
 
 func TestProvideForCreateVolume_ProvisionerSecret_Missing(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -118,6 +122,7 @@ func TestProvideForCreateVolume_ProvisionerSecret_Missing(t *testing.T) {
 }
 
 func TestProvideForDeleteVolume_DriverCredentials(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -138,6 +143,7 @@ func TestProvideForDeleteVolume_DriverCredentials(t *testing.T) {
 }
 
 func TestProvideForDeleteVolume_ProvisionerSecret(t *testing.T) {
+	t.Parallel()
 	// Create a secret with valid AWS credentials
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -171,6 +177,7 @@ func TestProvideForDeleteVolume_ProvisionerSecret(t *testing.T) {
 }
 
 func TestProvideForDeleteVolume_ProvisionerSecret_MissingNamespace(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -191,6 +198,7 @@ func TestProvideForDeleteVolume_ProvisionerSecret_MissingNamespace(t *testing.T)
 }
 
 func TestProvideForNodePublish_NodePublishSecret(t *testing.T) {
+	t.Parallel()
 	// Create a secret with valid AWS credentials
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -225,6 +233,7 @@ func TestProvideForNodePublish_NodePublishSecret(t *testing.T) {
 }
 
 func TestGetCredentialsFor_CreateVolume(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -244,6 +253,7 @@ func TestGetCredentialsFor_CreateVolume(t *testing.T) {
 }
 
 func TestGetCredentialsFor_NodePublishVolume(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -263,6 +273,7 @@ func TestGetCredentialsFor_NodePublishVolume(t *testing.T) {
 }
 
 func TestGetCredentialsFor_UnsupportedOperation(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 	provider := New(client)
 
@@ -282,6 +293,7 @@ func TestGetCredentialsFor_UnsupportedOperation(t *testing.T) {
 }
 
 func TestCredentialCaching(t *testing.T) {
+	t.Parallel()
 	// Create a secret with valid AWS credentials
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -332,6 +344,7 @@ func TestCredentialCaching(t *testing.T) {
 }
 
 func TestCredentialCacheExpiration(t *testing.T) {
+	t.Parallel()
 	// Create a secret with valid AWS credentials
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -377,6 +390,7 @@ func TestCredentialCacheExpiration(t *testing.T) {
 }
 
 func TestValidateSecretCredentials_Valid(t *testing.T) {
+	t.Parallel()
 	secret := &corev1.Secret{
 		Data: map[string][]byte{
 			constants.AccessKeyIDField:     []byte("AKIATEST"),
@@ -394,6 +408,7 @@ func TestValidateSecretCredentials_Valid(t *testing.T) {
 }
 
 func TestValidateSecretCredentials_MissingAccessKey(t *testing.T) {
+	t.Parallel()
 	secret := &corev1.Secret{
 		Data: map[string][]byte{
 			constants.SecretAccessKeyField: []byte("test-secret-key"),
@@ -415,6 +430,7 @@ func TestValidateSecretCredentials_MissingAccessKey(t *testing.T) {
 }
 
 func TestValidateSecretCredentials_MissingSecretKey(t *testing.T) {
+	t.Parallel()
 	secret := &corev1.Secret{
 		Data: map[string][]byte{
 			constants.AccessKeyIDField: []byte("AKIATEST"),
@@ -436,6 +452,7 @@ func TestValidateSecretCredentials_MissingSecretKey(t *testing.T) {
 }
 
 func TestValidateSecretCredentials_NoData(t *testing.T) {
+	t.Parallel()
 	secret := &corev1.Secret{}
 
 	client := fake.NewSimpleClientset()
@@ -453,13 +470,31 @@ func TestValidateSecretCredentials_NoData(t *testing.T) {
 }
 
 func TestClearCache(t *testing.T) {
-	client := fake.NewSimpleClientset()
+	t.Parallel()
+	// Create a secret and populate the cache through normal code path
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-secret",
+			Namespace: "test-namespace",
+		},
+		Data: map[string][]byte{
+			constants.AccessKeyIDField:     []byte("AKIATEST"),
+			constants.SecretAccessKeyField: []byte("test-secret-key"),
+		},
+	}
+
+	client := fake.NewSimpleClientset(secret)
 	provider := New(client)
 
-	// Populate cache manually for testing
-	provider.credentialCache["test-key"] = &CredentialCacheEntry{
-		Config:    aws.Config{},
-		ExpiresAt: time.Now().Add(1 * time.Minute),
+	params := &storageclass.Parameters{
+		ProvisionerSecretName:      "test-secret",
+		ProvisionerSecretNamespace: "test-namespace",
+		AuthTier:                   storageclass.SecretCredentials,
+	}
+
+	_, err := provider.ProvideForCreateVolume(context.TODO(), params)
+	if err != nil {
+		t.Fatalf("Expected no error populating cache, got: %v", err)
 	}
 
 	// Verify cache has entry
@@ -469,7 +504,7 @@ func TestClearCache(t *testing.T) {
 	}
 
 	// Clear cache
-	provider.ClearCache()
+	provider.clearCache()
 
 	// Verify cache is empty
 	total, _ = provider.GetCacheStats()
@@ -491,6 +526,7 @@ func TestSetCacheTTL(t *testing.T) {
 }
 
 func TestMixedCredentialScenarios(t *testing.T) {
+	t.Parallel()
 	// Create secrets for different tiers
 	provisionerSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -554,6 +590,7 @@ func TestMixedCredentialScenarios(t *testing.T) {
 }
 
 func TestAPIRateLimiting(t *testing.T) {
+	t.Parallel()
 	// Create a secret
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -631,6 +668,7 @@ func containsString(s, substr string) bool {
 
 // Mock API failures for integration testing
 func TestAPIFailureHandling(t *testing.T) {
+	t.Parallel()
 	client := fake.NewSimpleClientset()
 
 	// Add a reactor to simulate API failures
