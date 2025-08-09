@@ -6,18 +6,8 @@ import (
 	"strings"
 
 	"k8s.io/klog/v2"
-)
 
-// CSI secret parameters as defined by the CSI specification
-// These are the only parameters supported for dynamic provisioning credential management
-const (
-	// CSI standard provisioner secret parameters (for controller operations)
-	ProvisionerSecretNameKey      = "csi.storage.k8s.io/provisioner-secret-name"
-	ProvisionerSecretNamespaceKey = "csi.storage.k8s.io/provisioner-secret-namespace"
-
-	// CSI standard node publish secret parameters (for node operations)
-	NodePublishSecretNameKey      = "csi.storage.k8s.io/node-publish-secret-name"
-	NodePublishSecretNamespaceKey = "csi.storage.k8s.io/node-publish-secret-namespace"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 )
 
 // Parameters represents parsed and validated StorageClass parameters for dynamic provisioning
@@ -58,10 +48,10 @@ func ParseAndValidate(parameters map[string]string) (*Parameters, error) {
 	enforceCSIDriverParameterPolicy(params)
 
 	// Parse and validate CSI secret parameters
-	provisionerSecretName := strings.TrimSpace(params[ProvisionerSecretNameKey])
-	provisionerSecretNamespace := strings.TrimSpace(params[ProvisionerSecretNamespaceKey])
-	nodePublishSecretName := strings.TrimSpace(params[NodePublishSecretNameKey])
-	nodePublishSecretNamespace := strings.TrimSpace(params[NodePublishSecretNamespaceKey])
+	provisionerSecretName := strings.TrimSpace(params[constants.ProvisionerSecretNameKey])
+	provisionerSecretNamespace := strings.TrimSpace(params[constants.ProvisionerSecretNamespaceKey])
+	nodePublishSecretName := strings.TrimSpace(params[constants.NodePublishSecretNameKey])
+	nodePublishSecretNamespace := strings.TrimSpace(params[constants.NodePublishSecretNamespaceKey])
 
 	// Validate secret parameter consistency
 	if err := validateSecretParameterConsistency(provisionerSecretName, provisionerSecretNamespace, "provisioner"); err != nil {
@@ -89,10 +79,10 @@ func ParseAndValidate(parameters map[string]string) (*Parameters, error) {
 // We only support CSI standard provisioner secret parameters, all others are silently ignored
 func enforceCSIDriverParameterPolicy(parameters map[string]string) {
 	supportedParams := map[string]bool{
-		ProvisionerSecretNameKey:      true,
-		ProvisionerSecretNamespaceKey: true,
-		NodePublishSecretNameKey:      true,
-		NodePublishSecretNamespaceKey: true,
+		constants.ProvisionerSecretNameKey:      true,
+		constants.ProvisionerSecretNamespaceKey: true,
+		constants.NodePublishSecretNameKey:      true,
+		constants.NodePublishSecretNamespaceKey: true,
 	}
 
 	// Remove any parameters that are not in our supported list
