@@ -2,9 +2,13 @@ package driver
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,7 +18,28 @@ import (
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
 )
+
+// Mock S3 client for testing
+type mockS3Client struct {
+	createBucketFunc func(ctx context.Context, bucket string) error
+	deleteBucketFunc func(ctx context.Context, bucket string) error
+}
+
+func (m *mockS3Client) CreateBucket(ctx context.Context, bucket string) error {
+	if m.createBucketFunc != nil {
+		return m.createBucketFunc(ctx, bucket)
+	}
+	return nil
+}
+
+func (m *mockS3Client) DeleteBucket(ctx context.Context, bucket string) error {
+	if m.deleteBucketFunc != nil {
+		return m.deleteBucketFunc(ctx, bucket)
+	}
+	return nil
+}
 
 func TestCreateVolume(t *testing.T) {
 	tests := []struct {
@@ -128,6 +153,14 @@ func TestCreateVolume(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Set up environment variables for S3 client
+			_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+			_ = os.Setenv("AWS_REGION", "us-east-1")
+			defer func() {
+				_ = os.Unsetenv("AWS_ENDPOINT_URL")
+				_ = os.Unsetenv("AWS_REGION")
+			}()
+
 			// Create a fake Kubernetes client with any required secrets
 			fakeClient := fake.NewSimpleClientset()
 			for _, secret := range tc.setupSecrets {
@@ -137,9 +170,15 @@ func TestCreateVolume(t *testing.T) {
 				}
 			}
 
-			// Create driver with controller credential provider
+			// Create mock S3 client
+			mockS3 := &mockS3Client{}
+
+			// Create driver with controller credential provider and mock S3 client factory
 			driver := &Driver{
 				controllerCredProvider: controllerCredProvider.New(fakeClient),
+				testS3ClientFactory: func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+					return mockS3, nil
+				},
 			}
 
 			// Call CreateVolume
@@ -269,12 +308,38 @@ func TestDeleteVolume(t *testing.T) {
 			},
 			expectedError: codes.OK,
 		},
+		{
+			name: "volume created by CreateVolume",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "csi-s3-1640995200-xyz123",
+			},
+			expectedError: codes.OK,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create driver
-			driver := &Driver{}
+			// Set up environment variables for S3 client
+			_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+			_ = os.Setenv("AWS_REGION", "us-east-1")
+			defer func() {
+				_ = os.Unsetenv("AWS_ENDPOINT_URL")
+				_ = os.Unsetenv("AWS_REGION")
+			}()
+
+			// Create a fake Kubernetes client
+			fakeClient := fake.NewSimpleClientset()
+
+			// Create mock S3 client
+			mockS3 := &mockS3Client{}
+
+			// Create driver with controller credential provider and mock S3 client factory
+			driver := &Driver{
+				controllerCredProvider: controllerCredProvider.New(fakeClient),
+				testS3ClientFactory: func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+					return mockS3, nil
+				},
+			}
 
 			// Call DeleteVolume
 			resp, err := driver.DeleteVolume(context.Background(), tc.req)
@@ -304,6 +369,205 @@ func TestDeleteVolume(t *testing.T) {
 					t.Fatal("Response is nil")
 				}
 				// DeleteVolumeResponse should be empty for successful deletion
+			}
+		})
+	}
+}
+
+func TestValidateDeleteVolumeRequest(t *testing.T) {
+	tests := []struct {
+		name        string
+		req         *csi.DeleteVolumeRequest
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "nil request",
+			req:         nil,
+			expectError: true,
+			errorMsg:    "request is nil",
+		},
+		{
+			name: "empty volume ID",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "",
+			},
+			expectError: true,
+			errorMsg:    "volume ID is required",
+		},
+		{
+			name: "valid request",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "csi-s3-1640995200-a1b2c3d",
+			},
+			expectError: false,
+		},
+		{
+			name: "valid request with secrets (future-proofing)",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "csi-s3-1640995200-xyz123",
+				Secrets: map[string]string{
+					"accessKeyID":     "AKIATEST",
+					"secretAccessKey": "test-secret-key",
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDeleteVolumeRequest(tc.req)
+			if tc.expectError {
+				if err == nil {
+					t.Fatal("Expected error but got none")
+				}
+				if tc.errorMsg != "" && !strings.Contains(err.Error(), tc.errorMsg) {
+					t.Fatalf("Expected error to contain %q, got %q", tc.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestGenerateVolumeIDFormat tests that generated volume IDs follow the expected UUID format
+func TestGenerateVolumeIDFormat(t *testing.T) {
+	// Generate multiple IDs to ensure they follow UUID format consistently
+	for i := 0; i < 5; i++ {
+		id := generateVolumeID()
+
+		if !strings.HasPrefix(id, "csi-s3-") {
+			t.Fatalf("Volume ID %q doesn't have expected prefix", id)
+		}
+
+		// Extract UUID portion after prefix
+		uuidPart := strings.TrimPrefix(id, "csi-s3-")
+		if len(uuidPart) == 0 {
+			t.Fatalf("Volume ID %q is missing UUID portion", id)
+		}
+
+		// UUID should contain hyphens and be in standard format
+		if !strings.Contains(uuidPart, "-") {
+			t.Fatalf("Volume ID %q UUID portion %q does not appear to be valid UUID format", id, uuidPart)
+		}
+
+		// Verify UUID-like length (UUIDs are typically 36 characters with hyphens)
+		if len(uuidPart) != 36 {
+			t.Fatalf("Volume ID %q UUID portion %q has unexpected length %d, expected 36", id, uuidPart, len(uuidPart))
+		}
+	}
+}
+
+func TestCreateS3Client(t *testing.T) {
+	tests := []struct {
+		name            string
+		setupEnv        func()
+		mockFactory     func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error)
+		inputConfig     *aws.Config
+		expectedSuccess bool
+		errorContains   string
+	}{
+		{
+			name: "successful S3 client creation",
+			setupEnv: func() {
+				_ = os.Setenv("AWS_ENDPOINT_URL", "https://s3.example.com")
+				_ = os.Setenv("AWS_REGION", "us-west-2")
+			},
+			mockFactory: nil, // Use real S3 client creation
+			inputConfig: &aws.Config{
+				Region:      "us-west-2",
+				Credentials: credentials.NewStaticCredentialsProvider("AKIATEST", "test-secret-key", ""),
+			},
+			expectedSuccess: true,
+		},
+		{
+			name: "test factory override",
+			setupEnv: func() {
+				_ = os.Setenv("AWS_ENDPOINT_URL", "https://s3.example.com")
+				_ = os.Setenv("AWS_REGION", "us-east-1")
+			},
+			mockFactory: func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+				return &mockS3Client{}, nil
+			},
+			inputConfig: &aws.Config{
+				Region:      "us-east-1",
+				Credentials: credentials.NewStaticCredentialsProvider("AKIATEST", "test-secret-key", ""),
+			},
+			expectedSuccess: true,
+		},
+		{
+			name: "test factory error",
+			setupEnv: func() {
+				_ = os.Setenv("AWS_ENDPOINT_URL", "https://s3.example.com")
+				_ = os.Setenv("AWS_REGION", "eu-west-1")
+			},
+			mockFactory: func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+				return nil, fmt.Errorf("mock factory error")
+			},
+			inputConfig: &aws.Config{
+				Region:      "eu-west-1",
+				Credentials: credentials.NewStaticCredentialsProvider("AKIATEST", "test-secret-key", ""),
+			},
+			expectedSuccess: false,
+			errorContains:   "mock factory error",
+		},
+		{
+			name: "missing endpoint URL environment variable",
+			setupEnv: func() {
+				// Don't set AWS_ENDPOINT_URL
+				_ = os.Setenv("AWS_REGION", "ap-southeast-1")
+			},
+			mockFactory: nil,
+			inputConfig: &aws.Config{
+				Region:      "ap-southeast-1",
+				Credentials: credentials.NewStaticCredentialsProvider("AKIATEST", "test-secret-key", ""),
+			},
+			expectedSuccess: true, // Should still work without endpoint URL
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Clean environment
+			_ = os.Unsetenv("AWS_ENDPOINT_URL")
+			_ = os.Unsetenv("AWS_REGION")
+
+			// Setup test environment
+			tc.setupEnv()
+
+			defer func() {
+				_ = os.Unsetenv("AWS_ENDPOINT_URL")
+				_ = os.Unsetenv("AWS_REGION")
+			}()
+
+			// Create driver with test factory if provided
+			driver := &Driver{}
+			if tc.mockFactory != nil {
+				driver.testS3ClientFactory = tc.mockFactory
+			}
+
+			// Call createS3Client
+			client, err := driver.createS3Client(context.Background(), tc.inputConfig)
+
+			// Check results
+			if tc.expectedSuccess {
+				if err != nil {
+					t.Fatalf("Expected success but got error: %v", err)
+				}
+				if client == nil {
+					t.Fatal("Expected client but got nil")
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("Expected error but got success")
+				}
+				if tc.errorContains != "" && !strings.Contains(err.Error(), tc.errorContains) {
+					t.Fatalf("Expected error to contain %q, got %q", tc.errorContains, err.Error())
+				}
 			}
 		})
 	}
