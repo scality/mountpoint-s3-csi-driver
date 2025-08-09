@@ -335,61 +335,24 @@ func TestValidateCreateVolumeRequest(t *testing.T) {
 }
 
 func TestGenerateVolumeID(t *testing.T) {
-	// Test multiple generations to ensure uniqueness
+	// Test multiple generations to ensure uniqueness and UUID-based format
 	generated := make(map[string]bool)
 	for i := 0; i < 10; i++ {
 		id := generateVolumeID()
 
-		// Check format
 		if !strings.HasPrefix(id, "csi-s3-") {
 			t.Fatalf("Volume ID %q doesn't have expected prefix", id)
 		}
 
-		// Check uniqueness
 		if generated[id] {
 			t.Fatalf("Duplicate volume ID generated: %s", id)
 		}
 		generated[id] = true
 
-		// Check format: csi-s3-{timestamp}-{random}
-		parts := strings.Split(id, "-")
-		if len(parts) == 3 {
-			// Fallback format when crypto/rand fails: csi-s3-{timestamp}
-			t.Logf("Volume ID %q uses fallback format (no random suffix)", id)
-		} else if len(parts) == 4 {
-			// Normal format: csi-s3-{timestamp}-{random}
-			t.Logf("Volume ID %q uses normal format", id)
-		} else {
-			t.Fatalf("Volume ID %q doesn't have expected format", id)
-		}
-	}
-}
-
-// TestGenerateVolumeIDWithFallback tests the fallback scenario when random generation fails
-// This test verifies that the fallback format still produces valid volume IDs
-func TestGenerateVolumeIDWithFallback(t *testing.T) {
-	// Since we can't easily mock crypto/rand failure in the existing function,
-	// this test validates that both formats are acceptable by the system
-	validIDs := []string{
-		"csi-s3-1640995200",         // Fallback format (timestamp only)
-		"csi-s3-1640995200-a1b2c3d", // Normal format (timestamp + random)
-	}
-
-	for _, id := range validIDs {
-		// Validate each format would be acceptable
-		if !strings.HasPrefix(id, "csi-s3-") {
-			t.Fatalf("Volume ID %q doesn't have expected prefix", id)
-		}
-
-		parts := strings.Split(id, "-")
-		if len(parts) == 3 {
-			// Fallback format: csi-s3-{timestamp}
-			t.Logf("Validating fallback format: %s", id)
-		} else if len(parts) == 4 {
-			// Normal format: csi-s3-{timestamp}-{random}
-			t.Logf("Validating normal format: %s", id)
-		} else {
-			t.Fatalf("Volume ID %q doesn't have valid format", id)
+		// Expect UUID v4 format suffix (contains hyphens) after prefix
+		suffix := strings.TrimPrefix(id, "csi-s3-")
+		if len(suffix) == 0 || !strings.Contains(suffix, "-") {
+			t.Fatalf("Volume ID %q does not appear to be UUID-based", id)
 		}
 	}
 }

@@ -18,12 +18,10 @@ package driver
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/google/uuid"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -32,6 +30,8 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/storageclass"
 )
+
+const defaultVolumeCapacityBytes int64 = 1 << 30 // 1 GiB
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	klog.V(4).Infof("CreateVolume: called with args %s", protosanitizer.StripSecrets(req))
@@ -76,7 +76,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	capacity := req.GetCapacityRange().GetRequiredBytes()
 	if capacity == 0 {
-		capacity = 1 * 1024 * 1024 * 1024
+		capacity = defaultVolumeCapacityBytes
 	}
 
 	klog.V(4).Infof("CreateVolume: successfully created volume %s with metadata only (no bucket created)", volumeID)
@@ -197,15 +197,5 @@ func validateCreateVolumeRequest(req *csi.CreateVolumeRequest) error {
 }
 
 func generateVolumeID() string {
-	timestamp := time.Now().Unix()
-
-	randomBytes := make([]byte, 4)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		klog.Warningf("Failed to generate random bytes for volume ID: %v", err)
-		return fmt.Sprintf("csi-s3-%d", timestamp)
-	}
-
-	randomString := hex.EncodeToString(randomBytes)
-	return fmt.Sprintf("csi-s3-%d-%s", timestamp, randomString)
+	return fmt.Sprintf("csi-s3-%s", uuid.NewString())
 }
