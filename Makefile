@@ -19,7 +19,7 @@ VERSION=1.1.1
 
 # List of allowed licenses in the CSI Driver's dependencies.
 # See https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L28 for list of canonical names for licenses.
-ALLOWED_LICENSES="Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT"
+ALLOWED_LICENSES="Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,MPL-2.0"
 
 PKG=github.com/scality/mountpoint-s3-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
