@@ -73,6 +73,13 @@ func TestCreateVolume(t *testing.T) {
 				CapacityRange: &csi.CapacityRange{
 					RequiredBytes: 1024 * 1024 * 1024, // 1Gi
 				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
+				},
 			},
 			expectedError: codes.OK,
 		},
@@ -83,6 +90,13 @@ func TestCreateVolume(t *testing.T) {
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "test-secret",
 					"csi.storage.k8s.io/provisioner-secret-namespace": "default",
+				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
 				},
 			},
 			setupSecrets: []*corev1.Secret{
@@ -106,6 +120,13 @@ func TestCreateVolume(t *testing.T) {
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name": "test-secret",
 					// Missing namespace - should error
+				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
 				},
 			},
 			expectedError: codes.InvalidArgument,
@@ -133,6 +154,13 @@ func TestCreateVolume(t *testing.T) {
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/node-publish-secret-name":      "node-secret",
 					"csi.storage.k8s.io/node-publish-secret-namespace": "kube-system",
+				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
 				},
 			},
 			setupSecrets: []*corev1.Secret{
@@ -380,6 +408,13 @@ func TestCreateVolumeAuthenticationSource(t *testing.T) {
 			req := &csi.CreateVolumeRequest{
 				Name:       "test-volume",
 				Parameters: tc.parameters,
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
+				},
 			}
 
 			// Call CreateVolume
