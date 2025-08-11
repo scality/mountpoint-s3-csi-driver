@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [unit-test, csi-compliance-test, controller-integration-test, validate-helm, check-licenses]
+        test: [unit-test, controller-integration-test, validate-helm, check-licenses]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4

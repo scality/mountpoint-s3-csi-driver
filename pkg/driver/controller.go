@@ -277,20 +277,23 @@ func validateCreateVolumeRequest(req *csi.CreateVolumeRequest) error {
 		return fmt.Errorf("volume name is required")
 	}
 
-	if len(req.GetVolumeCapabilities()) > 0 {
-		for _, cap := range req.GetVolumeCapabilities() {
-			if cap.GetAccessMode() == nil {
-				return fmt.Errorf("volume capability access mode is required")
-			}
-			mode := cap.GetAccessMode().GetMode()
-			// S3 only supports multi-node access modes since it's object storage
-			// Single-node modes don't make sense for S3
-			if mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER ||
-				mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY ||
-				mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER ||
-				mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER {
-				return fmt.Errorf("S3 volumes only support multi-node access modes, got %v", mode)
-			}
+	// CSI spec requires volume capabilities to be provided
+	if len(req.GetVolumeCapabilities()) == 0 {
+		return fmt.Errorf("volume capabilities are required")
+	}
+
+	for _, cap := range req.GetVolumeCapabilities() {
+		if cap.GetAccessMode() == nil {
+			return fmt.Errorf("volume capability access mode is required")
+		}
+		mode := cap.GetAccessMode().GetMode()
+		// S3 only supports multi-node access modes since it's object storage
+		// Single-node modes don't make sense for S3
+		if mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER ||
+			mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY ||
+			mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER ||
+			mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER {
+			return fmt.Errorf("S3 volumes only support multi-node access modes, got %v", mode)
 		}
 	}
 	return nil

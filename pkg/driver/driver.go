@@ -139,6 +139,20 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 	}, nil
 }
 
+// NewDriverForTests creates a new driver instance for testing purposes
+// This allows tests to provide their own Kubernetes client and node server
+func NewDriverForTests(endpoint, nodeID string, nodeServer *node.S3NodeServer, kubeClient kubernetes.Interface) *Driver {
+	controllerCredProv := controllerCredProvider.New(kubeClient)
+
+	return &Driver{
+		Endpoint:               endpoint,
+		NodeID:                 nodeID,
+		NodeServer:             nodeServer,
+		controllerCredProvider: controllerCredProv,
+		stopCh:                 make(chan struct{}),
+	}
+}
+
 func (d *Driver) Run() error {
 	scheme, addr, err := ParseEndpoint(d.Endpoint)
 	if err != nil {
