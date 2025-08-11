@@ -33,8 +33,9 @@ GOPATH=$(shell go env GOPATH)
 GOOS=$(shell go env GOOS)
 GOBIN=$(GOPATH)/bin
 
-# TODO(S3CSI-20): Implement simplified container image building.
-# Docker image building functionality has been temporarily removed and will be addressed in S3CSI-20.
+# Container image configuration
+CONTAINER_IMAGE ?= scality/mountpoint-s3-csi-driver
+CONTAINER_TAG ?= local
 
 # Test configuration variables
 E2E_REGION?=us-east-1
@@ -57,6 +58,10 @@ bin:
 	CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags ${LDFLAGS} -o bin/scality-s3-csi-mounter ./cmd/scality-csi-mounter/
 	# TODO: `install-mp` component won't be necessary with the containerization.
 	CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags ${LDFLAGS} -o bin/install-mp ./cmd/install-mp/
+
+.PHONY: container
+container:
+	docker build -t ${CONTAINER_IMAGE}:${CONTAINER_TAG} .
 
 .PHONY: unit-test
 unit-test:
@@ -219,6 +224,10 @@ help-csi:
 	@echo "  csi-uninstall-clean - Uninstall and delete custom namespace"
 	@echo "  csi-uninstall-force - Force uninstall the CSI driver"
 	@echo ""
+	@echo "Building:"
+	@echo "  bin                - Build binaries"
+	@echo "  container          - Build container image (default tag: local)"
+	@echo ""
 	@echo "Testing:"
 	@echo "  e2e                - Run tests on installed driver"
 	@echo "  e2e-go             - Run only Go-based tests"
@@ -231,6 +240,12 @@ help-csi:
 	@echo "  3. Ensure KUBECONFIG is set or ~/.kube/config exists"
 	@echo ""
 	@echo "Example workflow:"
+	@echo "  # Build container with default tag (local):"
+	@echo "  make container"
+	@echo "  # Build container with custom tag:"
+	@echo "  make container CONTAINER_TAG=1.1.3"
+	@echo ""
+	@echo "  # E2E testing:"
 	@echo "  source tests/e2e/scripts/load-credentials.sh"
 	@echo "  make e2e-all S3_ENDPOINT_URL=https://s3.example.com"
 	@echo "  # Or with custom kubeconfig:"
