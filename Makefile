@@ -69,17 +69,16 @@ unit-test:
 
 .PHONY: csi-compliance-test
 csi-compliance-test:
-	# TODO: S3CSI-141 - Re-enable these tests when CreateVolume/DeleteVolume are implemented in Phase 5
-	# Currently skipping Node Service tests and CreateVolume/DeleteVolume tests because they depend on volume implementation, but we only advertise capabilities in Phase 2
-	go test -v ./tests/sanity/... -ginkgo.skip="ValidateVolumeCapabilities|Node Service|CreateVolume|DeleteVolume"
+	# ValidateVolumeCapabilities skipped due to static provisioning limitation: https://github.com/kubernetes-csi/csi-test/issues/214
+	# Node Service tests skipped as they require actual mounting which needs real S3 storage
+	go test -v ./tests/sanity/... -ginkgo.skip="ValidateVolumeCapabilities|Node Service"
 
 .PHONY: test
 test:
 	go test -v -race ./{cmd,pkg}/... -coverprofile=./cover.out -covermode=atomic -coverpkg=./{cmd,pkg}/...
 	# ValidateVolumeCapabilities skipped due to static provisioning limitation: https://github.com/kubernetes-csi/csi-test/issues/214
-	# TODO: S3CSI-141 - Re-enable these tests when CreateVolume/DeleteVolume are implemented in Phase 5
-	# Currently skipping Node Service tests and CreateVolume/DeleteVolume tests because they depend on volume implementation, but we only advertise capabilities in Phase 2
-	go test -v ./tests/sanity/... -ginkgo.skip="ValidateVolumeCapabilities|Node Service|CreateVolume|DeleteVolume"
+	# Node Service tests skipped as they require actual mounting which needs real S3 storage
+	go test -v ./tests/sanity/... -ginkgo.skip="ValidateVolumeCapabilities|Node Service"
 
 .PHONY: cover
 cover:
