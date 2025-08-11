@@ -64,6 +64,15 @@ func TestCreateVolume(t *testing.T) {
 			errorContains: "volume name is required",
 		},
 		{
+			name: "missing volume capabilities",
+			req: &csi.CreateVolumeRequest{
+				Name:               "test-volume",
+				VolumeCapabilities: nil, // or could be empty slice: []*csi.VolumeCapability{}
+			},
+			expectedError: codes.InvalidArgument,
+			errorContains: "volume capabilities are required",
+		},
+		{
 			name: "valid request with driver credentials",
 			req: &csi.CreateVolumeRequest{
 				Name:       "test-volume",
@@ -146,6 +155,19 @@ func TestCreateVolume(t *testing.T) {
 			},
 			expectedError: codes.InvalidArgument,
 			errorContains: "S3 volumes only support multi-node access modes",
+		},
+		{
+			name: "missing volume capability access mode",
+			req: &csi.CreateVolumeRequest{
+				Name: "test-volume-nil-access-mode",
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: nil, // This should trigger the validation error
+					},
+				},
+			},
+			expectedError: codes.InvalidArgument,
+			errorContains: "volume capability access mode is required",
 		},
 		{
 			name: "with node publish secret",
