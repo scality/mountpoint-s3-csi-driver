@@ -55,6 +55,25 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	volumeID := generateVolumeID()
 	klog.V(4).Infof("Generated volume ID: %s", volumeID)
 
+	// Controller Credential Resolution for Bucket Operations
+	//
+	// The controller handles bucket creation/deletion operations and uses a separate
+	// credential resolution strategy from the node operations. This allows proper
+	// separation of concerns where the controller can have administrative permissions
+	// for bucket management while nodes have limited permissions for mounting.
+	//
+	// Controller Credential Resolution Order:
+	// 1. provisioner-secret: If specified in StorageClass, controller uses this secret
+	//    for bucket operations (e.g., CreateBucket, DeleteBucket)
+	// 2. driver credentials: If no provisioner-secret, controller uses driver-level
+	//    credentials for bucket operations
+	//
+	// Note: This is independent of node-publish-secret, which only affects what
+	// credentials the node uses for mounting operations. The two-stage approach enables:
+	// - Admin credentials for bucket management (controller)
+	// - Read/write credentials for data access (node)
+	// - Proper security boundaries between management and access operations
+
 	awsConfig, err := d.controllerCredProvider.ProvideForCreateVolume(ctx, params)
 	if err != nil {
 		klog.Errorf("CreateVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
