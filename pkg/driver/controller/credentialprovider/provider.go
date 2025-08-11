@@ -22,6 +22,9 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/storageclass"
 )
 
+// defaultCredentialCacheTTL is the default TTL for credential cache entries.
+const defaultCredentialCacheTTL = 5 * time.Minute
+
 // CredentialCacheEntry represents a cached credential with expiration
 type CredentialCacheEntry struct {
 	Config    aws.Config
@@ -41,7 +44,7 @@ type Provider struct {
 
 // New creates a new controller credential provider
 func New(client kubernetes.Interface) *Provider {
-	ttl := 5 * time.Minute
+	ttl := defaultCredentialCacheTTL
 	lruCache := expirable.NewLRU[string, aws.Config](512, nil, ttl)
 	return &Provider{
 		client:   client,
