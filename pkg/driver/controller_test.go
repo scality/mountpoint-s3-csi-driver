@@ -273,6 +273,152 @@ func TestGenerateVolumeID(t *testing.T) {
 	}
 }
 
+func TestCreateVolumeAuthenticationSource(t *testing.T) {
+	tests := []struct {
+		name                        string
+		parameters                  map[string]string
+		expectedAuthSource          string
+		expectedNodeSecretName      string
+		expectedNodeSecretNamespace string
+	}{
+		{
+			name:               "no secrets - use driver credentials",
+			parameters:         map[string]string{},
+			expectedAuthSource: "driver",
+		},
+		{
+			name: "only provisioner secret - node uses provisioner secret as fallback",
+			parameters: map[string]string{
+				"csi.storage.k8s.io/provisioner-secret-name":      "provisioner-secret",
+				"csi.storage.k8s.io/provisioner-secret-namespace": "default",
+			},
+			expectedAuthSource:          "secret",
+			expectedNodeSecretName:      "provisioner-secret",
+			expectedNodeSecretNamespace: "default",
+		},
+		{
+			name: "only node-publish secret - use node-publish secret",
+			parameters: map[string]string{
+				"csi.storage.k8s.io/node-publish-secret-name":      "node-secret",
+				"csi.storage.k8s.io/node-publish-secret-namespace": "kube-system",
+			},
+			expectedAuthSource:          "secret",
+			expectedNodeSecretName:      "node-secret",
+			expectedNodeSecretNamespace: "kube-system",
+		},
+		{
+			name: "both secrets - use node-publish secret",
+			parameters: map[string]string{
+				"csi.storage.k8s.io/provisioner-secret-name":       "provisioner-secret",
+				"csi.storage.k8s.io/provisioner-secret-namespace":  "default",
+				"csi.storage.k8s.io/node-publish-secret-name":      "node-secret",
+				"csi.storage.k8s.io/node-publish-secret-namespace": "kube-system",
+			},
+			expectedAuthSource:          "secret",
+			expectedNodeSecretName:      "node-secret",
+			expectedNodeSecretNamespace: "kube-system",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set up environment variables for S3 client
+			_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+			_ = os.Setenv("AWS_REGION", "us-east-1")
+			defer func() {
+				_ = os.Unsetenv("AWS_ENDPOINT_URL")
+				_ = os.Unsetenv("AWS_REGION")
+			}()
+
+			// Create a fake Kubernetes client with necessary secrets
+			secrets := []*corev1.Secret{}
+			if tc.parameters["csi.storage.k8s.io/provisioner-secret-name"] != "" {
+				secrets = append(secrets, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tc.parameters["csi.storage.k8s.io/provisioner-secret-name"],
+						Namespace: tc.parameters["csi.storage.k8s.io/provisioner-secret-namespace"],
+					},
+					Data: map[string][]byte{
+						constants.AccessKeyIDField:     []byte("AKIATEST"),
+						constants.SecretAccessKeyField: []byte("test-secret-key"),
+					},
+				})
+			}
+			if tc.parameters["csi.storage.k8s.io/node-publish-secret-name"] != "" {
+				secrets = append(secrets, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tc.parameters["csi.storage.k8s.io/node-publish-secret-name"],
+						Namespace: tc.parameters["csi.storage.k8s.io/node-publish-secret-namespace"],
+					},
+					Data: map[string][]byte{
+						constants.AccessKeyIDField:     []byte("AKIANODETEST"),
+						constants.SecretAccessKeyField: []byte("node-secret-key"),
+					},
+				})
+			}
+
+			fakeClient := fake.NewSimpleClientset()
+			for _, secret := range secrets {
+				_, err := fakeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("Failed to create secret: %v", err)
+				}
+			}
+
+			// Create mock S3 client
+			mockS3 := &mockS3Client{}
+
+			// Create driver with controller credential provider and mock S3 client factory
+			driver := &Driver{
+				controllerCredProvider: controllerCredProvider.New(fakeClient),
+				testS3ClientFactory: func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+					return mockS3, nil
+				},
+			}
+
+			// Create request
+			req := &csi.CreateVolumeRequest{
+				Name:       "test-volume",
+				Parameters: tc.parameters,
+			}
+
+			// Call CreateVolume
+			resp, err := driver.CreateVolume(context.Background(), req)
+			// Check error
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Verify AuthenticationSource is set correctly
+			authSource := resp.Volume.VolumeContext["authenticationSource"]
+			if authSource != tc.expectedAuthSource {
+				t.Fatalf("Expected authenticationSource %q, got %q", tc.expectedAuthSource, authSource)
+			}
+
+			// Verify node secret info is set correctly when using secrets
+			if tc.expectedAuthSource == "secret" {
+				nodeSecretName := resp.Volume.VolumeContext[constants.VolumeContextNodePublishSecretNameKey]
+				if nodeSecretName != tc.expectedNodeSecretName {
+					t.Fatalf("Expected %s %q, got %q", constants.VolumeContextNodePublishSecretNameKey, tc.expectedNodeSecretName, nodeSecretName)
+				}
+
+				nodeSecretNamespace := resp.Volume.VolumeContext[constants.VolumeContextNodePublishSecretNamespaceKey]
+				if nodeSecretNamespace != tc.expectedNodeSecretNamespace {
+					t.Fatalf("Expected %s %q, got %q", constants.VolumeContextNodePublishSecretNamespaceKey, tc.expectedNodeSecretNamespace, nodeSecretNamespace)
+				}
+			} else {
+				// For driver credentials, these fields should not be present
+				if resp.Volume.VolumeContext[constants.VolumeContextNodePublishSecretNameKey] != "" {
+					t.Fatalf("Expected no %s for driver credentials, got %q", constants.VolumeContextNodePublishSecretNameKey, resp.Volume.VolumeContext[constants.VolumeContextNodePublishSecretNameKey])
+				}
+				if resp.Volume.VolumeContext[constants.VolumeContextNodePublishSecretNamespaceKey] != "" {
+					t.Fatalf("Expected no %s for driver credentials, got %q", constants.VolumeContextNodePublishSecretNamespaceKey, resp.Volume.VolumeContext[constants.VolumeContextNodePublishSecretNamespaceKey])
+				}
+			}
+		})
+	}
+}
+
 func TestDeleteVolume(t *testing.T) {
 	tests := []struct {
 		name          string
