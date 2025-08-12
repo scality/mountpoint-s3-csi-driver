@@ -458,6 +458,21 @@ func CreateProvisionerSecret(ctx context.Context, f *framework.Framework) (strin
 	return CreateCredentialSecret(ctx, f, "test-provisioner-secret", accessKeyID, secretAccessKey)
 }
 
+// CreateNodePublishSecret creates a Secret for node-publish authentication and returns its name.
+// This is used for testing the credential hierarchy in dynamic provisioning.
+func CreateNodePublishSecret(ctx context.Context, f *framework.Framework) (string, error) {
+	// Use the same global test credentials for now
+	// In a real environment, these could be different credentials
+	accessKeyID := GetEnv("ACCOUNT1_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT1_SECRET_KEY", "")
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return "", fmt.Errorf("test credentials not available: ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set")
+	}
+
+	return CreateCredentialSecret(ctx, f, "test-node-publish-secret", accessKeyID, secretAccessKey)
+}
+
 // BuildSecretVolume creates a volume using a secret reference for authentication.
 func BuildSecretVolume(
 	ctx context.Context,
