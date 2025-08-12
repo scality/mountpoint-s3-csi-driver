@@ -215,7 +215,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 		// DEBUG: Print all volume context attributes
 		ginkgo.By("DEBUG: Printing volume context for analysis")
 		framework.Logf("Volume context attributes: %+v", boundPV.Spec.CSI.VolumeAttributes)
-		
+
 		// Also print the StorageClass parameters for debugging
 		debugSC, err := f.ClientSet.StorageV1().StorageClasses().Get(ctx, sc.Name, metav1.GetOptions{})
 		framework.ExpectNoError(err, "Failed to get StorageClass for debug")

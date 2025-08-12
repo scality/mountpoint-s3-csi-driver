@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
@@ -47,6 +49,10 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}
 
 	klog.V(4).Infof("CreateVolume: received parameters: %+v", req.GetParameters())
+	klog.V(4).Infof("CreateVolume: received secrets count: %d", len(req.GetSecrets()))
+	for k, v := range req.GetSecrets() {
+		klog.V(4).Infof("CreateVolume: secret key %s = %s", k, v[:min(len(v), 10)]+"...")
+	}
 	params, err := storageclass.ParseAndValidate(req.GetParameters())
 	if err != nil {
 		klog.Errorf("CreateVolume: failed to parse StorageClass parameters: %v", err)
@@ -59,24 +65,23 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	// Controller Credential Resolution for Bucket Operations
 	//
-	// The controller handles bucket creation/deletion operations and uses a separate
-	// credential resolution strategy from the node operations. This allows proper
-	// separation of concerns where the controller can have administrative permissions
-	// for bucket management while nodes have limited permissions for mounting.
+	// CSI Credential Resolution:
+	// According to the CSI specification, when StorageClass contains secret parameters
+	// like csi.storage.k8s.io/provisioner-secret-name, the CSI provisioner sidecar
+	// is responsible for resolving the secret and passing the actual credential values
+	// in the 'secrets' field of the CreateVolumeRequest. The secret names/namespaces
+	// are NOT passed in the 'parameters' field.
 	//
-	// Controller Credential Resolution Order:
-	// 1. provisioner-secret: If specified in StorageClass, controller uses this secret
-	//    for bucket operations (e.g., CreateBucket, DeleteBucket)
-	// 2. driver credentials: If no provisioner-secret, controller uses driver-level
-	//    credentials for bucket operations
+	// Credential Resolution Order:
+	// 1. CSI secrets: If provisioner resolved secrets, use credentials from req.GetSecrets()
+	// 2. Driver credentials: If no secrets provided, use driver-level credentials
 	//
-	// Note: This is independent of node-publish-secret, which only affects what
-	// credentials the node uses for mounting operations. The two-stage approach enables:
-	// - Admin credentials for bucket management (controller)
-	// - Read/write credentials for data access (node)
-	// - Proper security boundaries between management and access operations
+	// This approach properly separates:
+	// - CSI provisioner handles secret resolution from StorageClass
+	// - Controller handles credential usage for S3 operations
+	// - Node handles mounting with appropriate credentials passed via volume context
 
-	awsConfig, err := d.controllerCredProvider.ProvideForCreateVolume(ctx, params)
+	awsConfig, err := d.resolveControllerCredentials(ctx, req, params)
 	if err != nil {
 		klog.Errorf("CreateVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to resolve credentials: %v", err))
@@ -102,46 +107,28 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	// Authentication Source Configuration for Dynamic Provisioning
 	//
-	// This implements a credential hierarchy that determines what credentials
-	// the node should use for mounting operations. The controller may use different
-	// credentials (provisioner-secret) for bucket creation than what the node uses
-	// for mounting.
+	// CSI Credential Resolution:
+	// The CSI provisioner resolves StorageClass secret parameters and passes credential values
+	// in the 'secrets' field of CreateVolumeRequest. The authentication source is determined
+	// by whether the CSI provisioner provided secrets or not.
 	//
-	// Credential Resolution Order:
-	// 1. node-publish-secret: If specified in StorageClass, the node uses this secret
-	//    for mount operations (highest priority)
-	// 2. provisioner-secret: If no node-publish-secret but provisioner-secret exists,
-	//    the node falls back to using the provisioner-secret for mount operations
-	// 3. driver credentials: If no secrets are specified, both controller and node
-	//    use the driver-level credentials
+	// Authentication Source Logic:
+	// 1. If CSI secrets provided: authenticationSource = "secret" (node should use secrets)
+	// 2. If no CSI secrets: authenticationSource = "driver" (node should use driver credentials)
 	//
-	// This design allows flexible credential management:
-	// - Separate credentials for management (controller) vs access (node)
-	// - Single secret can serve both roles when only one is provided
-	// - Seamless fallback to driver credentials when no secrets are configured
-	//
-	// The authenticationSource field tells the node's credential provider which
-	// credentials to use, ensuring proper authentication during volume mount.
+	// Note: With CSI secret resolution, we don't get the original StorageClass parameter names,
+	// so we can't distinguish between provisioner-secret vs node-publish-secret in the controller.
+	// The node will need to determine the appropriate credential source during NodePublishVolume.
 
-	if params.HasNodePublishSecret() {
-		// Priority 1: node-publish-secret
+	csiSecrets := req.GetSecrets()
+	if len(csiSecrets) > 0 {
+		// CSI provisioner resolved secrets from StorageClass, node should use secret authentication
 		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceSecret
-		volumeContext[constants.VolumeContextNodePublishSecretNameKey] = params.NodePublishSecretName
-		volumeContext[constants.VolumeContextNodePublishSecretNamespaceKey] = params.NodePublishSecretNamespace
-	} else if params.HasProvisionerSecret() {
-		// Priority 2: provisioner-secret as fallback
-		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceSecret
-		volumeContext[constants.VolumeContextNodePublishSecretNameKey] = params.ProvisionerSecretName
-		volumeContext[constants.VolumeContextNodePublishSecretNamespaceKey] = params.ProvisionerSecretNamespace
+		klog.V(4).Infof("Set authenticationSource=secret for volume %s (CSI secrets provided)", volumeID)
 	} else {
-		// Priority 3: driver credentials
+		// No CSI secrets provided, node should use driver credentials
 		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceDriver
-	}
-
-	// Always store provisioner secret info if present (for reference/debugging)
-	if params.HasProvisionerSecret() {
-		volumeContext[constants.VolumeContextProvisionerSecretNameKey] = params.ProvisionerSecretName
-		volumeContext[constants.VolumeContextProvisionerSecretNamespaceKey] = params.ProvisionerSecretNamespace
+		klog.V(4).Infof("Set authenticationSource=driver for volume %s (no CSI secrets)", volumeID)
 	}
 
 	capacity := req.GetCapacityRange().GetRequiredBytes()
@@ -337,6 +324,67 @@ func (d *Driver) createS3Client(ctx context.Context, awsConfig *aws.Config) (s3c
 	}
 
 	return s3client.New(ctx, s3Config)
+}
+
+// resolveControllerCredentials resolves AWS credentials for controller operations from CSI request
+// This handles the CSI specification requirement where the CSI provisioner resolves secrets
+// and passes credential values in the secrets field of CreateVolumeRequest
+func (d *Driver) resolveControllerCredentials(ctx context.Context, req *csi.CreateVolumeRequest, params *storageclass.Parameters) (aws.Config, error) {
+	secrets := req.GetSecrets()
+
+	// If CSI provisioner provided secrets (from provisioner-secret), use those
+	if len(secrets) > 0 {
+		klog.V(4).Infof("Using CSI provisioner secrets for CreateVolume (secret count: %d)", len(secrets))
+		return d.createAWSConfigFromCSISecrets(ctx, secrets)
+	}
+
+	// Fallback to driver credentials if no CSI secrets provided
+	klog.V(4).Infof("Using driver credentials for CreateVolume (no CSI secrets provided)")
+	// Use empty params to trigger driver credential fallback in the credential provider
+	emptyParams := &storageclass.Parameters{}
+	return d.controllerCredProvider.ProvideForCreateVolume(ctx, emptyParams)
+}
+
+// createAWSConfigFromCSISecrets creates AWS config from CSI secrets passed by the provisioner
+// The CSI provisioner resolves StorageClass secret parameters and passes the actual credential
+// values in the secrets field of the CreateVolumeRequest
+func (d *Driver) createAWSConfigFromCSISecrets(ctx context.Context, secrets map[string]string) (aws.Config, error) {
+	// Extract standard AWS credential fields from CSI secrets
+	accessKeyID, hasAccessKey := secrets[constants.AccessKeyIDField]
+	secretAccessKey, hasSecretKey := secrets[constants.SecretAccessKeyField]
+
+	if !hasAccessKey || !hasSecretKey {
+		return aws.Config{}, fmt.Errorf("CSI secrets missing required AWS credentials: access_key_id=%v, secret_access_key=%v", hasAccessKey, hasSecretKey)
+	}
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return aws.Config{}, fmt.Errorf("CSI secrets contain empty AWS credentials")
+	}
+
+	// Optional session token for temporary credentials
+	sessionToken := secrets[constants.SessionTokenField] // empty if not present
+
+	// Optional region override
+	region := secrets[constants.RegionField] // empty if not present
+
+	// Create static credential provider from CSI secrets
+	credsProvider := credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, sessionToken)
+
+	// Load base config with static credentials
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithCredentialsProvider(credsProvider),
+	)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("failed to create AWS config from CSI secrets: %w", err)
+	}
+
+	// Override region if provided in secrets
+	if region != "" {
+		cfg.Region = region
+	}
+
+	klog.V(4).Infof("Created AWS config from CSI secrets: accessKeyID=%s, region=%s, hasSessionToken=%v", accessKeyID[:min(len(accessKeyID), 8)]+"...", cfg.Region, sessionToken != "")
+	return cfg, nil
 }
 
 func generateVolumeID() string {
