@@ -2,13 +2,18 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	f "k8s.io/kubernetes/test/e2e/framework"
 	e2eskipper "k8s.io/kubernetes/test/e2e/framework/skipper"
 	"k8s.io/kubernetes/test/e2e/storage/framework"
+	"k8s.io/utils/ptr"
 )
 
 var (
@@ -27,12 +32,14 @@ type s3Volume struct {
 	bucketName           string
 	deleteBucket         s3client.DeleteBucketFunc
 	authenticationSource string
+	isDynamic            bool
 }
 
 var (
 	_ framework.TestDriver                     = &s3Driver{}
 	_ framework.PreprovisionedVolumeTestDriver = &s3Driver{}
 	_ framework.PreprovisionedPVTestDriver     = &s3Driver{}
+	_ framework.DynamicPVTestDriver            = &s3Driver{}
 )
 
 func initS3Driver() *s3Driver {
@@ -59,9 +66,29 @@ func (d *s3Driver) GetDriverInfo() *framework.DriverInfo {
 	return &d.driverInfo
 }
 
+func (d *s3Driver) GetDynamicProvisionStorageClass(
+	ctx context.Context,
+	config *framework.PerTestConfig,
+	fsType string,
+) *storagev1.StorageClass {
+	// Generate unique storage class name
+	scName := fmt.Sprintf("s3-sc-%s", uuid.NewString()[:8])
+
+	return &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: scName,
+		},
+		Provisioner: d.driverInfo.Name, // "s3.csi.scality.com"
+		Parameters:  map[string]string{
+			// Basic test with no parameters
+		},
+		ReclaimPolicy: ptr.To(v1.PersistentVolumeReclaimDelete),
+	}
+}
+
 func (d *s3Driver) SkipUnsupportedTest(pattern framework.TestPattern) {
-	if pattern.VolType != framework.PreprovisionedPV {
-		e2eskipper.Skipf("Scality S3 Driver only supports static provisioning -- skipping")
+	if pattern.VolType != framework.PreprovisionedPV && pattern.VolType != framework.DynamicPV {
+		e2eskipper.Skipf("Scality S3 Driver: unsupported volume type - %v", pattern.VolType)
 	}
 }
 
@@ -76,22 +103,31 @@ func (d *s3Driver) PrepareTest(ctx context.Context, f *f.Framework) *framework.P
 }
 
 func (d *s3Driver) CreateVolume(ctx context.Context, config *framework.PerTestConfig, volumeType framework.TestVolType) framework.TestVolume {
-	if volumeType != framework.PreprovisionedPV {
-		f.Failf("Unsupported volType: %v is specified", volumeType)
-	}
+	switch volumeType {
+	case framework.PreprovisionedPV:
+		var bucketName string
+		var deleteBucket s3client.DeleteBucketFunc
+		type contextKey string
+		const authenticationSourceKey contextKey = "authenticationSource"
 
-	var bucketName string
-	var deleteBucket s3client.DeleteBucketFunc
-	type contextKey string                                            // TODO(S3CSI-11): Refactor once more authentication sources are supported
-	const authenticationSourceKey contextKey = "authenticationSource" // TODO(S3CSI-11): Refactor once more authentication sources are supported
+		bucketName, deleteBucket = d.client.CreateBucket(ctx)
+		val, _ := ctx.Value(authenticationSourceKey).(string)
 
-	bucketName, deleteBucket = d.client.CreateBucket(ctx)
-	val, _ := ctx.Value(authenticationSourceKey).(string) // TODO(S3CSI-11): Refactor once more authentication sources are supported
-
-	return &s3Volume{
-		bucketName:           bucketName,
-		deleteBucket:         deleteBucket,
-		authenticationSource: val,
+		return &s3Volume{
+			bucketName:           bucketName,
+			deleteBucket:         deleteBucket,
+			authenticationSource: val,
+			isDynamic:            false,
+		}
+	case framework.DynamicPV:
+		// For dynamic provisioning, no pre-created bucket needed
+		// The CSI driver will create the bucket during CreateVolume RPC
+		return &s3Volume{
+			isDynamic: true,
+		}
+	default:
+		f.Failf("Unsupported volType: %v", volumeType)
+		return nil
 	}
 }
 
@@ -114,6 +150,15 @@ func (d *s3Driver) GetPersistentVolumeSource(readOnly bool, fsType string, testV
 }
 
 func (v *s3Volume) DeleteVolume(ctx context.Context) {
-	err := v.deleteBucket(ctx)
-	f.ExpectNoError(err, "failed to delete S3 Bucket: %s", v.bucketName)
+	if v.isDynamic {
+		// For dynamic volumes, the CSI driver handles deletion
+		// No manual bucket cleanup needed
+		return
+	}
+
+	// Existing code for static volumes
+	if v.deleteBucket != nil {
+		err := v.deleteBucket(ctx)
+		f.ExpectNoError(err, "failed to delete S3 Bucket: %s", v.bucketName)
+	}
 }

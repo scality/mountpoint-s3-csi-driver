@@ -105,7 +105,13 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 	stopCh := make(chan struct{})
 
 	var mounterImpl mounter.Mounter
-	if util.UsePodMounter() {
+
+	// Check if running in controller-only mode
+	if os.Getenv("CSI_CONTROLLER_ONLY") == "true" {
+		klog.Infoln("Running in controller-only mode, skipping mounter initialization")
+		// No mounter needed for controller-only mode
+		mounterImpl = nil
+	} else if util.UsePodMounter() {
 		podWatcher := watcher.New(clientset, mountpointPodNamespace, podWatcherResyncPeriod)
 		err = podWatcher.Start(stopCh)
 		if err != nil {
@@ -125,7 +131,10 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		klog.Infoln("Using systemd mounter")
 	}
 
-	nodeServer := node.NewS3NodeServer(nodeID, mounterImpl)
+	var nodeServer *node.S3NodeServer
+	if mounterImpl != nil {
+		nodeServer = node.NewS3NodeServer(nodeID, mounterImpl)
+	}
 
 	// Initialize controller credential provider for dynamic provisioning
 	controllerCredProvider := controllerCredProvider.New(clientset)
@@ -195,7 +204,9 @@ func (d *Driver) Run() error {
 
 	csi.RegisterIdentityServer(d.Srv, d)
 	csi.RegisterControllerServer(d.Srv, d)
-	csi.RegisterNodeServer(d.Srv, d.NodeServer)
+	if d.NodeServer != nil {
+		csi.RegisterNodeServer(d.Srv, d.NodeServer)
+	}
 
 	klog.Infof("Listening for connections on address: %#v", listener.Addr())
 	return d.Srv.Serve(listener)

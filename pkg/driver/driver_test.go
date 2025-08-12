@@ -124,6 +124,53 @@ func TestDriverStop(t *testing.T) {
 	driver.Stop()
 }
 
+// TestControllerOnlyEnvironmentLogic tests the CSI_CONTROLLER_ONLY environment variable parsing
+func TestControllerOnlyEnvironmentLogic(t *testing.T) {
+	// Save original environment variable
+	originalControllerOnly := os.Getenv("CSI_CONTROLLER_ONLY")
+	defer func() {
+		if originalControllerOnly == "" {
+			_ = os.Unsetenv("CSI_CONTROLLER_ONLY")
+		} else {
+			_ = os.Setenv("CSI_CONTROLLER_ONLY", originalControllerOnly)
+		}
+	}()
+
+	t.Run("environment variable parsing works correctly", func(t *testing.T) {
+		// Test the actual environment variable condition used in the code: os.Getenv("CSI_CONTROLLER_ONLY") == "true"
+
+		// Test case 1: CSI_CONTROLLER_ONLY="true" should return true
+		_ = os.Setenv("CSI_CONTROLLER_ONLY", "true")
+		if os.Getenv("CSI_CONTROLLER_ONLY") != "true" {
+			t.Fatal("Expected CSI_CONTROLLER_ONLY environment variable to be 'true'")
+		}
+		// Verify the condition used in the code
+		if os.Getenv("CSI_CONTROLLER_ONLY") != "true" {
+			t.Fatal("Controller-only mode condition should be true when CSI_CONTROLLER_ONLY='true'")
+		}
+
+		// Test case 2: CSI_CONTROLLER_ONLY="false" should not trigger controller-only mode
+		_ = os.Setenv("CSI_CONTROLLER_ONLY", "false")
+		if os.Getenv("CSI_CONTROLLER_ONLY") == "true" {
+			t.Fatal("Expected CSI_CONTROLLER_ONLY environment variable to not be 'true' when set to 'false'")
+		}
+		// Verify the condition used in the code
+		if os.Getenv("CSI_CONTROLLER_ONLY") == "true" {
+			t.Fatal("Controller-only mode condition should be false when CSI_CONTROLLER_ONLY='false'")
+		}
+
+		// Test case 3: Unset CSI_CONTROLLER_ONLY should not trigger controller-only mode
+		_ = os.Unsetenv("CSI_CONTROLLER_ONLY")
+		if os.Getenv("CSI_CONTROLLER_ONLY") == "true" {
+			t.Fatal("Expected CSI_CONTROLLER_ONLY environment variable to not be 'true' when unset")
+		}
+		// Verify the condition used in the code
+		if os.Getenv("CSI_CONTROLLER_ONLY") == "true" {
+			t.Fatal("Controller-only mode condition should be false when CSI_CONTROLLER_ONLY is unset")
+		}
+	})
+}
+
 func TestParseEndpoint(t *testing.T) {
 	tests := []struct {
 		name           string

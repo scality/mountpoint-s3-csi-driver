@@ -112,8 +112,10 @@ s3CredentialSecret:
 experimental:
   podMounter: false
 
-# Controller configuration (only used with experimental pod mounter)
+# Controller configuration (used for dynamic provisioning)
 controller:
+  # Enable controller deployment for dynamic provisioning
+  enable: true
   serviceAccount:
     # Specifies whether a service account should be created
     create: true

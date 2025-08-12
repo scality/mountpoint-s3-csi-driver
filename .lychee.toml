@@ -54,6 +54,9 @@ exclude = [
     "^https?://(www\\.)?facebook\\.com",
     "^https?://(www\\.)?instagram\\.com",
 
+    # Exclude freedesktop.org (intermittent bot blocking issues)
+    "^https?://(www\\.)?freedesktop\\.org",
+
     # Exclude email addresses by default (can be enabled with include_mail)
     "^mailto:",
 
