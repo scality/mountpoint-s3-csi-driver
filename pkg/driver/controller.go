@@ -46,11 +46,13 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	klog.V(4).Infof("CreateVolume: received parameters: %+v", req.GetParameters())
 	params, err := storageclass.ParseAndValidate(req.GetParameters())
 	if err != nil {
 		klog.Errorf("CreateVolume: failed to parse StorageClass parameters: %v", err)
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("failed to parse StorageClass parameters: %v", err))
 	}
+	klog.V(4).Infof("CreateVolume: parsed parameters - HasProvisionerSecret: %v, HasNodePublishSecret: %v", params.HasProvisionerSecret(), params.HasNodePublishSecret())
 
 	volumeID := generateVolumeID()
 	klog.V(4).Infof("Generated volume ID: %s", volumeID)
