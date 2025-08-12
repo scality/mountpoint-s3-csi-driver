@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/customsuites"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -74,13 +75,20 @@ func (d *s3Driver) GetDynamicProvisionStorageClass(
 	// Generate unique storage class name
 	scName := fmt.Sprintf("s3-sc-%s", uuid.NewString()[:8])
 
+	// Create provisioner secret for authentication
+	secretName, err := customsuites.CreateProvisionerSecret(ctx, config.Framework)
+	if err != nil {
+		f.Failf("Failed to create provisioner secret: %v", err)
+	}
+
 	return &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: scName,
 		},
 		Provisioner: d.driverInfo.Name, // "s3.csi.scality.com"
-		Parameters:  map[string]string{
-			// Basic test with no parameters
+		Parameters: map[string]string{
+			"csi.storage.k8s.io/provisioner-secret-name":      secretName,
+			"csi.storage.k8s.io/provisioner-secret-namespace": config.Framework.Namespace.Name,
 		},
 		ReclaimPolicy: ptr.To(v1.PersistentVolumeReclaimDelete),
 	}
