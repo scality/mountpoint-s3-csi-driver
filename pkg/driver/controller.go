@@ -50,9 +50,6 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	klog.V(4).Infof("CreateVolume: received parameters: %+v", req.GetParameters())
 	klog.V(4).Infof("CreateVolume: received secrets count: %d", len(req.GetSecrets()))
-	for k, v := range req.GetSecrets() {
-		klog.V(4).Infof("CreateVolume: secret key %s = %s", k, v[:min(len(v), 10)]+"...")
-	}
 	params, err := storageclass.ParseAndValidate(req.GetParameters())
 	if err != nil {
 		klog.Errorf("CreateVolume: failed to parse StorageClass parameters: %v", err)
@@ -383,7 +380,7 @@ func (d *Driver) createAWSConfigFromCSISecrets(ctx context.Context, secrets map[
 		cfg.Region = region
 	}
 
-	klog.V(4).Infof("Created AWS config from CSI secrets: accessKeyID=%s, region=%s, hasSessionToken=%v", accessKeyID[:min(len(accessKeyID), 8)]+"...", cfg.Region, sessionToken != "")
+	klog.V(4).Infof("Created AWS config from CSI secrets: region=%s, hasSessionToken=%v", cfg.Region, sessionToken != "")
 	return cfg, nil
 }
 
