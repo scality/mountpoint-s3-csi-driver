@@ -76,9 +76,15 @@ func (d *s3Driver) GetDynamicProvisionStorageClass(
 	scName := fmt.Sprintf("s3-sc-%s", uuid.NewString()[:8])
 
 	// Create provisioner secret for authentication
-	secretName, err := customsuites.CreateProvisionerSecret(ctx, config.Framework)
+	provSecretName, err := customsuites.CreateProvisionerSecret(ctx, config.Framework)
 	if err != nil {
 		f.Failf("Failed to create provisioner secret: %v", err)
+	}
+
+	// Create node-publish secret for mounting authentication
+	nodeSecretName, err := customsuites.CreateNodePublishSecret(ctx, config.Framework)
+	if err != nil {
+		f.Failf("Failed to create node-publish secret: %v", err)
 	}
 
 	return &storagev1.StorageClass{
@@ -87,8 +93,10 @@ func (d *s3Driver) GetDynamicProvisionStorageClass(
 		},
 		Provisioner: d.driverInfo.Name, // "s3.csi.scality.com"
 		Parameters: map[string]string{
-			"csi.storage.k8s.io/provisioner-secret-name":      secretName,
-			"csi.storage.k8s.io/provisioner-secret-namespace": config.Framework.Namespace.Name,
+			"csi.storage.k8s.io/provisioner-secret-name":       provSecretName,
+			"csi.storage.k8s.io/provisioner-secret-namespace":  config.Framework.Namespace.Name,
+			"csi.storage.k8s.io/node-publish-secret-name":      nodeSecretName,
+			"csi.storage.k8s.io/node-publish-secret-namespace": config.Framework.Namespace.Name,
 		},
 		ReclaimPolicy: ptr.To(v1.PersistentVolumeReclaimDelete),
 	}
