@@ -212,6 +212,15 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 			return err == nil && boundPV != nil
 		}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.BeTrue(), "PVC should be bound and PV should be available")
 
+		// DEBUG: Print all volume context attributes
+		ginkgo.By("DEBUG: Printing volume context for analysis")
+		framework.Logf("Volume context attributes: %+v", boundPV.Spec.CSI.VolumeAttributes)
+		
+		// Also print the StorageClass parameters for debugging
+		debugSC, err := f.ClientSet.StorageV1().StorageClasses().Get(ctx, sc.Name, metav1.GetOptions{})
+		framework.ExpectNoError(err, "Failed to get StorageClass for debug")
+		framework.Logf("StorageClass parameters: %+v", debugSC.Parameters)
+
 		// Verify the volume context contains the correct authentication source
 		VerifyVolumeContext(boundPV, map[string]string{
 			"authenticationSource": "secret",
