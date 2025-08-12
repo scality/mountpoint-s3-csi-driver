@@ -45,7 +45,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) GetTestSuiteInfo() storageframework
 }
 
 // SkipUnsupportedTests skips tests not applicable to this driver
-func (t *s3DynamicProvisioningAuthTestSuite) SkipUnsupportedTests(pattern storageframework.TestPattern, driver storageframework.TestDriver) {
+func (t *s3DynamicProvisioningAuthTestSuite) SkipUnsupportedTests(driver storageframework.TestDriver, pattern storageframework.TestPattern) {
 	if pattern.VolType != storageframework.DynamicPV {
 		ginkgo.Skip("S3 Dynamic Provisioning Auth test only supports DynamicPV")
 	}
@@ -54,23 +54,29 @@ func (t *s3DynamicProvisioningAuthTestSuite) SkipUnsupportedTests(pattern storag
 // DefineTests defines the authentication-specific tests for dynamic provisioning
 func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework.TestDriver, pattern storageframework.TestPattern) {
 	type local struct {
-		config *storageframework.PerTestConfig
-		driver storageframework.TestDriver
+		resources []*storageframework.VolumeResource
+		config    *storageframework.PerTestConfig
 	}
-
 	var l local
-	ctx := context.Background()
 
-	ginkgo.BeforeEach(func() {
-		l = local{}
-		f := framework.NewDefaultFramework("s3-dynamic-auth")
-		l.config = driver.PrepareTest(ctx, f)
-		l.driver = driver
-	})
+	// Create a framework with custom timeouts based on the driver's requirements
+	f := framework.NewFrameworkWithCustomTimeouts("s3-dynamic-auth", storageframework.GetDriverTimeouts(driver))
+	f.NamespacePodSecurityEnforceLevel = "privileged"
+
+	// cleanup function to be called after each test to ensure resources are properly deleted
+	cleanup := func(ctx context.Context) {
+		for _, resource := range l.resources {
+			if resource != nil {
+				_ = resource.CleanupResource(ctx)
+			}
+		}
+		l.resources = nil
+	}
 
 	// Test credential hierarchy: driver → provisioner → node-publish
 	ginkgo.It("should use correct credential hierarchy for dynamic provisioning", func(ctx context.Context) {
-		f := l.config.Framework
+		l.config = driver.PrepareTest(ctx, f)
+		defer cleanup(ctx)
 
 		ginkgo.By("Creating StorageClass with full authentication parameters")
 
@@ -152,12 +158,13 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 
 	// Test volume context contains correct authentication source
 	ginkgo.It("should set volume context with correct authentication source", func(ctx context.Context) {
-		f := l.config.Framework
+		l.config = driver.PrepareTest(ctx, f)
+		defer cleanup(ctx)
 
 		ginkgo.By("Creating dynamic PV through standard test driver")
 
 		// Use the test driver to create a dynamic StorageClass
-		dynamicDriver, ok := l.driver.(storageframework.DynamicPVTestDriver)
+		dynamicDriver, ok := driver.(storageframework.DynamicPVTestDriver)
 		if !ok {
 			ginkgo.Skip("Driver does not support dynamic provisioning")
 		}
@@ -213,7 +220,8 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 
 	// Test cross-namespace secret access
 	ginkgo.It("should handle cross-namespace secret access correctly", func(ctx context.Context) {
-		f := l.config.Framework
+		l.config = driver.PrepareTest(ctx, f)
+		defer cleanup(ctx)
 
 		ginkgo.By("Creating secrets in different namespaces")
 
