@@ -85,7 +85,7 @@ func TestCreateVolume(t *testing.T) {
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 						},
 					},
 				},
@@ -107,7 +107,7 @@ func TestCreateVolume(t *testing.T) {
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 						},
 					},
 				},
@@ -125,7 +125,7 @@ func TestCreateVolume(t *testing.T) {
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 						},
 					},
 				},
@@ -134,19 +134,19 @@ func TestCreateVolume(t *testing.T) {
 			errorContains: "provisioner secret name provided but namespace is missing",
 		},
 		{
-			name: "invalid single-node access mode",
+			name: "unsupported access mode - ReadOnlyMany should use mount options",
 			req: &csi.CreateVolumeRequest{
-				Name: "test-volume-single-node",
+				Name: "test-volume-readonly-access-mode",
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
 						},
 					},
 				},
 			},
 			expectedError: codes.InvalidArgument,
-			errorContains: "S3 volumes only support multi-node access modes",
+			errorContains: "S3 volumes only support ReadWriteMany access mode",
 		},
 		{
 			name: "missing volume capability access mode",
@@ -176,7 +176,7 @@ func TestCreateVolume(t *testing.T) {
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 						},
 					},
 				},
@@ -363,7 +363,7 @@ func TestCreateVolumeAuthenticationSource(t *testing.T) {
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 						},
 					},
 				},
