@@ -318,22 +318,22 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 		}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), "Cross-namespace authentication should work")
 	})
 
-	// Test bucket ownership verification with Lisa's credentials
-	ginkgo.It("should create bucket with Lisa's credentials when both provisioner and node secrets use Lisa", func(ctx context.Context) {
+	// Test bucket ownership verification with account other than driver default
+	ginkgo.It("should create bucket with account other than driver default when both provisioner and node secrets use same account", func(ctx context.Context) {
 		l.config = driver.PrepareTest(ctx, f)
 		defer cleanup(ctx)
 
-		ginkgo.By("Creating StorageClass with Lisa's credentials for both provisioner and node secrets")
+		ginkgo.By("Creating StorageClass with account2 credentials for both provisioner and node secrets")
 
-		// Create Lisa's provisioner and node-publish secrets
+		// Create account2 provisioner and node-publish secrets
 		lisaProvSecretName, err := CreateLisaProvisionerSecret(ctx, f)
-		framework.ExpectNoError(err, "Failed to create Lisa's provisioner secret")
+		framework.ExpectNoError(err, "Failed to create account2 provisioner secret")
 
 		lisaNodeSecretName, err := CreateLisaNodePublishSecret(ctx, f)
-		framework.ExpectNoError(err, "Failed to create Lisa's node-publish secret")
+		framework.ExpectNoError(err, "Failed to create account2 node-publish secret")
 
-		// Create StorageClass with both Lisa's secrets
-		scName := fmt.Sprintf("lisa-auth-sc-%s", uuid.NewString()[:8])
+		// Create StorageClass with both account2 secrets
+		scName := fmt.Sprintf("account2-auth-sc-%s", uuid.NewString()[:8])
 		sc := &storagev1.StorageClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
@@ -355,9 +355,9 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 			_ = f.ClientSet.StorageV1().StorageClasses().Delete(ctx, sc.Name, metav1.DeleteOptions{})
 		}()
 
-		ginkgo.By("Creating PVC with Lisa's authentication-enabled StorageClass")
+		ginkgo.By("Creating PVC with account2 authentication-enabled StorageClass")
 
-		pvcName := fmt.Sprintf("lisa-pvc-%s", uuid.NewString()[:8])
+		pvcName := fmt.Sprintf("account2-pvc-%s", uuid.NewString()[:8])
 		pvc := &v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pvcName,
@@ -375,9 +375,9 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 		}
 
 		_, err = f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Create(ctx, pvc, metav1.CreateOptions{})
-		framework.ExpectNoError(err, "Failed to create PVC with Lisa's StorageClass")
+		framework.ExpectNoError(err, "Failed to create PVC with account2 StorageClass")
 
-		ginkgo.By("Waiting for PVC to be bound with Lisa's authentication")
+		ginkgo.By("Waiting for PVC to be bound with account2 authentication")
 
 		var boundPV *v1.PersistentVolume
 		gomega.Eventually(func(ctx context.Context) bool {
@@ -397,7 +397,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 		ginkgo.By("Mounting the volume and creating a test file")
 
 		// Create a test pod to mount the volume and write a file
-		podName := fmt.Sprintf("lisa-test-pod-%s", uuid.NewString()[:8])
+		podName := fmt.Sprintf("account2-test-pod-%s", uuid.NewString()[:8])
 		pod := &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      podName,
@@ -415,15 +415,15 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 						},
 						VolumeMounts: []v1.VolumeMount{
 							{
-								Name:      "lisa-volume",
-								MountPath: "/mnt/lisa-data",
+								Name:      "account2-volume",
+								MountPath: "/mnt/account2-data",
 							},
 						},
 					},
 				},
 				Volumes: []v1.Volume{
 					{
-						Name: "lisa-volume",
+						Name: "account2-volume",
 						VolumeSource: v1.VolumeSource{
 							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
 								ClaimName: pvc.Name,
@@ -446,37 +446,37 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 		framework.ExpectNoError(e2epod.WaitForPodRunningInNamespace(ctx, f.ClientSet, pod), "Pod should be running")
 
 		// Create a test file
-		testFileName := "lisa-ownership-test.txt"
-		testFilePath := "/mnt/lisa-data/" + testFileName
-		testFileContent := "This file was created with Lisa's credentials"
+		testFileName := "account2-ownership-test.txt"
+		testFilePath := "/mnt/account2-data/" + testFileName
+		testFileContent := "This file was created with account2 credentials"
 
 		framework.Logf("Creating test file %s in pod %s", testFilePath, pod.Name)
 		WriteAndVerifyFile(f, pod, testFilePath, testFileContent)
 
-		ginkgo.By("Verifying bucket ownership using Lisa's S3 client")
+		ginkgo.By("Verifying bucket ownership using account2 S3 client")
 
-		// Create Lisa's S3 client to verify ownership
-		lisaAccessKey := GetEnv("ACCOUNT2_ACCESS_KEY", "")
-		lisaSecretKey := GetEnv("ACCOUNT2_SECRET_KEY", "")
-		lisaCanonicalID := GetEnv("ACCOUNT2_CANONICAL_ID", "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf")
+		// Create account2 S3 client to verify ownership
+		account2AccessKey := GetEnv("ACCOUNT2_ACCESS_KEY", "")
+		account2SecretKey := GetEnv("ACCOUNT2_SECRET_KEY", "")
+		account2CanonicalID := GetEnv("ACCOUNT2_CANONICAL_ID", "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf")
 
-		// Ensure we have Lisa's credentials
-		if lisaAccessKey == "" || lisaSecretKey == "" {
-			ginkgo.Fail("Lisa's credentials not available for bucket ownership verification")
+		// Ensure we have account2 credentials
+		if account2AccessKey == "" || account2SecretKey == "" {
+			ginkgo.Fail("Account2 credentials not available for bucket ownership verification")
 		}
 
-		// Import the s3client package
-		lisaS3Client := s3client.New("", lisaAccessKey, lisaSecretKey)
+		// Create S3 client with account2 credentials
+		account2S3Client := s3client.New("", account2AccessKey, account2SecretKey)
 
-		// Verify the test file object has Lisa's canonical ID as owner
-		framework.Logf("Verifying object %s has Lisa's canonical ID: %s", testFileName, lisaCanonicalID)
-		ownerID, err := lisaS3Client.GetObjectOwnerID(ctx, bucketName, testFileName)
+		// Verify the test file object has account2's canonical ID as owner
+		framework.Logf("Verifying object %s has account2 canonical ID: %s", testFileName, account2CanonicalID)
+		ownerID, err := account2S3Client.GetObjectOwnerID(ctx, bucketName, testFileName)
 		framework.ExpectNoError(err, "Failed to get object owner ID")
 
-		gomega.Expect(ownerID).To(gomega.Equal(lisaCanonicalID),
-			"Object should be owned by Lisa (canonical ID: %s), but got: %s. This indicates the bucket was not created with Lisa's credentials as expected.", lisaCanonicalID, ownerID)
+		gomega.Expect(ownerID).To(gomega.Equal(account2CanonicalID),
+			"Object should be owned by account2 (canonical ID: %s), but got: %s. This indicates the bucket was not created with account2 credentials as expected.", account2CanonicalID, ownerID)
 
-		framework.Logf("SUCCESS: Bucket ownership verification passed - object owner ID %s matches Lisa's canonical ID %s", ownerID, lisaCanonicalID)
+		framework.Logf("SUCCESS: Bucket ownership verification passed - object owner ID %s matches account2 canonical ID %s", ownerID, account2CanonicalID)
 
 		ginkgo.By("Verifying volume context indicates secret authentication")
 
