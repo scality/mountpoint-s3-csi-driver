@@ -90,10 +90,10 @@ var CSITestSuites = []func() framework.TestSuite{
 	// 8. Deletes all created resources (PVC deletion triggers PV and bucket cleanup).
 	//
 	// This validates the CSI driver's CreateVolume and DeleteVolume implementations.
-	// This will be enabled in once we have proper authentication sources implemented
-	// I am adding this so we do not forget it.
-	// TODO(S3CSI-150): Re-enable this test once the "any volume data source" test is implemented
-	// testsuites.InitProvisioningTestSuite,
+	// Full Kubernetes provisioning test suite with 30+ test scenarios
+	// including immediate vs WaitForFirstConsumer binding, multiple PVCs, invalid parameters,
+	// reclaim policies, node affinity, volume modes, and access modes.
+	testsuites.InitProvisioningTestSuite,
 
 	// Custom test suites specific to Scality CSI Driver for S3.
 	customsuites.InitS3MountOptionsTestSuite,
@@ -104,6 +104,8 @@ var CSITestSuites = []func() framework.TestSuite{
 	customsuites.InitS3CredentialsTestSuite,
 	customsuites.InitS3DynamicRbacTestSuite,
 	customsuites.InitS3DynamicProvisioningAuthTestSuite,
+	customsuites.InitS3DynamicProvisioningPerfTestSuite,
+	customsuites.InitS3AdvancedPatternsTestSuite,
 }
 
 // CSI test suite registration and execution.
