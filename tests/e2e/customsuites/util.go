@@ -473,6 +473,30 @@ func CreateNodePublishSecret(ctx context.Context, f *framework.Framework) (strin
 	return CreateCredentialSecret(ctx, f, "test-node-publish-secret", accessKeyID, secretAccessKey)
 }
 
+// CreateLisaProvisionerSecret creates a Secret for provisioner authentication using Lisa's (Account2) credentials.
+// This is used for testing that provisioner secrets take precedence over driver default credentials.
+func CreateLisaProvisionerSecret(ctx context.Context, f *framework.Framework) (string, error) {
+	// Use Account2 (Lisa) credentials
+	accessKeyID := GetEnv("ACCOUNT2_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT2_SECRET_KEY", "")
+	if accessKeyID == "" || secretAccessKey == "" {
+		return "", fmt.Errorf("Lisa's credentials not available: ACCOUNT2_ACCESS_KEY and ACCOUNT2_SECRET_KEY must be set")
+	}
+	return CreateCredentialSecret(ctx, f, "lisa-provisioner-secret", accessKeyID, secretAccessKey)
+}
+
+// CreateLisaNodePublishSecret creates a Secret for node-publish authentication using Lisa's (Account2) credentials.
+// This is used for testing that node-publish secrets take precedence over driver default credentials.
+func CreateLisaNodePublishSecret(ctx context.Context, f *framework.Framework) (string, error) {
+	// Use Account2 (Lisa) credentials
+	accessKeyID := GetEnv("ACCOUNT2_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT2_SECRET_KEY", "")
+	if accessKeyID == "" || secretAccessKey == "" {
+		return "", fmt.Errorf("Lisa's credentials not available: ACCOUNT2_ACCESS_KEY and ACCOUNT2_SECRET_KEY must be set")
+	}
+	return CreateCredentialSecret(ctx, f, "lisa-node-publish-secret", accessKeyID, secretAccessKey)
+}
+
 // BuildSecretVolume creates a volume using a secret reference for authentication.
 func BuildSecretVolume(
 	ctx context.Context,
