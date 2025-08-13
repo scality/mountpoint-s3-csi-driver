@@ -307,3 +307,79 @@ func TestProvideWithUnknownAuthSource(t *testing.T) {
 	assert.Equals(t, credentialprovider.AuthenticationSourceUnspecified, source)
 	assert.Equals(t, envprovider.Environment(nil), env)
 }
+
+func TestCredentialFallback(t *testing.T) {
+	// This test verifies the credential fallback behavior when only provisioner-secret
+	// is configured in StorageClass but no node-publish-secret is provided.
+	// Due to CSI spec limitations, the node service cannot access provisioner secrets,
+	// so it must fall back to driver credentials.
+
+	// Set up environment variables for driver-level credentials
+	setEnvForLongTermCredentials(t)
+
+	provider := credentialprovider.New(nil)
+
+	writePath := t.TempDir()
+	provideCtx := credentialprovider.ProvideContext{
+		AuthenticationSource: credentialprovider.AuthenticationSourceSecret, // Request secret authentication
+		SecretData:           nil,                                           // No node-publish secret data available
+		WritePath:            writePath,
+		EnvPath:              testEnvPath,
+		PodID:                testPodID,
+		VolumeID:             testVolumeID,
+	}
+
+	env, source, err := provider.Provide(context.Background(), provideCtx)
+
+	// Should succeed with driver authentication as fallback
+	// (Cannot use provisioner secret - CSI spec limitation)
+	assert.NoError(t, err)
+	assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
+
+	// Verify environment contains driver credentials (same as driver-level credentials test)
+	assert.Equals(t, envprovider.Environment{
+		"AWS_PROFILE":                 testProfilePrefix + "s3-csi",
+		"AWS_CONFIG_FILE":             "/test-env/" + testProfilePrefix + "s3-csi-config",
+		"AWS_SHARED_CREDENTIALS_FILE": "/test-env/" + testProfilePrefix + "s3-csi-credentials",
+	}, env)
+
+	// Verify credential files were created
+	assertLongTermCredentials(t, writePath)
+}
+
+func TestCredentialFallbackEmptySecretData(t *testing.T) {
+	// This test verifies fallback behavior when secret authentication is requested
+	// but the SecretData map is empty (no node-publish secrets provided).
+	// This simulates the case where only provisioner-secret is in the StorageClass.
+
+	// Set up environment variables for driver-level credentials
+	setEnvForLongTermCredentials(t)
+
+	provider := credentialprovider.New(nil)
+
+	writePath := t.TempDir()
+	provideCtx := credentialprovider.ProvideContext{
+		AuthenticationSource: credentialprovider.AuthenticationSourceSecret, // Request secret authentication
+		SecretData:           map[string]string{},                           // Empty map - no node-publish secrets
+		WritePath:            writePath,
+		EnvPath:              testEnvPath,
+		PodID:                testPodID,
+		VolumeID:             testVolumeID,
+	}
+
+	env, source, err := provider.Provide(context.Background(), provideCtx)
+
+	// Should succeed with driver authentication as fallback
+	assert.NoError(t, err)
+	assert.Equals(t, credentialprovider.AuthenticationSourceDriver, source)
+
+	// Verify environment contains driver credentials (same as driver-level credentials test)
+	assert.Equals(t, envprovider.Environment{
+		"AWS_PROFILE":                 testProfilePrefix + "s3-csi",
+		"AWS_CONFIG_FILE":             "/test-env/" + testProfilePrefix + "s3-csi-config",
+		"AWS_SHARED_CREDENTIALS_FILE": "/test-env/" + testProfilePrefix + "s3-csi-credentials",
+	}, env)
+
+	// Verify credential files were created
+	assertLongTermCredentials(t, writePath)
+}
