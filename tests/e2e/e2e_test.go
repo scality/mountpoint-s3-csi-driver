@@ -106,6 +106,7 @@ var CSITestSuites = []func() framework.TestSuite{
 	customsuites.InitS3DynamicProvisioningAuthTestSuite,
 	customsuites.InitS3DynamicProvisioningPerfTestSuite,
 	customsuites.InitS3AdvancedPatternsTestSuite,
+	customsuites.InitS3DynamicProvisioningMountOptionsTestSuite,
 }
 
 // CSI test suite registration and execution.
