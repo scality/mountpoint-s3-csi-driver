@@ -273,13 +273,11 @@ func validateCreateVolumeRequest(req *csi.CreateVolumeRequest) error {
 			return fmt.Errorf("volume capability access mode is required")
 		}
 		mode := cap.GetAccessMode().GetMode()
-		// S3 only supports multi-node access modes since it's object storage
-		// Single-node modes don't make sense for S3
-		if mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER ||
-			mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY ||
-			mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER ||
-			mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER {
-			return fmt.Errorf("S3 volumes only support multi-node access modes, got %v", mode)
+		// S3 is naturally multi-node read-write storage
+		// ReadOnlyMany behavior is achieved via mount options, not access modes
+		// Only support ReadWriteMany access mode - use mount options for read-only behavior
+		if mode != csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
+			return fmt.Errorf("S3 volumes only support ReadWriteMany access mode, got %v. Use mount options for read-only behavior", mode)
 		}
 	}
 	return nil
