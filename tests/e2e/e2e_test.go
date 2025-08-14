@@ -69,8 +69,31 @@ var CSITestSuites = []func() framework.TestSuite{
 	// 7. Deletes all created resources (pod, PVC, PV, S3 bucket).
 	//
 	// This is part of the standard CSI driver compliance test suite and is
-	// used to verify functional support for static provisioning with S3 storage.
+	// used to verify functional support for both static and dynamic provisioning with S3 storage.
+	// Dynamic provisioning test: "[Testpattern: Dynamic PV (default fs)] volumes should store data"
+	// Static provisioning test: "[Testpattern: Pre-provisioned PV (default fs)] volumes should store data"
 	testsuites.InitVolumesTestSuite,
+
+	// [sig-storage] CSI Volumes Test: Dynamic Provisioning
+	//
+	// This test verifies that the S3 CSI driver supports dynamic provisioning
+	// where S3 buckets are created on-demand when PVCs are created.
+	//
+	// The test performs the following steps:
+	// 1. Creates a Kubernetes namespace for test isolation.
+	// 2. Creates a StorageClass for dynamic provisioning.
+	// 3. Creates a PVC referencing the StorageClass.
+	// 4. Verifies that a PV is dynamically created and bound.
+	// 5. Launches a pod that mounts the PVC.
+	// 6. Writes data to the S3 bucket through the mounted volume.
+	// 7. Reads the data back and compares it to the expected content.
+	// 8. Deletes all created resources (PVC deletion triggers PV and bucket cleanup).
+	//
+	// This validates the CSI driver's CreateVolume and DeleteVolume implementations.
+	// This will be enabled in once we have proper authentication sources implemented
+	// I am adding this so we do not forget it.
+	// TODO(S3CSI-150): Re-enable this test once the "any volume data source" test is implemented
+	// testsuites.InitProvisioningTestSuite,
 
 	// Custom test suites specific to Scality CSI Driver for S3.
 	customsuites.InitS3MountOptionsTestSuite,

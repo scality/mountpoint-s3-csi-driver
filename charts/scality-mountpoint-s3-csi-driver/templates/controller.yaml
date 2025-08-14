@@ -1,4 +1,4 @@
-{{- if .Values.experimental.podMounter -}}
+{{- if .Values.controller.enable -}}
 
 kind: Deployment
 apiVersion: apps/v1
@@ -44,8 +44,11 @@ spec:
         - name: s3-csi-controller
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--endpoint=unix:///csi/csi.sock"
+            - "--node-id=controller"
           command:
-            - "/bin/scality-s3-csi-controller"
+            - "/bin/scality-s3-csi-driver"
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
@@ -57,18 +60,42 @@ spec:
               level: {{ .level }}
             {{- end }}
           # TODO: Healthcheck for the controller.
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
           {{- with .Values.controller.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
-            - name: MOUNTPOINT_IMAGE
-              value: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
-            - name: MOUNTPOINT_IMAGE_PULL_POLICY
-              value: {{ .Values.image.pullPolicy }}
-            - name: MOUNTPOINT_NAMESPACE
-              value: {{ .Values.mountpointPod.namespace }}
-            - name: MOUNTPOINT_PRIORITY_CLASS_NAME
-              value: {{ .Values.mountpointPod.priorityClassName }}
+            - name: AWS_ENDPOINT_URL
+              value: {{ .Values.node.s3EndpointUrl }}
+            - name: AWS_REGION
+              value: {{ .Values.node.s3Region }}
+            - name: CSI_NODE_NAME
+              value: "controller"
+            - name: CSI_CONTROLLER_ONLY
+              value: "true"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3CredentialSecret.name }}
+                  key: {{ .Values.s3CredentialSecret.accessKeyId }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3CredentialSecret.name }}
+                  key: {{ .Values.s3CredentialSecret.secretAccessKey }}
+        - name: csi-provisioner
+          image: registry.k8s.io/sig-storage/csi-provisioner:v5.1.0
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--v=2"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
 
 {{- end -}}
