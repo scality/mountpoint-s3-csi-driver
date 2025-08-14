@@ -497,6 +497,78 @@ func CreateLisaNodePublishSecret(ctx context.Context, f *framework.Framework) (s
 	return CreateCredentialSecret(ctx, f, "account2-node-publish-secret", accessKeyID, secretAccessKey)
 }
 
+// CreateProvisionerSecretWithName creates a Secret with a specific name for provisioner authentication
+func CreateProvisionerSecretWithName(ctx context.Context, f *framework.Framework, secretName string) (*v1.Secret, error) {
+	accessKeyID := GetEnv("ACCOUNT1_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT1_SECRET_KEY", "")
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil, fmt.Errorf("test credentials not available: ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set")
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: f.Namespace.Name,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"access_key_id":     []byte(accessKeyID),
+			"secret_access_key": []byte(secretAccessKey),
+		},
+	}
+
+	return f.ClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, secret, metav1.CreateOptions{})
+}
+
+// CreateNodeSecretWithName creates a Secret with a specific name for node-publish authentication
+func CreateNodeSecretWithName(ctx context.Context, f *framework.Framework, secretName string) (*v1.Secret, error) {
+	accessKeyID := GetEnv("ACCOUNT1_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT1_SECRET_KEY", "")
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil, fmt.Errorf("test credentials not available: ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set")
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: f.Namespace.Name,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"access_key_id":     []byte(accessKeyID),
+			"secret_access_key": []byte(secretAccessKey),
+		},
+	}
+
+	return f.ClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, secret, metav1.CreateOptions{})
+}
+
+// CreateProvisionerSecretWithNameInNamespace creates a Secret with a specific name in a specific namespace
+func CreateProvisionerSecretWithNameInNamespace(ctx context.Context, f *framework.Framework, secretName, namespace string) (*v1.Secret, error) {
+	accessKeyID := GetEnv("ACCOUNT1_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT1_SECRET_KEY", "")
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil, fmt.Errorf("test credentials not available: ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set")
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"access_key_id":     []byte(accessKeyID),
+			"secret_access_key": []byte(secretAccessKey),
+		},
+	}
+
+	return f.ClientSet.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+}
+
 // BuildSecretVolume creates a volume using a secret reference for authentication.
 func BuildSecretVolume(
 	ctx context.Context,
