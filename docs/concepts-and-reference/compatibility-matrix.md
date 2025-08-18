@@ -9,10 +9,10 @@ This page documents version compatibility between the Scality CSI Driver for S3,
 
 | S3 Implementation | Tested Versions |Notes                            |
 |-------------------|-----------------|---------------------------------|
-| Scality RING      | 9.4.2 or newer  | Full support with driver v1.0.0 |
+| Scality RING      | 9.4.2 or newer  | Full support with driver v1.x |
 
 ## Kubernetes Compatibility
 
 | Kubernetes Version |Notes                            |
 |--------------------|---------------------------------|
-| 1.30 and above     | Full support with driver v1.0.0 |
+| 1.30 and above     | Full support with driver v1.x |
