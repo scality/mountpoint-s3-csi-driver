@@ -79,7 +79,7 @@ sequenceDiagram
 | Phase/Step | Description | Key Outcome |
 |------------|-------------|-------------|
 | **Phase 1: Volume Creation** | **Kubernetes administrator sets up S3 storage reference** | **PV ready for use** |
-| 1.1 | Create PV with S3 bucket name (bucket must pre-exist), mount options, access modes (ReadWriteMany), and optional credentials secret (see [credentials docs](ring-s3-credentials-management.md)) | PV object created |
+| 1.1 | Create PV with S3 bucket name (bucket must pre-exist), mount options, access modes (ReadWriteMany), and optional credentials secret (see [credentials docs](./ring-s3-credentials-management/static-provisioning-credentials-management.md)) | PV object created |
 | 1.2 | Kubernetes API validates CSI driver name, volumeAttributes, and stores PV in etcd | PV status: Available, waiting for PVC |
 | **Phase 2: Claim Binding** | **Kubernetes developer requests and reserves storage (control plane operation)** | **PV-PVC bound together** |
 | 2.1 | Create PVC with matching storage class (""), access modes, and capacity - must reference specific PV by name | PVC object created (status: Pending) |

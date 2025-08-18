@@ -1,6 +1,6 @@
-# Credentials Architecture
+# Static Provisioning Credentials Management
 
-This document details how credentials flow through the Scality CSI Driver for S3, supporting both driver-level (global) and volume-level (per-volume) authentication methods.
+This document details how credentials flow through the Scality CSI Driver for S3 for static provisioning, supporting both driver-level (global) and volume-level (per-volume) authentication methods.
 
 <div align="center">
 
@@ -34,8 +34,6 @@ graph LR
 
 </div>
 
-## Credentials Management
-
 There are 2 ways to manage credentials:
 
 1. **Driver-Level Authentication** - Global credentials for all volumes
@@ -65,7 +63,7 @@ stringData:  # Use stringData for plain text values
   session_token: "SESSION_TOKEN_IF_NEEDED"  # Optional
 ```
 
-### Method 1: Driver-Level Authentication
+## Method 1: Driver-Level Authentication
 
 Credentials configured globally during driver installation. All volumes use these credentials unless overridden.
 
@@ -94,7 +92,7 @@ spec:
       # No authenticationSource - uses driver-level credentials
 ```
 
-### Method 2: Volume-Level Authentication
+## Method 2: Volume-Level Authentication
 
 Each persistent volume can use different credentials stored in Kubernetes Secrets. The secret definition is similar to the driver-level authentication secret.
 For volume-level authentication, the secret is referenced in the PersistentVolume spec via the `nodePublishSecretRef` field and the `authenticationSource` field is set to `secret`.
@@ -132,7 +130,7 @@ The Scality CSI driver for S3 evaluates credentials in the following order, usin
 - Allows different credentials per persistent volume
 - Overrides driver-level settings
 - Use case: Multi-tenant environments
-- Example: [Secret Authentication](../volume-provisioning/static-provisioning/examples/secret-authentication.md)
+- Example: [Secret Authentication](../../volume-provisioning/static-provisioning/examples/secret-authentication.md)
 
 ### Driver-Level Secret (Priority 2)
 
