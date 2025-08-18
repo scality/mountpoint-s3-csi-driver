@@ -12,7 +12,7 @@ graph TB
         subgraph driver["Driver-Level (Default)"]
             HelmChart["Helm Chart values.yaml"]
         end
-        
+
         subgraph storageclass["StorageClass-Level"]
             SCProvSecret["Provisioner Secret csi.storage.k8s.io/provisioner-secret-*"]
             SCNodeSecret["Node-Publish Secret csi.storage.k8s.io/node-publish-secret-*"]
