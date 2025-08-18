@@ -73,6 +73,10 @@ exclude = [
     "^https?://custom-s3\\.example\\.com(:[0-9]+)?(/.*)?$",
     "^https?://s3\\.scality\\.com(:[0-9]+)?(/.*)?$",
 
+    # Exclude helm validation test URLs
+    "^https?://legacy-.*\\.s3\\.example\\.com(:[0-9]+)?(/.*)?$",
+    "^https?://global-.*\\.s3\\.example\\.com(:[0-9]+)?(/.*)?$",
+
     # Exclude AWS URLs with URL-encoded variables (cause 403 errors)
     "^https?://s3\\.amazonaws\\.com/.*\\$\\{.*\\}.*$",
     "^https?://s3\\.amazonaws\\.com/.*\\%7B.*\\%7D.*$",

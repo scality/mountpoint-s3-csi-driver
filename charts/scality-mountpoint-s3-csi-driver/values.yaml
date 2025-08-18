@@ -7,6 +7,18 @@ nameOverride: ""
 fullnameOverride: ""
 imagePullSecrets: []
 
+# S3 configuration (REQUIRED)
+# Global S3 settings used by both node and controller components
+# Note: For backward compatibility, legacy node.s3EndpointUrl and node.s3Region are still supported
+# If both global and legacy values are specified, legacy node.s3* values take precedence
+s3:
+  # RING S3 endpoint URL to use for all volume mounts (REQUIRED)
+  # This is a sample value, replace with the actual RING S3 endpoint URL
+  endpointUrl: "http://s3.example.com:8000"
+  # Default AWS region to use for all volume mounts
+  # The Region can be overridden at per volume at persistent volume level by setting spec.mountOptions.region
+  region: "us-east-1"
+
 # Container image configuration
 image:
   repository: ghcr.io/scality/mountpoint-s3-csi-driver
@@ -24,14 +36,6 @@ node:
   # 4: All CSI operations and mount details (default)
   # 5: Very detailed debug info (systemd signals, mount-s3 output)
   logLevel: 4
-
-  # S3 configuration (REQUIRED)
-  # RING S3 endpoint URL to use for all volume mounts (REQUIRED)
-  # This is a sample value, replace with the actual RING S3 endpoint URL
-  s3EndpointUrl: "http://s3.example.com:8000"
-  # Default AWS region to use for all volume mounts
-  # The Region can be overridden at per volume at persistent volume level by setting spec.mountOptions.region
-  s3Region: "us-east-1"
 
   # SystemD mounter configuration (default mounter)
   mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
@@ -108,10 +112,6 @@ s3CredentialSecret:
   secretAccessKey: secret_access_key
   sessionToken: session_token
 
-# Experimental features. To be used only in development environments.
-experimental:
-  podMounter: false
-
 # Controller configuration (used for dynamic provisioning)
 controller:
   # Enable controller deployment for dynamic provisioning
@@ -120,6 +120,10 @@ controller:
     # Specifies whether a service account should be created
     create: true
     name: s3-csi-driver-controller-sa
+
+# Experimental features. To be used only in development environments.
+experimental:
+  podMounter: false
 
 # Mountpoint pod configuration (only used with experimental pod mounter)
 mountpointPod:

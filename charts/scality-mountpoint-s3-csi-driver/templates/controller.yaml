@@ -69,9 +69,9 @@ spec:
           {{- end }}
           env:
             - name: AWS_ENDPOINT_URL
-              value: {{ .Values.node.s3EndpointUrl }}
+              value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl }}
             - name: AWS_REGION
-              value: {{ .Values.node.s3Region }}
+              value: {{ coalesce .Values.node.s3Region .Values.s3.region }}
             - name: CSI_NODE_NAME
               value: "controller"
             - name: CSI_CONTROLLER_ONLY
