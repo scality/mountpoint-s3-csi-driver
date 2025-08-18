@@ -1,12 +1,18 @@
 # Deployment Architecture
 
 This document illustrates the deployment topology of the Scality CSI Driver for S3, showing how components are distributed across a Kubernetes cluster.
+The architecture differs between static and dynamic provisioning modes.
 
 <div align="center">
 
 ```mermaid
 graph TB
     subgraph cluster["Kubernetes Cluster"]
+
+        subgraph controlplane["Kubernetes Control Plane"]
+            APIServer["Kubernetes API Server"]
+        end
+
         subgraph node1["Kubernetes Node 1"]
             K1[Kubelet]
             subgraph ds1["CSI Driver Pod (DaemonSet)"]
@@ -23,6 +29,12 @@ graph TB
         end
 
         subgraph node2["Kubernetes Node 2"]
+            subgraph controller["CSI Controller Deployment"]
+                subgraph controllerPod["Controller Pod (1 replica)"]
+                    CSIController["CSI Controller Service"]
+                    CSIProvisioner["CSI Provisioner Sidecar(Watch PVC)"]
+                end
+            end
             K2[Kubelet]
             subgraph ds2["CSI Driver Pod (DaemonSet)"]
                 N2[CSI Driver Node Service]
@@ -56,6 +68,11 @@ graph TB
     end
 
     S3Storage[S3 Storage Endpoint]
+
+    %% Controller operations (Dynamic Provisioning)
+    APIServer <-->|"Watch PVC/StorageClass, Resolve PV/PVC Templates, Create PV, Update PVC Status"| CSIProvisioner
+    CSIProvisioner -->|"CreateVolume/DeleteVolume RPC | Unix socket /csi/csi.sock"| CSIController
+    CSIController -->|"Bucket Create/Delete via S3 API"| S3Storage
 
     %% Init container flow
     I1 -.->|Install binary to /opt/mountpoint-s3-csi/bin/| S1
@@ -103,41 +120,52 @@ graph TB
 
 ## Deployment Components
 
-### Pod Components
+### Controller Components (Dynamic Provisioning Only)
 
 | Component | Type | Purpose | Details |
 |-----------|------|---------|---------|
-| **mount-s3 Installer** | Init Container | Binary deployment | • Copies `mount-s3` binary from container to host at `/opt/mountpoint-s3-csi/bin/`<br>• Runs first and must complete successfully before main containers start<br>• Required because systemd executes processes on host filesystem<br>• Sets appropriate file permissions for systemd execution |
-| **CSI Driver Node Service** | Main Container | Core CSI functionality | • Binary: `scality-s3-csi-driver`<br>• Creates gRPC server on `/csi/csi.sock` Unix socket file<br>• Exposes HTTP `/healthz` endpoint for Kubernetes liveness probe<br>• Pod restart triggered if HTTP health check fails<br>• Handles volume mount/unmount operations by launching `mount-s3` binary installed by init container<br>• Manages systemd services via D-Bus that execute the `mount-s3` binary installed by init container |
-| **CSI Driver Registrar** | Sidecar | Kubelet registration | • Creates registration entry in `/registration/` directory watched by kubelet<br>• Registration entry announces CSI driver name `s3.csi.scality.com` and Unix socket location `/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock`<br>• Maintains registration while driver is deployed on node<br>• Has own liveness probe for registration health<br>• Uses standard Kubernetes CSI node-driver-registrar sidecar |
-| **CSI Driver Liveness Probe** | Sidecar | CSI socket health logging | • Checks CSI Driver Node Service via `/csi/csi.sock` Unix socket file<br>• Logs health status to container logs for troubleshooting<br>• Does NOT trigger pod restarts (logging only) |
+| **CSI Controller Service** | Main Container | Volume lifecycle management | • Binary: `scality-s3-csi-driver` with `CSI_CONTROLLER_ONLY=true`<br/>• Handles CreateVolume/DeleteVolume RPCs for dynamic provisioning<br/>• Creates and deletes S3 buckets based on StorageClass parameters<br/>• Manages provisioner and node-publish secrets from StorageClass<br/>• Single replica Deployment (not DaemonSet)<br/>• Runs on exactly one Kubernetes node in the cluster at any time |
+| **CSI Provisioner Sidecar** | Sidecar Container | Kubernetes integration | • Standard `csi-provisioner` from Kubernetes<br/>• Watches for PVCs that need dynamic provisioning<br/>• Reads StorageClass parameters and templates<br/>• Resolves template variables in StorageClass parameters (`${pvc.name}`, `${pvc.namespace}`, `${pv.name}`, etc.)<br/>• Calls CSI Controller's CreateVolume/DeleteVolume<br/>• Creates PV objects after successful bucket creation |
+
+### Node Components
+
+| Component | Type | Purpose | Details |
+|-----------|------|---------|---------|
+| **mount-s3 Installer** | Init Container | Binary deployment | • Copies `mount-s3` binary from container to host at `/opt/mountpoint-s3-csi/bin/`<br/>• Runs first and must complete successfully before main containers start<br/>• Required because systemd executes processes on host filesystem<br/>• Sets appropriate file permissions for systemd execution |
+| **CSI Driver Node Service** | Main Container | Core CSI functionality | • Binary: `scality-s3-csi-driver`<br/>• Creates gRPC server on `/csi/csi.sock` Unix socket file<br/>• Exposes HTTP `/healthz` endpoint for Kubernetes liveness probe<br/>• Pod restart triggered if HTTP health check fails<br/>• Handles volume mount/unmount operations by launching `mount-s3` binary installed by init container<br/>• Manages systemd services via D-Bus that execute the `mount-s3` binary installed by init container |
+| **CSI Driver Registrar** | Sidecar | Kubelet registration | • Creates registration entry in `/registration/` directory watched by kubelet<br/>• Registration entry announces CSI driver name `s3.csi.scality.com` and Unix socket location `/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock`<br/>• Maintains registration while driver is deployed on node<br/>• Has own liveness probe for registration health<br/>• Uses standard Kubernetes CSI node-driver-registrar sidecar |
+| **CSI Driver Liveness Probe** | Sidecar | CSI socket health logging | • Checks CSI Driver Node Service via `/csi/csi.sock` Unix socket file<br/>• Logs health status to container logs for troubleshooting<br/>• Does NOT trigger pod restarts (logging only) |
 
 ### Host-Level Components
 
 | Scope | Component | Purpose | Details |
 |-------|-----------|---------|---------|
-| **Per Kubernetes Node** | Host systemd | Service management | • Host's service manager receiving D-Bus commands from CSI Driver Node Service<br>• Creates transient systemd services that execute `mount-s3` binary installed by init container<br>• Manages service lifecycle: start, stop, monitor mount processes<br>• Provides process supervision and cleanup on service failures<br>• Runs on host filesystem context, not in container |
-| **Per Volume** | mount-s3 FUSE processes | S3 filesystem mounting | • One process per mounted volume using `mount-s3` binary installed by init container<br>• Executed by systemd services created via D-Bus by CSI Driver Node Service<br>• Creates FUSE mount presenting S3 bucket as POSIX filesystem<br>• Handles S3 API communication, caching, and file system semantics |
+| **Per Kubernetes Node** | Host systemd | Service management | • Host's service manager receiving D-Bus commands from CSI Driver Node Service<br/>• Creates transient systemd services that execute `mount-s3` binary installed by init container<br/>• Manages service lifecycle: start, stop, monitor mount processes<br/>• Provides process supervision and cleanup on service failures<br/>• Runs on host filesystem context, not in container |
+| **Per Volume** | mount-s3 FUSE processes | S3 filesystem mounting | • One process per mounted volume using `mount-s3` binary installed by init container<br/>• Executed by systemd services created via D-Bus by CSI Driver Node Service<br/>• Creates FUSE mount presenting S3 bucket as POSIX filesystem<br/>• Handles S3 API communication, caching, and file system semantics |
 
 ## Key Deployment Characteristics
 
 ### Resource Distribution
 
-| Resource Scope | What Gets Deployed | Deployment Method |
-|----------------|-------------------|-------------------|
-| **Per Kubernetes Node** | One CSI Driver pod | DaemonSet |
-| **Per Volume** | One mount-s3 process | systemd service |
+| Resource Scope | What Gets Deployed | Deployment Method | When Required |
+|----------------|-------------------|-------------------|---------------|
+| **Cluster-wide** | One CSI Controller pod | Deployment (1 replica) | Dynamic provisioning only |
+| **Per Kubernetes Node** | One CSI Driver pod | DaemonSet | Always |
+| **Per Volume** | One mount-s3 process | systemd service | Always |
 
 ### Communication Paths
 
-| Path | From | To | Protocol | Purpose |
-|------|------|----|----------|---------|
-| **CSI Driver Registration** | CSI Driver Registrar | Kubelet | Unix socket `/registration/` | Register driver per Kubernetes node |
-| **Volume Operations** | Kubelet | CSI Driver Node Service | gRPC on Unix socket `/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock` | Mount/unmount requests |
-| **Health Monitoring** | CSI Driver Liveness Probe | CSI Driver Node Service | gRPC on Unix socket `/csi/csi.sock` | Health status checks |
-| **Service Management** | CSI Driver Node Service | systemd | D-Bus on `/run/systemd/` | Create/stop services |
-| **File I/O** | Application pods | mount-s3 processes | FUSE | File system operations |
-| **Storage Access** | mount-s3 processes | S3 endpoint | HTTPS | S3 API calls |
+| Path | From | To | Protocol | Purpose | Provisioning Mode |
+|------|------|----|----------|---------|-------------------|
+| **PVC Monitoring** | CSI Provisioner Sidecar | Kubernetes API | HTTPS | Watch PVC/StorageClass events | Dynamic only |
+| **Volume Provisioning** | CSI Provisioner Sidecar | CSI Controller Service | gRPC on Unix socket `/csi/csi.sock` | CreateVolume/DeleteVolume | Dynamic only |
+| **Bucket Operations** | CSI Controller Service | S3 endpoint | HTTPS | Create/delete S3 buckets | Dynamic only |
+| **CSI Driver Registration** | CSI Driver Registrar | Kubelet | Unix socket `/registration/` | Register driver per Kubernetes node | Both |
+| **Volume Operations** | Kubelet | CSI Driver Node Service | gRPC on Unix socket `/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock` | Mount/unmount requests | Both |
+| **Health Monitoring** | CSI Driver Liveness Probe | CSI Driver Node Service | gRPC on Unix socket `/csi/csi.sock` | Health status checks | Both |
+| **Service Management** | CSI Driver Node Service | systemd | D-Bus on `/run/systemd/` | Create/stop services | Both |
+| **File I/O** | Application pods | mount-s3 processes | FUSE | File system operations | Both |
+| **Storage Access** | mount-s3 processes | S3 endpoint | HTTPS | S3 API calls | Both |
 
 ### Host Mounts Required
 
@@ -150,7 +178,33 @@ graph TB
 
 ### Scaling Behavior
 
-| Resource | Scaling Behavior | Mechanism |
-|----------|------------------|-----------|
-| **Kubernetes Nodes** | Automatic deployment to new nodes | DaemonSet controller |
-| **Volumes** | One process per volume | systemd service creation |
+| Resource | Scaling Behavior | Mechanism | Notes |
+|----------|------------------|-----------|-------|
+| **CSI Controller** | Single instance | Deployment with 1 replica | Only one controller needed cluster-wide (dynamic provisioning) |
+| **Kubernetes Nodes** | Automatic deployment to new nodes | DaemonSet controller | One CSI node pod per Kubernetes node |
+| **Volumes** | One process per volume | systemd service creation | Each mounted volume gets its own mount-s3 process |
+
+## Static vs Dynamic Provisioning
+
+### Static Provisioning
+
+- No controller deployment needed
+- Only DaemonSet for node pods
+- Administrator pre-creates S3 buckets
+- PersistentVolumes reference existing buckets
+
+### Dynamic Provisioning
+
+- Requires controller deployment (`controller.enable: true` in Helm values)
+- Controller creates/deletes S3 buckets automatically
+- StorageClass defines bucket creation parameters
+- Supports credential templating for multi-tenancy
+
+### Credential Flow Differences
+
+| Aspect | Static Provisioning | Dynamic Provisioning |
+|--------|--------------------|-----------------------|
+| **Bucket Creation** | Manual by admin | Automatic by CSI Controller |
+| **Credential Sources** | • Driver-level (global)<br/>• PV-level (nodePublishSecretRef) | • Driver-level (global)<br/>• StorageClass provisioner secrets<br/>• StorageClass node-publish secrets<br/>• Template-based secrets |
+| **Secret Resolution** | At mount time by CSI Node | • Provisioner secrets at CreateVolume<br/>• Node-publish secrets at mount time |
+| **Multi-tenancy** | Per-PV secrets | Per-StorageClass or per-PVC templated secrets |

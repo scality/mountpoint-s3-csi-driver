@@ -96,6 +96,7 @@ nav:
       - System Overview: architecture/system-overview.md
       - Deployment Architecture: architecture/deployment-architecture.md
       - Static Provisioning Flow: architecture/static-provisioning-flow.md
+      - Dynamic Provisioning Flow: architecture/dynamic-provisioning-flow.md
       - RING S3 Credential management:
           - Static Provisioning: architecture/ring-s3-credentials-management/static-provisioning-credentials-management.md
           - Dynamic Provisioning: architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md
