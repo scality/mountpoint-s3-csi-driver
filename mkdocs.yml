@@ -59,6 +59,8 @@ plugins:
   - panzoom:
       full_screen: true # Enable full screen mode
       key: "ctrl" # keyboard shortcuts
+      hint_location: "top" # hint location
+      always_show_hint: true
 
 markdown_extensions:
   - admonition # Enables notes, warnings, etc. Usage: !!! note
