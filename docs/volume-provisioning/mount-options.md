@@ -1,15 +1,16 @@
 # Mount Options Deep Dive
 
 The Scality CSI Driver for S3 allows you to customize how S3 buckets are mounted by specifying mount options in the `PersistentVolume` (PV) specification.
-These options are passed directly to the underlying Mountpoint for Amazon S3 client.
+These options are passed directly to the underlying Mountpoint for S3 client.
 
 ## How Mount Options are Applied
 
+
+### Static Provisioning
+
 Mount options are defined in the `spec.mountOptions` array within a `PersistentVolume` manifest.
 
-**Example:**
-
-```yaml
+```yaml title="PersistentVolume manifest"
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -38,6 +39,38 @@ spec:
     volumeAttributes:
       bucketName: "my-application-bucket"
 ```
+
+### Dynamic Provisioning
+
+Mount options are defined in the `spec.mountOptions` array within a `StorageClass` manifest.
+
+```yaml title="StorageClass manifest"
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: s3-dynamic-storage
+provisioner: s3.csi.scality.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - "allow-delete"         # Allows deleting objects
+  - "uid=1000"             # Sets mounted files/dirs UID to 1000
+  - "gid=1000"             # Sets mounted files/dirs GID to 1000
+  - "allow-other"          # Allows non-root users to access the mount
+  - "file-mode=0640"       # Sets file permissions to rw-r-----
+  - "dir-mode=0750"        # Sets directory permissions to rwxr-x---
+  - "region=eu-west-1"     # Overrides S3 region for this StorageClass
+  - "prefix=app-data/"     # Mounts only the 'app-data/' prefix from dynamically created buckets
+  - "debug"                # Enables Mountpoint debug logging
+parameters:
+  # Additional parameters for bucket creation can be added here
+  # Credential secrets for dynamic provisioning
+  csi.storage.k8s.io/provisioner-secret-name: s3-provisioner-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: default
+  csi.storage.k8s.io/node-publish-secret-name: s3-node-secret
+  csi.storage.k8s.io/node-publish-secret-namespace: default
+```
+
 
 ## Common Mount Options
 
@@ -151,4 +184,4 @@ spec:
     The CSI driver does not automatically manage the uniqueness or lifecycle of these host cache paths beyond passing the option to Mountpoint.
     Node-level disk space and permissions for the cache path are also your responsibility.
 
-For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../../concepts-and-reference/filesystem-semantics.md) page
+For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../concepts-and-reference/filesystem-semantics.md) page

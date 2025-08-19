@@ -52,7 +52,7 @@ There are 3 ways to manage credentials:
 
 For Kubernetes secrets used in driver-level, StorageClass-level, and template-based authentication,
 the credentials should be stored using the same key names as specified in the
-[values.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml#L104) file.
+[values.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/charts/scality-mountpoint-s3-csi-driver/values.yaml) file.
 Default key names are:
 
 - `access_key_id` for Access Key ID
