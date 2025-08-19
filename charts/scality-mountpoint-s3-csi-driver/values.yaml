@@ -99,6 +99,12 @@ sidecars:
       - mountPath: /csi
         name: plugin-dir
     resources: {}
+  csiProvisioner:
+    image:
+      repository: registry.k8s.io/sig-storage/csi-provisioner
+      tag: v5.1.0
+      pullPolicy: IfNotPresent
+    resources: {}
 
 # Init container configuration
 initContainer:
