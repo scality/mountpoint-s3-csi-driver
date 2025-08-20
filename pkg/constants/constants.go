@@ -24,4 +24,6 @@ const (
 	// Used to pass credential information from controller to node
 	VolumeContextProvisionerSecretNameKey      = "provisioner-secret-name"
 	VolumeContextProvisionerSecretNamespaceKey = "provisioner-secret-namespace"
+	VolumeContextNodePublishSecretNameKey      = "node-publish-secret-name"
+	VolumeContextNodePublishSecretNamespaceKey = "node-publish-secret-namespace"
 )

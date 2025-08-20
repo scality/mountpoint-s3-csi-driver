@@ -29,7 +29,9 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/volumecontext"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/storageclass"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
 )
@@ -52,6 +54,25 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	volumeID := generateVolumeID()
 	klog.V(4).Infof("Generated volume ID: %s", volumeID)
+
+	// Controller Credential Resolution for Bucket Operations
+	//
+	// The controller handles bucket creation/deletion operations and uses a separate
+	// credential resolution strategy from the node operations. This allows proper
+	// separation of concerns where the controller can have administrative permissions
+	// for bucket management while nodes have limited permissions for mounting.
+	//
+	// Controller Credential Resolution Order:
+	// 1. provisioner-secret: If specified in StorageClass, controller uses this secret
+	//    for bucket operations (e.g., CreateBucket, DeleteBucket)
+	// 2. driver credentials: If no provisioner-secret, controller uses driver-level
+	//    credentials for bucket operations
+	//
+	// Note: This is independent of node-publish-secret, which only affects what
+	// credentials the node uses for mounting operations. The two-stage approach enables:
+	// - Admin credentials for bucket management (controller)
+	// - Read/write credentials for data access (node)
+	// - Proper security boundaries between management and access operations
 
 	awsConfig, err := d.controllerCredProvider.ProvideForCreateVolume(ctx, params)
 	if err != nil {
@@ -77,14 +98,48 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		"bucketName":          volumeID,
 	}
 
+	// Authentication Source Configuration for Dynamic Provisioning
+	//
+	// This implements a credential hierarchy that determines what credentials
+	// the node should use for mounting operations. The controller may use different
+	// credentials (provisioner-secret) for bucket creation than what the node uses
+	// for mounting.
+	//
+	// Credential Resolution Order:
+	// 1. node-publish-secret: If specified in StorageClass, the node uses this secret
+	//    for mount operations (highest priority)
+	// 2. provisioner-secret: If no node-publish-secret but provisioner-secret exists,
+	//    the node falls back to using the provisioner-secret for mount operations
+	// 3. driver credentials: If no secrets are specified, both controller and node
+	//    use the driver-level credentials
+	//
+	// This design allows flexible credential management:
+	// - Separate credentials for management (controller) vs access (node)
+	// - Single secret can serve both roles when only one is provided
+	// - Seamless fallback to driver credentials when no secrets are configured
+	//
+	// The authenticationSource field tells the node's credential provider which
+	// credentials to use, ensuring proper authentication during volume mount.
+
+	if params.HasNodePublishSecret() {
+		// Priority 1: node-publish-secret
+		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceSecret
+		volumeContext[constants.VolumeContextNodePublishSecretNameKey] = params.NodePublishSecretName
+		volumeContext[constants.VolumeContextNodePublishSecretNamespaceKey] = params.NodePublishSecretNamespace
+	} else if params.HasProvisionerSecret() {
+		// Priority 2: provisioner-secret as fallback
+		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceSecret
+		volumeContext[constants.VolumeContextNodePublishSecretNameKey] = params.ProvisionerSecretName
+		volumeContext[constants.VolumeContextNodePublishSecretNamespaceKey] = params.ProvisionerSecretNamespace
+	} else {
+		// Priority 3: driver credentials
+		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceDriver
+	}
+
+	// Always store provisioner secret info if present (for reference/debugging)
 	if params.HasProvisionerSecret() {
 		volumeContext[constants.VolumeContextProvisionerSecretNameKey] = params.ProvisionerSecretName
 		volumeContext[constants.VolumeContextProvisionerSecretNamespaceKey] = params.ProvisionerSecretNamespace
-	}
-
-	if params.HasNodePublishSecret() {
-		volumeContext["node-publish-secret-name"] = params.NodePublishSecretName
-		volumeContext["node-publish-secret-namespace"] = params.NodePublishSecretNamespace
 	}
 
 	capacity := req.GetCapacityRange().GetRequiredBytes()
