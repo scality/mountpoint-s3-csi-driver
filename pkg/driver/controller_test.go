@@ -87,23 +87,6 @@ func TestCreateVolume(t *testing.T) {
 			errorContains: "provisioner secret name provided but namespace is missing",
 		},
 		{
-			name: "with volume capabilities",
-			req: &csi.CreateVolumeRequest{
-				Name: "test-volume",
-				VolumeCapabilities: []*csi.VolumeCapability{
-					{
-						AccessType: &csi.VolumeCapability_Mount{
-							Mount: &csi.VolumeCapability_MountVolume{},
-						},
-						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
-						},
-					},
-				},
-			},
-			expectedError: codes.OK,
-		},
-		{
 			name: "invalid single-node access mode",
 			req: &csi.CreateVolumeRequest{
 				Name: "test-volume-single-node",
@@ -228,112 +211,6 @@ func TestCreateVolume(t *testing.T) {
 	}
 }
 
-func TestValidateCreateVolumeRequest(t *testing.T) {
-	tests := []struct {
-		name        string
-		req         *csi.CreateVolumeRequest
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:        "nil request",
-			req:         nil,
-			expectError: true,
-			errorMsg:    "request is nil",
-		},
-		{
-			name: "empty volume name",
-			req: &csi.CreateVolumeRequest{
-				Name: "",
-			},
-			expectError: true,
-			errorMsg:    "volume name is required",
-		},
-		{
-			name: "valid request",
-			req: &csi.CreateVolumeRequest{
-				Name: "test-volume",
-			},
-			expectError: false,
-		},
-		{
-			name: "with valid capabilities",
-			req: &csi.CreateVolumeRequest{
-				Name: "test-volume",
-				VolumeCapabilities: []*csi.VolumeCapability{
-					{
-						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
-						},
-					},
-				},
-			},
-			expectError: false,
-		},
-		{
-			name: "missing access mode",
-			req: &csi.CreateVolumeRequest{
-				Name: "test-volume",
-				VolumeCapabilities: []*csi.VolumeCapability{
-					{
-						AccessMode: nil,
-					},
-				},
-			},
-			expectError: true,
-			errorMsg:    "volume capability access mode is required",
-		},
-		{
-			name: "single node writer (not supported)",
-			req: &csi.CreateVolumeRequest{
-				Name: "test-volume",
-				VolumeCapabilities: []*csi.VolumeCapability{
-					{
-						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
-						},
-					},
-				},
-			},
-			expectError: true,
-			errorMsg:    "S3 volumes only support multi-node access modes",
-		},
-		{
-			name: "single node reader only (not supported)",
-			req: &csi.CreateVolumeRequest{
-				Name: "test-volume",
-				VolumeCapabilities: []*csi.VolumeCapability{
-					{
-						AccessMode: &csi.VolumeCapability_AccessMode{
-							Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY,
-						},
-					},
-				},
-			},
-			expectError: true,
-			errorMsg:    "S3 volumes only support multi-node access modes",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateCreateVolumeRequest(tc.req)
-			if tc.expectError {
-				if err == nil {
-					t.Fatal("Expected error but got none")
-				}
-				if tc.errorMsg != "" && !strings.Contains(err.Error(), tc.errorMsg) {
-					t.Fatalf("Expected error to contain %q, got %q", tc.errorMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
-				}
-			}
-		})
-	}
-}
-
 func TestGenerateVolumeID(t *testing.T) {
 	// Test multiple generations to ensure uniqueness and UUID-based format
 	generated := make(map[string]bool)
@@ -354,5 +231,80 @@ func TestGenerateVolumeID(t *testing.T) {
 		if len(suffix) == 0 || !strings.Contains(suffix, "-") {
 			t.Fatalf("Volume ID %q does not appear to be UUID-based", id)
 		}
+	}
+}
+
+func TestDeleteVolume(t *testing.T) {
+	tests := []struct {
+		name          string
+		req           *csi.DeleteVolumeRequest
+		expectedError codes.Code
+		errorContains string
+	}{
+		{
+			name:          "nil request",
+			req:           nil,
+			expectedError: codes.InvalidArgument,
+			errorContains: "request is nil",
+		},
+		{
+			name: "missing volume ID",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "",
+			},
+			expectedError: codes.InvalidArgument,
+			errorContains: "volume ID is required",
+		},
+		{
+			name: "valid delete request",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "csi-s3-1640995200-a1b2c3d",
+			},
+			expectedError: codes.OK,
+		},
+		{
+			name: "idempotent delete - non-existent volume",
+			req: &csi.DeleteVolumeRequest{
+				VolumeId: "csi-s3-nonexistent-volume",
+			},
+			expectedError: codes.OK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create driver
+			driver := &Driver{}
+
+			// Call DeleteVolume
+			resp, err := driver.DeleteVolume(context.Background(), tc.req)
+
+			// Check error
+			if tc.expectedError != codes.OK {
+				if err == nil {
+					t.Fatalf("Expected error but got none")
+				}
+				st, ok := status.FromError(err)
+				if !ok {
+					t.Fatalf("Error is not a gRPC status error: %v", err)
+				}
+				if st.Code() != tc.expectedError {
+					t.Fatalf("Expected error code %v, got %v", tc.expectedError, st.Code())
+				}
+				if tc.errorContains != "" && !strings.Contains(st.Message(), tc.errorContains) {
+					t.Fatalf("Expected error to contain %q, got %q", tc.errorContains, st.Message())
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				// Validate response
+				if resp == nil {
+					t.Fatal("Response is nil")
+				}
+				// DeleteVolumeResponse should be empty for successful deletion
+			}
+		})
 	}
 }

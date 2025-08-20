@@ -117,3 +117,75 @@ func TestNewDriverEndpointURLValidation(t *testing.T) {
 		t.Logf("Got unexpected error type: %v", err)
 	})
 }
+
+func TestDriverStop(t *testing.T) {
+	driver := &driver.Driver{}
+	// Should not panic even with nil server
+	driver.Stop()
+}
+
+func TestParseEndpoint(t *testing.T) {
+	tests := []struct {
+		name           string
+		endpoint       string
+		expectedScheme string
+		expectedAddr   string
+		expectError    bool
+		errorContains  string
+	}{
+		{
+			name:           "valid unix socket",
+			endpoint:       "unix:///tmp/csi.sock",
+			expectedScheme: "unix",
+			expectedAddr:   "/tmp/csi.sock",
+			expectError:    false,
+		},
+		{
+			name:           "valid tcp endpoint",
+			endpoint:       "tcp://127.0.0.1:50051",
+			expectedScheme: "tcp",
+			expectedAddr:   "127.0.0.1:50051",
+			expectError:    false,
+		},
+		{
+			name:        "empty endpoint",
+			endpoint:    "",
+			expectError: true,
+		},
+		{
+			name:        "invalid endpoint format",
+			endpoint:    "invalid-endpoint",
+			expectError: true,
+		},
+		{
+			name:        "missing scheme",
+			endpoint:    "localhost:50051",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			scheme, addr, err := driver.ParseEndpoint(tc.endpoint)
+
+			if tc.expectError {
+				if err == nil {
+					t.Fatal("Expected error but got none")
+				}
+				if tc.errorContains != "" && !strings.Contains(err.Error(), tc.errorContains) {
+					t.Fatalf("Expected error to contain %q, got %q", tc.errorContains, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				if scheme != tc.expectedScheme {
+					t.Fatalf("Expected scheme %q, got %q", tc.expectedScheme, scheme)
+				}
+				if addr != tc.expectedAddr {
+					t.Fatalf("Expected addr %q, got %q", tc.expectedAddr, addr)
+				}
+			}
+		})
+	}
+}
