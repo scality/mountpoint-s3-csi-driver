@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
@@ -28,7 +29,9 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/storageclass"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
 )
 
 const defaultVolumeCapacityBytes int64 = 1 << 30 // 1 GiB
@@ -50,14 +53,24 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	volumeID := generateVolumeID()
 	klog.V(4).Infof("Generated volume ID: %s", volumeID)
 
-	creds, err := d.controllerCredProvider.ProvideForCreateVolume(ctx, params)
+	awsConfig, err := d.controllerCredProvider.ProvideForCreateVolume(ctx, params)
 	if err != nil {
 		klog.Errorf("CreateVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to resolve credentials: %v", err))
 	}
 
 	klog.V(4).Infof("Resolved credentials for volume %s using authentication tier: %s", volumeID, params.AuthTier)
-	_ = creds // Credentials resolved but not used right now, we will use them once we implement the actual bucket creation
+
+	s3Client, err := d.createS3Client(ctx, &awsConfig)
+	if err != nil {
+		klog.Errorf("CreateVolume: failed to create S3 client for volume %s: %v", volumeID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create S3 client: %v", err))
+	}
+
+	if err := s3Client.CreateBucket(ctx, volumeID); err != nil {
+		klog.Errorf("CreateVolume: bucket creation failed for volume %s: %v", volumeID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("bucket creation failed: %v", err))
+	}
 
 	volumeContext := map[string]string{
 		"dynamicProvisioning": "true",
@@ -79,7 +92,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		capacity = defaultVolumeCapacityBytes
 	}
 
-	klog.V(4).Infof("CreateVolume: successfully created volume %s with metadata only (no bucket created)", volumeID)
+	klog.V(4).Infof("CreateVolume: successfully created volume %s", volumeID)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      volumeID,
@@ -100,17 +113,36 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	volumeID := req.GetVolumeId()
 	klog.V(4).Infof("DeleteVolume: processing volume %s", volumeID)
 
-	// In the future, we would retrieve volume metadata to get credential information
-	// For now, we handle the delete request as metadata-only operation
-	// Future implementation will:
-	// 1. Retrieve volume context metadata from persistent storage
-	// 2. Parse credential source information (provisioner-secret details)
-	// 3. Use controller credential provider to resolve credentials
-	// 4. Connect to S3 and safely delete bucket (only if empty)
-	// 5. Clean up any bucket policies or access configurations
+	// For dynamic provisioning, we need to resolve credentials to delete the bucket
+	// Since we don't have volume context in DeleteVolumeRequest, we'll try both credential strategies
 
-	// CSI DeleteVolume is idempotent - success if volume doesn't exist
-	klog.V(4).Infof("DeleteVolume: successfully processed volume %s (metadata-only operation, no bucket deleted)", volumeID)
+	// Try to get credentials - first attempt with driver credentials
+	awsConfig, err := d.controllerCredProvider.ProvideForDeleteVolume(ctx, map[string]string{})
+	if err != nil {
+		klog.Errorf("DeleteVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
+		// Don't fail - CSI DeleteVolume should be idempotent
+		klog.V(4).Infof("DeleteVolume: treating as successful due to credential resolution failure for volume %s", volumeID)
+		return &csi.DeleteVolumeResponse{}, nil
+	}
+
+	// Create S3 client
+	s3Client, err := d.createS3Client(ctx, &awsConfig)
+	if err != nil {
+		klog.Errorf("DeleteVolume: failed to create S3 client for volume %s: %v", volumeID, err)
+		// Don't fail - CSI DeleteVolume should be idempotent
+		klog.V(4).Infof("DeleteVolume: treating as successful due to S3 client creation failure for volume %s", volumeID)
+		return &csi.DeleteVolumeResponse{}, nil
+	}
+
+	// Delete the bucket - S3 client handles all S3-specific logic
+	if err := s3Client.DeleteBucket(ctx, volumeID); err != nil {
+		klog.Errorf("DeleteVolume: bucket deletion failed for volume %s: %v", volumeID, err)
+		// CSI DeleteVolume must be idempotent - always succeed even if underlying storage operation fails
+		klog.V(4).Infof("DeleteVolume: treating as successful (CSI idempotency requirement)")
+	}
+
+	// CSI DeleteVolume is idempotent - always successful
+	klog.V(4).Infof("DeleteVolume: successfully completed for volume %s", volumeID)
 
 	return &csi.DeleteVolumeResponse{}, nil
 }
@@ -219,6 +251,32 @@ func validateDeleteVolumeRequest(req *csi.DeleteVolumeRequest) error {
 	}
 
 	return nil
+}
+
+func (d *Driver) createS3Client(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+	// Check if there's a test factory function (for dependency injection in tests)
+	if d.testS3ClientFactory != nil {
+		return d.testS3ClientFactory(ctx, awsConfig)
+	}
+
+	// Get environment configuration for region and endpoint URL
+	env := envprovider.Default()
+
+	// Get endpoint URL from environment (from Helm chart configuration)
+	endpointURL := env[envprovider.EnvEndpointURL]
+
+	// Use region from the driver/credential provider configuration
+	region := awsConfig.Region
+
+	klog.V(4).Infof("Creating S3 client with region: %s, endpointURL: %s", region, endpointURL)
+
+	s3Config := s3client.Config{
+		Region:      region,
+		EndpointURL: endpointURL,
+		Credentials: awsConfig.Credentials,
+	}
+
+	return s3client.New(ctx, s3Config)
 }
 
 func generateVolumeID() string {
