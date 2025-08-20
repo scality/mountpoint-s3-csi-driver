@@ -132,6 +132,9 @@ func TestDriverStop(t *testing.T) {
 	driver.Stop()
 }
 
+// minimal noop mounter for testing the systemd branch without side effects
+type noopMounter struct{}
+
 // TestControllerOnlyAffectsMounterCreation verifies that when CSI_CONTROLLER_ONLY is true,
 // the driver skips mounter initialization and thus has a nil NodeServer; otherwise it creates one.
 func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
@@ -201,9 +204,6 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 		t.Fatalf("expected NodeServer to be initialized when not controller-only")
 	}
 }
-
-// minimal noop mounter for testing the systemd branch without side effects
-type noopMounter struct{}
 
 func (n *noopMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args) error {
 	return nil
