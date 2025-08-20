@@ -88,6 +88,13 @@ jobs:
           # Verify DNS resolution works from within a pod
           kubectl run dns-test --image=busybox:1.28 --rm -it --restart=Never -- nslookup s3.scality.com
 
+      - name: Run CSI Compliance Tests
+        run: |
+          # Load credentials and run CSI compliance tests against the deployed S3 backend
+          source tests/e2e/scripts/load-credentials.sh
+          export AWS_ENDPOINT_URL=http://s3.scality.com:8000
+          make csi-compliance-test
+
       - name: Run Scality Tests
         run: |
           mkdir -p test-results

@@ -64,6 +64,15 @@ func TestCreateVolume(t *testing.T) {
 			errorContains: "volume name is required",
 		},
 		{
+			name: "missing volume capabilities",
+			req: &csi.CreateVolumeRequest{
+				Name:               "test-volume",
+				VolumeCapabilities: nil, // or could be empty slice: []*csi.VolumeCapability{}
+			},
+			expectedError: codes.InvalidArgument,
+			errorContains: "volume capabilities are required",
+		},
+		{
 			name: "valid request with driver credentials",
 			req: &csi.CreateVolumeRequest{
 				Name:       "test-volume",
@@ -72,6 +81,13 @@ func TestCreateVolume(t *testing.T) {
 				},
 				CapacityRange: &csi.CapacityRange{
 					RequiredBytes: 1024 * 1024 * 1024, // 1Gi
+				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
 				},
 			},
 			expectedError: codes.OK,
@@ -83,6 +99,13 @@ func TestCreateVolume(t *testing.T) {
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "test-secret",
 					"csi.storage.k8s.io/provisioner-secret-namespace": "default",
+				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
 				},
 			},
 			setupSecrets: []*corev1.Secret{
@@ -107,6 +130,13 @@ func TestCreateVolume(t *testing.T) {
 					"csi.storage.k8s.io/provisioner-secret-name": "test-secret",
 					// Missing namespace - should error
 				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
+				},
 			},
 			expectedError: codes.InvalidArgument,
 			errorContains: "provisioner secret name provided but namespace is missing",
@@ -127,12 +157,32 @@ func TestCreateVolume(t *testing.T) {
 			errorContains: "S3 volumes only support multi-node access modes",
 		},
 		{
+			name: "missing volume capability access mode",
+			req: &csi.CreateVolumeRequest{
+				Name: "test-volume-nil-access-mode",
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: nil, // This should trigger the validation error
+					},
+				},
+			},
+			expectedError: codes.InvalidArgument,
+			errorContains: "volume capability access mode is required",
+		},
+		{
 			name: "with node publish secret",
 			req: &csi.CreateVolumeRequest{
 				Name: "test-volume-node-secret",
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/node-publish-secret-name":      "node-secret",
 					"csi.storage.k8s.io/node-publish-secret-namespace": "kube-system",
+				},
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
 				},
 			},
 			setupSecrets: []*corev1.Secret{
@@ -380,6 +430,13 @@ func TestCreateVolumeAuthenticationSource(t *testing.T) {
 			req := &csi.CreateVolumeRequest{
 				Name:       "test-volume",
 				Parameters: tc.parameters,
+				VolumeCapabilities: []*csi.VolumeCapability{
+					{
+						AccessMode: &csi.VolumeCapability_AccessMode{
+							Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY,
+						},
+					},
+				},
 			}
 
 			// Call CreateVolume

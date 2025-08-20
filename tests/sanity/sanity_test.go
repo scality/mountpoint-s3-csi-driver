@@ -24,8 +24,9 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"k8s.io/client-go/kubernetes/fake"
 
-	sanity "github.com/kubernetes-csi/csi-test/pkg/sanity"
+	sanity "github.com/kubernetes-csi/csi-test/v4/pkg/sanity"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
@@ -55,7 +56,7 @@ func waitDriverIsUp(endpoint string) {
 	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
-	conn, err := grpc.Dial(endpoint, dialOptions...)
+	conn, err := grpc.NewClient(endpoint, dialOptions...)
 	Expect(err).NotTo(HaveOccurred())
 	defer conn.Close()
 	client := csi.NewIdentityClient(conn)
@@ -67,14 +68,16 @@ func waitDriverIsUp(endpoint string) {
 }
 
 var _ = BeforeSuite(func() {
-	s3Driver = &driver.Driver{
-		Endpoint: endpoint,
-		NodeID:   "fake_id",
-		NodeServer: node.NewS3NodeServer(
-			"fake_id",
-			&mounter.FakeMounter{},
-		),
-	}
+	// Set up environment for local testing
+	os.Setenv("AWS_ENDPOINT_URL", "http://localhost:8000")
+	os.Setenv("AWS_ACCESS_KEY_ID", "accessKey1")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "verySecretKey1")
+	os.Setenv("AWS_REGION", "us-east-1")
+
+	fakeClient := fake.NewSimpleClientset()
+	nodeServer := node.NewS3NodeServer("fake_id", &mounter.FakeMounter{})
+	s3Driver = driver.NewDriverForTests(endpoint, "fake_id", nodeServer, fakeClient)
+
 	go func() {
 		Expect(s3Driver.Run()).NotTo(HaveOccurred())
 	}()
@@ -86,14 +89,25 @@ var _ = AfterSuite(func() {
 	Expect(os.RemoveAll(socket)).NotTo(HaveOccurred())
 })
 
-var _ = Describe("Amazon S3 CSI Driver", func() {
-	_ = os.MkdirAll("/tmp/csi", os.ModePerm)
-	config := &sanity.Config{
+var _ = Describe("Scality CSI Driver for S3", func() {
+	BeforeEach(func() {
+		_ = os.RemoveAll("/tmp/csi")
+		_ = os.MkdirAll("/tmp/csi", os.ModePerm)
+	})
+
+	config := &sanity.TestConfig{
 		Address:        endpoint,
 		TargetPath:     mountPath,
 		StagingPath:    stagePath,
 		TestVolumeSize: 2000 * driver.GiB,
 		IDGen:          &sanity.DefaultIDGenerator{},
+		DialOptions: []grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		},
+		TestVolumeParameters: map[string]string{
+			"bucketName": "test-bucket-" + sanity.UniqueString("sanity"),
+		},
+		TestVolumeAccessType: "mount",
 	}
 	sanity.GinkgoTest(config)
 })

@@ -67,19 +67,20 @@ container:
 unit-test:
 	go test -v -parallel 8 ./{cmd,pkg}/... -coverprofile=./coverage.out -covermode=atomic -coverpkg=./{cmd,pkg}/...
 
+# Skip patterns for CSI sanity tests
+# - ValidateVolumeCapabilities: stub implementation, tested in unit tests (see https://github.com/kubernetes-csi/csi-test/issues/214)
+# - Node Service: requires real S3 storage infrastructure, tested in e2e tests
+# - Specific tests using SINGLE_NODE_WRITER: S3 only supports multi-node access modes
+CSI_SKIP_PATTERNS := ValidateVolumeCapabilities|Node Service|SingleNodeWriter|should not fail when requesting to create a volume with already existing name and same capacity|should fail when requesting to create a volume with already existing name and different capacity|should not fail when creating volume with maximum-length name|should return appropriate values.*no optional values added
+
 .PHONY: csi-compliance-test
 csi-compliance-test:
-	# TODO: S3CSI-141 - Re-enable these tests when CreateVolume/DeleteVolume are implemented in Phase 5
-	# Currently skipping Node Service tests and CreateVolume/DeleteVolume tests because they depend on volume implementation, but we only advertise capabilities in Phase 2
-	go test -v ./tests/sanity/... -ginkgo.skip="ValidateVolumeCapabilities|Node Service|CreateVolume|DeleteVolume"
+	go test -v ./tests/sanity/... -ginkgo.skip="$(CSI_SKIP_PATTERNS)"
 
 .PHONY: test
 test:
 	go test -v -race ./{cmd,pkg}/... -coverprofile=./cover.out -covermode=atomic -coverpkg=./{cmd,pkg}/...
-	# ValidateVolumeCapabilities skipped due to static provisioning limitation: https://github.com/kubernetes-csi/csi-test/issues/214
-	# TODO: S3CSI-141 - Re-enable these tests when CreateVolume/DeleteVolume are implemented in Phase 5
-	# Currently skipping Node Service tests and CreateVolume/DeleteVolume tests because they depend on volume implementation, but we only advertise capabilities in Phase 2
-	go test -v ./tests/sanity/... -ginkgo.skip="ValidateVolumeCapabilities|Node Service|CreateVolume|DeleteVolume"
+	go test -v ./tests/sanity/... -ginkgo.skip="$(CSI_SKIP_PATTERNS)"
 
 .PHONY: cover
 cover:
