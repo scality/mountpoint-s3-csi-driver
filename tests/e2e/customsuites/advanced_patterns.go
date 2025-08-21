@@ -15,6 +15,8 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/utils/ptr"
+
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/constants"
 )
 
 // s3AdvancedPatternsTestSuite implements TestSuite for advanced provisioning patterns
@@ -87,7 +89,7 @@ func (t *s3AdvancedPatternsTestSuite) DefineTests(driver storageframework.TestDr
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
 			},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name":      provSecretName,
 				"csi.storage.k8s.io/provisioner-secret-namespace": f.Namespace.Name,
@@ -234,7 +236,7 @@ func (t *s3AdvancedPatternsTestSuite) DefineTests(driver storageframework.TestDr
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
 			},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name":      provSecretName,
 				"csi.storage.k8s.io/provisioner-secret-namespace": f.Namespace.Name,
@@ -340,7 +342,7 @@ func (t *s3AdvancedPatternsTestSuite) DefineTests(driver storageframework.TestDr
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
 			},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name": provSecretName,
 				// Missing secret namespace - should cause error
@@ -411,7 +413,7 @@ func testCredentialFallback(ctx context.Context, f *framework.Framework, scenari
 		ObjectMeta: metav1.ObjectMeta{
 			Name: scName,
 		},
-		Provisioner:   "s3.csi.scality.com",
+		Provisioner:   constants.DriverName,
 		Parameters:    scParams,
 		ReclaimPolicy: ptr.To(v1.PersistentVolumeReclaimDelete),
 	}

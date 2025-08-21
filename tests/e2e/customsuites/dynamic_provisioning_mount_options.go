@@ -22,6 +22,7 @@ import (
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	admissionapi "k8s.io/pod-security-admission/api"
 
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 )
 
@@ -143,7 +144,7 @@ func (t *s3CSIDynamicProvisioningMountOptionsTestSuite) DefineTests(driver stora
 	createStorageClassWithMountOptions := func(ctx context.Context, mountOptions []string, parameters map[string]string, suffix string) *storagev1.StorageClass {
 		scName := fmt.Sprintf("mount-options-test-%s", suffix)
 
-		driverName := "s3.csi.scality.com"
+		driverName := constants.DriverName
 
 		if parameters == nil {
 			parameters = map[string]string{}

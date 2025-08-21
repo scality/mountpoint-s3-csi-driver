@@ -177,7 +177,7 @@ run_verification_tests() {
   log "Verifying Scality CSI driver installation in namespace: $namespace..."
 
   # Check if the CSI driver is registered
-  if exec_cmd kubectl get csidrivers | grep -q "s3.csi.scality.com"; then
+  if exec_cmd kubectl get csidrivers | grep -q "$CSI_DRIVER_NAME"; then
     log "CSI driver is registered properly."
   else
     error "CSI driver is not registered properly."

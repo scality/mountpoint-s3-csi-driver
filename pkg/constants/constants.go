@@ -3,6 +3,9 @@
 package constants
 
 const (
+	// CSI driver name constant
+	DriverName = "s3.csi.scality.com"
+
 	// Secret field names for AWS credentials as expected in Kubernetes secrets
 	// These match the format used by the existing node credential provider
 	AccessKeyIDField     = "access_key_id"

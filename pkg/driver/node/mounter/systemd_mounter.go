@@ -10,6 +10,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
 
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
@@ -191,7 +192,7 @@ func (m *SystemdMounter) credentialWriteAndEnvPath() (writePath string, envPath 
 func hostPluginDirWithDefault() string {
 	hostPluginDir := os.Getenv("HOST_PLUGIN_DIR")
 	if hostPluginDir == "" {
-		hostPluginDir = "/var/lib/kubelet/plugins/s3.csi.scality.com/"
+		hostPluginDir = "/var/lib/kubelet/plugins/" + constants.DriverName + "/"
 	}
 	return hostPluginDir
 }

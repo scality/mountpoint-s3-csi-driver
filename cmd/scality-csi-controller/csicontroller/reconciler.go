@@ -13,12 +13,13 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 )
 
 const debugLevel = 4
 
-const mountpointCSIDriverName = "s3.csi.scality.com"
+const mountpointCSIDriverName = constants.DriverName
 
 // A Reconciler reconciles Mountpoint Pods by watching other workload Pods that's using S3 CSI Driver.
 type Reconciler struct {
