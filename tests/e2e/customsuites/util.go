@@ -346,7 +346,7 @@ func WriteAndVerifyFile(f *framework.Framework, pod *v1.Pod, filePath, content s
 
 	// Verify file was written successfully by reading it back
 	ginkgo.By("Verifying file was successfully written")
-	e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("cat %s | grep -q '%s'", filePath, content))
+	e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("cat %s | grep -q %q", filePath, content))
 }
 
 /*──────────────────────────────
@@ -471,6 +471,30 @@ func CreateNodePublishSecret(ctx context.Context, f *framework.Framework) (strin
 	}
 
 	return CreateCredentialSecret(ctx, f, "test-node-publish-secret", accessKeyID, secretAccessKey)
+}
+
+// CreateLisaProvisionerSecret creates a Secret for provisioner authentication using account2 credentials (different from driver default).
+// This is used for testing that provisioner secrets take precedence over driver default credentials.
+func CreateLisaProvisionerSecret(ctx context.Context, f *framework.Framework) (string, error) {
+	// Use Account2 credentials (different from driver default account1)
+	accessKeyID := GetEnv("ACCOUNT2_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT2_SECRET_KEY", "")
+	if accessKeyID == "" || secretAccessKey == "" {
+		return "", fmt.Errorf("Account2 credentials not available: ACCOUNT2_ACCESS_KEY and ACCOUNT2_SECRET_KEY must be set")
+	}
+	return CreateCredentialSecret(ctx, f, "account2-provisioner-secret", accessKeyID, secretAccessKey)
+}
+
+// CreateLisaNodePublishSecret creates a Secret for node-publish authentication using account2 credentials (different from driver default).
+// This is used for testing that node-publish secrets take precedence over driver default credentials.
+func CreateLisaNodePublishSecret(ctx context.Context, f *framework.Framework) (string, error) {
+	// Use Account2 credentials (different from driver default account1)
+	accessKeyID := GetEnv("ACCOUNT2_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT2_SECRET_KEY", "")
+	if accessKeyID == "" || secretAccessKey == "" {
+		return "", fmt.Errorf("Account2 credentials not available: ACCOUNT2_ACCESS_KEY and ACCOUNT2_SECRET_KEY must be set")
+	}
+	return CreateCredentialSecret(ctx, f, "account2-node-publish-secret", accessKeyID, secretAccessKey)
 }
 
 // BuildSecretVolume creates a volume using a secret reference for authentication.

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	k8sv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog/v2"
 	k8sstrings "k8s.io/utils/strings"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
@@ -89,10 +90,24 @@ func New(client k8sv1.CoreV1Interface) *Provider {
 
 // Provide provides credentials for given context.
 // Depending on the configuration, it either returns driver-level or secret-level credentials.
+// Implements credential fallback logic:
+// - If secret authentication is requested but no node-publish secrets are available, falls back to driver credentials
+// - This is because the node service cannot access provisioner secrets (CSI spec limitation)
 func (c *Provider) Provide(ctx context.Context, provideCtx ProvideContext) (envprovider.Environment, AuthenticationSource, error) {
 	authenticationSource := provideCtx.AuthenticationSource
 	switch authenticationSource {
 	case AuthenticationSourceSecret:
+		// Check if node-publish secrets are actually provided
+		if len(provideCtx.SecretData) == 0 {
+			// No node-publish secrets provided - fall back to driver credentials
+			// This happens when only provisioner-secret is configured in StorageClass
+			// but no node-publish-secret is provided.
+			// Note: We cannot access provisioner secrets from the node service (CSI spec limitation),
+			// so we must fall back to driver credentials.
+			klog.V(4).Infof("credentialprovider: volume %s requested secret authentication but no node-publish secrets provided, falling back to driver credentials", provideCtx.VolumeID)
+			env, err := c.provideFromDriver(provideCtx)
+			return env, AuthenticationSourceDriver, err
+		}
 		env, err := c.provideFromSecret(ctx, provideCtx)
 		return env, AuthenticationSourceSecret, err
 	case AuthenticationSourceUnspecified, AuthenticationSourceDriver:
