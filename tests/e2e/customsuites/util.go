@@ -444,6 +444,20 @@ func CreateCredentialSecret(
 	return secretName, nil
 }
 
+// CreateProvisionerSecret creates a Secret for provisioner authentication and returns its name.
+// This is a convenience wrapper around CreateCredentialSecret for dynamic provisioning tests.
+func CreateProvisionerSecret(ctx context.Context, f *framework.Framework) (string, error) {
+	// Use the global test credentials
+	accessKeyID := GetEnv("ACCOUNT1_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT1_SECRET_KEY", "")
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return "", fmt.Errorf("test credentials not available: ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set")
+	}
+
+	return CreateCredentialSecret(ctx, f, "test-provisioner-secret", accessKeyID, secretAccessKey)
+}
+
 // BuildSecretVolume creates a volume using a secret reference for authentication.
 func BuildSecretVolume(
 	ctx context.Context,
