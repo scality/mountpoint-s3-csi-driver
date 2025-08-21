@@ -32,7 +32,7 @@ These attributes are specific to the CSI driver and control how it interacts wit
 
 ### `spec.mountOptions`
 
-Additional options to customize S3 mounting behavior. See [mount-options.md](mount-options.md) for the complete list of supported options.
+Additional options to customize S3 mounting behavior. See [mount-options.md](../mount-options.md) for the complete list of supported options.
 
 ## Basic Structure
 

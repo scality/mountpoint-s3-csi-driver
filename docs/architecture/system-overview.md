@@ -32,10 +32,10 @@ graph TB
     CSIController -->|"Create/Delete S3 Buckets"| S3
 
     %% Node Operations
-    APIServer <-->|CSI Protocol (Dynamic and Static Provisioning)| Node
-    Node -->|Creates S3 FUSE services| Host
-    Host <-->|S3 API| S3
-    App -->|File I/O| Host
+    APIServer <-->|"CSI Protocol (Dynamic and Static Provisioning)"| Node
+    Node -->|"Creates S3 FUSE services"| Host
+    Host <-->|"S3 API"| S3
+    App -->|"File I/O"| Host
 
 ```
 

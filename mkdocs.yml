@@ -107,9 +107,10 @@ nav:
       - Upgrade Guide: driver-deployment/upgrade-guide.md
       - Uninstallation: driver-deployment/uninstallation.md
   - Volume Provisioning:
+      - Overview: volume-provisioning/index.md
+      - Mount Options Reference: volume-provisioning/mount-options.md
       - Static Provisioning:
           - Overview: volume-provisioning/static-provisioning/overview.md
-          - Mount Options: volume-provisioning/static-provisioning/mount-options.md
           - Examples:
               - Basic Static Provisioning: volume-provisioning/static-provisioning/examples/basic-static-provisioning.md
               - Bucket Prefix Mounting: volume-provisioning/static-provisioning/examples/bucket-prefix.md
@@ -125,6 +126,9 @@ nav:
               - Debug Logging: volume-provisioning/static-provisioning/examples/debug-logging.md
               - File and Directory Permissions: volume-provisioning/static-provisioning/examples/file-permissions.md
               - Allow Root Access: volume-provisioning/static-provisioning/examples/allow-root.md
+      - Dynamic Provisioning:
+          - Overview: volume-provisioning/dynamic-provisioning/overview.md
+          - StorageClass Reference and Usage Examples: volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
       - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
