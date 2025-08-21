@@ -59,6 +59,8 @@ plugins:
   - panzoom:
       full_screen: true # Enable full screen mode
       key: "ctrl" # keyboard shortcuts
+      hint_location: "top" # hint location
+      always_show_hint: true
 
 markdown_extensions:
   - admonition # Enables notes, warnings, etc. Usage: !!! note
@@ -94,7 +96,9 @@ nav:
       - System Overview: architecture/system-overview.md
       - Deployment Architecture: architecture/deployment-architecture.md
       - Static Provisioning Flow: architecture/static-provisioning-flow.md
-      - RING S3 Credential management: architecture/ring-s3-credentials-management.md
+      - RING S3 Credential management:
+          - Static Provisioning: architecture/ring-s3-credentials-management/static-provisioning-credentials-management.md
+          - Dynamic Provisioning: architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md
   - Driver Deployment:
       - Prerequisites: driver-deployment/prerequisites.md
       - Quick Start: driver-deployment/quick-start.md

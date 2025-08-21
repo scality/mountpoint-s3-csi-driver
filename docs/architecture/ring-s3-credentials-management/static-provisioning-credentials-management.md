@@ -1,6 +1,6 @@
-# Credentials Architecture
+# Static Provisioning Credentials Management
 
-This document details how credentials flow through the Scality CSI Driver for S3, supporting both driver-level (global) and volume-level (per-volume) authentication methods.
+This document details how credentials flow through the Scality CSI Driver for S3 for static provisioning, supporting both driver-level (global) and volume-level (per-volume) authentication methods.
 
 <div align="center">
 
@@ -34,12 +34,10 @@ graph LR
 
 </div>
 
-## Credentials Management
-
 There are 2 ways to manage credentials:
 
-1. **Driver-Level Authentication** - Global credentials for all volumes
-2. **Persistent Volume-Level Authentication** - Per-volume credentials (set via Persistent Volume specifications)
+1. **Driver-Level Authentication** - Global kubernetes secret containing credentials configured during driver installation
+2. **Persistent Volume-Level Authentication** - Per-volume secrets containing credentials (set via Persistent Volume specifications)
 
 For Kubernetes secrets used in both driver-level and volume-level authentication,
 the credentials should be stored using the same key names as specified in the
@@ -65,9 +63,9 @@ stringData:  # Use stringData for plain text values
   session_token: "SESSION_TOKEN_IF_NEEDED"  # Optional
 ```
 
-### Method 1: Driver-Level Authentication
+## Method 1: Driver-Level Authentication
 
-Credentials configured globally during driver installation. All volumes use these credentials unless overridden.
+Global secret configured during driver installation. All volumes use this secret unless overridden.
 
 ```bash title="Step 1: Install with Helm (referencing secret)"
 helm install scality-s3-csi-driver charts/scality-mountpoint-s3-csi-driver \
@@ -94,11 +92,11 @@ spec:
       # No authenticationSource - uses driver-level credentials
 ```
 
-### Method 2: Volume-Level Authentication
+## Method 2: Volume-Level Authentication
 
-Each persistent volume can use different credentials stored in Kubernetes Secrets. The secret definition is similar to the driver-level authentication secret.
+Each persistent volume can use different secrets stored in Kubernetes. The secret definition is similar to the driver-level authentication secret.
 For volume-level authentication, the secret is referenced in the PersistentVolume spec via the `nodePublishSecretRef` field and the `authenticationSource` field is set to `secret`.
-This overrides the driver-level credentials for this volume.
+This overrides the driver-level secret for this volume.
 
 ```yaml title="PersistentVolume"
 apiVersion: v1
@@ -126,13 +124,13 @@ spec:
 
 The Scality CSI driver for S3 evaluates credentials in the following order, using the first valid credentials found:
 
-### Persistent Volume-Level Credentials (Priority 1 - Highest)
+### Persistent Volume-Level Secrets (Priority 1 - Highest)
 
 - Specified in PersistentVolume spec via `csi.authenticationSource: secret` and `csi.nodePublishSecretRef`
-- Allows different credentials per persistent volume
+- Allows different secrets per persistent volume
 - Overrides driver-level settings
 - Use case: Multi-tenant environments
-- Example: [Secret Authentication](../volume-provisioning/static-provisioning/examples/secret-authentication.md)
+- Example: [Secret Authentication](../../volume-provisioning/static-provisioning/examples/secret-authentication.md)
 
 ### Driver-Level Secret (Priority 2)
 
@@ -143,18 +141,18 @@ The Scality CSI driver for S3 evaluates credentials in the following order, usin
 
 ## Common Patterns for multi-tenant environments
 
-One set of shared credentials for all volumes. This is the default pattern for single-tenant environments.
+One set of shared secret for all volumes. This is the default pattern for single-tenant environments.
 
 ```text title="Single-Tenant Pattern (Driver-Level)"
-Persistent Volume 1: No secret in PV spec → Driver-level credentials
-Persistent Volume 2: No secret in PV spec → Driver-level credentials
-PersistentVolume 3: No secret in PV spec → Driver-level credentials
+Persistent Volume 1: No secret in PV spec → Driver-level secret
+Persistent Volume 2: No secret in PV spec → Driver-level secret
+PersistentVolume 3: No secret in PV spec → Driver-level secret
 ```
 
-Different credentials per tenant/application. This is the default pattern for multi-tenant environments.
+Different secrets per tenant/application. This is the default pattern for multi-tenant environments.
 
 ```text title="Multi-Tenant Pattern (Volume-Level)"
 Persistent Volume 1: Tenant A secret in PV spec → Tenant A's S3 bucket
 Persistent Volume 2: Tenant B secret in PV spec → Tenant B's S3 bucket
-Persistent Volume 3: No secret in PV spec → Driver-level credentials
+Persistent Volume 3: No secret in PV spec → Driver-level secret
 ```
