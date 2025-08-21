@@ -43,6 +43,8 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/utils/ptr"
+
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/constants"
 )
 
 // s3DynamicProvisioningTemplatingTestSuite implements TestSuite for testing CSI secret templating
@@ -156,7 +158,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "${pvc.name}-provisioner",
 					"csi.storage.k8s.io/provisioner-secret-namespace": "${pvc.namespace}",
@@ -208,7 +210,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "${pvc.namespace}-secret",
 					"csi.storage.k8s.io/provisioner-secret-namespace": "${pvc.namespace}",
@@ -253,7 +255,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "${pv.name}-secret",
 					"csi.storage.k8s.io/provisioner-secret-namespace": "${pvc.namespace}",
@@ -348,7 +350,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "test-secret",
 					"csi.storage.k8s.io/provisioner-secret-namespace": nsName, // Using static namespace for this test
@@ -399,7 +401,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":      "prov-secret-ns",
 					"csi.storage.k8s.io/provisioner-secret-namespace": "${pvc.namespace}",
@@ -454,7 +456,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "default-prov",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -517,7 +519,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "default-prov2",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -574,7 +576,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "default-prov3",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -630,7 +632,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "default-prov4",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -721,7 +723,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "default-prov5",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -776,7 +778,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "default-prov6",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -842,7 +844,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "${pvc.namespace}-admin",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -902,7 +904,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "platform-admin",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}", // Same namespace for simplicity
@@ -962,7 +964,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "${pvc.annotations['team.io/name']}-admin",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",
@@ -1039,7 +1041,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "${pvc.name}-provisioner",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  secretsNs, // Static namespace for provisioner
@@ -1094,7 +1096,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 				ObjectMeta: metav1.ObjectMeta{
 					Name: scName,
 				},
-				Provisioner: "s3.csi.scality.com",
+				Provisioner: constants.DriverName,
 				Parameters: map[string]string{
 					"csi.storage.k8s.io/provisioner-secret-name":       "${pv.name}-admin",
 					"csi.storage.k8s.io/provisioner-secret-namespace":  "${pvc.namespace}",

@@ -4,6 +4,11 @@
 # Basic error handling - exit on error, undefined variables, pipe failures
 set -euo pipefail
 
+# Constants - only declare if not already set
+if [[ -z "${CSI_DRIVER_NAME:-}" ]]; then
+    readonly CSI_DRIVER_NAME="s3.csi.scality.com"
+fi
+
 # Print with timestamp
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"

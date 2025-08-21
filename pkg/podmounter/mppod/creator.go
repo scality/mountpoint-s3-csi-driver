@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/cluster"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,10 +15,10 @@ import (
 
 // Labels populated on spawned Mountpoint Pods.
 const (
-	LabelMountpointVersion = "s3.csi.scality.com/mountpoint-version"
-	LabelPodUID            = "s3.csi.scality.com/pod-uid"
-	LabelVolumeName        = "s3.csi.scality.com/volume-name"
-	LabelCSIDriverVersion  = "s3.csi.scality.com/mounted-by-csi-driver-version"
+	LabelMountpointVersion = constants.DriverName + "/mountpoint-version"
+	LabelPodUID            = constants.DriverName + "/pod-uid"
+	LabelVolumeName        = constants.DriverName + "/volume-name"
+	LabelCSIDriverVersion  = constants.DriverName + "/mounted-by-csi-driver-version"
 )
 
 const EmptyDirSizeLimit = 10 * 1024 * 1024 // 10MiB

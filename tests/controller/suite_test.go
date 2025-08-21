@@ -20,12 +20,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/scality/mountpoint-s3-csi-driver/cmd/scality-csi-controller/csicontroller"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 )
 
 const (
-	s3CSIDriver  = "s3.csi.scality.com"
+	s3CSIDriver  = constants.DriverName
 	ebsCSIDriver = "ebs.csi.aws.com"
 )
 

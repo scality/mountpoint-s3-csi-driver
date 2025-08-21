@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
@@ -42,7 +43,7 @@ import (
 )
 
 const (
-	driverName = "s3.csi.scality.com"
+	driverName = constants.DriverName
 
 	grpcServerMaxReceiveMessageSize = 1024 * 1024 * 2 // 2MB
 

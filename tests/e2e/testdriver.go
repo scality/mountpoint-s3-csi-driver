@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/onsi/ginkgo/v2"
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/customsuites"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 	v1 "k8s.io/api/core/v1"
@@ -49,7 +50,7 @@ func initS3Driver() *s3Driver {
 	return &s3Driver{
 		client: s3client.New("", "", ""),
 		driverInfo: framework.DriverInfo{
-			Name:        "s3.csi.scality.com",
+			Name:        constants.DriverName,
 			MaxFileSize: framework.FileSizeLarge,
 			SupportedFsType: sets.NewString(
 				"", // Default fsType
@@ -111,7 +112,7 @@ func (d *s3Driver) GetDynamicProvisionStorageClass(
 		ObjectMeta: metav1.ObjectMeta{
 			Name: scName,
 		},
-		Provisioner: d.driverInfo.Name, // "s3.csi.scality.com"
+		Provisioner: d.driverInfo.Name, // constants.DriverName
 		Parameters: map[string]string{
 			"csi.storage.k8s.io/provisioner-secret-name":       provSecretName,
 			"csi.storage.k8s.io/provisioner-secret-namespace":  config.Framework.Namespace.Name,

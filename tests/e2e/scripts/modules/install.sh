@@ -220,7 +220,7 @@ verify_installation() {
   # Check if CSI driver is registered first (which should happen immediately after Helm install)
   log "Checking if CSI driver is registered..."
 
-  if ! exec_cmd kubectl get csidrivers | grep -q "s3.csi.scality.com"; then
+  if ! exec_cmd kubectl get csidrivers | grep -q "$CSI_DRIVER_NAME"; then
     error "CSI driver is not registered properly. Installation may have failed."
     exec_cmd kubectl get csidrivers
     return

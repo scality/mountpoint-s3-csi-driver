@@ -17,6 +17,7 @@ import (
 	storageframework "k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/utils/ptr"
 
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 )
 
@@ -96,7 +97,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
 			},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name":       provSecretName,
 				"csi.storage.k8s.io/provisioner-secret-namespace":  f.Namespace.Name,
@@ -262,7 +263,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
 			},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name":       provSecretName,
 				"csi.storage.k8s.io/provisioner-secret-namespace":  secretNamespace.Name, // Different namespace
@@ -326,7 +327,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 			ObjectMeta: metav1.ObjectMeta{
 				Name: scName,
 			},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name":       lisaProvSecretName,
 				"csi.storage.k8s.io/provisioner-secret-namespace":  f.Namespace.Name,
