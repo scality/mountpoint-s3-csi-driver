@@ -15,6 +15,7 @@ on:
       - 'NOTICE'
       - '.lychee.toml'
       - '.markdownlint.yaml'
+      - "CLAUDE.md"
 
 env:
   KUBECONFIG: "/home/runner/.kube/config"
