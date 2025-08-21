@@ -159,7 +159,7 @@ func (t *s3AdvancedPatternsTestSuite) DefineTests(driver storageframework.TestDr
 				Containers: []v1.Container{
 					{
 						Name:  "test-container",
-						Image: "busybox:1.35",
+						Image: "busybox:1.36",
 						Command: []string{
 							"sh", "-c", "echo 'WaitForFirstConsumer test' > /mnt/test-file && sleep 3600",
 						},
@@ -484,7 +484,7 @@ func testCredentialFallback(ctx context.Context, f *framework.Framework, scenari
 			Containers: []v1.Container{
 				{
 					Name:  "test-container",
-					Image: "busybox:1.35",
+					Image: "busybox:1.36",
 					Command: []string{
 						"sh", "-c", fmt.Sprintf("echo 'Credential fallback test: %s' > /mnt/test-file && sleep 120", scenarioName),
 					},

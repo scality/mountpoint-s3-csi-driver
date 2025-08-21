@@ -407,7 +407,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 				Containers: []v1.Container{
 					{
 						Name:  "test-container",
-						Image: "busybox:1.35",
+						Image: "busybox:1.36",
 						Command: []string{
 							"/bin/sh",
 							"-c",
