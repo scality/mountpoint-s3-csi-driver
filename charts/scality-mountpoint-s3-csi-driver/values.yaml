@@ -75,6 +75,7 @@ node:
 # Sidecar containers configuration
 sidecars:
   nodeDriverRegistrar:
+    # Source: https://github.com/kubernetes-csi/node-driver-registrar/releases
     image:
       repository: ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar
       tag: v2.14.0
@@ -91,6 +92,7 @@ sidecars:
         mountPath: /registration
     resources: {}
   livenessProbe:
+    # Source: https://github.com/kubernetes-csi/livenessprobe/releases
     image:
       repository: ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe
       tag: v2.16.0
@@ -98,6 +100,13 @@ sidecars:
     volumeMounts:
       - mountPath: /csi
         name: plugin-dir
+    resources: {}
+  csiProvisioner:
+    # Source: https://github.com/kubernetes-csi/external-provisioner/releases
+    image:
+      repository: ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner
+      tag: v5.3.0
+      pullPolicy: IfNotPresent
     resources: {}
 
 # Init container configuration
