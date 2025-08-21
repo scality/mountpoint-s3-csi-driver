@@ -17,5 +17,4 @@ coverage.out
 
 # Claude Code local user workflow specific files
 .claude/
-CLAUDE.md
 plans/
