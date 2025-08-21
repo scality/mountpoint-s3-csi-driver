@@ -1,5 +1,19 @@
 # Release Notes
 
+## [1.2.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.2.0)
+
+August 21, 2025
+
+### What's New
+
+- **Dynamic Provisioning**: Added support for automatic S3 bucket creation during PersistentVolumeClaim provisioning referencing a storage class.
+- **Controller Service**: Controller service is now deployed by default (previously experimental) to support dynamic provisioning.
+- **Helm Chart Updates**:
+  - Added global `s3.region` and `s3.endpointUrl` values that apply to both node and controller services.
+  - Legacy `node.s3EndpointUrl` and `node.s3Region` values are still supported and take precedence for backward compatibility.
+  - Added new `controller` section in Helm chart `values.yaml` with improved credential provider and RBAC permissions.
+  - Added configurable `images.provisioner` section in `values.yaml` for controller sidecar image configuration.
+
 ## [1.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.1.1)
 
 August 5, 2025
