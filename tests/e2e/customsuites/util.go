@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -495,6 +496,46 @@ func CreateLisaNodePublishSecret(ctx context.Context, f *framework.Framework) (s
 		return "", fmt.Errorf("Account2 credentials not available: ACCOUNT2_ACCESS_KEY and ACCOUNT2_SECRET_KEY must be set")
 	}
 	return CreateCredentialSecret(ctx, f, "account2-node-publish-secret", accessKeyID, secretAccessKey)
+}
+
+// CreateSecretWithNameInNamespace creates a Secret with a specific name in a specific namespace
+func CreateSecretWithNameInNamespace(ctx context.Context, f *framework.Framework, secretName, namespace string) (*v1.Secret, error) {
+	accessKeyID := GetEnv("ACCOUNT1_ACCESS_KEY", "")
+	secretAccessKey := GetEnv("ACCOUNT1_SECRET_KEY", "")
+
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil, fmt.Errorf("test credentials not available: ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set")
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"access_key_id":     []byte(accessKeyID),
+			"secret_access_key": []byte(secretAccessKey),
+		},
+	}
+
+	return f.ClientSet.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+}
+
+// WaitForPVCToBeBound waits for a PVC to reach the Bound state
+func WaitForPVCToBeBound(ctx context.Context, f *framework.Framework, pvcName, namespace string) {
+	WaitForPVCToBeBoundWithTimeout(ctx, f, pvcName, namespace, 2*time.Minute, 5*time.Second)
+}
+
+// WaitForPVCToBeBoundWithTimeout waits for a PVC to reach the Bound state with custom timeout
+func WaitForPVCToBeBoundWithTimeout(ctx context.Context, f *framework.Framework, pvcName, namespace string, timeout, interval time.Duration) {
+	gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
+		updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return v1.ClaimPending
+		}
+		return updatedPVC.Status.Phase
+	}, timeout, interval).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
 }
 
 // BuildSecretVolume creates a volume using a secret reference for authentication.
