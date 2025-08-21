@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains the Scality CSI Driver for S3 (version 1.2.0), a Container Storage Interface (CSI) driver that enables Kubernetes applications to mount Scality S3 buckets as file system volumes. It's forked from the AWS Mountpoint for Amazon S3 CSI Driver and optimized for Scality S3 storage.
+This repository contains the Scality CSI Driver for S3 (version 1.2.0), a Container Storage Interface (CSI) driver that enables Kubernetes applications to
+mount Scality S3 buckets as file system volumes. It's forked from the AWS Mountpoint for Amazon S3 CSI Driver and optimized for Scality S3 storage.
 
 The driver implements the CSI specification and uses the Mountpoint for Amazon S3 binary underneath for actual S3 mounting operations.
 
 ## Key Commands
 
 ### Building and Testing
+
 - `make bin` - Build all binaries (scality-s3-csi-driver, scality-csi-controller, scality-s3-csi-mounter, install-mp)
 - `make container` - Build container image with default tag "local"
 - `make test` - Run unit tests with race detection and CSI compliance tests
@@ -22,11 +24,13 @@ The driver implements the CSI specification and uses the Mountpoint for Amazon S
 - `make precommit` - Run all pre-commit hooks (formatting, linting, docs, helm)
 
 ### License Management
+
 - `make check-licenses` - Verify dependency licenses against allowed list
 - `make generate-licenses` - Generate license files for all dependencies
 - `make download-tools` - Download Go tools and dependencies
 
 ### CSI Driver Operations
+
 - `make csi-install S3_ENDPOINT_URL=<url>` - Install CSI driver to Kubernetes cluster
 - `make csi-uninstall` - Uninstall CSI driver interactively
 - `make csi-uninstall-clean` - Uninstall driver and delete custom namespace
@@ -37,6 +41,7 @@ The driver implements the CSI specification and uses the Mountpoint for Amazon S
 - `make e2e-all S3_ENDPOINT_URL=<url>` - Install driver and run all tests
 
 ### Documentation
+
 - `make docs` - Build and serve documentation with MkDocs (strict mode)
 - `make docs-clean` - Clean documentation build artifacts
 - `make validate-helm` - Validate Helm charts for correctness
@@ -47,24 +52,24 @@ The driver implements the CSI specification and uses the Mountpoint for Amazon S
 
 The Scality CSI Driver follows the CSI specification with three main components:
 
-1. **Controller Component** (`scality-csi-controller`): 
+1. **Controller Component** (`scality-csi-controller`):
    - Manages volume lifecycle and dynamic provisioning operations
    - Uses controller-runtime for Kubernetes controller pattern
    - Handles credential validation and storage class parameters
    - Coordinates with S3 storage for bucket operations
 
-2. **Node Component** (`scality-s3-csi-driver`): 
+2. **Node Component** (`scality-s3-csi-driver`):
    - Handles volume mounting/unmounting on each Kubernetes node
    - Implements CSI Node Service RPC
    - Coordinates with mounter component for actual S3 mounting
    - Manages credential providers (AWS profiles, Kubernetes secrets)
 
-3. **Mounter Component** (`scality-s3-csi-mounter`): 
+3. **Mounter Component** (`scality-s3-csi-mounter`):
    - Spawns and monitors mountpoint-s3 processes
    - Supports both pod-based and systemd mounting strategies
    - Handles mount argument construction and process lifecycle
 
-4. **Install Component** (`install-mp`): 
+4. **Install Component** (`install-mp`):
    - Utility for installing mountpoint-s3 binary (temporary solution)
 
 ### Key Package Structure
@@ -120,12 +125,14 @@ The Scality CSI Driver follows the CSI specification with three main components:
 ## Testing Strategy
 
 ### Test Structure
+
 - `tests/sanity/` - CSI specification compliance tests
 - `tests/controller/` - Controller integration tests using envtest
 - `tests/e2e/` - End-to-end tests against real S3 storage
 - Unit tests co-located with source files
 
 ### E2E Testing Prerequisites
+
 1. Load credentials: `source tests/e2e/scripts/load-credentials.sh`
 2. Provide S3_ENDPOINT_URL parameter
 3. Ensure Kubernetes cluster access
@@ -133,6 +140,7 @@ The Scality CSI Driver follows the CSI specification with three main components:
 ## License Management
 
 Uses go-licenses tool to manage dependency licenses:
+
 - Allowed licenses: Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT
 - `make check-licenses` - Verify compliance
 - `make generate-licenses` - Generate license files
