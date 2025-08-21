@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # capture-events-and-logs.sh - Capture Kubernetes events and correlate with resource logs
-# Usage: ./capture-events-and-logs.sh [output_directory]
+# Usage: ./capture-events-and-logs.sh [output_directory] [start|stop]
 
 OUTPUT_DIR="${1:-./debug-capture}"
 CAPTURE_PID_FILE="$OUTPUT_DIR/capture.pid"
@@ -53,7 +53,9 @@ capture_resource_context() {
     fi
 
     # Capture related events for this specific resource
-    kubectl get events -n "$namespace" --field-selector "involvedObject.name=$name,involvedObject.kind=$kind" -o json > "$OUTPUT_DIR/events/${safe_name}-events.json" 2>/dev/null || true
+    kubectl get events -n "$namespace" \
+        --field-selector "involvedObject.name=$name,involvedObject.kind=$kind" \
+        -o json > "$OUTPUT_DIR/events/${safe_name}-events.json" 2>/dev/null || true
 }
 
 # Function to start monitoring
