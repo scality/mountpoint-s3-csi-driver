@@ -11,7 +11,8 @@ It implements the [CSI specification](https://github.com/container-storage-inter
 
 ## Key Features
 
-- **Static Provisioning Only**: Integrate existing S3 buckets as persistent storage in Kubernetes. Dynamic provisioning is not supported.
+- **Static Provisioning**: Integrate existing S3 buckets as persistent storage in Kubernetes.
+- **Dynamic provisioning**: Create S3 buckets with dynamic provisioning and integrate new S3 buckets as persistent storage in Kubernetes.
 - **Familiar File Access**: Access S3 objects as files and directories, simplifying application integration.
 - **Customizable Mounts**: Fine-tune volume mounts with a variety of supported options for performance and behavior.
 - **Scality Integration**: Optimized for Scality S3 storage solutions like [Scality RING](https://www.scality.com/ring/).
