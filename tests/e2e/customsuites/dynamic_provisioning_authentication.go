@@ -137,13 +137,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 
 		ginkgo.By("Waiting for PVC to be bound with proper authentication")
 
-		gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-			updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-			if err != nil {
-				return v1.ClaimPending
-			}
-			return updatedPVC.Status.Phase
-		}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), "PVC should be bound with authentication")
+		WaitForPVCToBeBoundWithTimeout(ctx, f, pvc.Name, f.Namespace.Name, 120*time.Second, 5*time.Second)
 
 		ginkgo.By("Verifying PV contains correct volume attributes")
 
@@ -309,13 +303,7 @@ func (t *s3DynamicProvisioningAuthTestSuite) DefineTests(driver storageframework
 
 		ginkgo.By("Verifying cross-namespace authentication works")
 
-		gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-			updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-			if err != nil {
-				return v1.ClaimPending
-			}
-			return updatedPVC.Status.Phase
-		}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), "Cross-namespace authentication should work")
+		WaitForPVCToBeBoundWithTimeout(ctx, f, pvc.Name, f.Namespace.Name, 120*time.Second, 5*time.Second)
 	})
 
 	// Test bucket ownership verification with account other than driver default

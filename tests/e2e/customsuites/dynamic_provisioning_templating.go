@@ -146,7 +146,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			pvcBaseName := fmt.Sprintf("test-pvc-%s", uuid.NewString()[:8])
 			provSecretName := fmt.Sprintf("%s-provisioner", pvcBaseName)
 
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, provSecretName)
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, provSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
@@ -189,13 +189,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 1: ${pvc.name} in provisioner-secret-name passed")
 		})
@@ -204,7 +198,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			ginkgo.By("Creating namespace-based secret")
 
 			namespaceSecretName := fmt.Sprintf("%s-secret", f.Namespace.Name)
-			secret, err := CreateProvisionerSecretWithName(ctx, f, namespaceSecretName)
+			secret, err := CreateSecretWithNameInNamespace(ctx, f, namespaceSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create namespace-based secret")
 			l.secrets = append(l.secrets, secret)
 
@@ -246,13 +240,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 2: ${pvc.namespace} in provisioner-secret-name passed")
 		})
@@ -301,18 +289,12 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			pvSecretName := fmt.Sprintf("%s-secret", expectedPVName)
 
 			ginkgo.By("Creating secret for the predictable PV name")
-			pvSecret, err := CreateProvisionerSecretWithName(ctx, f, pvSecretName)
+			pvSecret, err := CreateSecretWithNameInNamespace(ctx, f, pvSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create PV secret")
 			l.secrets = append(l.secrets, pvSecret)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 3: ${pv.name} in provisioner-secret-name passed")
 		})
@@ -354,7 +336,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.namespaces = append(l.namespaces, ns)
 
 			// Create secret in that namespace
-			provSecret, err := CreateProvisionerSecretWithNameInNamespace(ctx, f, "test-secret", nsName)
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "test-secret", nsName)
 			framework.ExpectNoError(err, "Failed to create provisioner secret in PV namespace")
 			l.secrets = append(l.secrets, provSecret)
 
@@ -398,13 +380,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc2)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc2.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc2.Name, f.Namespace.Name)
 
 			framework.Logf("Test 4: ${pv.name} in provisioner-secret-namespace passed")
 		})
@@ -413,7 +389,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			ginkgo.By("Creating secret in the PVC namespace")
 
 			// Secret must exist in the same namespace as PVC
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "prov-secret-ns")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "prov-secret-ns", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
@@ -455,13 +431,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 5: ${pvc.namespace} in provisioner-secret-namespace passed")
 		})
@@ -474,7 +444,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 
 		ginkgo.It("should support ${pv.name} in node-publish-secret-name", func(ctx context.Context) {
 			ginkgo.By("Creating default provisioner secret")
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "default-prov")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "default-prov", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
@@ -520,30 +490,24 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			// Create node secret for predictable PV name
 			expectedPVName := fmt.Sprintf("pvc-%s", pvc.UID)
 			nodeSecretName := fmt.Sprintf("%s-node", expectedPVName)
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, nodeSecretName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, nodeSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret")
 			l.secrets = append(l.secrets, nodeSecret)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 6: ${pv.name} in node-publish-secret-name passed")
 		})
 
 		ginkgo.It("should support ${pvc.namespace} in node-publish-secret-name", func(ctx context.Context) {
 			ginkgo.By("Creating secrets")
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "default-prov2")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "default-prov2", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
 			nodeSecretName := fmt.Sprintf("%s-node", f.Namespace.Name)
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, nodeSecretName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, nodeSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -587,26 +551,20 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 7: ${pvc.namespace} in node-publish-secret-name passed")
 		})
 
 		ginkgo.It("should support ${pvc.name} in node-publish-secret-name", func(ctx context.Context) {
 			ginkgo.By("Creating secrets")
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "default-prov3")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "default-prov3", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
 			pvcBaseName := fmt.Sprintf("node-pvc-%s", uuid.NewString()[:8])
 			nodeSecretName := fmt.Sprintf("%s-node", pvcBaseName)
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, nodeSecretName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, nodeSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -650,25 +608,19 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 8: ${pvc.name} in node-publish-secret-name passed")
 		})
 
 		ginkgo.It("should support ${pvc.annotations['key']} in node-publish-secret-name", func(ctx context.Context) {
 			ginkgo.By("Creating secrets")
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "default-prov4")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "default-prov4", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
 			annotationSecretName := fmt.Sprintf("annotation-secret-%s", uuid.NewString()[:8])
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, annotationSecretName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, annotationSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -715,20 +667,14 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 9: ${pvc.annotations['key']} in node-publish-secret-name passed")
 		})
 
 		ginkgo.It("should support ${pv.name} in node-publish-secret-namespace", func(ctx context.Context) {
 			ginkgo.By("Creating default provisioner secret")
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "default-prov5")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "default-prov5", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
@@ -765,7 +711,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			_ = f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Delete(ctx, pvc.Name, metav1.DeleteOptions{})
 
 			// Create node secret in that namespace
-			nodeSecret, err := CreateProvisionerSecretWithNameInNamespace(ctx, f, "node-secret", nsName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, "node-secret", nsName)
 			framework.ExpectNoError(err, "Failed to create node secret in PV namespace")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -809,24 +755,18 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc2)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc2.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc2.Name, f.Namespace.Name)
 
 			framework.Logf("Test 10: ${pv.name} in node-publish-secret-namespace passed")
 		})
 
 		ginkgo.It("should support ${pvc.namespace} in node-publish-secret-namespace", func(ctx context.Context) {
 			ginkgo.By("Creating secrets")
-			provSecret, err := CreateProvisionerSecretWithName(ctx, f, "default-prov6")
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, "default-prov6", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create provisioner secret")
 			l.secrets = append(l.secrets, provSecret)
 
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, "node-secret-ns")
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, "node-secret-ns", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -870,13 +810,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 11: ${pvc.namespace} in node-publish-secret-namespace passed")
 		})
@@ -892,13 +826,13 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 
 			// Create admin secret for provisioning
 			adminSecretName := fmt.Sprintf("%s-admin", f.Namespace.Name)
-			adminSecret, err := CreateProvisionerSecretWithName(ctx, f, adminSecretName)
+			adminSecret, err := CreateSecretWithNameInNamespace(ctx, f, adminSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create admin secret")
 			l.secrets = append(l.secrets, adminSecret)
 
 			// Create user secret for node mounting
 			userSecretName := fmt.Sprintf("%s-user", f.Namespace.Name)
-			userSecret, err := CreateNodeSecretWithName(ctx, f, userSecretName)
+			userSecret, err := CreateSecretWithNameInNamespace(ctx, f, userSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create user secret")
 			l.secrets = append(l.secrets, userSecret)
 
@@ -942,13 +876,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 12: Separate provisioner and node credentials with namespace templating passed")
 		})
@@ -957,14 +885,14 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			ginkgo.By("Creating platform admin secret")
 
 			// Create centralized platform admin secret
-			platformSecret, err := CreateProvisionerSecretWithName(ctx, f, "platform-admin")
+			platformSecret, err := CreateSecretWithNameInNamespace(ctx, f, "platform-admin", f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create platform admin secret")
 			l.secrets = append(l.secrets, platformSecret)
 
 			// Create per-namespace-per-pvc node secret
 			pvcName := fmt.Sprintf("multi-platform-pvc-%s", uuid.NewString()[:8])
 			nodeSecretName := fmt.Sprintf("%s-%s", f.Namespace.Name, pvcName)
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, nodeSecretName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, nodeSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -1008,13 +936,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 13: Static provisioner with templated node secrets passed")
 		})
@@ -1025,12 +947,12 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			teamName := fmt.Sprintf("team-%s", uuid.NewString()[:8])
 
 			// Create team admin secret
-			teamAdminSecret, err := CreateProvisionerSecretWithName(ctx, f, fmt.Sprintf("%s-admin", teamName))
+			teamAdminSecret, err := CreateSecretWithNameInNamespace(ctx, f, fmt.Sprintf("%s-admin", teamName), f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create team admin secret")
 			l.secrets = append(l.secrets, teamAdminSecret)
 
 			// Create team user secret
-			teamUserSecret, err := CreateNodeSecretWithName(ctx, f, fmt.Sprintf("%s-user", teamName))
+			teamUserSecret, err := CreateSecretWithNameInNamespace(ctx, f, fmt.Sprintf("%s-user", teamName), f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create team user secret")
 			l.secrets = append(l.secrets, teamUserSecret)
 
@@ -1077,13 +999,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 14: Full annotation-driven multi-tenant templating passed")
 		})
@@ -1106,14 +1022,14 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 
 			// Create provisioner secret in separate namespace using PVC name template
 			provSecretName := fmt.Sprintf("%s-provisioner", pvcName)
-			provSecret, err := CreateProvisionerSecretWithNameInNamespace(ctx, f, provSecretName, secretsNs)
+			provSecret, err := CreateSecretWithNameInNamespace(ctx, f, provSecretName, secretsNs)
 			framework.ExpectNoError(err, "Failed to create provisioner secret in separate namespace")
 			l.secrets = append(l.secrets, provSecret)
 
 			// Create node secret in PVC namespace using PVC name
 			// This demonstrates that node secrets can be in a different namespace than provisioner secrets
 			nodeSecretName := fmt.Sprintf("%s-node", pvcName)
-			nodeSecret, err := CreateNodeSecretWithName(ctx, f, nodeSecretName)
+			nodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, nodeSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create node secret in PVC namespace")
 			l.secrets = append(l.secrets, nodeSecret)
 
@@ -1157,13 +1073,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pvcs = append(l.pvcs, pvc)
 
 			ginkgo.By("Waiting for PVC to be bound")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 15: Mixed static and dynamic namespace templating passed")
 		})
@@ -1174,7 +1084,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			appName := fmt.Sprintf("app-%s", uuid.NewString()[:8])
 
 			// Create app-specific node secret
-			appNodeSecret, err := CreateNodeSecretWithName(ctx, f, fmt.Sprintf("%s-node", appName))
+			appNodeSecret, err := CreateSecretWithNameInNamespace(ctx, f, fmt.Sprintf("%s-node", appName), f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create app node secret")
 			l.secrets = append(l.secrets, appNodeSecret)
 
@@ -1234,7 +1144,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			// Create provisioner secret for predictable PV name
 			expectedPVName := fmt.Sprintf("pvc-%s", pvc.UID)
 			pvAdminSecretName := fmt.Sprintf("%s-admin", expectedPVName)
-			pvAdminSecret, err := CreateProvisionerSecretWithName(ctx, f, pvAdminSecretName)
+			pvAdminSecret, err := CreateSecretWithNameInNamespace(ctx, f, pvAdminSecretName, f.Namespace.Name)
 			framework.ExpectNoError(err, "Failed to create PV admin secret")
 			l.secrets = append(l.secrets, pvAdminSecret)
 
@@ -1277,13 +1187,7 @@ func (t *s3DynamicProvisioningTemplatingTestSuite) DefineTests(driver storagefra
 			l.pods = append(l.pods, pod)
 
 			ginkgo.By("Waiting for PVC to be bound after pod creation")
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return updatedPVC.Status.Phase
-			}, 2*time.Minute, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
+			WaitForPVCToBeBound(ctx, f, pvc.Name, f.Namespace.Name)
 
 			framework.Logf("Test 16: WaitForFirstConsumer with multiple templates passed")
 		})

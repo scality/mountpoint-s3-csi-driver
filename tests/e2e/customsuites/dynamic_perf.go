@@ -155,14 +155,8 @@ func (t *s3DynamicProvisioningPerfTestSuite) DefineTests(driver storageframework
 
 		// Wait for all PVCs to be bound
 		bindStartTime := time.Now()
-		for i, pvcName := range pvcNames {
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				pvc, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return pvc.Status.Phase
-			}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), fmt.Sprintf("PVC %d should be bound", i))
+		for _, pvcName := range pvcNames {
+			WaitForPVCToBeBoundWithTimeout(ctx, f, pvcName, f.Namespace.Name, 120*time.Second, 5*time.Second)
 		}
 
 		totalTime := time.Since(startTime)
@@ -255,14 +249,8 @@ func (t *s3DynamicProvisioningPerfTestSuite) DefineTests(driver storageframework
 		ginkgo.By("Verifying all rapid provisions complete successfully")
 
 		// Wait for all PVCs to be bound
-		for i, pvcName := range pvcNames {
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				pvc, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return pvc.Status.Phase
-			}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), fmt.Sprintf("Rapid PVC %d should be bound", i))
+		for _, pvcName := range pvcNames {
+			WaitForPVCToBeBoundWithTimeout(ctx, f, pvcName, f.Namespace.Name, 120*time.Second, 5*time.Second)
 		}
 
 		totalTime := time.Since(startTime)
@@ -377,14 +365,8 @@ func (t *s3DynamicProvisioningPerfTestSuite) DefineTests(driver storageframework
 		ginkgo.By(fmt.Sprintf("Waiting for all %d large-scale PVCs to be bound", totalVolumes))
 
 		// Wait for all volumes to be bound
-		for i, pvcName := range allPVCNames {
-			gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-				pvc, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
-				if err != nil {
-					return v1.ClaimPending
-				}
-				return pvc.Status.Phase
-			}, 180*time.Second, 10*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), fmt.Sprintf("Large-scale PVC %d (%s) should be bound", i, pvcName))
+		for _, pvcName := range allPVCNames {
+			WaitForPVCToBeBoundWithTimeout(ctx, f, pvcName, f.Namespace.Name, 180*time.Second, 10*time.Second)
 		}
 
 		totalTime := time.Since(startTime)

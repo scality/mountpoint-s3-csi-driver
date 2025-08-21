@@ -206,13 +206,7 @@ func (t *s3AdvancedPatternsTestSuite) DefineTests(driver storageframework.TestDr
 		ginkgo.By("Verifying PVC gets bound after pod creation")
 
 		// Now PVC should get bound because pod is scheduled
-		gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-			updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
-			if err != nil {
-				return v1.ClaimPending
-			}
-			return updatedPVC.Status.Phase
-		}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound), "PVC should be bound after pod creation")
+		WaitForPVCToBeBoundWithTimeout(ctx, f, pvcName, f.Namespace.Name, 120*time.Second, 5*time.Second)
 
 		ginkgo.By("Verifying pod becomes ready")
 
@@ -454,14 +448,7 @@ func testCredentialFallback(ctx context.Context, f *framework.Framework, scenari
 	ginkgo.By(fmt.Sprintf("Verifying PVC gets bound for scenario: %s (%s)", scenarioName, expectedBehavior))
 
 	// PVC should get bound regardless of credential configuration if driver has valid fallback credentials
-	gomega.Eventually(func(ctx context.Context) v1.PersistentVolumeClaimPhase {
-		updatedPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
-		if err != nil {
-			return v1.ClaimPending
-		}
-		return updatedPVC.Status.Phase
-	}, 120*time.Second, 5*time.Second).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound),
-		fmt.Sprintf("PVC should be bound for %s scenario: %s", scenarioName, expectedBehavior))
+	WaitForPVCToBeBoundWithTimeout(ctx, f, pvcName, f.Namespace.Name, 120*time.Second, 5*time.Second)
 
 	// Test mounting by creating a pod
 	ginkgo.By(fmt.Sprintf("Creating pod to test mounting for scenario: %s", scenarioName))
