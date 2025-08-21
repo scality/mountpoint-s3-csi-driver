@@ -5,5 +5,5 @@ This repository hosts the Container Storage Interface (CSI) driver enabling Kube
 Refer to the [official documentation site](https://scality.github.io/mountpoint-s3-csi-driver/) for detailed installation, usage, and features.
 
 [![Linting and Formatting](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/linting-and-formatting.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/linting-and-formatting.yaml)
-[![Tests and Compliance](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/tests-and-compliance.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/tests-and-compliance.yaml)
+[![Code Quality Tests](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/code-quality-tests.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/code-quality-tests.yaml)
 [![E2E Integration Tests with RING S3](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/e2e-tests.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/e2e-tests.yaml)

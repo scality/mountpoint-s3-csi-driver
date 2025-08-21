@@ -53,6 +53,58 @@ const (
 
 var mountpointPodNamespace = os.Getenv("MOUNTPOINT_NAMESPACE")
 
+// Test seams: allow overriding external dependencies in unit tests.
+var (
+	inClusterConfigFn        = rest.InClusterConfig
+	newKubernetesForConfigFn = func(c *rest.Config) (kubernetes.Interface, error) { return kubernetes.NewForConfig(c) }
+	kubernetesVersionFn      = kubernetesVersion
+	newSystemdMounterFn      = func(credProvider *credentialprovider.Provider, mpVersion string, kubernetesVersion string) (mounter.Mounter, error) {
+		return mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
+	}
+)
+
+// InClusterConfigTestHook allows tests to override the in-cluster config function.
+// Pass nil to restore the default behavior.
+func InClusterConfigTestHook(hook func() (*rest.Config, error)) {
+	if hook == nil {
+		inClusterConfigFn = rest.InClusterConfig
+		return
+	}
+	inClusterConfigFn = hook
+}
+
+// KubeClientForConfigTestHook allows tests to override the Kubernetes client creation.
+// Pass nil to restore the default behavior.
+func KubeClientForConfigTestHook(hook func(*rest.Config) (kubernetes.Interface, error)) {
+	if hook == nil {
+		newKubernetesForConfigFn = func(c *rest.Config) (kubernetes.Interface, error) { return kubernetes.NewForConfig(c) }
+		return
+	}
+	newKubernetesForConfigFn = hook
+}
+
+// KubernetesVersionTestHook allows tests to override Kubernetes version detection.
+// Pass nil to restore the default behavior.
+func KubernetesVersionTestHook(hook func(kubernetes.Interface) (string, error)) {
+	if hook == nil {
+		kubernetesVersionFn = kubernetesVersion
+		return
+	}
+	kubernetesVersionFn = hook
+}
+
+// NewSystemdMounterTestHook allows tests to override systemd mounter creation.
+// Pass nil to restore the default behavior.
+func NewSystemdMounterTestHook(hook func(*credentialprovider.Provider, string, string) (mounter.Mounter, error)) {
+	if hook == nil {
+		newSystemdMounterFn = func(credProvider *credentialprovider.Provider, mpVersion string, kubernetesVersion string) (mounter.Mounter, error) {
+			return mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
+		}
+		return
+	}
+	newSystemdMounterFn = hook
+}
+
 type Driver struct {
 	Endpoint string
 	Srv      *grpc.Server
@@ -81,17 +133,17 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		return nil, fmt.Errorf("AWS_ENDPOINT_URL environment variable must be set for the CSI driver to function")
 	}
 
-	config, err := rest.InClusterConfig()
+	config, err := inClusterConfigFn()
 	if err != nil {
 		return nil, fmt.Errorf("cannot create in-cluster config: %w", err)
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := newKubernetesForConfigFn(config)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create kubernetes clientset: %w", err)
 	}
 
-	kubernetesVersion, err := kubernetesVersion(clientset)
+	kubernetesVersion, err := kubernetesVersionFn(clientset)
 	if err != nil {
 		klog.Errorf("failed to get kubernetes version: %v", err)
 	}
@@ -105,7 +157,13 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 	stopCh := make(chan struct{})
 
 	var mounterImpl mounter.Mounter
-	if util.UsePodMounter() {
+
+	// Check if running in controller-only mode
+	if os.Getenv("CSI_CONTROLLER_ONLY") == "true" {
+		klog.Infoln("Running in controller-only mode, skipping mounter initialization")
+		// No mounter needed for controller-only mode
+		mounterImpl = nil
+	} else if util.UsePodMounter() {
 		podWatcher := watcher.New(clientset, mountpointPodNamespace, podWatcherResyncPeriod)
 		err = podWatcher.Start(stopCh)
 		if err != nil {
@@ -118,14 +176,17 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		}
 		klog.Infoln("Using pod mounter")
 	} else {
-		mounterImpl, err = mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
+		mounterImpl, err = newSystemdMounterFn(credProvider, mpVersion, kubernetesVersion)
 		if err != nil {
 			klog.Fatalln(err)
 		}
 		klog.Infoln("Using systemd mounter")
 	}
 
-	nodeServer := node.NewS3NodeServer(nodeID, mounterImpl)
+	var nodeServer *node.S3NodeServer
+	if mounterImpl != nil {
+		nodeServer = node.NewS3NodeServer(nodeID, mounterImpl)
+	}
 
 	// Initialize controller credential provider for dynamic provisioning
 	controllerCredProvider := controllerCredProvider.New(clientset)
@@ -195,7 +256,9 @@ func (d *Driver) Run() error {
 
 	csi.RegisterIdentityServer(d.Srv, d)
 	csi.RegisterControllerServer(d.Srv, d)
-	csi.RegisterNodeServer(d.Srv, d.NodeServer)
+	if d.NodeServer != nil {
+		csi.RegisterNodeServer(d.Srv, d.NodeServer)
+	}
 
 	klog.Infof("Listening for connections on address: %#v", listener.Addr())
 	return d.Srv.Serve(listener)
@@ -212,8 +275,8 @@ func (d *Driver) Stop() {
 	}
 }
 
-func kubernetesVersion(clientset *kubernetes.Clientset) (string, error) {
-	version, err := clientset.ServerVersion()
+func kubernetesVersion(clientset kubernetes.Interface) (string, error) {
+	version, err := clientset.Discovery().ServerVersion()
 	if err != nil {
 		return "", fmt.Errorf("cannot get kubernetes server version: %w", err)
 	}
