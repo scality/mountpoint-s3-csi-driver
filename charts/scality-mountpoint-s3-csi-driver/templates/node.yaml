@@ -119,9 +119,9 @@ spec:
               value: {{ .Values.mountpointPod.namespace }}
             {{- end }}
             - name: AWS_ENDPOINT_URL
-              value: {{ .Values.node.s3EndpointUrl }}
+              value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl }}
             - name: AWS_REGION
-              value: {{ .Values.node.s3Region }}
+              value: {{ coalesce .Values.node.s3Region .Values.s3.region }}
             {{- with .Values.s3CredentialSecret }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
