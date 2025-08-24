@@ -157,4 +157,4 @@ Uses go-licenses tool to manage dependency licenses:
 - Always give a commit message in the end and ask user to commit
 - When giving a commit message, also provide a PR description
 
-- Run Make precommit before committing any change and after finishing changes
+- Run `make precommit` before committing any change and after finishing changes, and add the fixes for commit or fix the issues and only then finish the task.
