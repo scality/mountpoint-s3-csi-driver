@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: upgrade-test-pv-1
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: s3.csi.scality.com
+    volumeHandle: upgrade-test-bucket-1
+    volumeAttributes:
+      bucketName: upgrade-test-bucket-1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: upgrade-test-pvc-1
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  volumeName: upgrade-test-pv-1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-1
+  labels:
+    test: upgrade
+    phase: pre-upgrade
+spec:
+  containers:
+  - name: test
+    image: busybox:1.36
+    command: ["/bin/sh", "-c", "sleep infinity"]
+    volumeMounts:
+    - name: s3-volume
+      mountPath: /data
+  volumes:
+  - name: s3-volume
+    persistentVolumeClaim:
+      claimName: upgrade-test-pvc-1

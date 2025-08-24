@@ -157,7 +157,11 @@ Uses go-licenses tool to manage dependency licenses:
 - Always give a commit message in the end and ask user to commit
 - When giving a commit message, also provide a PR description
 
-- Run `make precommit` before committing any change and after finishing changes
-- If precommit hooks modify files (like end-of-file-fixer), add the modified files and amend the commit
-- Only consider the task complete after precommit passes or only fails on system dependencies (like mkdocs)
-- Common precommit workflow: `git add .` → `git commit` → `make precommit` → `git add .` → `git commit --amend --no-edit`
+- **ALWAYS run precommit workflow**: Never complete a task without following this process:
+  1. `git add .` → `git commit -m "message"`  
+  2. `make precommit` 
+  3. If hooks modify files: `git add .` → `git commit --amend --no-edit`
+  4. Repeat steps 2-3 until only system dependency failures remain (like mkdocs)
+- **Common hook fixes**: end-of-file-fixer, trim-trailing-whitespace, codespell automatically fix issues
+- **Task completion**: Only mark tasks complete after precommit workflow succeeds or only fails on system dependencies
+- **Never skip**: Even for "simple" changes like YAML files, always run the full precommit workflow
