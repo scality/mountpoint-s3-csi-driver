@@ -13,16 +13,16 @@ This document provides a comprehensive tracking table for all implementation ite
 | # | Description | Dependencies | Value Added | Reference | JIRA |
 |---|-------------|--------------|-------------|-----------|------|
 | **Phase 0: Upgrade Testing Infrastructure (40 items)** | | | | | |
-| 1 | Create upgrade test directory structure | None | Foundation for upgrade testing | [upgrade-testing-plan.md#pr-1](upgrade-testing-implementation-plan.md#pr-1-create-upgrade-test-directory-structure) | |
-| 2 | Add basic logging helpers | None | Consistent test output | [upgrade-testing-plan.md#pr-2](upgrade-testing-implementation-plan.md#pr-2-add-basic-logging-helpers) | |
-| 3 | Add phase tracking helpers | None | Test progress tracking | [upgrade-testing-plan.md#pr-3](upgrade-testing-implementation-plan.md#pr-3-add-phase-tracking-helpers) | |
-| 4 | Add driver verification helper | None | Driver health checks | [upgrade-testing-plan.md#pr-4](upgrade-testing-implementation-plan.md#pr-4-add-driver-verification-helper) | |
-| 5 | Add mount detection helper | None | Identify mount strategies | [upgrade-testing-plan.md#pr-5](upgrade-testing-implementation-plan.md#pr-5-add-mount-detection-helper) | |
-| 6 | Add mount verification helper | None | Verify mount functionality | [upgrade-testing-plan.md#pr-6](upgrade-testing-implementation-plan.md#pr-6-add-mount-verification-helper) | |
-| 7 | Add test data helpers | None | Data integrity testing | [upgrade-testing-plan.md#pr-7](upgrade-testing-implementation-plan.md#pr-7-add-test-data-helpers) | |
-| 8 | Add I/O testing helpers | None | Continuous I/O validation | [upgrade-testing-plan.md#pr-8](upgrade-testing-implementation-plan.md#pr-8-add-io-testing-helpers) | |
-| 9 | Add credential refresh check | None | Long-running auth testing | [upgrade-testing-plan.md#pr-9](upgrade-testing-implementation-plan.md#pr-9-add-credential-refresh-check) | |
-| 10 | Add mount info collection script | None | Debug information gathering | [upgrade-testing-plan.md#pr-10](upgrade-testing-implementation-plan.md#pr-10-add-mount-info-collection-script) | |
+| 1 | Create upgrade test directory structure | None | Foundation for upgrade testing | [upgrade-testing-plan.md#pr-1](upgrade-testing-implementation-plan.md#pr-1-create-upgrade-test-directory-structure) | S3CSI-165 |
+| 2 | Add basic logging helpers | None | Consistent test output | [upgrade-testing-plan.md#pr-2](upgrade-testing-implementation-plan.md#pr-2-add-basic-logging-helpers) | S3CSI-165|
+| 3 | Add phase tracking helpers | None | Test progress tracking | [upgrade-testing-plan.md#pr-3](upgrade-testing-implementation-plan.md#pr-3-add-phase-tracking-helpers) | S3CSI-165 |
+| 4 | Add driver verification helper | None | Driver health checks | [upgrade-testing-plan.md#pr-4](upgrade-testing-implementation-plan.md#pr-4-add-driver-verification-helper) | S3CSI-165 |
+| 5 | Add mount detection helper | None | Identify mount strategies | [upgrade-testing-plan.md#pr-5](upgrade-testing-implementation-plan.md#pr-5-add-mount-detection-helper) | S3CSI-165 |
+| 6 | Add mount verification helper | None | Verify mount functionality | [upgrade-testing-plan.md#pr-6](upgrade-testing-implementation-plan.md#pr-6-add-mount-verification-helper) | S3CSI-165 |
+| 7 | Add test data helpers | None | Data integrity testing | [upgrade-testing-plan.md#pr-7](upgrade-testing-implementation-plan.md#pr-7-add-test-data-helpers) | S3CSI-165 |
+| 8 | Add I/O testing helpers | None | Continuous I/O validation | [upgrade-testing-plan.md#pr-8](upgrade-testing-implementation-plan.md#pr-8-add-io-testing-helpers) | S3CSI-165 |
+| 9 | Add credential refresh check | None | Long-running auth testing | [upgrade-testing-plan.md#pr-9](upgrade-testing-implementation-plan.md#pr-9-add-credential-refresh-check) | S3CSI-165 |
+| 10 | Add mount info collection script | None | Debug information gathering | [upgrade-testing-plan.md#pr-10](upgrade-testing-implementation-plan.md#pr-10-add-mount-info-collection-script) | S3CSI-165 |
 | 11 | Add old workload fixture | None | Pre-upgrade test workloads | [upgrade-testing-plan.md#pr-11](upgrade-testing-implementation-plan.md#pr-11-add-old-workload-fixture) | |
 | 12 | Add new workload fixture | None | Post-upgrade test workloads | [upgrade-testing-plan.md#pr-12](upgrade-testing-implementation-plan.md#pr-12-add-new-workload-fixture) | |
 | 13 | Add I/O workload fixture | None | Continuous I/O workload | [upgrade-testing-plan.md#pr-13](upgrade-testing-implementation-plan.md#pr-13-add-io-workload-fixture) | |
