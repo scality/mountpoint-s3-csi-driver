@@ -1,0 +1,31 @@
+name: Build Dev Image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'mkdocs.yml'
+      - 'requirements.txt'  # MkDocs requirements
+      - 'NOTICE'
+      - '.lychee.toml'
+      - '.markdownlint.yaml'
+      - "CLAUDE.md"
+
+jobs:
+  dev-image:
+    name: Dev Image
+    permissions:
+      contents: read
+      packages: write
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
+    with:
+      context: .
+      name: mountpoint-s3-csi-driver
+      namespace: ${{ github.repository_owner }}
+      tag: ${{ github.sha }}

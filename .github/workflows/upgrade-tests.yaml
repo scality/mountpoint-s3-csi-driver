@@ -1,4 +1,4 @@
-name: E2E Integration Tests with RING S3
+name: Upgrade Tests
 
 on:
   workflow_run:
@@ -9,24 +9,29 @@ env:
   KUBECONFIG: "/home/runner/.kube/config"
 
 jobs:
-  e2e-tests:
+  upgrade-tests:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    name: v${{ matrix.ring_version }}
+    name: Upgrade v${{ matrix.from_version }} → PR
     runs-on: ubuntu-22.04-8core
     strategy:
       fail-fast: false
       matrix:
         include:
-          - ring_version: "9.4"
-            github_varirable_name: "CLOUDSERVER_RING_9_4"
-          - ring_version: "9.5"
-            github_varirable_name: "CLOUDSERVER_RING_9_5"
+          - from_version: "1.2.0"
+            ring_version: "9.4"
+            github_variable_name: "CLOUDSERVER_RING_9_4"
+            test_duration: "30"
+          - from_version: "1.2.0"
+            ring_version: "9.5"
+            github_variable_name: "CLOUDSERVER_RING_9_5"
+            test_duration: "30"
     env:
-      CLOUDSERVER_TAG: ${{ vars[matrix.github_varirable_name] }}
+      CLOUDSERVER_TAG: ${{ vars[matrix.github_variable_name] }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Run Common Setup
@@ -71,23 +76,18 @@ jobs:
           ./tests/e2e/scripts/capture-events-and-logs.sh artifacts/k8s-debug start &
           echo $! > capture.pid
 
-      - name: Run CSI Compliance Tests
+      - name: Run Upgrade Test
         run: |
-          # Load credentials and run CSI compliance tests against the deployed S3 backend
-          source tests/e2e/scripts/load-credentials.sh
-          export AWS_ENDPOINT_URL=http://s3.scality.com:8000
-          make csi-compliance-test
-
-      - name: Run Scality Tests
-        run: |
-          mkdir -p test-results
           # Load credentials from the integration config
           source tests/e2e/scripts/load-credentials.sh
-          make e2e-all \
-            S3_ENDPOINT_URL=http://s3.scality.com:8000 \
-            CSI_IMAGE_TAG=${{ github.sha }} \
-            CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
-            ADDITIONAL_ARGS="--junit-report=./test-results/e2e-tests-results.xml"
+          
+          # Run upgrade test using the built image from GHCR
+          ./tests/e2e/upgrade/run-upgrade-test.sh \
+            --from-version v${{ matrix.from_version }} \
+            --to-version local \
+            --to-image ghcr.io/${{ github.repository }}:${{ github.sha }} \
+            --test-duration ${{ matrix.test_duration }} \
+            --s3-endpoint-url http://s3.scality.com:8000
 
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
@@ -107,11 +107,29 @@ jobs:
           mkdir -p artifacts/logs/s3
           cp -r .github/scality-storage-deployment/logs/s3/* artifacts/logs/s3/ 2>/dev/null || true
 
+      - name: Collect Upgrade Test Logs
+        if: always()
+        run: |
+          mkdir -p artifacts/upgrade-test
+          
+          # Collect CSI driver logs
+          kubectl logs -n scality-s3-csi -l app=s3-csi-node --all-containers > artifacts/upgrade-test/csi-node-logs.txt || true
+          kubectl logs -n scality-s3-csi -l app=s3-csi-controller --all-containers > artifacts/upgrade-test/csi-controller-logs.txt || true
+          
+          # Collect mount information
+          ./tests/e2e/upgrade/lib/collect-mount-info.sh > artifacts/upgrade-test/mount-info.txt || true
+          
+          # Collect Helm release information
+          helm list -n scality-s3-csi -o yaml > artifacts/upgrade-test/helm-releases.yaml || true
+          
+          # Collect pod information
+          kubectl get pods -n scality-s3-csi -o yaml > artifacts/upgrade-test/csi-pods.yaml || true
+
       - name: Upload Test Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-test-artifacts-${{ matrix.ring_version }}
+          name: upgrade-test-artifacts-${{ matrix.from_version }}-${{ matrix.ring_version }}
           path: artifacts
 
       - name: Upload test results to Codecov
@@ -119,6 +137,6 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./tests/e2e/test-results/e2e-tests-results.xml
-          flags: e2e_tests,cloudserver_${{ matrix.ring_version }}
+          file: ./test-results/upgrade-test-results.xml
+          flags: upgrade_tests,from_${{ matrix.from_version }},ring_${{ matrix.ring_version }}
           slug: scality/mountpoint-s3-csi-driver
