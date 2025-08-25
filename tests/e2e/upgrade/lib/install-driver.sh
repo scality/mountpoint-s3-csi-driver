@@ -9,10 +9,13 @@ install_old_version() {
 
     log_info "Installing from OCI Helm chart"
     
+    # Strip 'v' prefix from version for OCI chart (e.g., v1.2.0 -> 1.2.0)
+    local chart_version="${version#v}"
+    
     # Install specific version from OCI registry
     helm install scality-mountpoint-s3-csi-driver \
         oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-        --version "${version}" \
+        --version "${chart_version}" \
         --namespace "${namespace}" \
         --create-namespace \
         --set s3.endpointUrl="${s3_endpoint}" \
@@ -47,10 +50,13 @@ upgrade_driver() {
             ${upgrade_args} \
             --wait --timeout 10m
     else
+        # Strip 'v' prefix from version for OCI chart
+        local chart_version="${to_version#v}"
+        
         # Upgrade to specific version from OCI registry
         helm upgrade scality-mountpoint-s3-csi-driver \
             oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-            --version "${to_version}" \
+            --version "${chart_version}" \
             --namespace "${namespace}" \
             ${upgrade_args} \
             --wait --timeout 10m
