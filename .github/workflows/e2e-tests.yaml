@@ -218,7 +218,7 @@ jobs:
             --to-version local \
             --to-image ghcr.io/${{ github.repository }}:${{ github.sha }} \
             --test-duration ${{ matrix.test_duration }} \
-            --s3-endpoint http://s3.scality.com:8000
+            --s3-endpoint-url http://s3.scality.com:8000
 
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
