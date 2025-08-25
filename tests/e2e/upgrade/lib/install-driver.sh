@@ -16,7 +16,10 @@ install_old_version() {
     log_info "S3 endpoint: ${s3_endpoint}"
     log_info "Namespace: ${namespace}"
     
-    # Create s3-secret before Helm installation
+    # Create namespace and s3-secret before Helm installation
+    log_info "Creating namespace ${namespace}..."
+    kubectl create namespace "${namespace}" --dry-run=client -o yaml | kubectl apply -f -
+    
     log_info "Creating s3-secret in namespace ${namespace}..."
     kubectl create secret generic s3-secret \
         --from-literal=accessKeyId="${ACCOUNT1_ACCESS_KEY}" \
@@ -30,7 +33,6 @@ install_old_version() {
         oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
         --version "${chart_version}" \
         --namespace "${namespace}" \
-        --create-namespace \
         --set s3.endpointUrl="${s3_endpoint}" \
         --set s3CredentialSecret.accessKeyId="${ACCOUNT1_ACCESS_KEY}" \
         --set s3CredentialSecret.secretAccessKey="${ACCOUNT1_SECRET_KEY}" \
