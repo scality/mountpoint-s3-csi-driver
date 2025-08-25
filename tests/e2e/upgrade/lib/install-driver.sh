@@ -16,6 +16,14 @@ install_old_version() {
     log_info "S3 endpoint: ${s3_endpoint}"
     log_info "Namespace: ${namespace}"
     
+    # Create s3-secret before Helm installation
+    log_info "Creating s3-secret in namespace ${namespace}..."
+    kubectl create secret generic s3-secret \
+        --from-literal=accessKeyId="${ACCOUNT1_ACCESS_KEY}" \
+        --from-literal=secretAccessKey="${ACCOUNT1_SECRET_KEY}" \
+        --namespace="${namespace}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    
     # Install specific version from OCI registry with verbose logging
     log_info "Starting Helm installation..."
     if ! helm install scality-mountpoint-s3-csi-driver \
