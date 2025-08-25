@@ -29,11 +29,11 @@ This document provides a comprehensive tracking table for all implementation ite
 | 14 | Add installation helper | 4 | Driver installation automation | [upgrade-testing-plan.md#pr-14](upgrade-testing-implementation-plan.md#pr-14-add-installation-helper) | S3CSI-165 |
 | 15 | Add workload management | 5,6 | Workload lifecycle management | [upgrade-testing-plan.md#pr-15](upgrade-testing-implementation-plan.md#pr-15-add-workload-management) | S3CSI-165 |
 | 16 | Add stability test function | 7,8,9 | Long-running stability tests | [upgrade-testing-plan.md#pr-16](upgrade-testing-implementation-plan.md#pr-16-add-stability-test-function) | S3CSI-165 |
-| 17 | Create main test script skeleton | 1,2,3 | Test orchestration | [upgrade-testing-plan.md#pr-17](upgrade-testing-implementation-plan.md#pr-17-create-main-test-script-skeleton) | |
-| 18 | Implement Phase 1-2 (install & workload) | 14,15,17 | Initial test phases | [upgrade-testing-plan.md#pr-18](upgrade-testing-implementation-plan.md#pr-18-implement-phase-1-2-install--workload) | |
-| 19 | Implement Phase 3-4 (data & I/O) | 18 | Data integrity phases | [upgrade-testing-plan.md#pr-19](upgrade-testing-implementation-plan.md#pr-19-implement-phase-3-4-data--io) | |
-| 20 | Implement Phase 5-6 (upgrade & verify) | 16,19 | Upgrade execution phases | [upgrade-testing-plan.md#pr-20](upgrade-testing-implementation-plan.md#pr-20-implement-phase-5-6-upgrade--verify) | |
-| 21 | Implement Phase 7-9 (new workload & cleanup) | 20 | Final test phases | [upgrade-testing-plan.md#pr-21](upgrade-testing-implementation-plan.md#pr-21-implement-phase-7-9-new-workload--cleanup) | |
+| 17 | Create main test script skeleton | 1,2,3 | Test orchestration | [upgrade-testing-plan.md#pr-17](upgrade-testing-implementation-plan.md#pr-17-create-main-test-script-skeleton) | S3CSI-165 |
+| 18 | Implement Phase 1-2 (install & workload) | 14,15,17 | Initial test phases | [upgrade-testing-plan.md#pr-18](upgrade-testing-implementation-plan.md#pr-18-implement-phase-1-2-install--workload) | S3CSI-165 |
+| 19 | Implement Phase 3-4 (data & I/O) | 18 | Data integrity phases | [upgrade-testing-plan.md#pr-19](upgrade-testing-implementation-plan.md#pr-19-implement-phase-3-4-data--io) | S3CSI-165 |
+| 20 | Implement Phase 5-6 (upgrade & verify) | 16,19 | Upgrade execution phases | [upgrade-testing-plan.md#pr-20](upgrade-testing-implementation-plan.md#pr-20-implement-phase-5-6-upgrade--verify) | S3CSI-165 |
+| 21 | Implement Phase 7-9 (new workload & cleanup) | 20 | Final test phases | [upgrade-testing-plan.md#pr-21](upgrade-testing-implementation-plan.md#pr-21-implement-phase-7-9-new-workload--cleanup) | S3CSI-165 |
 | 22 | Add basic upgrade test target to Makefile | 21 | Make integration | [upgrade-testing-plan.md#pr-22](upgrade-testing-implementation-plan.md#pr-22-add-basic-upgrade-test-target-to-makefile) | |
 | 23 | Add quick test target | 22 | Quick validation option | [upgrade-testing-plan.md#pr-23](upgrade-testing-implementation-plan.md#pr-23-add-quick-test-target) | |
 | 24 | Add full test target | 22 | Complete validation option | [upgrade-testing-plan.md#pr-24](upgrade-testing-implementation-plan.md#pr-24-add-full-test-target) | |
