@@ -151,9 +151,6 @@ jobs:
     name: Upgrade v${{ matrix.from_version }}
     runs-on: ubuntu-22.04-8core
     needs: dev-image
-    if: |
-      github.event_name == 'push' ||
-      contains(github.event.pull_request.labels.*.name, 'run-upgrade')
     strategy:
       fail-fast: false
       matrix:
