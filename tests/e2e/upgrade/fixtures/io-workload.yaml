@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: io-generator
+  labels:
+    test: upgrade
+    purpose: continuous-io
+spec:
+  containers:
+  - name: io
+    image: busybox:1.36
+    command:
+    - /bin/sh
+    - -c
+    - |
+      while true; do
+        echo "$(date): Writing test data" >> /data/io-test.log
+        head -c 1024 /dev/urandom | base64 > /data/random-$(date +%s).txt
+        ls -la /data/ > /dev/null
+        sleep 1
+      done
+    volumeMounts:
+    - name: s3-volume
+      mountPath: /data
+  volumes:
+  - name: s3-volume
+    persistentVolumeClaim:
+      claimName: upgrade-test-pvc-1
