@@ -7,13 +7,11 @@ install_old_version() {
 
     log_info "Installing CSI Driver version ${version}"
 
-    # Add Helm repo if not exists
-    helm repo add scality https://scality.github.io/mountpoint-s3-csi-driver 2>/dev/null || true
-    helm repo update
-
-    # Install specific version
+    log_info "Installing from OCI Helm chart"
+    
+    # Install specific version from OCI registry
     helm install scality-mountpoint-s3-csi-driver \
-        scality/scality-mountpoint-s3-csi-driver \
+        oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
         --version "${version}" \
         --namespace "${namespace}" \
         --create-namespace \
@@ -49,9 +47,9 @@ upgrade_driver() {
             ${upgrade_args} \
             --wait --timeout 10m
     else
-        # Upgrade to specific version
+        # Upgrade to specific version from OCI registry
         helm upgrade scality-mountpoint-s3-csi-driver \
-            scality/scality-mountpoint-s3-csi-driver \
+            oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
             --version "${to_version}" \
             --namespace "${namespace}" \
             ${upgrade_args} \
