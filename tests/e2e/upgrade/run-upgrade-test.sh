@@ -47,7 +47,7 @@ while [[ $# -gt 0 ]]; do
             NAMESPACE="$2"
             shift 2
             ;;
-        --s3-endpoint)
+        --s3-endpoint-url)
             S3_ENDPOINT_URL="$2"
             shift 2
             ;;
@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --to-image IMAGE          Docker image for upgrade"
             echo "  --test-duration MINUTES   Test duration in minutes (default: 30)"
             echo "  --namespace NAMESPACE     Kubernetes namespace (default: scality-s3-csi)"
-            echo "  --s3-endpoint URL         S3 endpoint URL"
+            echo "  --s3-endpoint-url URL     S3 endpoint URL"
             exit 0
             ;;
         *)
