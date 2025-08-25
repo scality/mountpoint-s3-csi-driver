@@ -418,3 +418,41 @@ e2e-all:
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
 	fi; \
 	./tests/e2e/scripts/run.sh all $$INSTALL_ARGS
+
+################################################################
+# Upgrade Testing
+################################################################
+
+# Upgrade test configuration
+UPGRADE_FROM_VERSION ?= v1.2.0
+UPGRADE_TO_VERSION ?= local
+UPGRADE_TEST_DURATION ?= 30
+
+.PHONY: upgrade-test
+upgrade-test: ## Run upgrade compatibility test
+	@echo "Testing upgrade: $(UPGRADE_FROM_VERSION) → $(UPGRADE_TO_VERSION)"
+	@echo "Duration: $(UPGRADE_TEST_DURATION) minutes"
+	@source tests/e2e/scripts/load-credentials.sh && \
+	./tests/e2e/upgrade/run-upgrade-test.sh \
+		--from-version $(UPGRADE_FROM_VERSION) \
+		--to-version $(UPGRADE_TO_VERSION) \
+		--test-duration $(UPGRADE_TEST_DURATION) \
+		--s3-endpoint $(S3_ENDPOINT_URL)
+
+.PHONY: upgrade-test-quick
+upgrade-test-quick: ## Quick upgrade test (15 minutes)
+	@echo "Running quick upgrade test (15 minutes)"
+	@$(MAKE) upgrade-test UPGRADE_TEST_DURATION=15
+
+.PHONY: upgrade-test-full
+upgrade-test-full: ## Full upgrade test (150 minutes with credential refresh)
+	@echo "Running full upgrade test (150 minutes)"
+	@$(MAKE) upgrade-test UPGRADE_TEST_DURATION=150
+
+.PHONY: upgrade-test-all-versions
+upgrade-test-all-versions: ## Test upgrades from multiple versions
+	@echo "Testing upgrades from all supported versions"
+	@for version in v1.2.0 v1.1.0; do \
+		echo "Testing upgrade from $$version"; \
+		$(MAKE) upgrade-test UPGRADE_FROM_VERSION=$$version || exit 1; \
+	done
