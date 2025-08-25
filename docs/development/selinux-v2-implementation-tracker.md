@@ -26,9 +26,9 @@ This document provides a comprehensive tracking table for all implementation ite
 | 11 | Add old workload fixture | None | Pre-upgrade test workloads | [upgrade-testing-plan.md#pr-11](upgrade-testing-implementation-plan.md#pr-11-add-old-workload-fixture) | S3CSI-165 |
 | 12 | Add new workload fixture | None | Post-upgrade test workloads | [upgrade-testing-plan.md#pr-12](upgrade-testing-implementation-plan.md#pr-12-add-new-workload-fixture) | S3CSI-165 |
 | 13 | Add I/O workload fixture | None | Continuous I/O workload | [upgrade-testing-plan.md#pr-13](upgrade-testing-implementation-plan.md#pr-13-add-io-workload-fixture) | S3CSI-165 |
-| 14 | Add installation helper | 4 | Driver installation automation | [upgrade-testing-plan.md#pr-14](upgrade-testing-implementation-plan.md#pr-14-add-installation-helper) | |
-| 15 | Add workload management | 5,6 | Workload lifecycle management | [upgrade-testing-plan.md#pr-15](upgrade-testing-implementation-plan.md#pr-15-add-workload-management) | |
-| 16 | Add stability test function | 7,8,9 | Long-running stability tests | [upgrade-testing-plan.md#pr-16](upgrade-testing-implementation-plan.md#pr-16-add-stability-test-function) | |
+| 14 | Add installation helper | 4 | Driver installation automation | [upgrade-testing-plan.md#pr-14](upgrade-testing-implementation-plan.md#pr-14-add-installation-helper) | S3CSI-165 |
+| 15 | Add workload management | 5,6 | Workload lifecycle management | [upgrade-testing-plan.md#pr-15](upgrade-testing-implementation-plan.md#pr-15-add-workload-management) | S3CSI-165 |
+| 16 | Add stability test function | 7,8,9 | Long-running stability tests | [upgrade-testing-plan.md#pr-16](upgrade-testing-implementation-plan.md#pr-16-add-stability-test-function) | S3CSI-165 |
 | 17 | Create main test script skeleton | 1,2,3 | Test orchestration | [upgrade-testing-plan.md#pr-17](upgrade-testing-implementation-plan.md#pr-17-create-main-test-script-skeleton) | |
 | 18 | Implement Phase 1-2 (install & workload) | 14,15,17 | Initial test phases | [upgrade-testing-plan.md#pr-18](upgrade-testing-implementation-plan.md#pr-18-implement-phase-1-2-install--workload) | |
 | 19 | Implement Phase 3-4 (data & I/O) | 18 | Data integrity phases | [upgrade-testing-plan.md#pr-19](upgrade-testing-implementation-plan.md#pr-19-implement-phase-3-4-data--io) | |
