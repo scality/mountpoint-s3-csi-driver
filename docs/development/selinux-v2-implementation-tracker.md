@@ -34,10 +34,10 @@ This document provides a comprehensive tracking table for all implementation ite
 | 19 | Implement Phase 3-4 (data & I/O) | 18 | Data integrity phases | [upgrade-testing-plan.md#pr-19](upgrade-testing-implementation-plan.md#pr-19-implement-phase-3-4-data--io) | S3CSI-165 |
 | 20 | Implement Phase 5-6 (upgrade & verify) | 16,19 | Upgrade execution phases | [upgrade-testing-plan.md#pr-20](upgrade-testing-implementation-plan.md#pr-20-implement-phase-5-6-upgrade--verify) | S3CSI-165 |
 | 21 | Implement Phase 7-9 (new workload & cleanup) | 20 | Final test phases | [upgrade-testing-plan.md#pr-21](upgrade-testing-implementation-plan.md#pr-21-implement-phase-7-9-new-workload--cleanup) | S3CSI-165 |
-| 22 | Add basic upgrade test target to Makefile | 21 | Make integration | [upgrade-testing-plan.md#pr-22](upgrade-testing-implementation-plan.md#pr-22-add-basic-upgrade-test-target-to-makefile) | |
-| 23 | Add quick test target | 22 | Quick validation option | [upgrade-testing-plan.md#pr-23](upgrade-testing-implementation-plan.md#pr-23-add-quick-test-target) | |
-| 24 | Add full test target | 22 | Complete validation option | [upgrade-testing-plan.md#pr-24](upgrade-testing-implementation-plan.md#pr-24-add-full-test-target) | |
-| 25 | Add multi-version test target | 22 | Multiple version testing | [upgrade-testing-plan.md#pr-25](upgrade-testing-implementation-plan.md#pr-25-add-multi-version-test-target) | |
+| 22 | Add basic upgrade test target to Makefile | 21 | Make integration | [upgrade-testing-plan.md#pr-22](upgrade-testing-implementation-plan.md#pr-22-add-basic-upgrade-test-target-to-makefile) | S3CSI-165 |
+| 23 | Add quick test target | 22 | Quick validation option | [upgrade-testing-plan.md#pr-23](upgrade-testing-implementation-plan.md#pr-23-add-quick-test-target) | S3CSI-165 |
+| 24 | Add full test target | 22 | Complete validation option | [upgrade-testing-plan.md#pr-24](upgrade-testing-implementation-plan.md#pr-24-add-full-test-target) | S3CSI-165 |
+| 25 | Add multi-version test target | 22 | Multiple version testing | [upgrade-testing-plan.md#pr-25](upgrade-testing-implementation-plan.md#pr-25-add-multi-version-test-target) | S3CSI-165 |
 | 26 | Create upgrade test workflow skeleton | None | CI/CD foundation | [upgrade-testing-plan.md#pr-26](upgrade-testing-implementation-plan.md#pr-26-create-upgrade-test-workflow-skeleton) | |
 | 27 | Add image build job | 26 | Test image building | [upgrade-testing-plan.md#pr-27](upgrade-testing-implementation-plan.md#pr-27-add-image-build-job) | |
 | 28 | Add test matrix | 27 | Multi-scenario testing | [upgrade-testing-plan.md#pr-28](upgrade-testing-implementation-plan.md#pr-28-add-test-matrix) | |
