@@ -12,8 +12,13 @@ install_old_version() {
     # Strip 'v' prefix from version for OCI chart (e.g., v1.2.0 -> 1.2.0)
     local chart_version="${version#v}"
     
-    # Install specific version from OCI registry
-    helm install scality-mountpoint-s3-csi-driver \
+    log_info "Chart version: ${chart_version}"
+    log_info "S3 endpoint: ${s3_endpoint}"
+    log_info "Namespace: ${namespace}"
+    
+    # Install specific version from OCI registry with verbose logging
+    log_info "Starting Helm installation..."
+    if ! helm install scality-mountpoint-s3-csi-driver \
         oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
         --version "${chart_version}" \
         --namespace "${namespace}" \
@@ -21,7 +26,29 @@ install_old_version() {
         --set s3.endpointUrl="${s3_endpoint}" \
         --set s3CredentialSecret.accessKeyId="${ACCOUNT1_ACCESS_KEY}" \
         --set s3CredentialSecret.secretAccessKey="${ACCOUNT1_SECRET_KEY}" \
-        --wait --timeout 5m
+        --wait --timeout 10m \
+        --debug; then
+        
+        log_error "Helm installation failed, gathering debug information..."
+        
+        # Get Helm status
+        helm status scality-mountpoint-s3-csi-driver -n "${namespace}" || true
+        
+        # Get pod status
+        log_info "Pod status in namespace ${namespace}:"
+        kubectl get pods -n "${namespace}" -o wide || true
+        
+        # Get events
+        log_info "Recent events in namespace ${namespace}:"
+        kubectl get events -n "${namespace}" --sort-by='.lastTimestamp' || true
+        
+        # Get logs from any failed pods
+        log_info "Logs from CSI driver pods:"
+        kubectl logs -n "${namespace}" -l app=s3-csi-node --all-containers --tail=50 || true
+        kubectl logs -n "${namespace}" -l app=s3-csi-controller --all-containers --tail=50 || true
+        
+        return 1
+    fi
 
     log_success "CSI Driver ${version} installed"
 }
