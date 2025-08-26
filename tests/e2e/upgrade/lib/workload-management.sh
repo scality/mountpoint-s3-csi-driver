@@ -2,8 +2,16 @@
 
 create_test_workloads() {
     local namespace=${1:-default}
+    local s3_endpoint=${2:-http://s3.scality.com:8000}
 
     log_info "Creating test workloads"
+
+    # Create test buckets first
+    log_info "Creating test buckets"
+    AWS_ACCESS_KEY_ID="${ACCOUNT1_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${ACCOUNT1_SECRET_KEY}" \
+        aws s3 mb s3://upgrade-test-bucket-1 --endpoint-url "${s3_endpoint}" || true
+    AWS_ACCESS_KEY_ID="${ACCOUNT1_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${ACCOUNT1_SECRET_KEY}" \
+        aws s3 mb s3://upgrade-test-bucket-2 --endpoint-url "${s3_endpoint}" || true
 
     # Apply old workload fixture
     kubectl apply -f tests/e2e/upgrade/fixtures/old-workload.yaml

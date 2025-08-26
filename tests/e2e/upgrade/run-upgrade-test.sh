@@ -84,7 +84,7 @@ main() {
 
     # Phase 2: Create test workloads
     log_phase "2. Creating test workloads"
-    create_test_workloads
+    create_test_workloads default "${S3_ENDPOINT_URL}"
     verify_mounts_working "systemd"
     record_phase "create_workloads" "SUCCESS"
 
