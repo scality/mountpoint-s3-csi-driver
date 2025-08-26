@@ -7,11 +7,26 @@ create_test_workloads() {
     log_info "Creating test workloads"
 
     # Create test buckets first
-    log_info "Creating test buckets"
-    AWS_ACCESS_KEY_ID="${ACCOUNT1_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${ACCOUNT1_SECRET_KEY}" \
-        aws s3 mb s3://upgrade-test-bucket-1 --endpoint-url "${s3_endpoint}" || true
-    AWS_ACCESS_KEY_ID="${ACCOUNT1_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${ACCOUNT1_SECRET_KEY}" \
-        aws s3 mb s3://upgrade-test-bucket-2 --endpoint-url "${s3_endpoint}" || true
+    log_info "Creating test buckets via Kubernetes Job"
+    
+    # Update the Job with the correct S3 endpoint if provided
+    if [[ "${s3_endpoint}" != "http://s3.scality.com:8000" ]]; then
+        sed -i.bak "s|http://s3.scality.com:8000|${s3_endpoint}|g" tests/e2e/upgrade/fixtures/create-buckets-job.yaml
+    fi
+    
+    # Create the bucket creation job
+    kubectl apply -f tests/e2e/upgrade/fixtures/create-buckets-job.yaml
+    
+    # Wait for job to complete
+    if kubectl wait --for=condition=complete job/create-test-buckets --timeout=60s; then
+        log_success "Test buckets created"
+    else
+        log_error "Failed to create test buckets"
+        kubectl logs job/create-test-buckets
+    fi
+    
+    # Clean up the job
+    kubectl delete job/create-test-buckets --ignore-not-found=true
 
     # Apply old workload fixture
     kubectl apply -f tests/e2e/upgrade/fixtures/old-workload.yaml

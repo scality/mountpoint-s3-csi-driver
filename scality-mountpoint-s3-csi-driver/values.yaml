@@ -1,0 +1,140 @@
+# Default values for scality-mountpoint-s3-csi-driver Helm chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into templates.
+
+# Global Helm configuration
+nameOverride: ""
+fullnameOverride: ""
+imagePullSecrets: []
+
+# S3 configuration (REQUIRED)
+# Global S3 settings used by both node and controller components
+# Note: For backward compatibility, legacy node.s3EndpointUrl and node.s3Region are still supported
+# If both global and legacy values are specified, legacy node.s3* values take precedence
+s3:
+  # RING S3 endpoint URL to use for all volume mounts (REQUIRED)
+  # This is a sample value, replace with the actual RING S3 endpoint URL
+  endpointUrl: "http://s3.example.com:8000"
+  # Default AWS region to use for all volume mounts
+  # The Region can be overridden at persistent volume level by setting
+  region: "us-east-1"
+
+# Container image configuration
+image:
+  repository: ghcr.io/scality/mountpoint-s3-csi-driver
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.2.0"
+
+# Node plugin configuration (DaemonSet)
+node:
+  # Kubernetes configuration
+  kubeletPath: /var/lib/kubelet
+  # Log verbosity level for the CSI driver (higher numbers = more verbose)
+  # 1-2: Basic operational info (recommended for production)
+  # 3: Credential authentication info
+  # 4: All CSI operations and mount details (default)
+  # 5: Very detailed debug info (systemd signals, mount-s3 output)
+  logLevel: 4
+
+  # SystemD mounter configuration (default mounter)
+  mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
+
+  # Security context for the CSI driver containers
+  seLinuxOptions:
+    user: system_u
+    type: super_t
+    role: system_r
+    level: s0
+
+  # Service account
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    name: s3-csi-driver-sa
+
+  # Scheduling and resources
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 10m
+      memory: 40Mi
+    limits:
+      memory: 256Mi
+
+  # Tolerations
+  # Tolerates all taints and overrides defaultTolerations
+  tolerateAllTaints: false
+  defaultTolerations: true
+  tolerations: []
+
+  # Compatibility
+  podInfoOnMountCompat:
+    enable: false
+
+# Sidecar containers configuration
+sidecars:
+  nodeDriverRegistrar:
+    # Source: https://github.com/kubernetes-csi/node-driver-registrar/releases
+    image:
+      repository: ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar
+      tag: v2.14.0
+      pullPolicy: IfNotPresent
+    env:
+      - name: KUBE_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: spec.nodeName
+    volumeMounts:
+      - name: plugin-dir
+        mountPath: /csi
+      - name: registration-dir
+        mountPath: /registration
+    resources: {}
+  livenessProbe:
+    # Source: https://github.com/kubernetes-csi/livenessprobe/releases
+    image:
+      repository: ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe
+      tag: v2.16.0
+      pullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /csi
+        name: plugin-dir
+    resources: {}
+  csiProvisioner:
+    # Source: https://github.com/kubernetes-csi/external-provisioner/releases
+    image:
+      repository: ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner
+      tag: v5.3.0
+      pullPolicy: IfNotPresent
+    resources: {}
+
+# Init container configuration
+initContainer:
+  installMountpoint:
+    resources: {}
+
+# S3 credentials secret configuration
+s3CredentialSecret:
+  name: s3-secret
+  accessKeyId: access_key_id
+  secretAccessKey: secret_access_key
+  sessionToken: session_token
+
+# Controller configuration (used for dynamic provisioning)
+controller:
+  # Enable controller deployment for dynamic provisioning
+  enable: true
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    name: s3-csi-driver-controller-sa
+
+# Experimental features. To be used only in development environments.
+experimental:
+  podMounter: false
+
+# Mountpoint pod configuration (only used with experimental pod mounter)
+mountpointPod:
+  namespace: mount-s3
+  priorityClassName: mount-s3-critical

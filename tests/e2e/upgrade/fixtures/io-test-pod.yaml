@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: io-test-pod
+  labels:
+    test: upgrade
+    purpose: continuous-io
+spec:
+  containers:
+  - name: io-writer
+    image: busybox:1.36
+    command: 
+    - /bin/sh
+    - -c
+    - |
+      echo "Starting continuous I/O test at $(date)" > /data/io-test.log
+      counter=0
+      while true; do
+        echo "Write $counter at $(date)" >> /data/io-test.log
+        echo "Test file $counter" > /data/test-file-$counter.txt
+        # Read to verify
+        tail -n 5 /data/io-test.log > /dev/null
+        counter=$((counter + 1))
+        sleep 2
+      done
+    volumeMounts:
+    - name: s3-volume
+      mountPath: /data
+  volumes:
+  - name: s3-volume
+    persistentVolumeClaim:
+      claimName: upgrade-test-pvc-1

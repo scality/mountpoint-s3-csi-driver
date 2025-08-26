@@ -1,0 +1,258 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: s3-csi-node
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scality-mountpoint-s3-csi-driver.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: s3-csi-node
+      {{- include "scality-mountpoint-s3-csi-driver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: s3-csi-node
+        {{- include "scality-mountpoint-s3-csi-driver.labels" . | nindent 8 }}
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        {{- with .Values.node.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ .Values.node.serviceAccount.name }}
+      priorityClassName: system-node-critical
+      {{- with .Values.node.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      tolerations:
+        {{- if .Values.node.tolerateAllTaints }}
+        - operator: Exists
+        {{- else if .Values.node.defaultTolerations }}
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 300
+        {{- end }}
+        {{- with .Values.node.tolerations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
+
+      {{ if not .Values.experimental.podMounter -}}
+      # This `install-mountpoint` is only needed with `SystemdMounter` and not with `PodMounter`.
+      initContainers:
+        - name: install-mountpoint
+          image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            {{- with .Values.node.seLinuxOptions }}
+            seLinuxOptions:
+              user: {{ .user }}
+              type: {{ .type }}
+              role: {{ .role }}
+              level: {{ .level }}
+            {{- end }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/install-mp"
+          env:
+            - name: MOUNTPOINT_INSTALL_DIR
+              value: /target
+          volumeMounts:
+            - name: mp-install
+              mountPath: /target
+          {{- with default .Values.node.resources .Values.initContainer.installMountpoint.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- end }}
+
+      containers:
+        - name: s3-plugin
+          image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
+          securityContext:
+            {{ if .Values.experimental.podMounter -}}
+            privileged: true
+            {{- else -}}
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            {{- end }}
+            {{- with .Values.node.seLinuxOptions }}
+            seLinuxOptions:
+              user: {{ .user }}
+              type: {{ .type }}
+              role: {{ .role }}
+              level: {{ .level }}
+            {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --endpoint=$(CSI_ENDPOINT)
+            - --v={{ .Values.node.logLevel }}
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:/csi/csi.sock
+            - name: PTMX_PATH
+              value: /host/dev/ptmx
+            # mount-s3 runs in systemd context, so this is relative to the host
+            - name: MOUNT_S3_PATH
+              value: {{ default "/opt/mountpoint-s3-csi/bin/" .Values.node.mountpointInstallPath }}mount-s3
+            - name: KUBELET_PATH
+              value: {{ .Values.node.kubeletPath }}
+            - name: CSI_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HOST_PLUGIN_DIR
+              value: {{ trimSuffix "/" .Values.node.kubeletPath }}/plugins/s3.csi.scality.com/
+            {{- if .Values.experimental.podMounter }}
+            - name: MOUNTER_KIND
+              value: pod
+            - name: MOUNTPOINT_NAMESPACE
+              value: {{ .Values.mountpointPod.namespace }}
+            {{- end }}
+            - name: AWS_ENDPOINT_URL
+              value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl }}
+            - name: AWS_REGION
+              value: {{ coalesce .Values.node.s3Region .Values.s3.region }}
+            {{- with .Values.s3CredentialSecret }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .accessKeyId }}
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .secretAccessKey }}
+                  optional: true
+            - name: AWS_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .sessionToken }}
+                  optional: true
+            {{- end }}
+          volumeMounts:
+            - name: kubelet-dir
+              mountPath: {{ .Values.node.kubeletPath }}
+              {{ if .Values.experimental.podMounter -}}
+              mountPropagation: Bidirectional
+              {{- else -}}
+              # Currently we spawn Mountpoint instances on the host using systemd,
+              # "HostToContainer" allows any newly created mounts inside kubelet path to propagated to the container.
+              # Thanks to this, we can do "is mount point?" checks for volumes provided by the CSI Driver
+              # without needing to mount "/proc/mounts" from host.
+              mountPropagation: HostToContainer
+              {{- end }}
+            - name: plugin-dir
+              mountPath: /csi
+            - name: systemd-bus
+              mountPath: /run/systemd
+              mountPropagation: HostToContainer
+            - name: host-dev
+              mountPath: /host/dev
+          ports:
+            - name: healthz
+              containerPort: 9808
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 2
+            failureThreshold: 5
+          {{- with .Values.node.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: node-driver-registrar
+          image: {{ printf "%s:%s" .Values.sidecars.nodeDriverRegistrar.image.repository .Values.sidecars.nodeDriverRegistrar.image.tag }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.nodeDriverRegistrar.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          args:
+            - --csi-address=$(ADDRESS)
+            - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: {{ trimSuffix "/" .Values.node.kubeletPath }}/plugins/s3.csi.scality.com/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          livenessProbe:
+            exec:
+              command:
+                - /csi-node-driver-registrar
+                - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+                - --mode=kubelet-registration-probe
+            initialDelaySeconds: 30
+            timeoutSeconds: 15
+            periodSeconds: 90
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+          {{- with default .Values.node.resources .Values.sidecars.nodeDriverRegistrar.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: liveness-probe
+          image: {{ printf "%s:%s" .Values.sidecars.livenessProbe.image.repository .Values.sidecars.livenessProbe.image.tag }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.livenessProbe.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          args:
+            - --csi-address=/csi/csi.sock
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+          {{- with default .Values.node.resources .Values.sidecars.livenessProbe.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: host-dev
+          hostPath:
+            path: /dev/
+            type: Directory
+        - name: mp-install
+          hostPath:
+            path: {{ default "/opt/mountpoint-s3-csi/bin/" .Values.node.mountpointInstallPath }}
+            type: DirectoryOrCreate
+        - name: systemd-bus
+          hostPath:
+            path: /run/systemd
+            type: Directory
+        - name: kubelet-dir
+          hostPath:
+            path: {{ .Values.node.kubeletPath }}
+            type: Directory
+        - name: plugin-dir
+          hostPath:
+            path: {{ trimSuffix "/" .Values.node.kubeletPath }}/plugins/s3.csi.scality.com/
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: {{ trimSuffix "/" .Values.node.kubeletPath }}/plugins_registry/
+            type: Directory
+        {{- with .Values.node.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

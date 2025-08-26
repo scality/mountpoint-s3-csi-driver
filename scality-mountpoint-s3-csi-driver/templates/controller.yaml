@@ -1,0 +1,102 @@
+{{- if .Values.controller.enable -}}
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: s3-csi-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scality-mountpoint-s3-csi-driver.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3-csi-controller
+      {{- include "scality-mountpoint-s3-csi-driver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: s3-csi-controller
+        {{- include "scality-mountpoint-s3-csi-driver.labels" . | nindent 8 }}
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        {{- with .Values.controller.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ .Values.controller.serviceAccount.name }}
+      priorityClassName: system-cluster-critical
+      {{- with .Values.controller.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      tolerations:
+        # TODO: Should we add some default tolerations for controller?
+        {{- with .Values.controller.tolerations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: s3-csi-controller
+          image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--endpoint=unix:///csi/csi.sock"
+            - "--node-id=controller"
+          command:
+            - "/bin/scality-s3-csi-driver"
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            {{- with .Values.controller.seLinuxOptions }}
+            seLinuxOptions:
+              user: {{ .user }}
+              type: {{ .type }}
+              role: {{ .role }}
+              level: {{ .level }}
+            {{- end }}
+          # TODO: Healthcheck for the controller.
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          {{- with .Values.controller.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: AWS_ENDPOINT_URL
+              value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl }}
+            - name: AWS_REGION
+              value: {{ coalesce .Values.node.s3Region .Values.s3.region }}
+            - name: CSI_NODE_NAME
+              value: "controller"
+            - name: CSI_CONTROLLER_ONLY
+              value: "true"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3CredentialSecret.name }}
+                  key: {{ .Values.s3CredentialSecret.accessKeyId }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3CredentialSecret.name }}
+                  key: {{ .Values.s3CredentialSecret.secretAccessKey }}
+        - name: csi-provisioner
+          image: {{ .Values.sidecars.csiProvisioner.image.repository }}:{{ .Values.sidecars.csiProvisioner.image.tag }}
+          imagePullPolicy: {{ .Values.sidecars.csiProvisioner.image.pullPolicy }}
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--v=2"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+
+{{- end -}}
