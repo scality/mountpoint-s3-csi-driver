@@ -21,11 +21,12 @@ install_old_version() {
     kubectl create namespace "${namespace}" --dry-run=client -o yaml | kubectl apply -f -
     
     log_info "Creating s3-secret in namespace ${namespace}..."
+    # Delete existing secret if it exists, then create new one with correct keys
+    kubectl delete secret s3-secret --namespace="${namespace}" --ignore-not-found=true
     kubectl create secret generic s3-secret \
-        --from-literal=accessKeyId="${ACCOUNT1_ACCESS_KEY}" \
-        --from-literal=secretAccessKey="${ACCOUNT1_SECRET_KEY}" \
-        --namespace="${namespace}" \
-        --dry-run=client -o yaml | kubectl apply -f -
+        --from-literal=accessKey1="${ACCOUNT1_ACCESS_KEY}" \
+        --from-literal=secretKey1="${ACCOUNT1_SECRET_KEY}" \
+        --namespace="${namespace}"
     
     # Install specific version from OCI registry with verbose logging
     log_info "Starting Helm installation..."
