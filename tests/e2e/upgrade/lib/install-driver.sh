@@ -24,8 +24,8 @@ install_old_version() {
     # Delete existing secret if it exists, then create new one with correct keys
     kubectl delete secret s3-secret --namespace="${namespace}" --ignore-not-found=true
     kubectl create secret generic s3-secret \
-        --from-literal=accessKey1="${ACCOUNT1_ACCESS_KEY}" \
-        --from-literal=secretKey1="${ACCOUNT1_SECRET_KEY}" \
+        --from-literal=access_key_id="${ACCOUNT1_ACCESS_KEY}" \
+        --from-literal=secret_access_key="${ACCOUNT1_SECRET_KEY}" \
         --namespace="${namespace}"
     
     # Install specific version from OCI registry with verbose logging
@@ -35,8 +35,6 @@ install_old_version() {
         --version "${chart_version}" \
         --namespace "${namespace}" \
         --set s3.endpointUrl="${s3_endpoint}" \
-        --set s3CredentialSecret.accessKeyId="${ACCOUNT1_ACCESS_KEY}" \
-        --set s3CredentialSecret.secretAccessKey="${ACCOUNT1_SECRET_KEY}" \
         --wait --timeout 10m \
         --debug; then
         
