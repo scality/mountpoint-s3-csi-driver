@@ -372,6 +372,88 @@ func RemoveDNS() error {
 	return nil
 }
 
+// InstallCSIWithVersion installs CSI from OCI registry (for mage install command)
+func InstallCSIWithVersion() error {
+	chartVersion := GetCSIChartVersion()
+
+	// Version should already be checked in Install(), but double-check here
+	if chartVersion == "" {
+		return fmt.Errorf("SCALITY_CSI_VERSION environment variable is required")
+	}
+
+	// Verify chart version exists
+	fmt.Printf("Verifying chart version %s exists in registry...\n", chartVersion)
+	chartPath := "oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver"
+	if err := sh.Run("helm", "show", "chart", chartPath, "--version", chartVersion); err != nil {
+		return fmt.Errorf("chart version %s not found in registry\n\n"+
+			"Available versions can be checked with:\n"+
+			"  helm search repo %s --versions\n\n"+
+			"Error: %v", chartVersion, chartPath, err)
+	}
+
+	namespace := GetNamespace()
+
+	// Configure DNS mapping
+	if err := ConfigureDNS(); err != nil {
+		return fmt.Errorf("failed to configure DNS: %v", err)
+	}
+
+	s3EndpointURL := GetS3EndpointURL()
+
+	fmt.Printf("Installing CSI driver in namespace: %s\n", namespace)
+	fmt.Printf("  Chart version: %s (from OCI registry)\n", chartVersion)
+	fmt.Printf("  Using published images from version %s\n", chartVersion)
+	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
+
+	// Build helm args - NOTE: Same release name "scality-s3-csi" as InstallCSI
+	args := []string{
+		"upgrade", "--install", "scality-s3-csi",
+		chartPath,
+		"--version", chartVersion,
+		"--namespace", namespace,
+		"--create-namespace",
+		"--set", fmt.Sprintf("node.s3EndpointUrl=%s", s3EndpointURL),
+		"--wait",
+		"--timeout", "300s",
+	}
+
+	if IsVerbose() {
+		args = append(args, "--debug")
+	}
+
+	if err := sh.RunV("helm", args...); err != nil {
+		return fmt.Errorf("helm install failed: %v", err)
+	}
+
+	// Verification code (same as InstallCSI)
+	fmt.Println("Helm installation completed. Verifying CSI driver deployment...")
+
+	// Wait for pods to be ready
+	fmt.Println("Waiting for CSI driver pods to become ready...")
+
+	// Wait for controller pods
+	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
+		"-l", "app=s3-csi-controller", "-n", namespace, "--timeout=120s"); err != nil {
+		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
+	}
+
+	// Wait for node pods
+	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
+		"-l", "app=s3-csi-node", "-n", namespace, "--timeout=120s"); err != nil {
+		fmt.Printf("Warning: Node pods not ready: %v\n", err)
+	}
+
+	// Verify pods are running
+	fmt.Println("\nVerifying CSI driver pods are running:")
+	if err := sh.RunV("kubectl", "get", "pods", "-n", namespace,
+		"-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); err != nil {
+		return fmt.Errorf("failed to get CSI driver pods: %v", err)
+	}
+
+	fmt.Printf("CSI driver version %s installed successfully!\n", chartVersion)
+	return nil
+}
+
 // ShowS3DNS shows the current S3 DNS configuration
 func ShowS3DNS() error {
 	fmt.Println("Current S3 DNS Configuration:")
