@@ -8,7 +8,7 @@ Simple build targets for CSI driver development and testing.
 
 | Command | Purpose | Source | Image | Chart | Environment Variables |
 |---------|---------|--------|-------|-------|----------------------|
-| **`mage up`** | Local development | Local source code | Builds locally (`local` tag) | Uses local Helm chart | Optional: `S3_ENDPOINT_URL`, `CSI_NAMESPACE`, `CONTAINER_TAG`, `VERBOSE` |
+| **`mage up`** | Local development | Local source code | Builds locally (`local` tag) | Uses local Helm chart | Optional: `S3_ENDPOINT_URL`, `CSI_NAMESPACE`, `CONTAINER_TAG`, `KIND_CLUSTER_NAME`, `VERBOSE` |
 | **`mage install`** | Production/testing | OCI registry | Uses published images | Downloads from registry | Required: `SCALITY_CSI_VERSION`<br>Optional: `S3_ENDPOINT_URL`, `CSI_NAMESPACE`, `VERBOSE` |
 | **`mage down`** | Cleanup | - | - | - | Optional: `CSI_NAMESPACE` |
 | **`mage status`** | Check status | - | - | - | Optional: `CSI_NAMESPACE` |
@@ -78,7 +78,7 @@ mage install  # Will error with usage instructions
 |------|-----------|----------------|----------------------------|
 | 1 | Loads credentials from `tests/e2e/integration_config.json` | Loads credentials from `tests/e2e/integration_config.json` | None |
 | 2 | **Builds container image** with tag `local` | - | `CONTAINER_TAG` |
-| 3 | **Loads image to cluster** (kind/minikube) | - | `CONTAINER_TAG` |
+| 3 | **Loads image to cluster** (kind/minikube) | - | `CONTAINER_TAG`, `KIND_CLUSTER_NAME` |
 | 4 | Configures DNS mapping: `s3.example.com` → S3 endpoint | Configures DNS mapping: `s3.example.com` → S3 endpoint | `S3_ENDPOINT_URL` or `S3_HOST`/`S3_PORT`/`S3_HTTPS` |
 | 5 | Creates Kubernetes secret with S3 credentials | Creates Kubernetes secret with S3 credentials | `CSI_NAMESPACE` |
 | 6 | Installs CSI driver via Helm using **local chart** | Installs CSI driver via Helm from **OCI registry** | `CSI_NAMESPACE`, `VERBOSE` / `SCALITY_CSI_VERSION` (required) |
@@ -133,6 +133,7 @@ mage down
 | `S3_HTTPS` | Use HTTPS if set to `true` (used with `S3_HOST`) | `false` | `mage up`, `mage install` | No |
 | `CONTAINER_TAG` | Docker image tag for local builds | `local` | `mage up` | No |
 | `CONTAINER_IMAGE` | Custom container image name | `ghcr.io/scality/mountpoint-s3-csi-driver` | `mage up` | No |
+| `KIND_CLUSTER_NAME` | Kind cluster name for image loading | `kind` (default cluster) | `mage up` | No |
 | `VERBOSE` | Enable verbose/debug output | None | All commands | No |
 
 ### S3 Configuration (choose one approach)
@@ -175,7 +176,7 @@ The CSI driver uses `[PROTOCOL]://s3.example.com:[PORT]` as its endpoint (matchi
 | Command | Purpose | Used By | Environment Variables |
 |---------|---------|---------|----------------------|
 | `mage buildImage` | Build container image | `mage up` only | `CONTAINER_TAG` |
-| `mage loadImageToCluster` | Load image to cluster (kind/minikube) | `mage up` only | `CONTAINER_TAG` |
+| `mage loadImageToCluster` | Load image to cluster (kind/minikube) | `mage up` only | `CONTAINER_TAG`, `KIND_CLUSTER_NAME` |
 | `mage loadCredentials` | Load credentials from `integration_config.json` | Both | None |
 | `mage createSecret` | Create K8s secret with S3 credentials | Both | `CSI_NAMESPACE` |
 | `mage installCSI` | Install via Helm using local chart | `mage up` only | `CSI_NAMESPACE`, `S3_ENDPOINT_URL`, `VERBOSE` |
@@ -198,6 +199,9 @@ mage showS3DNSStatus
 # Build and load image without installing
 mage buildImage
 mage loadImageToCluster
+
+# Load image to specific Kind cluster
+KIND_CLUSTER_NAME=helm-test-cluster mage loadImageToCluster
 
 # Create secret manually
 mage createSecret

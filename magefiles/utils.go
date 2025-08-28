@@ -174,6 +174,19 @@ func GetCSIChartVersion() string {
 	return "" // Empty means no version specified
 }
 
+// IsDNSConfigured checks if s3.example.com is already configured in CoreDNS
+func IsDNSConfigured() bool {
+	// Get the current CoreDNS configuration
+	output, err := sh.Output("kubectl", "get", "configmap", "coredns", "-n", "kube-system", "-o", "jsonpath={.data.Corefile}")
+	if err != nil {
+		// If we can't check, assume not configured
+		return false
+	}
+
+	// Check if s3.example.com is already in the configuration
+	return strings.Contains(output, "s3.example.com")
+}
+
 // LoadCredentialsFromFile loads credentials from integration_config.json
 func LoadCredentialsFromFile() (*CredentialsConfig, error) {
 	// Get the project root directory
@@ -246,21 +259,34 @@ func RestartCoreDNS() error {
 
 // UpdateCoreDNSHosts updates CoreDNS configuration to add/remove s3.example.com mapping
 func UpdateCoreDNSHosts(s3Host string, remove bool) error {
-	var jqCmd string
-	if remove {
-		// Remove s3.example.com entries from CoreDNS configuration
-		jqCmd = `.data.Corefile |= gsub("\\n.*s3\\.example\\.com"; "")`
-	} else {
-		// First remove any existing s3.example.com entries, then add the new one
-		removeCmd := `.data.Corefile |= gsub("\\n.*s3\\.example\\.com"; "")`
-		addCmd := fmt.Sprintf(`.data.Corefile |= gsub("hosts \\{"; "hosts {\n           %s s3.example.com")`, s3Host)
-		jqCmd = fmt.Sprintf("(%s) | (%s)", removeCmd, addCmd)
+	// Get current config
+	currentConfig, err := sh.Output("kubectl", "get", "configmap", "coredns", "-n", "kube-system", "-o", "jsonpath={.data.Corefile}")
+	if err != nil {
+		return fmt.Errorf("failed to get CoreDNS config: %v", err)
 	}
 
-	// Apply the configuration
-	shellCmd := fmt.Sprintf(
-		`kubectl get configmap coredns -n kube-system -o json | jq '%s' | kubectl apply -f -`,
-		jqCmd)
+	// Remove existing s3.example.com entries
+	lines := strings.Split(currentConfig, "\n")
+	var filtered []string
+	for _, line := range lines {
+		if !strings.Contains(line, "s3.example.com") {
+			filtered = append(filtered, line)
+		}
+	}
+	newConfig := strings.Join(filtered, "\n")
 
-	return RunCommand("sh", "-c", shellCmd)
+	// If not removing, add the new entry
+	if !remove {
+		if strings.Contains(newConfig, "hosts {") {
+			// Add to existing hosts block
+			newConfig = strings.ReplaceAll(newConfig, "hosts {", fmt.Sprintf("hosts {\n        %s s3.example.com", s3Host))
+		} else {
+			// Create new hosts block before final }
+			newConfig = strings.ReplaceAll(newConfig, "\n}", fmt.Sprintf("\n    hosts {\n        %s s3.example.com\n        fallthrough\n    }\n}", s3Host))
+		}
+	}
+
+	// Patch the ConfigMap
+	patchData := fmt.Sprintf(`{"data":{"Corefile":%q}}`, newConfig)
+	return sh.RunV("kubectl", "patch", "configmap", "coredns", "-n", "kube-system", "--type=merge", "-p", patchData)
 }
