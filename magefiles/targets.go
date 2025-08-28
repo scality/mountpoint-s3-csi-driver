@@ -489,6 +489,77 @@ func ShowS3DNS() error {
 		} else {
 			fmt.Println("DNS resolution is working")
 		}
+
+		// Test S3 endpoint connectivity
+		fmt.Println("\nTesting S3 endpoint connectivity...")
+		s3EndpointURL := GetS3EndpointURL()
+		fmt.Printf("Testing endpoint: %s\n", s3EndpointURL)
+
+		// Use curl to test the S3 endpoint - we expect either success or AccessDenied
+		// Include -w to get HTTP status code and use -o to separate response body
+		testOutput, testErr := sh.Output("kubectl", "run", "s3-test", "--image=curlimages/curl:latest", "--rm", "-i", "--restart=Never",
+			"--", "sh", "-c", fmt.Sprintf("curl -s -S -X GET '%s' -w '\\nHTTP_CODE:%%{http_code}\\n'", s3EndpointURL))
+
+		// Combine output and error for parsing (kubectl may put output in error for non-zero exit codes)
+		fullOutput := testOutput
+		if testErr != nil && strings.Contains(testErr.Error(), "HTTP_CODE:") {
+			fullOutput = testErr.Error()
+		}
+
+		// Extract HTTP status code
+		httpCode := ""
+		if idx := strings.Index(fullOutput, "HTTP_CODE:"); idx != -1 {
+			codeStr := fullOutput[idx+10:]
+			if endIdx := strings.Index(codeStr, "\n"); endIdx != -1 {
+				httpCode = codeStr[:endIdx]
+			} else {
+				httpCode = codeStr
+			}
+		}
+
+		// Check for S3 XML error response
+		if strings.Contains(fullOutput, "<?xml") && strings.Contains(fullOutput, "<Error>") {
+			// Parse the XML error code
+			if strings.Contains(fullOutput, "<Code>AccessDenied</Code>") {
+				fmt.Println("✓ S3 endpoint is reachable (returned AccessDenied - expected without credentials)")
+			} else if strings.Contains(fullOutput, "<Code>InvalidAccessKeyId</Code>") {
+				fmt.Println("✓ S3 endpoint is reachable (returned InvalidAccessKeyId - expected without credentials)")
+			} else if strings.Contains(fullOutput, "<Code>SignatureDoesNotMatch</Code>") {
+				fmt.Println("✓ S3 endpoint is reachable (returned SignatureDoesNotMatch - expected without credentials)")
+			} else if codeIdx := strings.Index(fullOutput, "<Code>"); codeIdx != -1 {
+				// Extract any other error code
+				codeStart := codeIdx + 6
+				if codeEnd := strings.Index(fullOutput[codeStart:], "</Code>"); codeEnd != -1 {
+					errorCode := fullOutput[codeStart : codeStart+codeEnd]
+					fmt.Printf("✓ S3 endpoint is reachable (returned %s error)\n", errorCode)
+				} else {
+					fmt.Println("✓ S3 endpoint is reachable (returned S3 error response)")
+				}
+			}
+		} else if httpCode == "403" || httpCode == "401" {
+			fmt.Printf("✓ S3 endpoint is reachable (HTTP %s - expected without credentials)\n", httpCode)
+		} else if httpCode == "200" {
+			fmt.Println("✓ S3 endpoint is reachable (HTTP 200 OK)")
+		} else if httpCode != "" && strings.HasPrefix(httpCode, "4") {
+			fmt.Printf("✓ S3 endpoint is reachable (HTTP %s)\n", httpCode)
+		} else if httpCode != "" && strings.HasPrefix(httpCode, "5") {
+			fmt.Printf("⚠ S3 endpoint returned server error (HTTP %s)\n", httpCode)
+		} else if testErr != nil {
+			// Connection failed
+			fmt.Printf("✗ S3 endpoint connectivity test failed\n")
+			fmt.Println("  This could mean:")
+			fmt.Println("  - The S3 service is not running")
+			fmt.Println("  - The endpoint URL is incorrect")
+			fmt.Println("  - Network connectivity issues")
+			if IsVerbose() {
+				fmt.Printf("  Error details: %v\n", testErr)
+			}
+		} else {
+			fmt.Printf("? S3 endpoint returned unexpected response\n")
+			if IsVerbose() {
+				fmt.Printf("  Response: %s\n", fullOutput)
+			}
+		}
 	} else {
 		fmt.Println("s3.example.com is not configured in CoreDNS")
 		fmt.Println("   Run 'mage configureS3DNS' to set up the mapping")
