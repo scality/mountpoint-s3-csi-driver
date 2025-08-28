@@ -166,6 +166,14 @@ func GetContainerImage() string {
 	return fmt.Sprintf("%s:%s", image, GetContainerTag())
 }
 
+// GetCSIChartVersion returns the CSI chart version to install
+func GetCSIChartVersion() string {
+	if version := os.Getenv("SCALITY_CSI_VERSION"); version != "" {
+		return version
+	}
+	return "" // Empty means no version specified
+}
+
 // LoadCredentialsFromFile loads credentials from integration_config.json
 func LoadCredentialsFromFile() (*CredentialsConfig, error) {
 	// Get the project root directory

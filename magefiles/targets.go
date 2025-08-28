@@ -305,10 +305,58 @@ func Status() error {
 
 	fmt.Printf("CSI Driver Status in namespace: %s\n", namespace)
 
-	// Check Helm release status
+	// Check Helm release status and extract version
 	fmt.Println("\nHelm Release Status:")
-	if err := sh.RunV("helm", "status", "scality-s3-csi", "-n", namespace); err != nil {
+	releaseOutput, err := sh.Output("helm", "status", "scality-s3-csi", "-n", namespace, "--show-desc")
+	if err != nil {
 		fmt.Println("CSI driver is not installed")
+		return nil
+	}
+
+	// Display basic status
+	fmt.Println(releaseOutput)
+
+	// Get detailed version information
+	fmt.Println("\nVersion Information:")
+	versionOutput, err := sh.Output("helm", "list", "-n", namespace, "--filter", "scality-s3-csi", "-o", "json")
+	if err == nil && versionOutput != "" {
+		// Parse the JSON output to extract version info
+		// The output contains chart version and app version
+		if strings.Contains(versionOutput, "\"chart\":") {
+			// Extract chart name and version using simple string parsing
+			if chartIdx := strings.Index(versionOutput, "\"chart\":\""); chartIdx != -1 {
+				chartStart := chartIdx + 9
+				if chartEnd := strings.Index(versionOutput[chartStart:], "\""); chartEnd != -1 {
+					chart := versionOutput[chartStart : chartStart+chartEnd]
+					fmt.Printf("  Chart: %s\n", chart)
+				}
+			}
+			// Extract app version if present
+			if appIdx := strings.Index(versionOutput, "\"app_version\":\""); appIdx != -1 {
+				appStart := appIdx + 15
+				if appEnd := strings.Index(versionOutput[appStart:], "\""); appEnd != -1 {
+					appVersion := versionOutput[appStart : appStart+appEnd]
+					fmt.Printf("  App Version: %s\n", appVersion)
+				}
+			}
+		}
+	}
+
+	// Try to get image version from running pods
+	fmt.Println("\nRunning Images:")
+	imageOutput, err := sh.Output("kubectl", "get", "pods", "-n", namespace,
+		"-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver",
+		"-o", "jsonpath={range .items[*].spec.containers[*]}{.image}{\"\\n\"}{end}")
+	if err == nil && imageOutput != "" {
+		// Deduplicate and display unique images
+		images := strings.Split(strings.TrimSpace(imageOutput), "\n")
+		uniqueImages := make(map[string]bool)
+		for _, img := range images {
+			if img != "" && !uniqueImages[img] {
+				uniqueImages[img] = true
+				fmt.Printf("  %s\n", img)
+			}
+		}
 	}
 
 	// Check pods
@@ -372,6 +420,88 @@ func RemoveDNS() error {
 	return nil
 }
 
+// InstallCSIWithVersion installs CSI from OCI registry (for mage install command)
+func InstallCSIWithVersion() error {
+	chartVersion := GetCSIChartVersion()
+
+	// Version should already be checked in Install(), but double-check here
+	if chartVersion == "" {
+		return fmt.Errorf("SCALITY_CSI_VERSION environment variable is required")
+	}
+
+	// Verify chart version exists
+	fmt.Printf("Verifying chart version %s exists in registry...\n", chartVersion)
+	chartPath := "oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver"
+	if err := sh.Run("helm", "show", "chart", chartPath, "--version", chartVersion); err != nil {
+		return fmt.Errorf("chart version %s not found in registry\n\n"+
+			"Available versions can be checked with:\n"+
+			"  helm search repo %s --versions\n\n"+
+			"Error: %v", chartVersion, chartPath, err)
+	}
+
+	namespace := GetNamespace()
+
+	// Configure DNS mapping
+	if err := ConfigureDNS(); err != nil {
+		return fmt.Errorf("failed to configure DNS: %v", err)
+	}
+
+	s3EndpointURL := GetS3EndpointURL()
+
+	fmt.Printf("Installing CSI driver in namespace: %s\n", namespace)
+	fmt.Printf("  Chart version: %s (from OCI registry)\n", chartVersion)
+	fmt.Printf("  Using published images from version %s\n", chartVersion)
+	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
+
+	// Build helm args - NOTE: Same release name "scality-s3-csi" as InstallCSI
+	args := []string{
+		"upgrade", "--install", "scality-s3-csi",
+		chartPath,
+		"--version", chartVersion,
+		"--namespace", namespace,
+		"--create-namespace",
+		"--set", fmt.Sprintf("node.s3EndpointUrl=%s", s3EndpointURL),
+		"--wait",
+		"--timeout", "300s",
+	}
+
+	if IsVerbose() {
+		args = append(args, "--debug")
+	}
+
+	if err := sh.RunV("helm", args...); err != nil {
+		return fmt.Errorf("helm install failed: %v", err)
+	}
+
+	// Verification code (same as InstallCSI)
+	fmt.Println("Helm installation completed. Verifying CSI driver deployment...")
+
+	// Wait for pods to be ready
+	fmt.Println("Waiting for CSI driver pods to become ready...")
+
+	// Wait for controller pods
+	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
+		"-l", "app=s3-csi-controller", "-n", namespace, "--timeout=120s"); err != nil {
+		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
+	}
+
+	// Wait for node pods
+	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
+		"-l", "app=s3-csi-node", "-n", namespace, "--timeout=120s"); err != nil {
+		fmt.Printf("Warning: Node pods not ready: %v\n", err)
+	}
+
+	// Verify pods are running
+	fmt.Println("\nVerifying CSI driver pods are running:")
+	if err := sh.RunV("kubectl", "get", "pods", "-n", namespace,
+		"-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); err != nil {
+		return fmt.Errorf("failed to get CSI driver pods: %v", err)
+	}
+
+	fmt.Printf("CSI driver version %s installed successfully!\n", chartVersion)
+	return nil
+}
+
 // ShowS3DNS shows the current S3 DNS configuration
 func ShowS3DNS() error {
 	fmt.Println("Current S3 DNS Configuration:")
@@ -406,6 +536,77 @@ func ShowS3DNS() error {
 			fmt.Println("S3 service DNS resolution failed - check if the target IP is reachable or S3 service is running")
 		} else {
 			fmt.Println("DNS resolution is working")
+		}
+
+		// Test S3 endpoint connectivity
+		fmt.Println("\nTesting S3 endpoint connectivity...")
+		s3EndpointURL := GetS3EndpointURL()
+		fmt.Printf("Testing endpoint: %s\n", s3EndpointURL)
+
+		// Use curl to test the S3 endpoint - we expect either success or AccessDenied
+		// Include -w to get HTTP status code and use -o to separate response body
+		testOutput, testErr := sh.Output("kubectl", "run", "s3-test", "--image=curlimages/curl:latest", "--rm", "-i", "--restart=Never",
+			"--", "sh", "-c", fmt.Sprintf("curl -s -S -X GET '%s' -w '\\nHTTP_CODE:%%{http_code}\\n'", s3EndpointURL))
+
+		// Combine output and error for parsing (kubectl may put output in error for non-zero exit codes)
+		fullOutput := testOutput
+		if testErr != nil && strings.Contains(testErr.Error(), "HTTP_CODE:") {
+			fullOutput = testErr.Error()
+		}
+
+		// Extract HTTP status code
+		httpCode := ""
+		if idx := strings.Index(fullOutput, "HTTP_CODE:"); idx != -1 {
+			codeStr := fullOutput[idx+10:]
+			if endIdx := strings.Index(codeStr, "\n"); endIdx != -1 {
+				httpCode = codeStr[:endIdx]
+			} else {
+				httpCode = codeStr
+			}
+		}
+
+		// Check for S3 XML error response
+		if strings.Contains(fullOutput, "<?xml") && strings.Contains(fullOutput, "<Error>") {
+			// Parse the XML error code
+			if strings.Contains(fullOutput, "<Code>AccessDenied</Code>") {
+				fmt.Println("✓ S3 endpoint is reachable (returned AccessDenied - expected without credentials)")
+			} else if strings.Contains(fullOutput, "<Code>InvalidAccessKeyId</Code>") {
+				fmt.Println("✓ S3 endpoint is reachable (returned InvalidAccessKeyId - expected without credentials)")
+			} else if strings.Contains(fullOutput, "<Code>SignatureDoesNotMatch</Code>") {
+				fmt.Println("✓ S3 endpoint is reachable (returned SignatureDoesNotMatch - expected without credentials)")
+			} else if codeIdx := strings.Index(fullOutput, "<Code>"); codeIdx != -1 {
+				// Extract any other error code
+				codeStart := codeIdx + 6
+				if codeEnd := strings.Index(fullOutput[codeStart:], "</Code>"); codeEnd != -1 {
+					errorCode := fullOutput[codeStart : codeStart+codeEnd]
+					fmt.Printf("✓ S3 endpoint is reachable (returned %s error)\n", errorCode)
+				} else {
+					fmt.Println("✓ S3 endpoint is reachable (returned S3 error response)")
+				}
+			}
+		} else if httpCode == "403" || httpCode == "401" {
+			fmt.Printf("✓ S3 endpoint is reachable (HTTP %s - expected without credentials)\n", httpCode)
+		} else if httpCode == "200" {
+			fmt.Println("✓ S3 endpoint is reachable (HTTP 200 OK)")
+		} else if httpCode != "" && strings.HasPrefix(httpCode, "4") {
+			fmt.Printf("✓ S3 endpoint is reachable (HTTP %s)\n", httpCode)
+		} else if httpCode != "" && strings.HasPrefix(httpCode, "5") {
+			fmt.Printf("⚠ S3 endpoint returned server error (HTTP %s)\n", httpCode)
+		} else if testErr != nil {
+			// Connection failed
+			fmt.Printf("✗ S3 endpoint connectivity test failed\n")
+			fmt.Println("  This could mean:")
+			fmt.Println("  - The S3 service is not running")
+			fmt.Println("  - The endpoint URL is incorrect")
+			fmt.Println("  - Network connectivity issues")
+			if IsVerbose() {
+				fmt.Printf("  Error details: %v\n", testErr)
+			}
+		} else {
+			fmt.Printf("? S3 endpoint returned unexpected response\n")
+			if IsVerbose() {
+				fmt.Printf("  Response: %s\n", fullOutput)
+			}
 		}
 	} else {
 		fmt.Println("s3.example.com is not configured in CoreDNS")
