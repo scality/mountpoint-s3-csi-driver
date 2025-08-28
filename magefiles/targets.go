@@ -305,10 +305,58 @@ func Status() error {
 
 	fmt.Printf("CSI Driver Status in namespace: %s\n", namespace)
 
-	// Check Helm release status
+	// Check Helm release status and extract version
 	fmt.Println("\nHelm Release Status:")
-	if err := sh.RunV("helm", "status", "scality-s3-csi", "-n", namespace); err != nil {
+	releaseOutput, err := sh.Output("helm", "status", "scality-s3-csi", "-n", namespace, "--show-desc")
+	if err != nil {
 		fmt.Println("CSI driver is not installed")
+		return nil
+	}
+
+	// Display basic status
+	fmt.Println(releaseOutput)
+
+	// Get detailed version information
+	fmt.Println("\nVersion Information:")
+	versionOutput, err := sh.Output("helm", "list", "-n", namespace, "--filter", "scality-s3-csi", "-o", "json")
+	if err == nil && versionOutput != "" {
+		// Parse the JSON output to extract version info
+		// The output contains chart version and app version
+		if strings.Contains(versionOutput, "\"chart\":") {
+			// Extract chart name and version using simple string parsing
+			if chartIdx := strings.Index(versionOutput, "\"chart\":\""); chartIdx != -1 {
+				chartStart := chartIdx + 9
+				if chartEnd := strings.Index(versionOutput[chartStart:], "\""); chartEnd != -1 {
+					chart := versionOutput[chartStart : chartStart+chartEnd]
+					fmt.Printf("  Chart: %s\n", chart)
+				}
+			}
+			// Extract app version if present
+			if appIdx := strings.Index(versionOutput, "\"app_version\":\""); appIdx != -1 {
+				appStart := appIdx + 15
+				if appEnd := strings.Index(versionOutput[appStart:], "\""); appEnd != -1 {
+					appVersion := versionOutput[appStart : appStart+appEnd]
+					fmt.Printf("  App Version: %s\n", appVersion)
+				}
+			}
+		}
+	}
+
+	// Try to get image version from running pods
+	fmt.Println("\nRunning Images:")
+	imageOutput, err := sh.Output("kubectl", "get", "pods", "-n", namespace,
+		"-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver",
+		"-o", "jsonpath={range .items[*].spec.containers[*]}{.image}{\"\\n\"}{end}")
+	if err == nil && imageOutput != "" {
+		// Deduplicate and display unique images
+		images := strings.Split(strings.TrimSpace(imageOutput), "\n")
+		uniqueImages := make(map[string]bool)
+		for _, img := range images {
+			if img != "" && !uniqueImages[img] {
+				uniqueImages[img] = true
+				fmt.Printf("  %s\n", img)
+			}
+		}
 	}
 
 	// Check pods

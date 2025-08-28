@@ -16,7 +16,7 @@ Simple build targets for CSI driver development and testing.
 ### Quick Reference
 
 - **`mage up`** - Build and install CSI driver from local source
-- **`mage install`** - Install specific CSI version from OCI registry (requires SCALITY_CSI_VERSION)
+- **`mage install`** - Install specific CSI version from OCI registry (requires `SCALITY_CSI_VERSION`)
 - **`mage down`** - Remove CSI driver and cleanup (works for both up and install)
 - **`mage status`** - Show current installation status
 
@@ -128,9 +128,9 @@ mage down
 | `SCALITY_CSI_VERSION` | Chart version to install from OCI registry | None | `mage install` | **Yes** (for install) |
 | `CSI_NAMESPACE` | Target Kubernetes namespace | `default` | All commands | No |
 | `S3_ENDPOINT_URL` | Complete S3 endpoint URL (e.g., `http://192.0.0.2:8000`) | `http://localhost:8000` | `mage up`, `mage install` | No |
-| `S3_HOST` | S3 host/IP (alternative to S3_ENDPOINT_URL) | `localhost` | `mage up`, `mage install` | No |
-| `S3_PORT` | S3 port (used with S3_HOST) | `8000` | `mage up`, `mage install` | No |
-| `S3_HTTPS` | Use HTTPS if set to `true` (used with S3_HOST) | `false` | `mage up`, `mage install` | No |
+| `S3_HOST` | S3 host/IP (alternative to `S3_ENDPOINT_URL`) | `localhost` | `mage up`, `mage install` | No |
+| `S3_PORT` | S3 port (used with `S3_HOST`) | `8000` | `mage up`, `mage install` | No |
+| `S3_HTTPS` | Use HTTPS if set to `true` (used with `S3_HOST`) | `false` | `mage up`, `mage install` | No |
 | `CONTAINER_TAG` | Docker image tag for local builds | `local` | `mage up` | No |
 | `CONTAINER_IMAGE` | Custom container image name | `ghcr.io/scality/mountpoint-s3-csi-driver` | `mage up` | No |
 | `VERBOSE` | Enable verbose/debug output | None | All commands | No |
