@@ -71,6 +71,16 @@ jobs:
         run: |
           mage status && mage showS3DNSStatus
 
+      - name: Setup Upgrade Tests
+        run: |
+          echo "Setting up upgrade tests to verify mount continuity..."
+          UPGRADE_TEST_BUCKET=github-ci-test-bucket mage setupUpgradeTests
+
+      - name: Capture Pre-Upgrade Mount State
+        run: |
+          kubectl get pods -n upgrade-test -o wide
+          kubectl describe pods -n upgrade-test
+
       - name: Upgrade to Local Development Version
         run: |
           echo "Upgrading to local development version using mage..."
@@ -80,6 +90,11 @@ jobs:
       - name: Show Status of CSI Driver After Upgrade
         run: |
           mage status && mage showS3DNSStatus
+
+      - name: Verify Mounts Survived Upgrade
+        run: |
+          echo "Verifying mounts were NOT remounted during upgrade..."
+          mage verifyUpgradeTests
 
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
@@ -105,6 +120,11 @@ jobs:
         with:
           name: v1-to-latest-upgrade-test-artifacts
           path: artifacts
+
+      - name: Cleanup Upgrade Tests
+        if: always()
+        run: |
+          mage cleanupUpgradeTests
 
       - name: Cleanup
         if: always()
