@@ -213,7 +213,7 @@ spec:
     - |
       apt-get update && apt-get install -y procps
       echo "Static test pod started at $(date)" > /data/startup.log
-      
+
       # Keep pod running
       while true; do
         sleep 10
@@ -282,7 +282,7 @@ spec:
     - |
       apt-get update && apt-get install -y procps
       echo "Dynamic test pod started at $(date)" > /data/startup.log
-      
+
       # Keep pod running
       while true; do
         sleep 10

@@ -5,6 +5,7 @@ Tests to verify PVC mounts survive CSI driver upgrades without disruption.
 ## Overview
 
 These tests ensure that:
+
 1. Existing PVC mounts remain active during CSI driver upgrade
 2. No remounting occurs (mounts are NOT disrupted)
 3. Data remains accessible throughout the upgrade
@@ -13,11 +14,13 @@ These tests ensure that:
 ## Test Scenarios
 
 ### Static Provisioning Test
+
 - Pre-provisioned PV with PVC
 - Pod writing continuous data
 - Verifies mount survives upgrade
 
 ### Dynamic Provisioning Test  
+
 - Dynamic PVC using StorageClass
 - Pod with open file handles
 - Verifies no remounting occurs
@@ -25,6 +28,7 @@ These tests ensure that:
 ## Usage
 
 ### Run Complete Test Suite
+
 ```bash
 # Setup before upgrade
 mage setupUpgradeTests
@@ -40,6 +44,7 @@ mage cleanupUpgradeTests
 ```
 
 ### Run Individual Tests
+
 ```bash
 # Setup only static test
 UPGRADE_TEST_TYPE=static mage setupUpgradeTests
@@ -51,6 +56,7 @@ UPGRADE_TEST_TYPE=dynamic mage verifyUpgradeTests
 ## How It Works
 
 ### Setup Phase (Before Upgrade)
+
 1. Creates test namespace `upgrade-test`
 2. Deploys pods with PVC mounts (static and dynamic)
 3. Starts continuous write process with open file handles
@@ -58,6 +64,7 @@ UPGRADE_TEST_TYPE=dynamic mage verifyUpgradeTests
 5. Begins writing timestamps every 100ms to detect gaps
 
 ### Verification Phase (After Upgrade)
+
 1. Checks mount process PID unchanged
 2. Verifies open file handles still valid
 3. Confirms mount ID unchanged
@@ -86,16 +93,19 @@ UPGRADE_TEST_TYPE=dynamic mage verifyUpgradeTests
 ## Troubleshooting
 
 ### Test Fails: "Mount was REMOUNTED"
+
 - Check CSI driver logs during upgrade
 - Verify no node restarts occurred
 - Check if systemd restarted mount services
 
 ### Test Fails: "Continuous write stopped"
+
 - Pod may have been evicted
 - Check node resources (CPU/memory)
 - Verify S3 endpoint remained accessible
 
 ### Test Fails: "Open file handle broken"
+
 - Mount was disrupted during upgrade
 - This indicates the upgrade is NOT seamless
 
@@ -122,6 +132,7 @@ UPGRADE_TEST_TYPE=dynamic mage verifyUpgradeTests
 ## Test Results
 
 ### Expected Success Output
+
 ```
 ✅ Mount PID unchanged: 12345
 ✅ Process start time unchanged
@@ -133,6 +144,7 @@ UPGRADE_TEST_TYPE=dynamic mage verifyUpgradeTests
 ```
 
 ### Expected Failure Output (if mount was remounted)
+
 ```
 ❌ Mount PID changed: 12345 → 67890 (REMOUNTED!)
 ❌ Open file handle broken (REMOUNTED!)
