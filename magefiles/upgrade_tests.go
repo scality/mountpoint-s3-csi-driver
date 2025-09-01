@@ -90,9 +90,9 @@ func CleanupDynamicProvisioning() error {
 	return cleanupTest(dynamicConfig)
 }
 
-// Combined targets for CI compatibility
+// SetupUpgradeTests creates both static and dynamic provisioning test resources
 func SetupUpgradeTests() error {
-	fmt.Println("🔧 Setting up upgrade tests (static + dynamic provisioning)...")
+	fmt.Println("Setting up upgrade tests (static + dynamic provisioning)...")
 
 	fmt.Println("\n--- Setting up static provisioning test ---")
 	if err := SetupStaticProvisioning(); err != nil {
@@ -104,12 +104,13 @@ func SetupUpgradeTests() error {
 		return fmt.Errorf("dynamic provisioning setup failed: %v", err)
 	}
 
-	fmt.Println("✅ All upgrade tests setup complete")
+	fmt.Println("✓ All upgrade tests setup complete")
 	return nil
 }
 
+// VerifyUpgradeTests verifies both static and dynamic provisioning after upgrade
 func VerifyUpgradeTests() error {
-	fmt.Println("🔍 Verifying upgrade tests (static + dynamic provisioning)...")
+	fmt.Println("Verifying upgrade tests (static + dynamic provisioning)...")
 
 	fmt.Println("\n--- Verifying static provisioning ---")
 	if err := VerifyStaticProvisioning(); err != nil {
@@ -121,24 +122,25 @@ func VerifyUpgradeTests() error {
 		return fmt.Errorf("dynamic provisioning verification failed: %v", err)
 	}
 
-	fmt.Println("✅ All upgrade tests verification complete")
+	fmt.Println("✓ All upgrade tests verification complete")
 	return nil
 }
 
+// CleanupUpgradeTests removes all static and dynamic test resources
 func CleanupUpgradeTests() error {
-	fmt.Println("🧹 Cleaning up all upgrade test resources...")
+	fmt.Println("Cleaning up all upgrade test resources...")
 
 	fmt.Println("\n--- Cleaning up static provisioning ---")
 	if err := CleanupStaticProvisioning(); err != nil {
-		fmt.Printf("Warning: Static cleanup failed: %v\n", err)
+		fmt.Printf("✗ Warning: Static cleanup failed: %v\n", err)
 	}
 
 	fmt.Println("\n--- Cleaning up dynamic provisioning ---")
 	if err := CleanupDynamicProvisioning(); err != nil {
-		fmt.Printf("Warning: Dynamic cleanup failed: %v\n", err)
+		fmt.Printf("✗ Warning: Dynamic cleanup failed: %v\n", err)
 	}
 
-	fmt.Println("✅ All upgrade tests cleanup complete")
+	fmt.Println("✓ All upgrade tests cleanup complete")
 	return nil
 }
 
@@ -147,7 +149,7 @@ func CleanupUpgradeTests() error {
 // =============================================================================
 
 func setupTest(config TestConfig) error {
-	fmt.Printf("🔧 Setting up %s provisioning upgrade test...\n", config.Type)
+	fmt.Printf("Setting up %s provisioning upgrade test...\n", config.Type)
 
 	// Ensure credentials are loaded
 	mg.Deps(LoadCredentials)
@@ -195,39 +197,39 @@ func setupTest(config TestConfig) error {
 		return fmt.Errorf("failed to write test data: %v", err)
 	}
 
-	fmt.Printf("✅ %s provisioning test setup complete\n", strings.Title(config.Type))
+	fmt.Printf("✓ %s provisioning test setup complete\n", strings.Title(config.Type))
 	return nil
 }
 
 func verifyTest(config TestConfig, beforeContent, afterContent string) error {
-	fmt.Printf("🔍 Verifying %s provisioning after upgrade...\n", config.Type)
+	fmt.Printf("Verifying %s provisioning after upgrade...\n", config.Type)
 
 	// Check pod is still running
 	if err := verifyPodRunning(config); err != nil {
-		return fmt.Errorf("❌ Pod check failed: %v", err)
+		return fmt.Errorf("✗ Pod check failed: %v", err)
 	}
 
 	// Verify old data persists
 	if err := verifyTestDataExists(config, "before-upgrade.txt", beforeContent); err != nil {
-		return fmt.Errorf("❌ Data persistence check failed: %v", err)
+		return fmt.Errorf("✗ Data persistence check failed: %v", err)
 	}
 
 	// Write new data after upgrade
 	if err := writeTestData(config, "after-upgrade.txt", afterContent); err != nil {
-		return fmt.Errorf("❌ New write check failed: %v", err)
+		return fmt.Errorf("✗ New write check failed: %v", err)
 	}
 
 	// Verify new data
 	if err := verifyTestDataExists(config, "after-upgrade.txt", afterContent); err != nil {
-		return fmt.Errorf("❌ New data verification failed: %v", err)
+		return fmt.Errorf("✗ New data verification failed: %v", err)
 	}
 
-	fmt.Printf("✅ %s provisioning upgrade verification successful!\n", strings.Title(config.Type))
+	fmt.Printf("✓ %s provisioning upgrade verification successful!\n", strings.Title(config.Type))
 	return nil
 }
 
 func cleanupTest(config TestConfig) error {
-	fmt.Printf("🧹 Cleaning up %s provisioning test resources...\n", config.Type)
+	fmt.Printf("Cleaning up %s provisioning test resources...\n", config.Type)
 
 	// Delete Pod
 	_ = sh.Run("kubectl", "delete", "pod", config.PodName, "-n", config.Namespace, "--ignore-not-found=true")
@@ -242,7 +244,7 @@ func cleanupTest(config TestConfig) error {
 		// Delete S3 bucket (requires credentials)
 		mg.Deps(LoadCredentials)
 		if err := deleteS3Bucket(config.BucketName); err != nil {
-			fmt.Printf("Warning: Failed to delete test bucket: %v\n", err)
+			fmt.Printf("✗ Warning: Failed to delete test bucket: %v\n", err)
 		}
 	}
 
@@ -251,7 +253,7 @@ func cleanupTest(config TestConfig) error {
 		_ = sh.Run("kubectl", "delete", "storageclass", config.SCName, "--ignore-not-found=true")
 	}
 
-	fmt.Printf("✅ %s provisioning test cleanup complete\n", strings.Title(config.Type))
+	fmt.Printf("✓ %s provisioning test cleanup complete\n", strings.Title(config.Type))
 	return nil
 }
 
@@ -438,7 +440,7 @@ func deleteS3Bucket(bucketName string) error {
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		fmt.Printf("Warning: Failed to list objects in bucket %s: %v\n", bucketName, err)
+		fmt.Printf("✗ Warning: Failed to list objects in bucket %s: %v\n", bucketName, err)
 	} else if listResp.Contents != nil && len(listResp.Contents) > 0 {
 		for _, obj := range listResp.Contents {
 			_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
@@ -446,7 +448,7 @@ func deleteS3Bucket(bucketName string) error {
 				Key:    obj.Key,
 			})
 			if err != nil {
-				fmt.Printf("Warning: Failed to delete object %s: %v\n", *obj.Key, err)
+				fmt.Printf("✗ Warning: Failed to delete object %s: %v\n", *obj.Key, err)
 			}
 		}
 	}
