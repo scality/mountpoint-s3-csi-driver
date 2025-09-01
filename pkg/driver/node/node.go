@@ -39,7 +39,7 @@ import (
 var kubeletPath = util.KubeletPath()
 
 var (
-	systemdNodeCaps    = []csi.NodeServiceCapability_RPC_Type{
+	systemdNodeCaps = []csi.NodeServiceCapability_RPC_Type{
 		csi.NodeServiceCapability_RPC_VOLUME_MOUNT_GROUP,
 	}
 	podMounterNodeCaps = []csi.NodeServiceCapability_RPC_Type{
