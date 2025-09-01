@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -35,7 +35,7 @@ jobs:
           password: "${{ github.token }}"
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4.3.0
+        uses: azure/setup-helm@v4.3.1
 
       - name: Install Mage
         run: |

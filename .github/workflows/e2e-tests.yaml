@@ -47,7 +47,7 @@ jobs:
       CLOUDSERVER_TAG: ${{ vars[matrix.github_varirable_name] }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

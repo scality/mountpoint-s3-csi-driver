@@ -13,7 +13,7 @@ runs:
   using: "composite"
   steps:
     - name: Check out repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: ${{ inputs.ref }}
 
@@ -41,7 +41,7 @@ runs:
         cluster_name: helm-test-cluster
 
     - name: Setup Helm
-      uses: azure/setup-helm@v4.3.0
+      uses: azure/setup-helm@v4.3.1
 
     - name: Pull Container Images and Download GO Dependencies in Parallel
       if: inputs.skip_container_pulls != 'true'
