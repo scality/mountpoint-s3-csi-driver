@@ -140,6 +140,11 @@ func GetS3Port() string {
 func GetS3EndpointURL() string {
 	_, port, originalURL := GetS3Config()
 
+	// If S3_ENDPOINT_URL is provided, return it directly
+	if url := os.Getenv("S3_ENDPOINT_URL"); url != "" {
+		return url
+	}
+
 	// Extract protocol from original configuration
 	protocol := "http"
 	if strings.HasPrefix(originalURL, "https://") {
