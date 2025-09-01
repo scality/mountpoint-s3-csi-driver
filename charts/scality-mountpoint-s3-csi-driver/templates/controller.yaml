@@ -52,6 +52,11 @@ spec:
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            {{- with .Values.controller.securityContext }}
+            runAsNonRoot: {{ .runAsNonRoot }}
+            runAsUser: {{ .runAsUser }}
+            runAsGroup: {{ .runAsGroup }}
+            {{- end }}
             {{- with .Values.controller.seLinuxOptions }}
             seLinuxOptions:
               user: {{ .user }}

@@ -41,6 +41,12 @@ node:
   mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
 
   # Security context for the CSI driver containers
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
   seLinuxOptions:
     user: system_u
     type: super_t
@@ -129,6 +135,16 @@ controller:
     # Specifies whether a service account should be created
     create: true
     name: s3-csi-driver-controller-sa
+  # Security context for the controller containers
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+  seLinuxOptions:
+    user: system_u
+    type: super_t
+    role: system_r
+    level: s0
 
 # Experimental features. To be used only in development environments.
 experimental:

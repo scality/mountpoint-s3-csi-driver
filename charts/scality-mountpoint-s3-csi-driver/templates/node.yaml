@@ -23,6 +23,11 @@ spec:
         {{- end }}
       serviceAccountName: {{ .Values.node.serviceAccount.name }}
       priorityClassName: system-node-critical
+      {{- with .Values.node.securityContext }}
+      securityContext:
+        fsGroup: {{ .fsGroup }}
+        fsGroupChangePolicy: {{ .fsGroupChangePolicy }}
+      {{- end }}
       {{- with .Values.node.affinity }}
       affinity: {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -54,6 +59,11 @@ spec:
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            {{- with .Values.node.securityContext }}
+            runAsNonRoot: {{ .runAsNonRoot }}
+            runAsUser: {{ .runAsUser }}
+            runAsGroup: {{ .runAsGroup }}
+            {{- end }}
             {{- with .Values.node.seLinuxOptions }}
             seLinuxOptions:
               user: {{ .user }}
@@ -84,6 +94,11 @@ spec:
             {{- else -}}
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            {{- with .Values.node.securityContext }}
+            runAsNonRoot: {{ .runAsNonRoot }}
+            runAsUser: {{ .runAsUser }}
+            runAsGroup: {{ .runAsGroup }}
+            {{- end }}
             {{- end }}
             {{- with .Values.node.seLinuxOptions }}
             seLinuxOptions:
