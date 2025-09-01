@@ -387,6 +387,7 @@ func getS3Client() (*s3.Client, error) {
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
 		config.WithCredentialsProvider(aws.NewCredentialsCache(
 			aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 				return aws.Credentials{
