@@ -18,11 +18,11 @@ require (
 	github.com/onsi/ginkgo/v2 v2.25.2
 	github.com/onsi/gomega v1.38.2
 	google.golang.org/grpc v1.74.2
-	k8s.io/api v0.33.2
-	k8s.io/client-go v0.33.2
+	k8s.io/api v0.33.4
+	k8s.io/client-go v0.33.4
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/kubectl v0.33.2
-	k8s.io/mount-utils v0.33.2
+	k8s.io/kubectl v0.33.4
+	k8s.io/mount-utils v0.33.4
 	sigs.k8s.io/controller-runtime v0.21.0
 )
 
@@ -117,7 +117,7 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apimachinery v0.33.2
+	k8s.io/apimachinery v0.33.4
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 )
 
