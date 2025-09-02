@@ -42,11 +42,22 @@ jobs:
           go install github.com/magefile/mage@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
+      - name: Set Environment Variables
+        run: |
+          HOST_IP=$(hostname -I | awk '{print $1}')
+          echo "HOST_IP=$HOST_IP" >> $GITHUB_ENV
+          echo "S3_ENDPOINT_URL=http://$HOST_IP:8000" >> $GITHUB_ENV
+          echo "KIND_CLUSTER_NAME=upgrade-test-cluster" >> $GITHUB_ENV
+          echo "Host IP: $HOST_IP"
+          echo "S3 Endpoint: http://$HOST_IP:8000"
+          echo "Kind Cluster: upgrade-test-cluster"
+
       - name: Create Kind Cluster
         uses: helm/kind-action@v1.12.0
         with:
           wait: 90s
           cluster_name: upgrade-test-cluster
+
       - name: Deploy CloudServer (S3 Backend)
         run: |
           set -e -o pipefail
@@ -62,24 +73,29 @@ jobs:
           ./tests/e2e/scripts/capture-events-and-logs.sh artifacts/k8s-debug start &
           echo $! > capture.pid
 
-      - name: Install CSI Driver v1.2.0 from OCI Registry
+      - name: Configure Host DNS for S3 Endpoint
         run: |
-          HOST_IP=$(hostname -I | awk '{print $1}')
-          S3_ENDPOINT_URL=http://$HOST_IP:8000 SCALITY_CSI_VERSION=1.2.0 mage install
+          echo "Adding s3.example.com -> $HOST_IP mapping to /etc/hosts for CSI driver compatibility"
+          echo "$HOST_IP s3.example.com" | sudo tee -a /etc/hosts
+          cat /etc/hosts | grep s3.example.com
+
+      - name: Install CSI Driver v1.2.0 from OCI Registry
+        run: SCALITY_CSI_VERSION=1.2.0 mage install
 
       - name: Show Status of CSI Driver
-        run: |
-          mage status && mage showS3DNSStatus
+        run: mage status && mage showS3DNSStatus
+
+      - name: Setup Static Provisioning Test
+        run: mage setupStaticProvisioning
 
       - name: Upgrade to Local Development Version
-        run: |
-          echo "Upgrading to local development version using mage..."
-          HOST_IP=$(hostname -I | awk '{print $1}')
-          KIND_CLUSTER_NAME=upgrade-test-cluster VERBOSE=1 mage up
+        run: VERBOSE=1 mage up
 
       - name: Show Status of CSI Driver After Upgrade
-        run: |
-          mage status && mage showS3DNSStatus
+        run: mage status && mage showS3DNSStatus
+
+      - name: Verify Static Provisioning After Upgrade
+        run: mage verifyStaticProvisioning
 
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
@@ -106,7 +122,10 @@ jobs:
           name: v1-to-latest-upgrade-test-artifacts
           path: artifacts
 
+      - name: Cleanup Test Resources
+        if: always()
+        run: mage cleanupStaticProvisioning || true
+
       - name: Cleanup
         if: always()
-        run: |
-          mage down
+        run: mage down
