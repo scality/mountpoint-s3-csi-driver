@@ -39,7 +39,9 @@ import (
 var kubeletPath = util.KubeletPath()
 
 var (
-	systemdNodeCaps    = []csi.NodeServiceCapability_RPC_Type{}
+	systemdNodeCaps = []csi.NodeServiceCapability_RPC_Type{
+		csi.NodeServiceCapability_RPC_VOLUME_MOUNT_GROUP,
+	}
 	podMounterNodeCaps = []csi.NodeServiceCapability_RPC_Type{
 		csi.NodeServiceCapability_RPC_VOLUME_MOUNT_GROUP,
 	}
@@ -125,7 +127,7 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 
 	args := mountpoint.ParseArgs(mountpointArgs)
 
-	if capMount := volCap.GetMount(); capMount != nil && util.UsePodMounter() {
+	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
 			// We need to add the following flags to support fsGroup
 			// If these flags were already set by customer in PV mountOptions then we won't override them

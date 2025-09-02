@@ -536,10 +536,15 @@ func TestNodeGetCapabilitiesForSystemd(t *testing.T) {
 		t.Fatalf("NodeGetCapabilities failed: %v", err)
 	}
 
-	capabilities := resp.GetCapabilities()
-	if len(capabilities) != 0 {
-		t.Fatalf("NodeGetCapabilities failed: capabilities not empty")
-	}
+	assert.Equals(t, []*csi.NodeServiceCapability{
+		{
+			Type: &csi.NodeServiceCapability_Rpc{
+				Rpc: &csi.NodeServiceCapability_RPC{
+					Type: csi.NodeServiceCapability_RPC_VOLUME_MOUNT_GROUP,
+				},
+			},
+		},
+	}, resp.GetCapabilities())
 
 	nodeTestEnv.mockCtl.Finish()
 }
