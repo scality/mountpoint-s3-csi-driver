@@ -85,7 +85,12 @@ func LoadImageToCluster() error {
 	var err error
 	switch clusterType {
 	case "kind":
-		err = sh.RunV("kind", "load", "docker-image", image)
+		// Check if KIND_CLUSTER_NAME is set
+		if clusterName := os.Getenv("KIND_CLUSTER_NAME"); clusterName != "" {
+			err = sh.RunV("kind", "load", "docker-image", image, "--name", clusterName)
+		} else {
+			err = sh.RunV("kind", "load", "docker-image", image)
+		}
 	case "minikube":
 		err = sh.RunV("minikube", "image", "load", image)
 	default:
@@ -189,9 +194,17 @@ func InstallCSI() error {
 	namespace := GetNamespace()
 	imageTag := GetContainerTag()
 
-	// Configure DNS mapping and use s3.example.com as endpoint
-	if err := ConfigureDNS(); err != nil {
-		return fmt.Errorf("failed to configure DNS: %v", err)
+	// Configure DNS mapping only if needed
+	// Configure DNS if:
+	// 1. DNS is not already configured, OR
+	// 2. S3_ENDPOINT_URL is explicitly provided (user wants to override)
+	if !IsDNSConfigured() || os.Getenv("S3_ENDPOINT_URL") != "" {
+		fmt.Println("Configuring DNS mapping...")
+		if err := ConfigureDNS(); err != nil {
+			return fmt.Errorf("failed to configure DNS: %v", err)
+		}
+	} else {
+		fmt.Println("DNS already configured for s3.example.com, skipping DNS configuration...")
 	}
 
 	s3EndpointURL := GetS3EndpointURL()
@@ -441,9 +454,17 @@ func InstallCSIWithVersion() error {
 
 	namespace := GetNamespace()
 
-	// Configure DNS mapping
-	if err := ConfigureDNS(); err != nil {
-		return fmt.Errorf("failed to configure DNS: %v", err)
+	// Configure DNS mapping only if needed
+	// Configure DNS if:
+	// 1. DNS is not already configured, OR
+	// 2. S3_ENDPOINT_URL is explicitly provided (user wants to override)
+	if !IsDNSConfigured() || os.Getenv("S3_ENDPOINT_URL") != "" {
+		fmt.Println("Configuring DNS mapping...")
+		if err := ConfigureDNS(); err != nil {
+			return fmt.Errorf("failed to configure DNS: %v", err)
+		}
+	} else {
+		fmt.Println("DNS already configured for s3.example.com, skipping DNS configuration...")
 	}
 
 	s3EndpointURL := GetS3EndpointURL()
