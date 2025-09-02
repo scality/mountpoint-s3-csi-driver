@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: upgrade-test-sc
+provisioner: s3.csi.scality.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - allow-delete

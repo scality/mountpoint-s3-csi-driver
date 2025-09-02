@@ -14,15 +14,32 @@ The upgrade tests validate that existing workloads continue to function after up
 
 Tests pre-provisioned PV/PVC/Pod resources through upgrade:
 
-- Creates S3 bucket and Kubernetes resources
+- Creates S3 bucket manually and Kubernetes resources
 - Writes test data before upgrade
 - Verifies data persistence and new write capability after upgrade
 
+### Dynamic Provisioning Test
+
+Tests dynamically provisioned volumes through upgrade:
+
+- Creates StorageClass and PVC (triggers automatic bucket/PV creation)
+- Writes test data before upgrade
+- Verifies data persistence and new write capability after upgrade
+- Tests full CSI controller functionality
+
 ### Manifest Files
+
+**Static Provisioning:**
 
 - `manifests/static-pv.yaml` - PersistentVolume for static test
 - `manifests/static-pvc.yaml` - PersistentVolumeClaim for static test  
 - `manifests/static-pod.yaml` - Pod for static test
+
+**Dynamic Provisioning:**
+
+- `manifests/dynamic-storageclass.yaml` - StorageClass for dynamic test
+- `manifests/dynamic-pvc.yaml` - PersistentVolumeClaim for dynamic test
+- `manifests/dynamic-pod.yaml` - Pod for dynamic test
 
 ## Mage Targets
 
@@ -32,7 +49,21 @@ Tests pre-provisioned PV/PVC/Pod resources through upgrade:
 - `mage verifyStaticProvisioning` - Verify data persistence and new writes after upgrade
 - `mage cleanupStaticProvisioning` - Remove all static test resources
 
+### Dynamic Provisioning
+
+- `mage setupDynamicProvisioning` - Create StorageClass, PVC, Pod, write test data
+- `mage verifyDynamicProvisioning` - Verify data persistence and new writes after upgrade
+- `mage cleanupDynamicProvisioning` - Remove all dynamic test resources
+
+### Combined Tests (CI)
+
+- `mage setupUpgradeTests` - Setup both static and dynamic tests
+- `mage verifyUpgradeTests` - Verify both static and dynamic tests
+- `mage cleanupUpgradeTests` - Cleanup both static and dynamic tests
+
 ## Usage
+
+### Static Provisioning Only
 
 ```bash
 # Load credentials and set S3 endpoint
@@ -40,13 +71,13 @@ source tests/e2e/scripts/load-credentials.sh
 export HOST_IP=<ip of the host>
 export S3_ENDPOINT_URL=http://${HOST_IP}:8000
 
-# if using kind cluster
-export KIND_CLUSTER_NAME=<name of the kind cluster>
+# If using KIND cluster, set cluster name
+export KIND_CLUSTER_NAME=<kind-cluster-name>
 
 # Install v1.2.0
 SCALITY_CSI_VERSION=1.2.0 mage install
 
-# Setup test
+# Setup static test
 mage setupStaticProvisioning
 
 # Upgrade to local version
@@ -57,8 +88,62 @@ mage verifyStaticProvisioning
 
 # Cleanup
 mage cleanupStaticProvisioning
+```
 
-# Clean up of driver
+### Dynamic Provisioning Only
+
+```bash
+# Load credentials and set S3 endpoint
+source tests/e2e/scripts/load-credentials.sh
+export HOST_IP=<ip of the host>
+export S3_ENDPOINT_URL=http://${HOST_IP}:8000
+
+# If using KIND cluster, set cluster name
+export KIND_CLUSTER_NAME=<kind-cluster-name>
+
+# Install v1.2.0
+SCALITY_CSI_VERSION=1.2.0 mage install
+
+# Setup dynamic test
+mage setupDynamicProvisioning
+
+# Upgrade to local version
+mage up
+
+# Verify upgrade
+mage verifyDynamicProvisioning
+
+# Cleanup
+mage cleanupDynamicProvisioning
+```
+
+### Both Tests (Full Suite)
+
+```bash
+# Load credentials and set S3 endpoint
+source tests/e2e/scripts/load-credentials.sh
+export HOST_IP=<ip of the host>
+export S3_ENDPOINT_URL=http://${HOST_IP}:8000
+
+# If using KIND cluster, set cluster name
+export KIND_CLUSTER_NAME=<kind-cluster-name>
+
+# Install v1.2.0
+SCALITY_CSI_VERSION=1.2.0 mage install
+
+# Setup all tests
+mage setupUpgradeTests
+
+# Upgrade to local version
+mage up
+
+# Verify all tests
+mage verifyUpgradeTests
+
+# Cleanup all tests
+mage cleanupUpgradeTests
+
+# Clean up driver
 mage down
 ```
 

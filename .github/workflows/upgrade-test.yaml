@@ -85,8 +85,8 @@ jobs:
       - name: Show Status of CSI Driver
         run: mage status && mage showS3DNSStatus
 
-      - name: Setup Static Provisioning Test
-        run: mage setupStaticProvisioning
+      - name: Setup Upgrade Tests (Static + Dynamic Provisioning)
+        run: mage setupUpgradeTests
 
       - name: Upgrade to Local Development Version
         run: VERBOSE=1 mage up
@@ -94,8 +94,8 @@ jobs:
       - name: Show Status of CSI Driver After Upgrade
         run: mage status && mage showS3DNSStatus
 
-      - name: Verify Static Provisioning After Upgrade
-        run: mage verifyStaticProvisioning
+      - name: Verify Upgrade Tests (Static + Dynamic Provisioning)
+        run: mage verifyUpgradeTests
 
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
@@ -124,7 +124,7 @@ jobs:
 
       - name: Cleanup Test Resources
         if: always()
-        run: mage cleanupStaticProvisioning || true
+        run: mage cleanupUpgradeTests || true
 
       - name: Cleanup
         if: always()

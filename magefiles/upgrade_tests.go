@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -16,16 +17,44 @@ import (
 )
 
 // =============================================================================
-// Constants and Variables
+// Test Configuration
 // =============================================================================
 
-const (
-	staticTestBucketName = "upgrade-test-static"
-	staticTestPVName     = "upgrade-test-pv"
-	staticTestPVCName    = "upgrade-test-pvc"
-	staticTestPodName    = "upgrade-test-pod"
-	testNamespace        = "default"
-)
+type TestConfig struct {
+	Type         string
+	PodName      string
+	PVCName      string
+	PVName       string // only for static
+	SCName       string // only for dynamic
+	BucketName   string // only for static
+	Namespace    string
+	PVCTimeout   int // seconds
+	PodTimeout   int // seconds
+	ManifestPath string
+}
+
+var staticConfig = TestConfig{
+	Type:         "static",
+	PodName:      "upgrade-test-pod",
+	PVCName:      "upgrade-test-pvc",
+	PVName:       "upgrade-test-pv",
+	BucketName:   "upgrade-test-static",
+	Namespace:    "default",
+	PVCTimeout:   60,
+	PodTimeout:   120,
+	ManifestPath: "tests/upgrade/manifests/static",
+}
+
+var dynamicConfig = TestConfig{
+	Type:         "dynamic",
+	PodName:      "upgrade-test-dynamic-pod",
+	PVCName:      "upgrade-test-dynamic-pvc",
+	SCName:       "upgrade-test-sc",
+	Namespace:    "default",
+	PVCTimeout:   120,
+	PodTimeout:   120,
+	ManifestPath: "tests/upgrade/manifests/dynamic",
+}
 
 // =============================================================================
 // Public Mage Targets (Entry Points)
@@ -33,103 +62,322 @@ const (
 
 // SetupStaticProvisioning creates resources for static provisioning upgrade test
 func SetupStaticProvisioning() error {
-	fmt.Println("🔧 Setting up static provisioning upgrade test...")
+	return setupTest(staticConfig)
+}
 
-	// Ensure credentials are loaded
-	mg.Deps(LoadCredentials)
-
-	// Create S3 bucket
-	if err := createStaticTestBucket(); err != nil {
-		return fmt.Errorf("failed to create test bucket: %v", err)
-	}
-
-	// Create PV
-	if err := createStaticTestPV(); err != nil {
-		return fmt.Errorf("failed to create PV: %v", err)
-	}
-
-	// Create PVC
-	if err := createStaticTestPVC(); err != nil {
-		return fmt.Errorf("failed to create PVC: %v", err)
-	}
-
-	// Create Pod (PVC will bind when pod is created for static provisioning)
-	if err := createStaticTestPod(); err != nil {
-		return fmt.Errorf("failed to create Pod: %v", err)
-	}
-
-	// Wait for pod to be ready (this also ensures PVC is bound)
-	if err := waitForPodReady(); err != nil {
-		return fmt.Errorf("Pod failed to be ready: %v", err)
-	}
-
-	// Write initial test data
-	if err := writeTestData("before-upgrade.txt", "Data written before upgrade"); err != nil {
-		return fmt.Errorf("failed to write test data: %v", err)
-	}
-
-	fmt.Println("✅ Static provisioning test setup complete")
-	return nil
+// SetupDynamicProvisioning creates resources for dynamic provisioning upgrade test
+func SetupDynamicProvisioning() error {
+	return setupTest(dynamicConfig)
 }
 
 // VerifyStaticProvisioning verifies static provisioning works after upgrade
 func VerifyStaticProvisioning() error {
-	fmt.Println("🔍 Verifying static provisioning after upgrade...")
+	return verifyTest(staticConfig, "Data written before upgrade", "Data written after upgrade")
+}
 
-	// Check pod is still running
-	if err := verifyPodRunning(); err != nil {
-		return fmt.Errorf("❌ Pod check failed: %v", err)
-	}
-
-	// Verify old data persists
-	if err := verifyTestDataExists("before-upgrade.txt", "Data written before upgrade"); err != nil {
-		return fmt.Errorf("❌ Data persistence check failed: %v", err)
-	}
-
-	// Write new data after upgrade
-	if err := writeTestData("after-upgrade.txt", "Data written after upgrade"); err != nil {
-		return fmt.Errorf("❌ New write check failed: %v", err)
-	}
-
-	// Verify new data
-	if err := verifyTestDataExists("after-upgrade.txt", "Data written after upgrade"); err != nil {
-		return fmt.Errorf("❌ New data verification failed: %v", err)
-	}
-
-	fmt.Println("✅ Static provisioning upgrade verification successful!")
-	return nil
+// VerifyDynamicProvisioning verifies dynamic provisioning works after upgrade
+func VerifyDynamicProvisioning() error {
+	return verifyTest(dynamicConfig, "Dynamic data written before upgrade", "Dynamic data written after upgrade")
 }
 
 // CleanupStaticProvisioning removes static test resources
 func CleanupStaticProvisioning() error {
-	fmt.Println("🧹 Cleaning up static provisioning test resources...")
+	return cleanupTest(staticConfig)
+}
 
-	// Ensure credentials are loaded for S3 bucket deletion
-	mg.Deps(LoadCredentials)
+// CleanupDynamicProvisioning removes dynamic test resources
+func CleanupDynamicProvisioning() error {
+	return cleanupTest(dynamicConfig)
+}
 
-	// Delete Pod
-	_ = sh.Run("kubectl", "delete", "pod", staticTestPodName, "-n", testNamespace, "--ignore-not-found=true")
+// SetupUpgradeTests creates both static and dynamic provisioning test resources
+func SetupUpgradeTests() error {
+	fmt.Println("Setting up upgrade tests (static + dynamic provisioning)...")
 
-	// Delete PVC
-	_ = sh.Run("kubectl", "delete", "pvc", staticTestPVCName, "-n", testNamespace, "--ignore-not-found=true")
-
-	// Delete PV
-	_ = sh.Run("kubectl", "delete", "pv", staticTestPVName, "--ignore-not-found=true")
-
-	// Delete S3 bucket
-	if err := deleteStaticTestBucket(); err != nil {
-		fmt.Printf("Warning: Failed to delete test bucket: %v\n", err)
+	fmt.Println("\n--- Setting up static provisioning test ---")
+	if err := SetupStaticProvisioning(); err != nil {
+		return fmt.Errorf("static provisioning setup failed: %v", err)
 	}
 
-	fmt.Println("✅ Static provisioning test cleanup complete")
+	fmt.Println("\n--- Setting up dynamic provisioning test ---")
+	if err := SetupDynamicProvisioning(); err != nil {
+		return fmt.Errorf("dynamic provisioning setup failed: %v", err)
+	}
+
+	fmt.Println("✓ All upgrade tests setup complete")
+	return nil
+}
+
+// VerifyUpgradeTests verifies both static and dynamic provisioning after upgrade
+func VerifyUpgradeTests() error {
+	fmt.Println("Verifying upgrade tests (static + dynamic provisioning)...")
+
+	fmt.Println("\n--- Verifying static provisioning ---")
+	if err := VerifyStaticProvisioning(); err != nil {
+		return fmt.Errorf("static provisioning verification failed: %v", err)
+	}
+
+	fmt.Println("\n--- Verifying dynamic provisioning ---")
+	if err := VerifyDynamicProvisioning(); err != nil {
+		return fmt.Errorf("dynamic provisioning verification failed: %v", err)
+	}
+
+	fmt.Println("✓ All upgrade tests verification complete")
+	return nil
+}
+
+// CleanupUpgradeTests removes all static and dynamic test resources
+func CleanupUpgradeTests() error {
+	fmt.Println("Cleaning up all upgrade test resources...")
+
+	fmt.Println("\n--- Cleaning up static provisioning ---")
+	if err := CleanupStaticProvisioning(); err != nil {
+		fmt.Printf("✗ Warning: Static cleanup failed: %v\n", err)
+	}
+
+	fmt.Println("\n--- Cleaning up dynamic provisioning ---")
+	if err := CleanupDynamicProvisioning(); err != nil {
+		fmt.Printf("✗ Warning: Dynamic cleanup failed: %v\n", err)
+	}
+
+	fmt.Println("✓ All upgrade tests cleanup complete")
 	return nil
 }
 
 // =============================================================================
-// S3 Client and Operations
+// Generic Test Implementation
 // =============================================================================
 
-// getS3Client creates and returns an S3 client configured with credentials and endpoint
+func setupTest(config TestConfig) error {
+	fmt.Printf("Setting up %s provisioning upgrade test...\n", config.Type)
+
+	// Ensure credentials are loaded
+	mg.Deps(LoadCredentials)
+
+	// Static-specific setup
+	if config.Type == "static" {
+		if err := createS3Bucket(config.BucketName); err != nil {
+			return fmt.Errorf("failed to create S3 bucket: %v", err)
+		}
+		if err := applyManifest(config, "pv"); err != nil {
+			return fmt.Errorf("failed to create PV: %v", err)
+		}
+	}
+
+	// Dynamic-specific setup
+	if config.Type == "dynamic" {
+		if err := applyManifest(config, "storageclass"); err != nil {
+			return fmt.Errorf("failed to create StorageClass: %v", err)
+		}
+	}
+
+	// Common setup steps
+	if err := applyManifest(config, "pvc"); err != nil {
+		return fmt.Errorf("failed to create PVC: %v", err)
+	}
+
+	if err := waitForPVCBound(config); err != nil {
+		return fmt.Errorf("PVC failed to bind: %v", err)
+	}
+
+	if err := applyManifest(config, "pod"); err != nil {
+		return fmt.Errorf("failed to create Pod: %v", err)
+	}
+
+	if err := waitForPodReady(config); err != nil {
+		return fmt.Errorf("Pod failed to be ready: %v", err)
+	}
+
+	// Write initial test data
+	dataContent := "Data written before upgrade"
+	if config.Type == "dynamic" {
+		dataContent = "Dynamic data written before upgrade"
+	}
+	if err := writeTestData(config, "before-upgrade.txt", dataContent); err != nil {
+		return fmt.Errorf("failed to write test data: %v", err)
+	}
+
+	fmt.Printf("✓ %s provisioning test setup complete\n", strings.Title(config.Type))
+	return nil
+}
+
+func verifyTest(config TestConfig, beforeContent, afterContent string) error {
+	fmt.Printf("Verifying %s provisioning after upgrade...\n", config.Type)
+
+	// Check pod is still running
+	if err := verifyPodRunning(config); err != nil {
+		return fmt.Errorf("✗ Pod check failed: %v", err)
+	}
+
+	// Verify old data persists
+	if err := verifyTestDataExists(config, "before-upgrade.txt", beforeContent); err != nil {
+		return fmt.Errorf("✗ Data persistence check failed: %v", err)
+	}
+
+	// Write new data after upgrade
+	if err := writeTestData(config, "after-upgrade.txt", afterContent); err != nil {
+		return fmt.Errorf("✗ New write check failed: %v", err)
+	}
+
+	// Verify new data
+	if err := verifyTestDataExists(config, "after-upgrade.txt", afterContent); err != nil {
+		return fmt.Errorf("✗ New data verification failed: %v", err)
+	}
+
+	fmt.Printf("✓ %s provisioning upgrade verification successful!\n", strings.Title(config.Type))
+	return nil
+}
+
+func cleanupTest(config TestConfig) error {
+	fmt.Printf("Cleaning up %s provisioning test resources...\n", config.Type)
+
+	// Delete Pod
+	_ = sh.Run("kubectl", "delete", "pod", config.PodName, "-n", config.Namespace, "--ignore-not-found=true")
+
+	// Delete PVC
+	_ = sh.Run("kubectl", "delete", "pvc", config.PVCName, "-n", config.Namespace, "--ignore-not-found=true")
+
+	// Static-specific cleanup
+	if config.Type == "static" {
+		_ = sh.Run("kubectl", "delete", "pv", config.PVName, "--ignore-not-found=true")
+
+		// Delete S3 bucket (requires credentials)
+		mg.Deps(LoadCredentials)
+		if err := deleteS3Bucket(config.BucketName); err != nil {
+			fmt.Printf("✗ Warning: Failed to delete test bucket: %v\n", err)
+		}
+	}
+
+	// Dynamic-specific cleanup
+	if config.Type == "dynamic" {
+		_ = sh.Run("kubectl", "delete", "storageclass", config.SCName, "--ignore-not-found=true")
+	}
+
+	fmt.Printf("✓ %s provisioning test cleanup complete\n", strings.Title(config.Type))
+	return nil
+}
+
+// =============================================================================
+// Generic Helper Functions
+// =============================================================================
+
+func applyManifest(config TestConfig, resourceType string) error {
+	manifestFile := fmt.Sprintf("%s-%s.yaml", config.ManifestPath, resourceType)
+
+	resourceName := getResourceName(config, resourceType)
+	fmt.Printf("Creating %s: %s\n", strings.Title(resourceType), resourceName)
+
+	if err := sh.Run("kubectl", "apply", "-f", manifestFile); err != nil {
+		return fmt.Errorf("failed to create %s: %v", resourceType, err)
+	}
+
+	fmt.Printf("✓ %s %s created\n", strings.Title(resourceType), resourceName)
+	return nil
+}
+
+func getResourceName(config TestConfig, resourceType string) string {
+	switch resourceType {
+	case "pod":
+		return config.PodName
+	case "pvc":
+		return config.PVCName
+	case "pv":
+		return config.PVName
+	case "storageclass":
+		return config.SCName
+	default:
+		return ""
+	}
+}
+
+func waitForPVCBound(config TestConfig) error {
+	fmt.Printf("Waiting for PVC to be bound (%s provisioning)...\n", config.Type)
+
+	for i := 0; i < config.PVCTimeout; i++ {
+		output, err := sh.Output("kubectl", "get", "pvc", config.PVCName, "-n", config.Namespace,
+			"-o", "jsonpath={.status.phase}")
+		if err != nil {
+			return fmt.Errorf("failed to get PVC status: %v", err)
+		}
+
+		if output == "Bound" {
+			fmt.Println("✓ PVC bound successfully")
+			return nil
+		}
+
+		fmt.Printf("PVC status: %s, waiting...\n", output)
+		time.Sleep(1 * time.Second)
+	}
+
+	return fmt.Errorf("PVC did not bind within timeout")
+}
+
+func waitForPodReady(config TestConfig) error {
+	fmt.Println("Waiting for pod to be ready...")
+
+	timeoutStr := fmt.Sprintf("%ds", config.PodTimeout)
+	if err := sh.Run("kubectl", "wait", "--for=condition=Ready",
+		fmt.Sprintf("pod/%s", config.PodName),
+		"-n", config.Namespace,
+		fmt.Sprintf("--timeout=%s", timeoutStr)); err != nil {
+		return fmt.Errorf("Pod did not become ready within timeout: %v", err)
+	}
+
+	fmt.Println("✓ Pod ready")
+	return nil
+}
+
+func writeTestData(config TestConfig, filename, content string) error {
+	fmt.Printf("Writing test data to %s...\n", filename)
+
+	if err := sh.Run("kubectl", "exec", config.PodName, "-n", config.Namespace, "--",
+		"sh", "-c", fmt.Sprintf("echo '%s' > /data/%s", content, filename)); err != nil {
+		return fmt.Errorf("failed to write test data: %v", err)
+	}
+
+	fmt.Printf("✓ Test data written to %s\n", filename)
+	return nil
+}
+
+func verifyTestDataExists(config TestConfig, filename, expectedContent string) error {
+	fmt.Printf("Verifying test data in %s...\n", filename)
+
+	output, err := sh.Output("kubectl", "exec", config.PodName, "-n", config.Namespace, "--",
+		"cat", fmt.Sprintf("/data/%s", filename))
+	if err != nil {
+		return fmt.Errorf("failed to read test data: %v", err)
+	}
+
+	if !strings.Contains(output, expectedContent) {
+		return fmt.Errorf("test data mismatch - expected: %s, got: %s", expectedContent, output)
+	}
+
+	fmt.Printf("✓ Test data verified in %s\n", filename)
+	return nil
+}
+
+func verifyPodRunning(config TestConfig) error {
+	fmt.Println("Checking pod status...")
+
+	output, err := sh.Output("kubectl", "get", "pod", config.PodName,
+		"-n", config.Namespace,
+		"-o", "jsonpath={.status.phase}")
+	if err != nil {
+		return fmt.Errorf("failed to get pod status: %v", err)
+	}
+
+	if strings.TrimSpace(output) != "Running" {
+		return fmt.Errorf("pod not running, status: %s", output)
+	}
+
+	fmt.Println("✓ Pod is running")
+	return nil
+}
+
+// =============================================================================
+// S3 Client and Operations (Unchanged)
+// =============================================================================
+
 func getS3Client() (*s3.Client, error) {
 	accessKey := os.Getenv("ACCOUNT1_ACCESS_KEY")
 	secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
@@ -138,7 +386,6 @@ func getS3Client() (*s3.Client, error) {
 		return nil, fmt.Errorf("credentials not loaded")
 	}
 
-	// Load AWS config with static credentials
 	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithCredentialsProvider(aws.NewCredentialsCache(
 			aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
@@ -153,7 +400,6 @@ func getS3Client() (*s3.Client, error) {
 		return nil, fmt.Errorf("failed to load AWS config: %v", err)
 	}
 
-	// Create S3 client with custom endpoint resolver
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(GetS3EndpointURL())
 		o.UsePathStyle = true
@@ -162,8 +408,8 @@ func getS3Client() (*s3.Client, error) {
 	return client, nil
 }
 
-func createStaticTestBucket() error {
-	fmt.Printf("Creating S3 bucket: %s\n", staticTestBucketName)
+func createS3Bucket(bucketName string) error {
+	fmt.Printf("Creating S3 bucket: %s\n", bucketName)
 
 	client, err := getS3Client()
 	if err != nil {
@@ -171,18 +417,18 @@ func createStaticTestBucket() error {
 	}
 
 	_, err = client.CreateBucket(context.Background(), &s3.CreateBucketInput{
-		Bucket: aws.String(staticTestBucketName),
+		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create bucket %s: %v", staticTestBucketName, err)
+		return fmt.Errorf("failed to create bucket %s: %v", bucketName, err)
 	}
 
-	fmt.Printf("✓ S3 bucket %s created\n", staticTestBucketName)
+	fmt.Printf("✓ S3 bucket %s created\n", bucketName)
 	return nil
 }
 
-func deleteStaticTestBucket() error {
-	fmt.Printf("Deleting S3 bucket: %s\n", staticTestBucketName)
+func deleteS3Bucket(bucketName string) error {
+	fmt.Printf("Deleting S3 bucket: %s\n", bucketName)
 
 	client, err := getS3Client()
 	if err != nil {
@@ -191,150 +437,30 @@ func deleteStaticTestBucket() error {
 
 	// First list and delete all objects in the bucket
 	listResp, err := client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
-		Bucket: aws.String(staticTestBucketName),
+		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		fmt.Printf("Warning: Failed to list objects in bucket %s: %v\n", staticTestBucketName, err)
+		fmt.Printf("✗ Warning: Failed to list objects in bucket %s: %v\n", bucketName, err)
 	} else if listResp.Contents != nil && len(listResp.Contents) > 0 {
 		for _, obj := range listResp.Contents {
 			_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
-				Bucket: aws.String(staticTestBucketName),
+				Bucket: aws.String(bucketName),
 				Key:    obj.Key,
 			})
 			if err != nil {
-				fmt.Printf("Warning: Failed to delete object %s: %v\n", *obj.Key, err)
+				fmt.Printf("✗ Warning: Failed to delete object %s: %v\n", *obj.Key, err)
 			}
 		}
 	}
 
 	// Then delete the bucket
 	_, err = client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{
-		Bucket: aws.String(staticTestBucketName),
+		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to delete bucket %s: %v", staticTestBucketName, err)
+		return fmt.Errorf("failed to delete bucket %s: %v", bucketName, err)
 	}
 
-	fmt.Printf("✓ S3 bucket %s deleted\n", staticTestBucketName)
-	return nil
-}
-
-// =============================================================================
-// Kubernetes Resource Operations
-// =============================================================================
-
-func createStaticTestPV() error {
-	fmt.Printf("Creating PV: %s\n", staticTestPVName)
-
-	if err := sh.Run("kubectl", "apply", "-f", "tests/upgrade/manifests/static-pv.yaml"); err != nil {
-		return fmt.Errorf("failed to create PV: %v", err)
-	}
-
-	fmt.Printf("✓ PV %s created\n", staticTestPVName)
-	return nil
-}
-
-func createStaticTestPVC() error {
-	fmt.Printf("Creating PVC: %s\n", staticTestPVCName)
-
-	if err := sh.Run("kubectl", "apply", "-f", "tests/upgrade/manifests/static-pvc.yaml"); err != nil {
-		return fmt.Errorf("failed to create PVC: %v", err)
-	}
-
-	fmt.Printf("✓ PVC %s created\n", staticTestPVCName)
-	return nil
-}
-
-func createStaticTestPod() error {
-	fmt.Printf("Creating Pod: %s\n", staticTestPodName)
-
-	if err := sh.Run("kubectl", "apply", "-f", "tests/upgrade/manifests/static-pod.yaml"); err != nil {
-		return fmt.Errorf("failed to create Pod: %v", err)
-	}
-
-	fmt.Printf("✓ Pod %s created\n", staticTestPodName)
-	return nil
-}
-
-func waitForPVCBound() error {
-	fmt.Println("Waiting for PVC to be bound...")
-
-	if err := sh.Run("kubectl", "wait", "--for=condition=bound",
-		fmt.Sprintf("pvc/%s", staticTestPVCName),
-		"-n", testNamespace,
-		"--timeout=60s"); err != nil {
-		return fmt.Errorf("PVC did not bind within timeout: %v", err)
-	}
-
-	fmt.Println("✓ PVC bound successfully")
-	return nil
-}
-
-func waitForPodReady() error {
-	fmt.Println("Waiting for pod to be ready...")
-
-	if err := sh.Run("kubectl", "wait", "--for=condition=Ready",
-		fmt.Sprintf("pod/%s", staticTestPodName),
-		"-n", testNamespace,
-		"--timeout=120s"); err != nil {
-		return fmt.Errorf("Pod did not become ready within timeout: %v", err)
-	}
-
-	fmt.Println("✓ Pod ready")
-	return nil
-}
-
-// =============================================================================
-// Test Data Operations
-// =============================================================================
-
-func writeTestData(filename, content string) error {
-	fmt.Printf("Writing test data to %s...\n", filename)
-
-	if err := sh.Run("kubectl", "exec", staticTestPodName, "-n", testNamespace, "--",
-		"sh", "-c", fmt.Sprintf("echo '%s' > /data/%s", content, filename)); err != nil {
-		return fmt.Errorf("failed to write test data: %v", err)
-	}
-
-	fmt.Printf("✓ Test data written to %s\n", filename)
-	return nil
-}
-
-func verifyTestDataExists(filename, expectedContent string) error {
-	fmt.Printf("Verifying test data in %s...\n", filename)
-
-	output, err := sh.Output("kubectl", "exec", staticTestPodName, "-n", testNamespace, "--",
-		"cat", fmt.Sprintf("/data/%s", filename))
-	if err != nil {
-		return fmt.Errorf("failed to read test data: %v", err)
-	}
-
-	if !strings.Contains(output, expectedContent) {
-		return fmt.Errorf("test data mismatch - expected: %s, got: %s", expectedContent, output)
-	}
-
-	fmt.Printf("✓ Test data verified in %s\n", filename)
-	return nil
-}
-
-// =============================================================================
-// Verification Operations
-// =============================================================================
-
-func verifyPodRunning() error {
-	fmt.Println("Checking pod status...")
-
-	output, err := sh.Output("kubectl", "get", "pod", staticTestPodName,
-		"-n", testNamespace,
-		"-o", "jsonpath={.status.phase}")
-	if err != nil {
-		return fmt.Errorf("failed to get pod status: %v", err)
-	}
-
-	if strings.TrimSpace(output) != "Running" {
-		return fmt.Errorf("pod not running, status: %s", output)
-	}
-
-	fmt.Println("✓ Pod is running")
+	fmt.Printf("✓ S3 bucket %s deleted\n", bucketName)
 	return nil
 }
