@@ -752,6 +752,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	//
 	// Expected results:
 	// - Files have the specified file mode (0640) regardless of security context
+	// - Directories have mode 0770 when fsGroup is set (via VOLUME_MOUNT_GROUP capability)
 	// - File ownership is affected by the pod security context settings
 	// - Pod's runAsUser determines the user ownership of created files
 	// - Pod's fsGroup determines the group ownership of created files
@@ -801,7 +802,8 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 		ginkgo.By("Verifying file and directory permissions with custom security context")
 		uidPtr := ptr.To(customUID)
 		gidPtr := ptr.To(customGID)
-		verifyPermissions(testFramework, pod, testFile, testDir, "640", "755", uidPtr, gidPtr)
+		// With VOLUME_MOUNT_GROUP capability and fsGroup set, directories get 770 permissions for group access
+		verifyPermissions(testFramework, pod, testFile, testDir, "640", "770", uidPtr, gidPtr)
 
 		// Step 8: Create a file with specific permissions using chmod (to verify interaction)
 		explicitFile := fmt.Sprintf("%s/explicit-perm-file.txt", volPath)
