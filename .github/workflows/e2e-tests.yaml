@@ -41,8 +41,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - ring_version: "9.4"
-            github_varirable_name: "CLOUDSERVER_RING_9_4"
           - ring_version: "9.5"
             github_varirable_name: "CLOUDSERVER_RING_9_5"
     env:
