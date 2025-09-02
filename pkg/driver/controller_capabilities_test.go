@@ -20,7 +20,7 @@ func TestControllerGetCapabilities(t *testing.T) {
 		t.Fatal("ControllerGetCapabilities returned nil response")
 	}
 
-	if len(resp.Capabilities) != 1 {
+	if resp != nil && len(resp.Capabilities) != 1 {
 		t.Fatalf("Expected 1 capability, got %d", len(resp.Capabilities))
 	}
 
@@ -47,7 +47,7 @@ func TestGetPluginCapabilities(t *testing.T) {
 		t.Fatal("GetPluginCapabilities returned nil response")
 	}
 
-	if len(resp.Capabilities) != 1 {
+	if resp != nil && len(resp.Capabilities) != 1 {
 		t.Fatalf("Expected 1 capability, got %d", len(resp.Capabilities))
 	}
 
