@@ -43,7 +43,7 @@ RUN MP_ARCH=`echo ${TARGETARCH} | sed s/amd64/x86_64/` && \
     patchelf --set-rpath '$ORIGIN' /mountpoint-s3/bin/mount-s3
 
 # Build driver. Use BUILDPLATFORM not TARGETPLATFORM for cross compilation
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24.5-bullseye AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.0-trixie AS builder
 ARG TARGETARCH
 
 WORKDIR /go/src/github.com/scality/mountpoint-s3-csi-driver
