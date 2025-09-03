@@ -33,17 +33,20 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/targetpath"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/volumecontext"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 )
 
-var kubeletPath = util.KubeletPath()
+var kubeletPath = os.Getenv("KUBELET_PATH")
 
-var (
-	systemdNodeCaps    = []csi.NodeServiceCapability_RPC_Type{}
-	podMounterNodeCaps = []csi.NodeServiceCapability_RPC_Type{
-		csi.NodeServiceCapability_RPC_VOLUME_MOUNT_GROUP,
+func init() {
+	if kubeletPath == "" {
+		kubeletPath = "/var/lib/kubelet"
 	}
-)
+}
+
+// Pod mounter supports volume mount groups
+var nodeCaps = []csi.NodeServiceCapability_RPC_Type{
+	csi.NodeServiceCapability_RPC_VOLUME_MOUNT_GROUP,
+}
 
 var volumeCaps = []*csi.VolumeCapability_AccessMode{
 	{
@@ -125,7 +128,8 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 
 	args := mountpoint.ParseArgs(mountpointArgs)
 
-	if capMount := volCap.GetMount(); capMount != nil && util.UsePodMounter() {
+	// Pod mounter is always used in v2
+	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
 			// We need to add the following flags to support fsGroup
 			// If these flags were already set by customer in PV mountOptions then we won't override them
@@ -136,7 +140,8 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 		}
 	}
 
-	if util.UsePodMounter() && !args.Has(mountpoint.ArgAllowOther) {
+	// Pod mounter is always used in v2
+	if !args.Has(mountpoint.ArgAllowOther) {
 		// If customer container is running as root we need to add --allow-root as Mountpoint Pod is not run as root
 		args.SetIfAbsent(mountpoint.ArgAllowRoot, mountpoint.ArgNoValue)
 	}
@@ -208,12 +213,7 @@ func (ns *S3NodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpan
 func (ns *S3NodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	klog.V(4).Infof("NodeGetCapabilities: called with args %s", protosanitizer.StripSecrets(req))
 	var caps []*csi.NodeServiceCapability
-	var nodeCaps []csi.NodeServiceCapability_RPC_Type
-	if util.UsePodMounter() {
-		nodeCaps = podMounterNodeCaps
-	} else {
-		nodeCaps = systemdNodeCaps
-	}
+	// Pod mounter is always used in v2
 	for _, cap := range nodeCaps {
 		c := &csi.NodeServiceCapability{
 			Type: &csi.NodeServiceCapability_Rpc{

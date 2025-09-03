@@ -34,7 +34,6 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -59,9 +58,6 @@ var (
 	inClusterConfigFn        = rest.InClusterConfig
 	newKubernetesForConfigFn = func(c *rest.Config) (kubernetes.Interface, error) { return kubernetes.NewForConfig(c) }
 	kubernetesVersionFn      = kubernetesVersion
-	newSystemdMounterFn      = func(credProvider *credentialprovider.Provider, mpVersion string, kubernetesVersion string) (mounter.Mounter, error) {
-		return mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
-	}
 )
 
 // InClusterConfigTestHook allows tests to override the in-cluster config function.
@@ -92,18 +88,6 @@ func KubernetesVersionTestHook(hook func(kubernetes.Interface) (string, error)) 
 		return
 	}
 	kubernetesVersionFn = hook
-}
-
-// NewSystemdMounterTestHook allows tests to override systemd mounter creation.
-// Pass nil to restore the default behavior.
-func NewSystemdMounterTestHook(hook func(*credentialprovider.Provider, string, string) (mounter.Mounter, error)) {
-	if hook == nil {
-		newSystemdMounterFn = func(credProvider *credentialprovider.Provider, mpVersion string, kubernetesVersion string) (mounter.Mounter, error) {
-			return mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
-		}
-		return
-	}
-	newSystemdMounterFn = hook
 }
 
 type Driver struct {
@@ -164,7 +148,8 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		klog.Infoln("Running in controller-only mode, skipping mounter initialization")
 		// No mounter needed for controller-only mode
 		mounterImpl = nil
-	} else if util.UsePodMounter() {
+	} else {
+		// Always use pod mounter (v2 only supports pod mounter)
 		podWatcher := watcher.New(clientset, mountpointPodNamespace, podWatcherResyncPeriod)
 		err = podWatcher.Start(stopCh)
 		if err != nil {
@@ -176,12 +161,6 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 			klog.Fatalln(err)
 		}
 		klog.Infoln("Using pod mounter")
-	} else {
-		mounterImpl, err = newSystemdMounterFn(credProvider, mpVersion, kubernetesVersion)
-		if err != nil {
-			klog.Fatalln(err)
-		}
-		klog.Infoln("Using systemd mounter")
 	}
 
 	var nodeServer *node.S3NodeServer

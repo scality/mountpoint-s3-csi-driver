@@ -34,11 +34,9 @@ node:
   # 1-2: Basic operational info (recommended for production)
   # 3: Credential authentication info
   # 4: All CSI operations and mount details (default)
-  # 5: Very detailed debug info (systemd signals, mount-s3 output)
+  # 5: Very detailed debug info (mount-s3 output)
   logLevel: 4
 
-  # SystemD mounter configuration (default mounter)
-  mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
 
   # Security context for the CSI driver containers
   seLinuxOptions:

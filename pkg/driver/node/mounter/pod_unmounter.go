@@ -13,7 +13,6 @@ import (
 	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -46,10 +45,14 @@ func NewPodUnmounter(
 	podWatcher *watcher.Watcher,
 	credProvider *credentialprovider.Provider,
 ) *PodUnmounter {
+	kubeletPath := os.Getenv("KUBELET_PATH")
+	if kubeletPath == "" {
+		kubeletPath = "/var/lib/kubelet"
+	}
 	return &PodUnmounter{
 		nodeID:       nodeID,
 		mount:        mount,
-		kubeletPath:  util.KubeletPath(),
+		kubeletPath:  kubeletPath,
 		podWatcher:   podWatcher,
 		credProvider: credProvider,
 	}

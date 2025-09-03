@@ -22,7 +22,6 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mountoptions"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 )
 
 // targetDirPerm is the permission to use while creating target directory if its not exists.
@@ -50,11 +49,15 @@ type PodMounter struct {
 
 // NewPodMounter creates a new [PodMounter] with given Kubernetes client.
 func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, kubernetesVersion string) (*PodMounter, error) {
+	kubeletPath := os.Getenv("KUBELET_PATH")
+	if kubeletPath == "" {
+		kubeletPath = "/var/lib/kubelet"
+	}
 	return &PodMounter{
 		podWatcher:        podWatcher,
 		credProvider:      credProvider,
 		mount:             mount,
-		kubeletPath:       util.KubeletPath(),
+		kubeletPath:       kubeletPath,
 		mountSyscall:      mountSyscall,
 		kubernetesVersion: kubernetesVersion,
 	}, nil
