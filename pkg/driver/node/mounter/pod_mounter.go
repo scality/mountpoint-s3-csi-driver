@@ -10,10 +10,13 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/targetpath"
@@ -45,13 +48,20 @@ type PodMounter struct {
 	mountSyscall      mountSyscall
 	kubernetesVersion string
 	credProvider      *credentialprovider.Provider
+	k8sClient         client.Client
+	nodeName          string
 }
 
 // NewPodMounter creates a new [PodMounter] with given Kubernetes client.
-func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, kubernetesVersion string) (*PodMounter, error) {
+func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
 	kubeletPath := os.Getenv("KUBELET_PATH")
 	if kubeletPath == "" {
 		kubeletPath = "/var/lib/kubelet"
+	}
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" && k8sClient != nil {
+		// NODE_NAME is required only when using CRD mode (k8sClient is provided)
+		return nil, fmt.Errorf("NODE_NAME environment variable must be set when using CRD mode")
 	}
 	return &PodMounter{
 		podWatcher:        podWatcher,
@@ -60,7 +70,81 @@ func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider
 		kubeletPath:       kubeletPath,
 		mountSyscall:      mountSyscall,
 		kubernetesVersion: kubernetesVersion,
+		k8sClient:         k8sClient,
+		nodeName:          nodeName,
 	}, nil
+}
+
+// ensureMountpointPodAttachment ensures that a MountpointS3PodAttachment CRD exists for the given parameters.
+// It creates a new CRD if it doesn't exist, or updates an existing one to add the new attachment.
+func (pm *PodMounter) ensureMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, mountOptions string) error {
+	if pm.k8sClient == nil {
+		// Backward compatibility: if no k8s client, skip CRD creation
+		// This allows the old reconciler to still work
+		return nil
+	}
+
+	// Generate attachment name based on node and volume
+	attachmentName := fmt.Sprintf("%s-%s", pm.nodeName, volumeID)
+	mpPodName := mppod.MountpointPodNameFor(podID, volumeName)
+
+	// Try to get existing attachment
+	attachment := &crdv2.MountpointS3PodAttachment{}
+	err := pm.k8sClient.Get(ctx, client.ObjectKey{
+		Name:      attachmentName,
+		Namespace: "kube-system", // Using the same namespace as the CSI driver
+	}, attachment)
+
+	if err != nil && client.IgnoreNotFound(err) == nil {
+		return fmt.Errorf("failed to get MountpointS3PodAttachment: %w", err)
+	}
+
+	// Create new attachment if it doesn't exist
+	if err != nil {
+		attachment = &crdv2.MountpointS3PodAttachment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      attachmentName,
+				Namespace: "kube-system",
+			},
+			Spec: crdv2.MountpointS3PodAttachmentSpec{
+				NodeName:             pm.nodeName,
+				PersistentVolumeName: volumeName,
+				VolumeID:             volumeID,
+				MountOptions:         mountOptions,
+				MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
+					mpPodName: {
+						{
+							WorkloadPodUID: podID,
+							AttachmentTime: metav1.Now(),
+						},
+					},
+				},
+			},
+		}
+
+		if err := pm.k8sClient.Create(ctx, attachment); err != nil {
+			return fmt.Errorf("failed to create MountpointS3PodAttachment: %w", err)
+		}
+		klog.V(4).Infof("Created MountpointS3PodAttachment %s for pod %s", attachmentName, mpPodName)
+	} else {
+		// Update existing attachment to add new pod
+		if attachment.Spec.MountpointS3PodAttachments == nil {
+			attachment.Spec.MountpointS3PodAttachments = make(map[string][]crdv2.WorkloadAttachment)
+		}
+		attachment.Spec.MountpointS3PodAttachments[mpPodName] = []crdv2.WorkloadAttachment{
+			{
+				WorkloadPodUID: podID,
+				AttachmentTime: metav1.Now(),
+			},
+		}
+
+		if err := pm.k8sClient.Update(ctx, attachment); err != nil {
+			return fmt.Errorf("failed to update MountpointS3PodAttachment: %w", err)
+		}
+		klog.V(4).Infof("Updated MountpointS3PodAttachment %s for pod %s", attachmentName, mpPodName)
+	}
+
+	return nil
 }
 
 // Mount mounts the given `bucketName` at the `target` path using provided credential context and Mountpoint arguments.
@@ -81,6 +165,7 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	}
 
 	podID := credentialCtx.PodID
+	volumeID := credentialCtx.VolumeID
 
 	err = pm.verifyOrSetupMountTarget(target)
 	if err != nil {
@@ -90,6 +175,23 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	isMountPoint, err := pm.IsMountPoint(target)
 	if err != nil {
 		return fmt.Errorf("could not check if %q is already a mount point: %w", target, err)
+	}
+
+	// Create or update the MountpointS3PodAttachment CRD to trigger pod creation
+	// Extract mount options from args
+	mountOptions := args.SortedList()
+	mountOptionsStr := ""
+	if len(mountOptions) > 0 {
+		mountOptionsStr = mountOptions[0]
+		for _, opt := range mountOptions[1:] {
+			mountOptionsStr += "," + opt
+		}
+	}
+	
+	err = pm.ensureMountpointPodAttachment(ctx, podID, volumeName, volumeID, mountOptionsStr)
+	if err != nil {
+		klog.Errorf("failed to ensure MountpointS3PodAttachment for %q: %v", target, err)
+		return fmt.Errorf("failed to ensure MountpointS3PodAttachment for %q: %w", target, err)
 	}
 
 	// TODO: If `target` is a `systemd`-mounted Mountpoint, this would return an error,

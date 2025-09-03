@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
@@ -35,10 +36,14 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -156,7 +161,25 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 			klog.Fatalf("failed to start Pod watcher: %v\n", err)
 		}
 
-		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, kubernetesVersion)
+		// Create a controller-runtime client for CRD operations
+		// This is optional - if nil, the pod mounter will work in backward compatibility mode
+		var k8sClient client.Client
+		
+		// Initialize controller-runtime scheme and client
+		scheme := runtime.NewScheme()
+		utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+		utilruntime.Must(crdv2.AddToScheme(scheme))
+		
+		k8sClient, err = client.New(config, client.Options{
+			Scheme: scheme,
+		})
+		if err != nil {
+			klog.Errorf("Failed to create controller-runtime client: %v. Running in backward compatibility mode.", err)
+			// Continue with nil client for backward compatibility
+			k8sClient = nil
+		}
+		
+		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, kubernetesVersion, k8sClient)
 		if err != nil {
 			klog.Fatalln(err)
 		}
