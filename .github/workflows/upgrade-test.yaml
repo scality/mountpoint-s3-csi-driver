@@ -105,17 +105,42 @@ jobs:
           echo "Getting test pods before restart..."
           kubectl get pods -n default -l app=s3-test-app -o wide
           
+          # Check what's managing these pods (deployment, statefulset, etc)
+          echo "Checking pod controllers..."
+          kubectl get deployments,statefulsets,daemonsets -n default -o wide | grep -E "s3-test|NAME" || true
+          
           # Check if any mountpoint pods exist (v1.2.0 uses systemd, so there shouldn't be any)
           echo "Checking for existing mountpoint pods (should be none with systemd mounter)..."
           kubectl get pods -n mount-s3 2>/dev/null || echo "No mountpoint pods namespace yet (expected for systemd)"
           
+          # Store pod count before deletion
+          POD_COUNT=$(kubectl get pods -n default -l app=s3-test-app --no-headers | wc -l)
+          echo "Found $POD_COUNT test pod(s) before restart"
+          
           # Restart the test pods to trigger transition to pod mounter
           echo "Restarting test pods to trigger mounter transition..."
-          kubectl delete pods -n default -l app=s3-test-app --wait=true
+          # If managed by deployment, rollout restart is cleaner
+          if kubectl get deployment -n default -l app=s3-test-app 2>/dev/null | grep -q s3-test; then
+            echo "Using deployment rollout restart..."
+            kubectl rollout restart deployment -n default -l app=s3-test-app
+            kubectl rollout status deployment -n default -l app=s3-test-app --timeout=120s
+          else
+            # Fallback to pod deletion (works if there's a controller)
+            echo "Using pod deletion method..."
+            kubectl delete pods -n default -l app=s3-test-app --wait=true
+            
+            # Wait for new pods to be created
+            echo "Waiting for new pods to be created..."
+            timeout 60 bash -c 'until [ $(kubectl get pods -n default -l app=s3-test-app --no-headers | wc -l) -gt 0 ]; do sleep 2; done'
+          fi
           
-          # Wait for pods to come back up
-          echo "Waiting for pods to restart..."
+          # Wait for pods to come back up and be ready
+          echo "Waiting for pods to become ready..."
           kubectl wait --for=condition=Ready pods -n default -l app=s3-test-app --timeout=120s
+          
+          # Verify we have the same number of pods
+          NEW_POD_COUNT=$(kubectl get pods -n default -l app=s3-test-app --no-headers | wc -l)
+          echo "Pod count after restart: $NEW_POD_COUNT (was $POD_COUNT)"
           
           # Now check for mountpoint pods (should exist after restart with v2)
           echo "Checking for mountpoint pods after restart (should exist with pod mounter)..."
