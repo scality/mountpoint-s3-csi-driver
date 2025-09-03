@@ -159,21 +159,43 @@ jobs:
           # Test static provisioning pod
           if kubectl get pod upgrade-test-pod -n default &>/dev/null; then
             echo "Testing static provisioning pod..."
-            # Write a test file to verify mount is working
+            
+            # CRITICAL: Verify data written before upgrade still exists
+            echo "Checking for data persistence (before-upgrade.txt should exist)..."
+            if kubectl exec -n default upgrade-test-pod -- test -f /data/before-upgrade.txt; then
+              echo "✓ Pre-upgrade data file exists"
+              kubectl exec -n default upgrade-test-pod -- cat /data/before-upgrade.txt
+            else
+              echo "✗ FAILURE: Pre-upgrade data lost after pod recreation!"
+              exit 1
+            fi
+            
+            # Write a new test file to verify mount is working
             kubectl exec -n default upgrade-test-pod -- sh -c "echo 'Pod mounter transition test - static' > /data/transition-test.txt"
             
             # Read it back
-            echo "Reading back test file from static pod..."
+            echo "Reading back new test file from static pod..."
             kubectl exec -n default upgrade-test-pod -- cat /data/transition-test.txt
             
-            # List files to verify (should include before-upgrade.txt from original test)
-            echo "Files in static pod mount:"
+            # List all files to verify
+            echo "All files in static pod mount:"
             kubectl exec -n default upgrade-test-pod -- ls -la /data/
           fi
           
           # Test dynamic provisioning pod
           if kubectl get pod upgrade-test-dynamic-pod -n default &>/dev/null; then
             echo "Testing dynamic provisioning pod..."
+            
+            # CRITICAL: Verify data written before upgrade still exists
+            echo "Checking for data persistence (before-upgrade.txt should exist)..."
+            if kubectl exec -n default upgrade-test-dynamic-pod -- test -f /data/before-upgrade.txt; then
+              echo "✓ Pre-upgrade data file exists"
+              kubectl exec -n default upgrade-test-dynamic-pod -- cat /data/before-upgrade.txt
+            else
+              echo "✗ FAILURE: Pre-upgrade data lost after pod recreation!"
+              exit 1
+            fi
+            
             # Write a test file to verify mount is working
             kubectl exec -n default upgrade-test-dynamic-pod -- sh -c "echo 'Pod mounter transition test - dynamic' > /data/transition-test-dynamic.txt"
             
