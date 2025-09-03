@@ -136,6 +136,7 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 	// Save and restore env vars
 	originalControllerOnly := os.Getenv("CSI_CONTROLLER_ONLY")
 	originalEndpointURL := os.Getenv(envprovider.EnvEndpointURL)
+	originalNodeName := os.Getenv("NODE_NAME")
 	defer func() {
 		if originalControllerOnly == "" {
 			_ = os.Unsetenv("CSI_CONTROLLER_ONLY")
@@ -146,6 +147,11 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 			_ = os.Unsetenv(envprovider.EnvEndpointURL)
 		} else {
 			_ = os.Setenv(envprovider.EnvEndpointURL, originalEndpointURL)
+		}
+		if originalNodeName == "" {
+			_ = os.Unsetenv("NODE_NAME")
+		} else {
+			_ = os.Setenv("NODE_NAME", originalNodeName)
 		}
 		// restore seams
 		driver.InClusterConfigTestHook(nil)
@@ -184,6 +190,7 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 	// 2) node path: NodeServer should be non-nil (pod mounter is now the only option)
 	_ = os.Setenv("CSI_CONTROLLER_ONLY", "false")
 	_ = os.Setenv("MOUNTPOINT_NAMESPACE", "mount-s3") // Required for pod mounter
+	_ = os.Setenv("NODE_NAME", "test-node")          // Required for pod mounter with CRD support
 	d2, err := driver.NewDriver("unix:///tmp/test.sock", "mpv", "node-2")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

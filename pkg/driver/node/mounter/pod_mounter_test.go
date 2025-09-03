@@ -132,7 +132,8 @@ func setup(t *testing.T) *testCtx {
 	err = podWatcher.Start(stopCh)
 	assert.NoError(t, err)
 
-	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, testK8sVersion)
+	// Pass nil for k8s client to test backward compatibility mode
+	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, testK8sVersion, nil)
 	assert.NoError(t, err)
 
 	testCtx.podMounter = podMounter
