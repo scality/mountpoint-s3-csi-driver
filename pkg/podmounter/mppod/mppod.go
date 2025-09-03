@@ -6,6 +6,18 @@ import (
 	"fmt"
 )
 
+// Pod annotations
+const (
+	// AnnotationNeedsUnmount is the annotation used to mark a pod for unmounting
+	AnnotationNeedsUnmount = "s3.csi.scality.com/needs-unmount"
+)
+
+// Pod labels
+const (
+	// LabelVolumeId is the label used to store the volume ID
+	LabelVolumeId = "s3.csi.scality.com/volume-id"
+)
+
 // MountpointPodNameFor returns a consistent and unique Pod name for
 // Mountpoint Pod for given `podUID` and `volumeName`.
 //

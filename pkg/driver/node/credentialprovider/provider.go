@@ -36,6 +36,16 @@ const (
 	AuthenticationSourceSecret      AuthenticationSource = "secret"
 )
 
+// MountKind represents the type of mount operation
+type MountKind = string
+
+const (
+	// MountKindPod indicates a pod-based mount
+	MountKindPod MountKind = "pod"
+	// MountKindSystemd indicates a systemd-based mount
+	MountKindSystemd MountKind = "systemd"
+)
+
 // A Provider provides methods for accessing AWS credentials.
 type Provider struct {
 	client k8sv1.CoreV1Interface
@@ -81,6 +91,7 @@ type CleanupContext struct {
 	WritePath string
 	PodID     string
 	VolumeID  string
+	MountKind MountKind
 }
 
 // New creates a new [Provider] with given client.

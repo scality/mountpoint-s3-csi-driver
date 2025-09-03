@@ -28,6 +28,11 @@ import (
 // targetDirPerm is the permission to use while creating target directory if its not exists.
 const targetDirPerm = fs.FileMode(0o755)
 
+// SourceMountDir returns the base directory for Mountpoint source mounts
+func SourceMountDir(kubeletPath string) string {
+	return filepath.Join(kubeletPath, "plugins", "s3.csi.scality.com", "mounts")
+}
+
 // mountSyscall is the function that performs `mount` operation for given `target` with given Mountpoint `args`.
 // It returns mounted FUSE file descriptor as a result.
 // This is mainly exposed for testing, in production platform-native function (`mountSyscallDefault`) will be used.
