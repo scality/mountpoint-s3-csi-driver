@@ -46,7 +46,7 @@ spec:
       {{- end }}
       {{- end }}
 
-      {{ if not .Values.experimental.podMounter -}}
+      {{ if not .Values.podMounter.enabled -}}
       # This `install-mountpoint` is only needed with `SystemdMounter` and not with `PodMounter`.
       initContainers:
         - name: install-mountpoint
@@ -79,7 +79,7 @@ spec:
         - name: s3-plugin
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
           securityContext:
-            {{ if .Values.experimental.podMounter -}}
+            {{ if .Values.podMounter.enabled -}}
             privileged: true
             {{- else -}}
             readOnlyRootFilesystem: true
@@ -112,7 +112,7 @@ spec:
                   fieldPath: spec.nodeName
             - name: HOST_PLUGIN_DIR
               value: {{ trimSuffix "/" .Values.node.kubeletPath }}/plugins/s3.csi.scality.com/
-            {{- if .Values.experimental.podMounter }}
+            {{- if .Values.podMounter.enabled }}
             - name: MOUNTER_KIND
               value: pod
             - name: MOUNTPOINT_NAMESPACE
@@ -145,7 +145,7 @@ spec:
           volumeMounts:
             - name: kubelet-dir
               mountPath: {{ .Values.node.kubeletPath }}
-              {{ if .Values.experimental.podMounter -}}
+              {{ if .Values.podMounter.enabled -}}
               mountPropagation: Bidirectional
               {{- else -}}
               # Currently we spawn Mountpoint instances on the host using systemd,
