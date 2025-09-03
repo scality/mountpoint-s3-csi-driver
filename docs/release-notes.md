@@ -1,5 +1,28 @@
 # Release Notes
 
+## [2.0.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.0) - Unreleased
+
+### What's New
+
+- **SELinux Support**: Full support for SELinux-enabled Kubernetes environments through exclusive pod-based mounting
+- **Pod Mounter v2**: Adopted AWS upstream's pod mounter implementation with advanced features:
+  - **Pod Sharing**: Multiple pods can share the same S3 volume with reference-counted locking
+  - **MountpointS3PodAttachment CRD**: Track and manage pod attachments to S3 volumes
+  - **Headroom Management**: Resource reservation for efficient Mountpoint Pod scheduling
+  - **Priority Classes**: Support for preempting and headroom priority classes
+- **Automatic Migration**: Seamless transition from systemd mounts to pod mounter on pod restart
+- **Improved Resource Efficiency**: Reduced resource consumption through pod sharing and headroom optimization
+
+### Breaking Changes
+
+- **Systemd Mounter Removed**: Only pod-based mounting is supported (matching AWS v2.0.0)
+- **Pod Mounter Always Enabled**: The `podMounter.enabled` setting now defaults to true and cannot be disabled
+- **New CRD Required**: MountpointS3PodAttachment CRD must be installed for pod attachment tracking
+
+### Migration Guide
+
+Existing deployments using systemd mounts will continue to work. Mounts will automatically transition to pod mounter when pods are restarted. No manual intervention required.
+
 ## [1.2.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.2.0)
 
 August 21, 2025
