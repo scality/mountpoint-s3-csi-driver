@@ -106,7 +106,7 @@ func TestNodePublishVolume(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--force-path-style"})))
+					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--allow-root", "--force-path-style"})))
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {
 					t.Fatalf("NodePublishVolume is failed: %v", err)
@@ -144,7 +144,7 @@ func TestNodePublishVolume(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs([]string{"--bar", "--foo", "--read-only", "--test=123", "--force-path-style"})))
+					gomock.Eq(mountpoint.ParseArgs([]string{"--bar", "--foo", "--read-only", "--test=123", "--allow-root", "--force-path-style"})))
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {
 					t.Fatalf("NodePublishVolume is failed: %v", err)
@@ -182,7 +182,7 @@ func TestNodePublishVolume(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--test=123", "--force-path-style"}))).Return(nil)
+					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--test=123", "--allow-root", "--force-path-style"}))).Return(nil)
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {
 					t.Fatalf("NodePublishVolume is failed: %v", err)
@@ -524,24 +524,6 @@ func TestNodeUnpublishVolume(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, tc.testFunc)
 	}
-}
-
-func TestNodeGetCapabilitiesForSystemd(t *testing.T) {
-	nodeTestEnv := initNodeServerTestEnv(t)
-	ctx := context.Background()
-	req := &csi.NodeGetCapabilitiesRequest{}
-
-	resp, err := nodeTestEnv.server.NodeGetCapabilities(ctx, req)
-	if err != nil {
-		t.Fatalf("NodeGetCapabilities failed: %v", err)
-	}
-
-	capabilities := resp.GetCapabilities()
-	if len(capabilities) != 0 {
-		t.Fatalf("NodeGetCapabilities failed: capabilities not empty")
-	}
-
-	nodeTestEnv.mockCtl.Finish()
 }
 
 func TestNodeGetCapabilitiesForPodMounter(t *testing.T) {
