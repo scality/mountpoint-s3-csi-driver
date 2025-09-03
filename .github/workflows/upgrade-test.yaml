@@ -97,6 +97,60 @@ jobs:
       - name: Verify Upgrade Tests (Static + Dynamic Provisioning)
         run: mage verifyUpgradeTests
 
+      - name: Test Pod Mounter Transition After Restart
+        run: |
+          echo "=== Testing automatic transition from systemd to pod mounter ==="
+          
+          # Get test pods before restart
+          echo "Getting test pods before restart..."
+          kubectl get pods -n default -l app=s3-test-app -o wide
+          
+          # Check if any mountpoint pods exist (v1.2.0 uses systemd, so there shouldn't be any)
+          echo "Checking for existing mountpoint pods (should be none with systemd mounter)..."
+          kubectl get pods -n mount-s3 2>/dev/null || echo "No mountpoint pods namespace yet (expected for systemd)"
+          
+          # Restart the test pods to trigger transition to pod mounter
+          echo "Restarting test pods to trigger mounter transition..."
+          kubectl delete pods -n default -l app=s3-test-app --wait=true
+          
+          # Wait for pods to come back up
+          echo "Waiting for pods to restart..."
+          kubectl wait --for=condition=Ready pods -n default -l app=s3-test-app --timeout=120s
+          
+          # Now check for mountpoint pods (should exist after restart with v2)
+          echo "Checking for mountpoint pods after restart (should exist with pod mounter)..."
+          kubectl get pods -n mount-s3 -o wide
+          
+          # Verify mountpoint pods are running
+          MOUNTPOINT_PODS=$(kubectl get pods -n mount-s3 --no-headers 2>/dev/null | wc -l)
+          if [ "$MOUNTPOINT_PODS" -gt 0 ]; then
+            echo "✓ Found $MOUNTPOINT_PODS mountpoint pod(s) - pod mounter is active"
+            kubectl get pods -n mount-s3 -o yaml | grep -E "mountpoint-version|mounted-by-csi-driver-version" | head -10
+          else
+            echo "✗ No mountpoint pods found - pod mounter may not be working"
+            exit 1
+          fi
+          
+          # Test that we can still write to the volumes
+          echo "Testing write access to volumes after mounter transition..."
+          
+          # Get a test pod name
+          TEST_POD=$(kubectl get pods -n default -l app=s3-test-app -o jsonpath='{.items[0].metadata.name}')
+          
+          # Write a test file to verify mount is working
+          echo "Writing test file to verify mount functionality..."
+          kubectl exec -n default $TEST_POD -- sh -c "echo 'Pod mounter transition test' > /data/transition-test.txt"
+          
+          # Read it back
+          echo "Reading back test file..."
+          kubectl exec -n default $TEST_POD -- cat /data/transition-test.txt
+          
+          # List files to verify
+          echo "Listing files in mounted volume..."
+          kubectl exec -n default $TEST_POD -- ls -la /data/
+          
+          echo "✓ Pod mounter transition test completed successfully"
+
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
         run: |
