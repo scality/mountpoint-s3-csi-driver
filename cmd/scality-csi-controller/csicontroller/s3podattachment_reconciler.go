@@ -149,12 +149,51 @@ func (r *S3PodAttachmentReconciler) createMountpointPod(ctx context.Context, s3p
 		return fmt.Errorf("failed to get PersistentVolume %s: %w", s3pa.Spec.PersistentVolumeName, err)
 	}
 
-	// TODO: In a complete implementation, we'd need to look up the workload pod
-	// to extract resource requirements and other configuration.
-	// For now, we'll create a minimal pod spec.
+	// Try to find the workload pod by UID
+	workloadPod := &corev1.Pod{}
+	podList := &corev1.PodList{}
+	err = r.List(ctx, podList)
+	if err != nil {
+		klog.Warningf("Failed to list pods to find workload pod %s: %v", attachment.WorkloadPodUID, err)
+		// Continue with minimal spec if we can't find the workload pod
+		workloadPod = nil
+	} else {
+		found := false
+		for _, pod := range podList.Items {
+			if string(pod.UID) == attachment.WorkloadPodUID {
+				workloadPod = &pod
+				found = true
+				break
+			}
+		}
+		if !found {
+			klog.Warningf("Could not find workload pod with UID %s, using minimal spec", attachment.WorkloadPodUID)
+			workloadPod = nil
+		}
+	}
 
-	// Create the Mountpoint Pod spec
-	mpPod := r.createMountpointPodSpec(mpPodName, s3pa, pv)
+	// Create the Mountpoint Pod spec using the Creator
+	var mpPod *corev1.Pod
+	if workloadPod != nil {
+		// Use the Creator to build a proper pod spec with workload pod info
+		mpPod = r.mountpointPodCreator.Create(workloadPod, pv)
+		// Override the name to match what we expect
+		mpPod.Name = mpPodName
+	} else {
+		// Fallback to minimal spec if we don't have workload pod
+		mpPod = r.createMountpointPodSpec(mpPodName, s3pa, pv)
+	}
+
+	// Add owner reference to the S3PodAttachment
+	mpPod.OwnerReferences = []metav1.OwnerReference{
+		{
+			APIVersion: crdv2.GroupVersion.String(),
+			Kind:       "MountpointS3PodAttachment",
+			Name:       s3pa.Name,
+			UID:        s3pa.UID,
+			Controller: func(b bool) *bool { return &b }(true),
+		},
+	}
 
 	// Create the pod
 	err = r.Create(ctx, mpPod)
@@ -174,9 +213,7 @@ func (r *S3PodAttachmentReconciler) createMountpointPodSpec(name string, s3pa *c
 		mountOptions = strings.Split(s3pa.Spec.MountOptions, ",")
 	}
 
-	// Create minimal pod spec
-	// In a complete implementation, this would use the Creator.Create method
-	// with proper workload pod information
+	// Create minimal pod spec as a fallback
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -187,15 +224,6 @@ func (r *S3PodAttachmentReconciler) createMountpointPodSpec(name string, s3pa *c
 				mppod.LabelCSIDriverVersion:  r.mountpointPodConfig.CSIDriverVersion,
 				LabelNodeName:                s3pa.Spec.NodeName,
 				LabelPVName:                  s3pa.Spec.PersistentVolumeName,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: crdv2.GroupVersion.String(),
-					Kind:       "MountpointS3PodAttachment",
-					Name:       s3pa.Name,
-					UID:        s3pa.UID,
-					Controller: func(b bool) *bool { return &b }(true),
-				},
 			},
 		},
 		Spec: corev1.PodSpec{
