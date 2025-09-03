@@ -1,0 +1,106 @@
+NAMESPACE            LAST SEEN   TYPE      REASON                    OBJECT                                          MESSAGE
+default              4m13s       Normal    Starting                  node/helm-test-cluster-control-plane            
+default              4m20s       Normal    Starting                  node/helm-test-cluster-control-plane            Starting kubelet.
+kube-system          4m20s       Normal    LeaderElection            lease/kube-controller-manager                   helm-test-cluster-control-plane_8ab4d1cf-0193-4d32-999f-c7980bead621 became leader
+default              4m20s       Normal    NodeHasSufficientPID      node/helm-test-cluster-control-plane            Node helm-test-cluster-control-plane status is now: NodeHasSufficientPID
+default              4m20s       Normal    NodeHasNoDiskPressure     node/helm-test-cluster-control-plane            Node helm-test-cluster-control-plane status is now: NodeHasNoDiskPressure
+default              4m20s       Normal    NodeHasSufficientMemory   node/helm-test-cluster-control-plane            Node helm-test-cluster-control-plane status is now: NodeHasSufficientMemory
+default              4m20s       Normal    NodeAllocatableEnforced   node/helm-test-cluster-control-plane            Updated Node Allocatable limit across pods
+kube-system          4m19s       Normal    LeaderElection            lease/kube-scheduler                            helm-test-cluster-control-plane_44eed123-89b4-4e9b-a171-8bf76fb7aa49 became leader
+default              4m16s       Normal    RegisteredNode            node/helm-test-cluster-control-plane            Node helm-test-cluster-control-plane event: Registered Node helm-test-cluster-control-plane in Controller
+kube-system          4m15s       Normal    Scheduled                 pod/kube-proxy-qh8hc                            Successfully assigned kube-system/kube-proxy-qh8hc to helm-test-cluster-control-plane
+kube-system          4m15s       Normal    SuccessfulCreate          daemonset/kindnet                               Created pod: kindnet-d2x4w
+kube-system          4m15s       Normal    ScalingReplicaSet         deployment/coredns                              Scaled up replica set coredns-668d6bf9bc from 0 to 2
+local-path-storage   4m15s       Normal    ScalingReplicaSet         deployment/local-path-provisioner               Scaled up replica set local-path-provisioner-58cc7856b6 from 0 to 1
+kube-system          4m15s       Normal    SuccessfulCreate          daemonset/kube-proxy                            Created pod: kube-proxy-qh8hc
+kube-system          4m15s       Normal    Scheduled                 pod/kindnet-d2x4w                               Successfully assigned kube-system/kindnet-d2x4w to helm-test-cluster-control-plane
+kube-system          4m14s       Normal    SuccessfulCreate          replicaset/coredns-668d6bf9bc                   Created pod: coredns-668d6bf9bc-lqrzk
+kube-system          4m14s       Normal    SuccessfulCreate          replicaset/coredns-668d6bf9bc                   Created pod: coredns-668d6bf9bc-zqf4q
+kube-system          4m14s       Normal    Pulled                    pod/kindnet-d2x4w                               Container image "docker.io/kindest/kindnetd:v20241212-9f82dd49" already present on machine
+local-path-storage   4m14s       Warning   FailedScheduling          pod/local-path-provisioner-58cc7856b6-zvwg7     0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+local-path-storage   4m14s       Normal    SuccessfulCreate          replicaset/local-path-provisioner-58cc7856b6    Created pod: local-path-provisioner-58cc7856b6-zvwg7
+kube-system          4m14s       Normal    Started                   pod/kube-proxy-qh8hc                            Started container kube-proxy
+kube-system          4m14s       Warning   FailedScheduling          pod/coredns-668d6bf9bc-lqrzk                    0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+kube-system          4m14s       Normal    Pulled                    pod/kube-proxy-qh8hc                            Container image "registry.k8s.io/kube-proxy:v1.32.0" already present on machine
+kube-system          4m14s       Warning   FailedScheduling          pod/coredns-668d6bf9bc-zqf4q                    0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+kube-system          4m14s       Normal    Created                   pod/kube-proxy-qh8hc                            Created container: kube-proxy
+kube-system          4m13s       Normal    Started                   pod/kindnet-d2x4w                               Started container kindnet-cni
+kube-system          4m13s       Normal    Created                   pod/kindnet-d2x4w                               Created container: kindnet-cni
+local-path-storage   4m2s        Normal    Pulled                    pod/local-path-provisioner-58cc7856b6-zvwg7     Container image "docker.io/kindest/local-path-provisioner:v20241212-8ac705d0" already present on machine
+kube-system          4m2s        Normal    Pulled                    pod/coredns-668d6bf9bc-lqrzk                    Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          4m2s        Normal    Scheduled                 pod/coredns-668d6bf9bc-zqf4q                    Successfully assigned kube-system/coredns-668d6bf9bc-zqf4q to helm-test-cluster-control-plane
+kube-system          4m2s        Normal    Pulled                    pod/coredns-668d6bf9bc-zqf4q                    Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          4m2s        Normal    Scheduled                 pod/coredns-668d6bf9bc-lqrzk                    Successfully assigned kube-system/coredns-668d6bf9bc-lqrzk to helm-test-cluster-control-plane
+default              4m2s        Normal    NodeReady                 node/helm-test-cluster-control-plane            Node helm-test-cluster-control-plane status is now: NodeReady
+local-path-storage   4m2s        Normal    Scheduled                 pod/local-path-provisioner-58cc7856b6-zvwg7     Successfully assigned local-path-storage/local-path-provisioner-58cc7856b6-zvwg7 to helm-test-cluster-control-plane
+kube-system          4m1s        Normal    Started                   pod/coredns-668d6bf9bc-zqf4q                    Started container coredns
+local-path-storage   4m1s        Normal    Started                   pod/local-path-provisioner-58cc7856b6-zvwg7     Started container local-path-provisioner
+kube-system          4m1s        Normal    Started                   pod/coredns-668d6bf9bc-lqrzk                    Started container coredns
+kube-system          4m1s        Normal    Created                   pod/coredns-668d6bf9bc-zqf4q                    Created container: coredns
+kube-system          4m1s        Normal    Created                   pod/coredns-668d6bf9bc-lqrzk                    Created container: coredns
+local-path-storage   4m1s        Normal    Created                   pod/local-path-provisioner-58cc7856b6-zvwg7     Created container: local-path-provisioner
+kube-system          3m37s       Normal    Scheduled                 pod/coredns-847647bbdd-4bjdg                    Successfully assigned kube-system/coredns-847647bbdd-4bjdg to helm-test-cluster-control-plane
+kube-system          3m37s       Normal    Killing                   pod/coredns-668d6bf9bc-zqf4q                    Stopping container coredns
+kube-system          3m37s       Normal    Scheduled                 pod/coredns-847647bbdd-jnrv6                    Successfully assigned kube-system/coredns-847647bbdd-jnrv6 to helm-test-cluster-control-plane
+kube-system          3m37s       Normal    ScalingReplicaSet         deployment/coredns                              Scaled up replica set coredns-847647bbdd from 0 to 1
+kube-system          3m37s       Normal    ScalingReplicaSet         deployment/coredns                              Scaled up replica set coredns-847647bbdd from 1 to 2
+kube-system          3m37s       Normal    ScalingReplicaSet         deployment/coredns                              Scaled down replica set coredns-668d6bf9bc from 2 to 1
+kube-system          3m37s       Normal    SuccessfulCreate          replicaset/coredns-847647bbdd                   Created pod: coredns-847647bbdd-jnrv6
+kube-system          3m37s       Normal    SuccessfulCreate          replicaset/coredns-847647bbdd                   Created pod: coredns-847647bbdd-4bjdg
+kube-system          3m37s       Normal    SuccessfulDelete          replicaset/coredns-668d6bf9bc                   Deleted pod: coredns-668d6bf9bc-zqf4q
+kube-system          3m36s       Normal    Created                   pod/coredns-847647bbdd-4bjdg                    Created container: coredns
+kube-system          3m36s       Normal    Started                   pod/coredns-847647bbdd-jnrv6                    Started container coredns
+kube-system          3m36s       Normal    Created                   pod/coredns-847647bbdd-jnrv6                    Created container: coredns
+kube-system          3m36s       Normal    Pulled                    pod/coredns-847647bbdd-jnrv6                    Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          3m36s       Normal    Started                   pod/coredns-847647bbdd-4bjdg                    Started container coredns
+kube-system          3m36s       Normal    Pulled                    pod/coredns-847647bbdd-4bjdg                    Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          3m35s       Normal    ScalingReplicaSet         deployment/coredns                              Scaled down replica set coredns-668d6bf9bc from 1 to 0
+default              3m35s       Normal    Scheduled                 pod/dns-test                                    Successfully assigned default/dns-test to helm-test-cluster-control-plane
+kube-system          3m35s       Normal    SuccessfulDelete          replicaset/coredns-668d6bf9bc                   Deleted pod: coredns-668d6bf9bc-lqrzk
+default              3m35s       Normal    Pulling                   pod/dns-test                                    Pulling image "busybox:1.28"
+kube-system          3m35s       Normal    Killing                   pod/coredns-668d6bf9bc-lqrzk                    Stopping container coredns
+default              3m33s       Normal    Pulled                    pod/dns-test                                    Successfully pulled image "busybox:1.28" in 1.855s (1.855s including waiting). Image size: 727869 bytes.
+default              3m33s       Normal    Created                   pod/dns-test                                    Created container: dns-test
+default              3m33s       Normal    Started                   pod/dns-test                                    Started container dns-test
+kube-system          3m30s       Warning   Unhealthy                 pod/coredns-668d6bf9bc-lqrzk                    Readiness probe failed: Get "http://10.244.0.3:8181/ready": dial tcp 10.244.0.3:8181: connect: connection refused
+kube-system          3m22s       Normal    SuccessfulCreate          daemonset/s3-csi-node                           Created pod: s3-csi-node-znlqf
+kube-system          3m22s       Normal    Scheduled                 pod/s3-csi-controller-7589d96658-2f7hc          Successfully assigned kube-system/s3-csi-controller-7589d96658-2f7hc to helm-test-cluster-control-plane
+kube-system          3m22s       Normal    Scheduled                 pod/s3-csi-node-znlqf                           Successfully assigned kube-system/s3-csi-node-znlqf to helm-test-cluster-control-plane
+kube-system          3m22s       Normal    ScalingReplicaSet         deployment/s3-csi-controller                    Scaled up replica set s3-csi-controller-7589d96658 from 0 to 1
+kube-system          3m22s       Normal    SuccessfulCreate          replicaset/s3-csi-controller-7589d96658         Created pod: s3-csi-controller-7589d96658-2f7hc
+kube-system          3m21s       Normal    Pulled                    pod/s3-csi-controller-7589d96658-2f7hc          Container image "ghcr.io/scality/mountpoint-s3-csi-driver:cfd7c8aa614d5235d9817f97f2bf04164c00e86c" already present on machine
+kube-system          3m21s       Normal    Pulling                   pod/s3-csi-controller-7589d96658-2f7hc          Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0"
+kube-system          3m21s       Normal    Pulling                   pod/s3-csi-node-znlqf                           Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0"
+kube-system          3m21s       Normal    Started                   pod/s3-csi-node-znlqf                           Started container s3-plugin
+kube-system          3m21s       Normal    Started                   pod/s3-csi-controller-7589d96658-2f7hc          Started container s3-csi-controller
+kube-system          3m21s       Normal    Created                   pod/s3-csi-controller-7589d96658-2f7hc          Created container: s3-csi-controller
+kube-system          3m21s       Normal    Created                   pod/s3-csi-node-znlqf                           Created container: s3-plugin
+kube-system          3m21s       Normal    Pulled                    pod/s3-csi-node-znlqf                           Container image "ghcr.io/scality/mountpoint-s3-csi-driver:cfd7c8aa614d5235d9817f97f2bf04164c00e86c" already present on machine
+kube-system          3m20s       Normal    Pulled                    pod/s3-csi-node-znlqf                           Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0" in 1.794s (1.795s including waiting). Image size: 15579380 bytes.
+kube-system          3m20s       Normal    Created                   pod/s3-csi-node-znlqf                           Created container: node-driver-registrar
+kube-system          3m19s       Normal    Pulling                   pod/s3-csi-node-znlqf                           Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0"
+kube-system          3m19s       Normal    Started                   pod/s3-csi-node-znlqf                           Started container node-driver-registrar
+kube-system          3m17s       Normal    Started                   pod/s3-csi-controller-7589d96658-2f7hc          Started container csi-provisioner
+kube-system          3m17s       Normal    Pulled                    pod/s3-csi-controller-7589d96658-2f7hc          Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0" in 2.459s (4.246s including waiting). Image size: 35709312 bytes.
+kube-system          3m17s       Normal    Created                   pod/s3-csi-controller-7589d96658-2f7hc          Created container: csi-provisioner
+kube-system          3m14s       Normal    Pulled                    pod/s3-csi-node-znlqf                           Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0" in 2.805s (5.177s including waiting). Image size: 15557083 bytes.
+kube-system          3m14s       Normal    Created                   pod/s3-csi-node-znlqf                           Created container: liveness-probe
+kube-system          3m14s       Normal    Started                   pod/s3-csi-node-znlqf                           Started container liveness-probe
+volume-7243          3m10s       Warning   ProvisioningFailed        persistentvolumeclaim/pvc-b58b2                 storageclass.storage.k8s.io "volume-7243" not found
+volume-14            3m10s       Normal    ProvisioningSucceeded     persistentvolumeclaim/s3.csi.scality.com9pjcf   Successfully provisioned volume pvc-f6d6c891-9ca8-41be-9bfe-65ee4fb4876f
+volume-14            3m10s       Normal    ExternalProvisioning      persistentvolumeclaim/s3.csi.scality.com9pjcf   Waiting for a volume to be created either by the external provisioner 's3.csi.scality.com' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+volume-14            3m10s       Normal    Provisioning              persistentvolumeclaim/s3.csi.scality.com9pjcf   External provisioner is provisioning volume for claim "volume-14/s3.csi.scality.com9pjcf"
+volume-14            3m8s        Normal    Scheduled                 pod/s3-injector                                 Successfully assigned volume-14/s3-injector to helm-test-cluster-control-plane
+volume-7243          3m          Normal    Scheduled                 pod/s3-injector                                 Successfully assigned volume-7243/s3-injector to helm-test-cluster-control-plane
+cache-9409           3m          Normal    Scheduled                 pod/pvc-tester-k7vbw                            Successfully assigned cache-9409/pvc-tester-k7vbw to helm-test-cluster-control-plane
+cache-2083           3m          Normal    Scheduled                 pod/pvc-tester-9w72h                            Successfully assigned cache-2083/pvc-tester-9w72h to helm-test-cluster-control-plane
+cache-2080           2m44s       Normal    Scheduled                 pod/pvc-tester-p88rv                            Successfully assigned cache-2080/pvc-tester-p88rv to helm-test-cluster-control-plane
+credentials-9545     2m          Normal    Scheduled                 pod/pvc-tester-p2kbk                            Successfully assigned credentials-9545/pvc-tester-p2kbk to helm-test-cluster-control-plane
+volume-14            68s         Warning   FailedMount               pod/s3-injector                                 MountVolume.SetUp failed for volume "pvc-f6d6c891-9ca8-41be-9bfe-65ee4fb4876f" : rpc error: code = DeadlineExceeded desc = context deadline exceeded
+cache-2083           60s         Warning   FailedMount               pod/pvc-tester-9w72h                            MountVolume.SetUp failed for volume "s3-e2e-pv-22c7e9e4-45d0-43a1-a2b4-1d7c34ba7fe8" : rpc error: code = DeadlineExceeded desc = context deadline exceeded
+cache-9409           60s         Warning   FailedMount               pod/pvc-tester-k7vbw                            MountVolume.SetUp failed for volume "s3-e2e-pv-f2a8451b-5e6d-4328-b34c-d78c20b96498" : rpc error: code = DeadlineExceeded desc = context deadline exceeded
+volume-7243          60s         Warning   FailedMount               pod/s3-injector                                 MountVolume.SetUp failed for volume "s3.csi.scality.com-dp7hk" : rpc error: code = DeadlineExceeded desc = context deadline exceeded
+credentials-5770     59s         Normal    Scheduled                 pod/pvc-tester-cvghd                            Successfully assigned credentials-5770/pvc-tester-cvghd to helm-test-cluster-control-plane
+cache-2080           44s         Warning   FailedMount               pod/pvc-tester-p88rv                            MountVolume.SetUp failed for volume "s3-e2e-pv-a78a6975-f697-42a1-9291-f73734bd10b1" : rpc error: code = DeadlineExceeded desc = context deadline exceeded
+credentials-5926     33s         Normal    Scheduled                 pod/test-invalid-key-21d3f382                   Successfully assigned credentials-5926/test-invalid-key-21d3f382 to helm-test-cluster-control-plane
+credentials-9545     0s          Warning   FailedMount               pod/pvc-tester-p2kbk                            MountVolume.SetUp failed for volume "s3-e2e-pv-0f20758c-227f-4b7b-bef9-0bc65c6233ff" : rpc error: code = DeadlineExceeded desc = context deadline exceeded

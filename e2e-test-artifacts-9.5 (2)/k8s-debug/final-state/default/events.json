@@ -1,0 +1,374 @@
+{
+    "kind": "EventList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "2803"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "dns-test.1861c539b2297a60",
+                "namespace": "default",
+                "uid": "ea2a0373-0cbc-40bc-968d-f1ef44976772",
+                "resourceVersion": "539",
+                "creationTimestamp": "2025-09-03T12:23:01Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-test",
+                "uid": "78f716b1-13f2-4ff7-8c04-acfa9bc9e772",
+                "apiVersion": "v1",
+                "resourceVersion": "537"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/dns-test to helm-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-03T12:23:01Z",
+            "lastTimestamp": "2025-09-03T12:23:01Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "dns-test.1861c539c985cbc4",
+                "namespace": "default",
+                "uid": "8580f893-15bd-4598-99bf-fb935e0a0d00",
+                "resourceVersion": "541",
+                "creationTimestamp": "2025-09-03T12:23:01Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-test",
+                "uid": "78f716b1-13f2-4ff7-8c04-acfa9bc9e772",
+                "apiVersion": "v1",
+                "resourceVersion": "538",
+                "fieldPath": "spec.containers{dns-test}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"busybox:1.28\"",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:23:01Z",
+            "lastTimestamp": "2025-09-03T12:23:01Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-test.1861c53a381f65aa",
+                "namespace": "default",
+                "uid": "25542840-63d6-4d1e-9ac2-6c794978900b",
+                "resourceVersion": "544",
+                "creationTimestamp": "2025-09-03T12:23:03Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-test",
+                "uid": "78f716b1-13f2-4ff7-8c04-acfa9bc9e772",
+                "apiVersion": "v1",
+                "resourceVersion": "538",
+                "fieldPath": "spec.containers{dns-test}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"busybox:1.28\" in 1.855s (1.855s including waiting). Image size: 727869 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:23:03Z",
+            "lastTimestamp": "2025-09-03T12:23:03Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-test.1861c53a387ccddc",
+                "namespace": "default",
+                "uid": "7e985377-12a4-4044-86e5-d133940a1635",
+                "resourceVersion": "545",
+                "creationTimestamp": "2025-09-03T12:23:03Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-test",
+                "uid": "78f716b1-13f2-4ff7-8c04-acfa9bc9e772",
+                "apiVersion": "v1",
+                "resourceVersion": "538",
+                "fieldPath": "spec.containers{dns-test}"
+            },
+            "reason": "Created",
+            "message": "Created container: dns-test",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:23:03Z",
+            "lastTimestamp": "2025-09-03T12:23:03Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-test.1861c53a3d35bd96",
+                "namespace": "default",
+                "uid": "b31311b9-a1bd-4998-837a-7527ce92a25a",
+                "resourceVersion": "546",
+                "creationTimestamp": "2025-09-03T12:23:03Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-test",
+                "uid": "78f716b1-13f2-4ff7-8c04-acfa9bc9e772",
+                "apiVersion": "v1",
+                "resourceVersion": "538",
+                "fieldPath": "spec.containers{dns-test}"
+            },
+            "reason": "Started",
+            "message": "Started container dns-test",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:23:03Z",
+            "lastTimestamp": "2025-09-03T12:23:03Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c52f2b69f9aa",
+                "namespace": "default",
+                "uid": "8089836e-ce1d-4c76-8760-bb15a6e4cac2",
+                "resourceVersion": "220",
+                "creationTimestamp": "2025-09-03T12:22:16Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "Starting",
+            "message": "Starting kubelet.",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:22:16Z",
+            "lastTimestamp": "2025-09-03T12:22:16Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c52f2e13f939",
+                "namespace": "default",
+                "uid": "92a14e56-f9a4-4666-a8f4-80e4300cf2db",
+                "resourceVersion": "222",
+                "creationTimestamp": "2025-09-03T12:22:16Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "NodeAllocatableEnforced",
+            "message": "Updated Node Allocatable limit across pods",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:22:16Z",
+            "lastTimestamp": "2025-09-03T12:22:16Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c52f3414af51",
+                "namespace": "default",
+                "uid": "476ba6fb-369b-405c-b811-4db25252aab0",
+                "resourceVersion": "226",
+                "creationTimestamp": "2025-09-03T12:22:16Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "NodeHasSufficientMemory",
+            "message": "Node helm-test-cluster-control-plane status is now: NodeHasSufficientMemory",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:22:16Z",
+            "lastTimestamp": "2025-09-03T12:22:16Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c52f34151eb2",
+                "namespace": "default",
+                "uid": "91334944-4062-4207-a4ef-9bcb940019fc",
+                "resourceVersion": "227",
+                "creationTimestamp": "2025-09-03T12:22:16Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "NodeHasNoDiskPressure",
+            "message": "Node helm-test-cluster-control-plane status is now: NodeHasNoDiskPressure",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:22:16Z",
+            "lastTimestamp": "2025-09-03T12:22:16Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c52f34153207",
+                "namespace": "default",
+                "uid": "0ad7d68f-9317-4b65-958f-379c941aa386",
+                "resourceVersion": "228",
+                "creationTimestamp": "2025-09-03T12:22:16Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "NodeHasSufficientPID",
+            "message": "Node helm-test-cluster-control-plane status is now: NodeHasSufficientPID",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:22:16Z",
+            "lastTimestamp": "2025-09-03T12:22:16Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c5304b2d0f93",
+                "namespace": "default",
+                "uid": "d37518f5-de3d-4a48-b470-818fa8d4ba28",
+                "resourceVersion": "305",
+                "creationTimestamp": "2025-09-03T12:22:20Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "28c51ddc-b1ba-43fb-8d51-7ef1be93f3e2",
+                "apiVersion": "v1"
+            },
+            "reason": "RegisteredNode",
+            "message": "Node helm-test-cluster-control-plane event: Registered Node helm-test-cluster-control-plane in Controller",
+            "source": {
+                "component": "node-controller"
+            },
+            "firstTimestamp": "2025-09-03T12:22:20Z",
+            "lastTimestamp": "2025-09-03T12:22:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "node-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c530bdca302b",
+                "namespace": "default",
+                "uid": "cc552b00-c94f-4c7a-bcf3-666d7ce7d30b",
+                "resourceVersion": "375",
+                "creationTimestamp": "2025-09-03T12:22:22Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "Starting",
+            "source": {},
+            "firstTimestamp": null,
+            "lastTimestamp": null,
+            "type": "Normal",
+            "eventTime": "2025-09-03T12:22:22.784449Z",
+            "action": "StartKubeProxy",
+            "reportingComponent": "kube-proxy",
+            "reportingInstance": "kube-proxy-helm-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "helm-test-cluster-control-plane.1861c5336021184e",
+                "namespace": "default",
+                "uid": "4928ffc3-bf4a-4545-ba72-859838283436",
+                "resourceVersion": "402",
+                "creationTimestamp": "2025-09-03T12:22:34Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "helm-test-cluster-control-plane",
+                "uid": "helm-test-cluster-control-plane"
+            },
+            "reason": "NodeReady",
+            "message": "Node helm-test-cluster-control-plane status is now: NodeReady",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:22:34Z",
+            "lastTimestamp": "2025-09-03T12:22:34Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        }
+    ]
+}

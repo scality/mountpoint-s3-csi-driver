@@ -1,0 +1,68 @@
+{
+    "kind": "EventList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "2803"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "pvc-tester-mcp4m.1861c5df0db68e1e",
+                "namespace": "directorypermissions-5869",
+                "uid": "690794df-0d7e-4214-a9ca-89a02a6f8467",
+                "resourceVersion": "2355",
+                "creationTimestamp": "2025-09-03T12:34:51Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "directorypermissions-5869",
+                "name": "pvc-tester-mcp4m",
+                "uid": "55f2b71b-ec9d-45b4-8cd0-4150dd22dd46",
+                "apiVersion": "v1",
+                "resourceVersion": "2353"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned directorypermissions-5869/pvc-tester-mcp4m to helm-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-03T12:34:51Z",
+            "lastTimestamp": "2025-09-03T12:34:51Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "pvc-tester-mcp4m.1861c5fb0b50f44f",
+                "namespace": "directorypermissions-5869",
+                "uid": "53fc1be2-ab13-413e-bdd6-17dd11758a0b",
+                "resourceVersion": "2643",
+                "creationTimestamp": "2025-09-03T12:36:51Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "directorypermissions-5869",
+                "name": "pvc-tester-mcp4m",
+                "uid": "55f2b71b-ec9d-45b4-8cd0-4150dd22dd46",
+                "apiVersion": "v1",
+                "resourceVersion": "2354"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"s3-e2e-pv-15ddf1b8-0e7c-494a-8a82-2cd45395f725\" : rpc error: code = DeadlineExceeded desc = context deadline exceeded",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-03T12:36:51Z",
+            "lastTimestamp": "2025-09-03T12:36:51Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        }
+    ]
+}

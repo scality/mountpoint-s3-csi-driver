@@ -11,6 +11,9 @@ import (
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -18,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/scality/mountpoint-s3-csi-driver/cmd/scality-csi-controller/csicontroller"
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/cluster"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
@@ -32,21 +36,32 @@ var (
 	mountpointContainerCommand  = flag.String("mountpoint-container-command", "/bin/scality-s3-csi-mounter", "Entrypoint command of the Mountpoint Pods.")
 )
 
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(crdv2.AddToScheme(scheme))
+}
+
 func main() {
 	flag.Parse()
 
 	logf.SetLogger(zap.New())
 
 	log := logf.Log.WithName(csicontroller.Name)
-	client := config.GetConfigOrDie()
+	conf := config.GetConfigOrDie()
 
-	mgr, err := manager.New(client, manager.Options{})
+	mgr, err := manager.New(conf, manager.Options{
+		Scheme: scheme,
+	})
 	if err != nil {
 		log.Error(err, "failed to create a new manager")
 		os.Exit(1)
 	}
 
-	err = csicontroller.NewReconciler(mgr.GetClient(), mppod.Config{
+	podConfig := mppod.Config{
 		Namespace:         *mountpointNamespace,
 		MountpointVersion: *mountpointVersion,
 		PriorityClassName: *mountpointPriorityClassName,
@@ -56,10 +71,20 @@ func main() {
 			ImagePullPolicy: corev1.PullPolicy(*mountpointImagePullPolicy),
 		},
 		CSIDriverVersion: version.GetVersion().DriverVersion,
-		ClusterVariant:   cluster.DetectVariant(client, log),
-	}).SetupWithManager(mgr)
+		ClusterVariant:   cluster.DetectVariant(conf, log),
+	}
+
+	// Setup the original pod reconciler for backward compatibility
+	err = csicontroller.NewReconciler(mgr.GetClient(), podConfig).SetupWithManager(mgr)
 	if err != nil {
-		log.Error(err, "failed to create controller")
+		log.Error(err, "failed to create pod reconciler")
+		os.Exit(1)
+	}
+
+	// Setup the S3PodAttachment reconciler for v2 pod creation
+	s3paReconciler := csicontroller.NewS3PodAttachmentReconciler(mgr.GetClient(), scheme, podConfig)
+	if err := s3paReconciler.SetupWithManager(mgr); err != nil {
+		log.Error(err, "failed to create S3PodAttachment reconciler")
 		os.Exit(1)
 	}
 

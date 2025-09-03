@@ -1,0 +1,325 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes"
+                },
+                "creationTimestamp": "2025-09-03T12:23:36Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "name": "s3-e2e-pvc-aca5c9a6-5c16-4453-8f18-7c4fcd8a0a2e",
+                "namespace": "cache-2080",
+                "resourceVersion": "913",
+                "uid": "1e194d14-7093-4a34-8654-6254b81f617b"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1200Gi"
+                    }
+                },
+                "storageClassName": "",
+                "volumeMode": "Filesystem",
+                "volumeName": "s3-e2e-pv-a78a6975-f697-42a1-9291-f73734bd10b1"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "1200Gi"
+                },
+                "phase": "Bound"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes"
+                },
+                "creationTimestamp": "2025-09-03T12:23:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "name": "s3-e2e-pvc-0c40b7d0-5de5-44bd-88aa-3f86b7f1df83",
+                "namespace": "cache-2083",
+                "resourceVersion": "851",
+                "uid": "6c948c54-5e75-49dc-b423-b8742d3f7f51"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1200Gi"
+                    }
+                },
+                "storageClassName": "",
+                "volumeMode": "Filesystem",
+                "volumeName": "s3-e2e-pv-22c7e9e4-45d0-43a1-a2b4-1d7c34ba7fe8"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "1200Gi"
+                },
+                "phase": "Bound"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes"
+                },
+                "creationTimestamp": "2025-09-03T12:23:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "name": "s3-e2e-pvc-95006489-160c-446f-b5c9-e4e5424b28df",
+                "namespace": "cache-9409",
+                "resourceVersion": "859",
+                "uid": "70a83c10-3c07-4941-a96a-341ed239aff2"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1200Gi"
+                    }
+                },
+                "storageClassName": "",
+                "volumeMode": "Filesystem",
+                "volumeName": "s3-e2e-pv-f2a8451b-5e6d-4328-b34c-d78c20b96498"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "1200Gi"
+                },
+                "phase": "Bound"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "creationTimestamp": "2025-09-03T12:24:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "name": "s3-e2e-pvc-0226e440-ccff-43ce-a146-3cabb5a7bf13",
+                "namespace": "credentials-9545",
+                "resourceVersion": "989",
+                "uid": "5f2341ed-2021-487f-9679-668908250f2e"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1200Gi"
+                    }
+                },
+                "storageClassName": "",
+                "volumeMode": "Filesystem",
+                "volumeName": "s3-e2e-pv-0f20758c-227f-4b7b-bef9-0bc65c6233ff"
+            },
+            "status": {
+                "phase": "Pending"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes",
+                    "pv.kubernetes.io/bound-by-controller": "yes",
+                    "volume.beta.kubernetes.io/storage-provisioner": "s3.csi.scality.com",
+                    "volume.kubernetes.io/selected-node": "helm-test-cluster-control-plane",
+                    "volume.kubernetes.io/storage-provisioner": "s3.csi.scality.com"
+                },
+                "creationTimestamp": "2025-09-03T12:23:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "name": "wait-pvc-fa2d03a0",
+                "namespace": "s3-advanced-patterns-6413",
+                "resourceVersion": "936",
+                "uid": "0791ca10-4c1c-4048-9c8a-62005baeb355"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1Gi"
+                    }
+                },
+                "storageClassName": "wait-first-consumer-sc-a0c4243c",
+                "volumeMode": "Filesystem",
+                "volumeName": "pvc-0791ca10-4c1c-4048-9c8a-62005baeb355"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "1Gi"
+                },
+                "phase": "Bound"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes",
+                    "pv.kubernetes.io/bound-by-controller": "yes",
+                    "volume.beta.kubernetes.io/storage-provisioner": "s3.csi.scality.com",
+                    "volume.kubernetes.io/storage-provisioner": "s3.csi.scality.com"
+                },
+                "creationTimestamp": "2025-09-03T12:23:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "name": "cred-fallback-pvc-no-secrets-c26daa6f",
+                "namespace": "s3-advanced-patterns-6517",
+                "resourceVersion": "766",
+                "uid": "838aab36-5044-4965-852d-29c302d223e6"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1Gi"
+                    }
+                },
+                "storageClassName": "cred-fallback-no-secrets-1446cae0",
+                "volumeMode": "Filesystem",
+                "volumeName": "pvc-838aab36-5044-4965-852d-29c302d223e6"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "1Gi"
+                },
+                "phase": "Bound"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes",
+                    "pv.kubernetes.io/bound-by-controller": "yes",
+                    "volume.beta.kubernetes.io/storage-provisioner": "s3.csi.scality.com",
+                    "volume.kubernetes.io/storage-provisioner": "s3.csi.scality.com"
+                },
+                "creationTimestamp": "2025-09-03T12:23:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "generateName": "s3.csi.scality.com",
+                "name": "s3.csi.scality.com9pjcf",
+                "namespace": "volume-14",
+                "resourceVersion": "773",
+                "uid": "f6d6c891-9ca8-41be-9bfe-65ee4fb4876f"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "1Mi"
+                    }
+                },
+                "storageClassName": "s3-sc-2ba35075",
+                "volumeMode": "Filesystem",
+                "volumeName": "pvc-f6d6c891-9ca8-41be-9bfe-65ee4fb4876f"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "1Mi"
+                },
+                "phase": "Bound"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "annotations": {
+                    "pv.kubernetes.io/bind-completed": "yes",
+                    "pv.kubernetes.io/bound-by-controller": "yes"
+                },
+                "creationTimestamp": "2025-09-03T12:23:26Z",
+                "finalizers": [
+                    "kubernetes.io/pvc-protection"
+                ],
+                "generateName": "pvc-",
+                "name": "pvc-b58b2",
+                "namespace": "volume-7243",
+                "resourceVersion": "856",
+                "uid": "897252b6-ac72-4e1f-83d9-c2dab0888839"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "2Gi"
+                    }
+                },
+                "storageClassName": "volume-7243",
+                "volumeMode": "Filesystem",
+                "volumeName": "s3.csi.scality.com-dp7hk"
+            },
+            "status": {
+                "accessModes": [
+                    "ReadWriteMany"
+                ],
+                "capacity": {
+                    "storage": "2Gi"
+                },
+                "phase": "Bound"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}
