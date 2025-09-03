@@ -28,12 +28,15 @@ import (
 )
 
 var (
-	mountpointNamespace         = flag.String("mountpoint-namespace", os.Getenv("MOUNTPOINT_NAMESPACE"), "Namespace to spawn Mountpoint Pods in.")
-	mountpointVersion           = flag.String("mountpoint-version", os.Getenv("MOUNTPOINT_VERSION"), "Version of Mountpoint within the given Mountpoint image.")
-	mountpointPriorityClassName = flag.String("mountpoint-priority-class-name", os.Getenv("MOUNTPOINT_PRIORITY_CLASS_NAME"), "Priority class name of the Mountpoint Pods.")
-	mountpointImage             = flag.String("mountpoint-image", os.Getenv("MOUNTPOINT_IMAGE"), "Image of Mountpoint to use in spawned Mountpoint Pods.")
-	mountpointImagePullPolicy   = flag.String("mountpoint-image-pull-policy", os.Getenv("MOUNTPOINT_IMAGE_PULL_POLICY"), "Pull policy of Mountpoint images.")
-	mountpointContainerCommand  = flag.String("mountpoint-container-command", "/bin/scality-s3-csi-mounter", "Entrypoint command of the Mountpoint Pods.")
+	mountpointNamespace                    = flag.String("mountpoint-namespace", os.Getenv("MOUNTPOINT_NAMESPACE"), "Namespace to spawn Mountpoint Pods in.")
+	mountpointVersion                      = flag.String("mountpoint-version", os.Getenv("MOUNTPOINT_VERSION"), "Version of Mountpoint within the given Mountpoint image.")
+	mountpointPriorityClassName            = flag.String("mountpoint-priority-class-name", os.Getenv("MOUNTPOINT_PRIORITY_CLASS_NAME"), "Priority class name of the Mountpoint Pods.")
+	mountpointPreemptingPriorityClassName  = flag.String("mountpoint-preempting-priority-class-name", os.Getenv("MOUNTPOINT_PREEMPTING_PRIORITY_CLASS_NAME"), "Preempting priority class name of the Mountpoint Pods.")
+	mountpointHeadroomPriorityClassName    = flag.String("mountpoint-headroom-priority-class-name", os.Getenv("MOUNTPOINT_HEADROOM_PRIORITY_CLASS_NAME"), "Priority class name of the Headroom Pods.")
+	mountpointImage                        = flag.String("mountpoint-image", os.Getenv("MOUNTPOINT_IMAGE"), "Image of Mountpoint to use in spawned Mountpoint Pods.")
+	headroomImage                          = flag.String("headroom-image", os.Getenv("MOUNTPOINT_HEADROOM_IMAGE"), "Image of a pause container to use in spawned Headroom Pods.")
+	mountpointImagePullPolicy              = flag.String("mountpoint-image-pull-policy", os.Getenv("MOUNTPOINT_IMAGE_PULL_POLICY"), "Pull policy of Mountpoint images.")
+	mountpointContainerCommand             = flag.String("mountpoint-container-command", "/bin/scality-s3-csi-mounter", "Entrypoint command of the Mountpoint Pods.")
 )
 
 var (
@@ -62,12 +65,15 @@ func main() {
 	}
 
 	podConfig := mppod.Config{
-		Namespace:         *mountpointNamespace,
-		MountpointVersion: *mountpointVersion,
-		PriorityClassName: *mountpointPriorityClassName,
+		Namespace:                   *mountpointNamespace,
+		MountpointVersion:           *mountpointVersion,
+		PriorityClassName:           *mountpointPriorityClassName,
+		PreemptingPriorityClassName: *mountpointPreemptingPriorityClassName,
+		HeadroomPriorityClassName:   *mountpointHeadroomPriorityClassName,
 		Container: mppod.ContainerConfig{
 			Command:         *mountpointContainerCommand,
 			Image:           *mountpointImage,
+			HeadroomImage:   *headroomImage,
 			ImagePullPolicy: corev1.PullPolicy(*mountpointImagePullPolicy),
 		},
 		CSIDriverVersion: version.GetVersion().DriverVersion,
