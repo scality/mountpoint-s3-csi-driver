@@ -81,8 +81,10 @@ func (pm *PodMounter) ensureMountpointPodAttachment(ctx context.Context, podID, 
 	if pm.k8sClient == nil {
 		// Backward compatibility: if no k8s client, skip CRD creation
 		// This allows the old reconciler to still work
+		klog.Warningf("k8sClient is nil, skipping MountpointS3PodAttachment creation")
 		return nil
 	}
+	klog.V(4).Infof("ensureMountpointPodAttachment called with podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)
 
 	// Generate attachment name based on node and volume
 	attachmentName := fmt.Sprintf("%s-%s", pm.nodeName, volumeID)
@@ -91,11 +93,14 @@ func (pm *PodMounter) ensureMountpointPodAttachment(ctx context.Context, podID, 
 	// Try to get existing attachment
 	attachment := &crdv2.MountpointS3PodAttachment{}
 	err := pm.k8sClient.Get(ctx, client.ObjectKey{
-		Name:      attachmentName,
-		Namespace: "kube-system", // Using the same namespace as the CSI driver
+		Name: attachmentName,
+		// No namespace - CRD is cluster-scoped
 	}, attachment)
 
-	if err != nil && client.IgnoreNotFound(err) == nil {
+	klog.V(4).Infof("Get MountpointS3PodAttachment %s result: err=%v", attachmentName, err)
+
+	if err != nil && client.IgnoreNotFound(err) != nil {
+		klog.Errorf("Failed to get MountpointS3PodAttachment (non-NotFound error): %v", err)
 		return fmt.Errorf("failed to get MountpointS3PodAttachment: %w", err)
 	}
 
@@ -103,8 +108,8 @@ func (pm *PodMounter) ensureMountpointPodAttachment(ctx context.Context, podID, 
 	if err != nil {
 		attachment = &crdv2.MountpointS3PodAttachment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      attachmentName,
-				Namespace: "kube-system",
+				Name: attachmentName,
+				// No namespace - CRD is cluster-scoped
 			},
 			Spec: crdv2.MountpointS3PodAttachmentSpec{
 				NodeName:             pm.nodeName,
@@ -122,10 +127,12 @@ func (pm *PodMounter) ensureMountpointPodAttachment(ctx context.Context, podID, 
 			},
 		}
 
+		klog.Infof("Creating MountpointS3PodAttachment %s for pod %s", attachmentName, mpPodName)
 		if err := pm.k8sClient.Create(ctx, attachment); err != nil {
+			klog.Errorf("Failed to create MountpointS3PodAttachment %s: %v", attachmentName, err)
 			return fmt.Errorf("failed to create MountpointS3PodAttachment: %w", err)
 		}
-		klog.V(4).Infof("Created MountpointS3PodAttachment %s for pod %s", attachmentName, mpPodName)
+		klog.Infof("Successfully created MountpointS3PodAttachment %s for pod %s", attachmentName, mpPodName)
 	} else {
 		// Update existing attachment to add new pod
 		if attachment.Spec.MountpointS3PodAttachments == nil {
