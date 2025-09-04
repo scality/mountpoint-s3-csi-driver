@@ -11,6 +11,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 )
@@ -288,8 +289,26 @@ var _ = Describe("Mountpoint Controller", func() {
 						pod2.schedule("test-node")
 
 						// In v2, pod2 should share the same Mountpoint Pod as pod1
-						mpPod2 := waitForMountpointPodFor(pod2, vol)
-						Expect(mpPod2.Name).To(Equal(mpPod1.Name), "Expected workload pods to share the same Mountpoint Pod")
+						// Wait for the S3PodAttachment to be updated with pod2's UID
+						Eventually(func(g Gomega) {
+							s3paList := &crdv2.MountpointS3PodAttachmentList{}
+							g.Expect(k8sClient.List(ctx, s3paList, client.MatchingFields{
+								"spec.nodeName":             "test-node",
+								"spec.persistentVolumeName": vol.pv.Name,
+							})).To(Succeed())
+							g.Expect(s3paList.Items).To(HaveLen(1))
+
+							s3pa := &s3paList.Items[0]
+							// Check that the Mountpoint Pod has both workload UIDs
+							g.Expect(s3pa.Spec.MountpointS3PodAttachments).To(HaveLen(1))
+							for _, attachments := range s3pa.Spec.MountpointS3PodAttachments {
+								uids := []string{}
+								for _, attachment := range attachments {
+									uids = append(uids, attachment.WorkloadPodUID)
+								}
+								g.Expect(uids).To(ContainElements(string(pod1.UID), string(pod2.UID)))
+							}
+						}, defaultWaitTimeout, defaultWaitRetryPeriod).Should(Succeed())
 					})
 				})
 
@@ -312,8 +331,26 @@ var _ = Describe("Mountpoint Controller", func() {
 						pod2.schedule("test-node")
 
 						// In v2, pod2 should share the same Mountpoint Pod as pod1
-						mpPod2 := waitForMountpointPodFor(pod2, vol)
-						Expect(mpPod2.Name).To(Equal(mpPod1.Name), "Expected workload pods to share the same Mountpoint Pod")
+						// Wait for the S3PodAttachment to be updated with pod2's UID
+						Eventually(func(g Gomega) {
+							s3paList := &crdv2.MountpointS3PodAttachmentList{}
+							g.Expect(k8sClient.List(ctx, s3paList, client.MatchingFields{
+								"spec.nodeName":             "test-node",
+								"spec.persistentVolumeName": vol.pv.Name,
+							})).To(Succeed())
+							g.Expect(s3paList.Items).To(HaveLen(1))
+
+							s3pa := &s3paList.Items[0]
+							// Check that the Mountpoint Pod has both workload UIDs
+							g.Expect(s3pa.Spec.MountpointS3PodAttachments).To(HaveLen(1))
+							for _, attachments := range s3pa.Spec.MountpointS3PodAttachments {
+								uids := []string{}
+								for _, attachment := range attachments {
+									uids = append(uids, attachment.WorkloadPodUID)
+								}
+								g.Expect(uids).To(ContainElements(string(pod1.UID), string(pod2.UID)))
+							}
+						}, defaultWaitTimeout, defaultWaitRetryPeriod).Should(Succeed())
 					})
 				})
 			})
