@@ -88,7 +88,7 @@ var _ = BeforeSuite(func() {
 
 	By("Bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{"../../deploy/crd"},
+		CRDDirectoryPaths: []string{"../../charts/scality-mountpoint-s3-csi-driver/crds"},
 	}
 
 	var err error
