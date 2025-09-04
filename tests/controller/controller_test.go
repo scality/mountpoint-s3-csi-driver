@@ -270,7 +270,7 @@ var _ = Describe("Mountpoint Controller", func() {
 		Context("Multiple Pods using the same PV and PVC", func() {
 			Context("Same Node", func() {
 				Context("Pre-bound PV and PVC", func() {
-					It("should schedule a Mountpoint Pod per Workload Pod", func() {
+					It("should share a Mountpoint Pod between Workload Pods on the same node", func() {
 						vol := createVolume()
 						vol.bind()
 
@@ -282,17 +282,19 @@ var _ = Describe("Mountpoint Controller", func() {
 
 						pod1.schedule("test-node")
 
-						waitAndVerifyMountpointPodFor(pod1, vol)
-						expectNoMountpointPodFor(pod2, vol)
+						mpPod1 := waitForMountpointPodFor(pod1, vol)
+						verifyMountpointPodFor(pod1, vol, mpPod1)
 
 						pod2.schedule("test-node")
 
-						waitAndVerifyMountpointPodFor(pod2, vol)
+						// In v2, pod2 should share the same Mountpoint Pod as pod1
+						mpPod2 := waitForMountpointPodFor(pod2, vol)
+						Expect(mpPod2.Name).To(Equal(mpPod1.Name), "Expected workload pods to share the same Mountpoint Pod")
 					})
 				})
 
 				Context("Late PV and PVC binding", func() {
-					It("should schedule a Mountpoint Pod per Workload Pod", func() {
+					It("should share a Mountpoint Pod between Workload Pods on the same node", func() {
 						vol := createVolume()
 
 						pod1 := createPod(withPVC(vol.pvc))
@@ -304,12 +306,14 @@ var _ = Describe("Mountpoint Controller", func() {
 
 						vol.bind()
 
-						waitAndVerifyMountpointPodFor(pod1, vol)
-						expectNoMountpointPodFor(pod2, vol)
+						mpPod1 := waitForMountpointPodFor(pod1, vol)
+						verifyMountpointPodFor(pod1, vol, mpPod1)
 
 						pod2.schedule("test-node")
 
-						waitAndVerifyMountpointPodFor(pod2, vol)
+						// In v2, pod2 should share the same Mountpoint Pod as pod1
+						mpPod2 := waitForMountpointPodFor(pod2, vol)
+						Expect(mpPod2.Name).To(Equal(mpPod1.Name), "Expected workload pods to share the same Mountpoint Pod")
 					})
 				})
 			})
@@ -446,7 +450,7 @@ var _ = Describe("Mountpoint Controller", func() {
 			expectNoMountpointPodFor(pod, vol)
 		})
 
-		It("should delete Mountpoint Pod if the Workload Pod is terminated", func() {
+		It("should annotate Mountpoint Pod for unmount if the Workload Pod is terminated", func() {
 			vol := createVolume()
 			vol.bind()
 
@@ -461,8 +465,18 @@ var _ = Describe("Mountpoint Controller", func() {
 			pod.terminate()
 			waitForObjectToDisappear(pod.Pod)
 
-			// `mountpointPod` scheduled for `pod` should also get terminated
-			waitForObjectToDisappear(mountpointPod.Pod)
+			// `mountpointPod` scheduled for `pod` should be annotated for unmount
+			// In v2, the pod is annotated rather than immediately deleted
+			Eventually(func(g Gomega) {
+				mpPod := &corev1.Pod{}
+				err := k8sClient.Get(ctx, types.NamespacedName{
+					Name:      mountpointPod.Name,
+					Namespace: mountpointPod.Namespace,
+				}, mpPod)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(mpPod.Annotations).To(HaveKey(mppod.AnnotationNeedsUnmount))
+				g.Expect(mpPod.Annotations[mppod.AnnotationNeedsUnmount]).To(Equal("true"))
+			}, defaultWaitTimeout, defaultWaitRetryPeriod).Should(Succeed())
 		})
 	})
 
