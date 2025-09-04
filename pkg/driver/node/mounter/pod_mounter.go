@@ -77,46 +77,47 @@ func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider
 
 // waitForMountpointPodAttachment waits for a MountpointS3PodAttachment CRD to be created by the controller.
 // It continuously polls until the CRD is found or the context times out.
-func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, credentialCtx credentialprovider.ProvideContext) (string, error) {
+func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, credentialCtx credentialprovider.ProvideContext, fsGroup string) (string, error) {
 	if pm.k8sClient == nil {
 		// Backward compatibility: if no k8s client, return the pod name directly
 		// This allows the old reconciler to still work
 		klog.Warningf("k8sClient is nil, returning pod name directly")
 		return mppod.MountpointPodNameFor(podID, volumeName), nil
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	
+
 	// Build field filters for searching MountpointS3PodAttachments
 	fieldFilters := client.MatchingFields{
 		crdv2.FieldNodeName:             pm.nodeName,
 		crdv2.FieldPersistentVolumeName: volumeName,
 		crdv2.FieldVolumeID:             volumeID,
+		crdv2.FieldWorkloadFSGroup:      fsGroup,
 		crdv2.FieldAuthenticationSource: credentialCtx.AuthenticationSource,
 	}
-	
+
 	if credentialCtx.AuthenticationSource == credentialprovider.AuthenticationSourcePod {
 		fieldFilters[crdv2.FieldWorkloadNamespace] = credentialCtx.PodNamespace
 		// TODO: Add ServiceAccountName when it's added to ProvideContext
 	}
-	
+
 	klog.V(4).Infof("Waiting for MountpointS3PodAttachment for podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)
-	
+
 	for {
 		select {
 		case <-ctx.Done():
 			return "", fmt.Errorf("timed out waiting for MountpointS3PodAttachment: %w", ctx.Err())
 		default:
 		}
-		
+
 		s3paList := &crdv2.MountpointS3PodAttachmentList{}
 		err := pm.k8sClient.List(ctx, s3paList, fieldFilters)
 		if err != nil {
 			klog.Errorf("Failed to list MountpointS3PodAttachments: %v", err)
 			return "", err
 		}
-		
+
 		for _, s3pa := range s3paList.Items {
 			for mpPodName, attachments := range s3pa.Spec.MountpointS3PodAttachments {
 				for _, attachment := range attachments {
@@ -127,7 +128,7 @@ func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID,
 				}
 			}
 		}
-		
+
 		select {
 		case <-ctx.Done():
 			return "", fmt.Errorf("timed out waiting for MountpointS3PodAttachment: %w", ctx.Err())
@@ -146,13 +147,13 @@ func (pm *PodMounter) helpMessageForGettingControllerLogs() string {
 //
 // At high level, this method will:
 //  1. Wait for Mountpoint Pod to be `Running`
-//  2. Write credentials to Mountpoint Pod's credentials directory  
+//  2. Write credentials to Mountpoint Pod's credentials directory
 //  3. Mount to source directory (if not already mounted)
 //  4. Bind mount from source to target
 //
 // This implements a source/bind mount pattern where the S3 bucket is first mounted to a source directory
 // and then bind-mounted to the target. This allows multiple containers to share the same mount.
-func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args) error {
+func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args, fsGroup string) error {
 	volumeName, err := pm.volumeNameFromTargetPath(target)
 	if err != nil {
 		return fmt.Errorf("failed to extract volume name from %q: %w", target, err)
@@ -162,7 +163,7 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	volumeID := credentialCtx.VolumeID
 
 	// Wait for the controller to create the MountpointS3PodAttachment CRD and spawn the Mountpoint Pod
-	mpPodName, err := pm.waitForMountpointPodAttachment(ctx, podID, volumeName, volumeID, credentialCtx)
+	mpPodName, err := pm.waitForMountpointPodAttachment(ctx, podID, volumeName, volumeID, credentialCtx, fsGroup)
 	if err != nil {
 		klog.Errorf("failed to wait for MountpointS3PodAttachment for %q: %v. %s", target, err, pm.helpMessageForGettingControllerLogs())
 		return fmt.Errorf("failed to wait for MountpointS3PodAttachment for %q: %w. %s", target, err, pm.helpMessageForGettingControllerLogs())
@@ -170,13 +171,13 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 
 	// Setup the source mount directory
 	source := filepath.Join(SourceMountDir(pm.kubeletPath), mpPodName)
-	
+
 	// Verify source mount directory can be used
 	err = pm.verifyOrSetupMountTarget(source)
 	if err != nil {
 		return fmt.Errorf("failed to verify source path can be used as a mount point %q: %w", source, err)
 	}
-	
+
 	// Check if source is already mounted
 	isSourceMounted, err := pm.IsMountPoint(source)
 	if err != nil {
@@ -188,7 +189,7 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	if err != nil {
 		return fmt.Errorf("failed to verify target path can be used as a mount point %q: %w", target, err)
 	}
-	
+
 	isTargetMounted, err := pm.IsMountPoint(target)
 	if err != nil {
 		return fmt.Errorf("could not check if target %q is already a mount point: %w", target, err)
@@ -458,7 +459,7 @@ func (pm *PodMounter) bindMountSyscallWithDefault(source, target string) error {
 	if pm.bindMountSyscall != nil {
 		return pm.bindMountSyscall(source, target)
 	}
-	
+
 	// Default bind mount using mount-utils
 	return pm.mount.Mount(source, target, "", []string{"bind"})
 }

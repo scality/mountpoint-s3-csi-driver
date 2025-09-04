@@ -190,7 +190,7 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 	// 2) node path: NodeServer should be non-nil (pod mounter is now the only option)
 	_ = os.Setenv("CSI_CONTROLLER_ONLY", "false")
 	_ = os.Setenv("MOUNTPOINT_NAMESPACE", "mount-s3") // Required for pod mounter
-	_ = os.Setenv("NODE_NAME", "test-node")          // Required for pod mounter with CRD support
+	_ = os.Setenv("NODE_NAME", "test-node")           // Required for pod mounter with CRD support
 	d2, err := driver.NewDriver("unix:///tmp/test.sock", "mpv", "node-2")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

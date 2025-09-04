@@ -17,12 +17,12 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/go-logr/logr"
 	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/volumecontext"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
-	"github.com/go-logr/logr"
 )
 
 const debugLevel = 4

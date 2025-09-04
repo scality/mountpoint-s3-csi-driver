@@ -11,6 +11,7 @@ The Scality CSI Driver v2 uses a Custom Resource Definition (CRD) based architec
 The `MountpointS3PodAttachment` is a cluster-scoped Custom Resource that represents the relationship between workload pods and Mountpoint pods. It serves as the coordination point between the CSI controller and node components.
 
 Key characteristics:
+
 - **Cluster-scoped**: No namespace restriction, allowing cross-namespace coordination
 - **Indexed fields**: Optimized for efficient lookups by node, volume, and workload attributes
 - **Attachment tracking**: Maintains the mapping between workload pods and Mountpoint pods
@@ -22,6 +23,7 @@ The controller watches workload pods and manages the lifecycle of MountpointS3Po
 **Location**: `cmd/scality-csi-controller/csicontroller/reconciler.go`
 
 **Responsibilities**:
+
 1. Watch workload pods that use S3 CSI volumes
 2. Create MountpointS3PodAttachment CRDs when workloads need S3 volumes
 3. Spawn Mountpoint Pods based on the CRD specifications
@@ -35,6 +37,7 @@ The node component waits for the controller to create the necessary resources be
 **Location**: `pkg/driver/node/mounter/pod_mounter.go`
 
 **Responsibilities**:
+
 1. Wait for MountpointS3PodAttachment CRD to be created by the controller
 2. Wait for the associated Mountpoint Pod to be running
 3. Provide credentials to the Mountpoint Pod
@@ -50,7 +53,7 @@ sequenceDiagram
     participant CRD as MountpointS3PodAttachment
     participant N as CSI Node
     participant MP as Mountpoint Pod
-    
+
     W->>C: Pod scheduled with PVC
     C->>C: Detect S3 CSI volume
     C->>CRD: Create/Update CRD
@@ -78,12 +81,14 @@ func MountpointPodNameFor(podUID string, volumeName string) string {
 **Pattern**: `mp-<sha224_hash>`
 
 **Inputs**:
+
 - `podUID`: Unique identifier of the workload pod
 - `volumeName`: Name of the PersistentVolume
 
 **Example**: `mp-a7f3b2c9d8e5f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2`
 
 This deterministic naming ensures:
+
 - Same pod+volume combination always generates the same Mountpoint Pod name
 - Controller and node can independently calculate the expected pod name
 - No need for explicit communication of pod names between components
@@ -111,12 +116,14 @@ These indices enable the node to quickly find the relevant CRD for a given workl
 ## Pod Sharing
 
 Multiple workload pods can share a single Mountpoint Pod when they:
+
 - Are on the same node
 - Use the same PersistentVolume
 - Have compatible mount options
 - Use the same authentication source
 
 The controller manages this by:
+
 1. Checking if an existing Mountpoint Pod can serve the new workload
 2. Adding the workload UID to the existing pod's attachment list
 3. Creating a new Mountpoint Pod only if no suitable one exists
@@ -153,6 +160,7 @@ When a workload pod is deleted:
 ### Controller Configuration
 
 The controller requires RBAC permissions for:
+
 - Watching Pods
 - Creating/updating/deleting MountpointS3PodAttachments
 - Creating/deleting Mountpoint Pods
@@ -160,6 +168,7 @@ The controller requires RBAC permissions for:
 ### Node Configuration
 
 The node requires:
+
 - Access to list MountpointS3PodAttachments
 - Access to get Mountpoint Pods
 - Local filesystem access for FUSE operations
@@ -199,6 +208,7 @@ kubectl logs -n kube-system mp-<hash>
 ## Migration from v1
 
 The v2 architecture is backward compatible with v1 systemd-based mounts:
+
 - Existing mounts continue to work
 - New mounts use the CRD-based approach
 - Gradual migration as workloads are redeployed

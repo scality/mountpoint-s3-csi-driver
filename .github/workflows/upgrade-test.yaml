@@ -100,49 +100,49 @@ jobs:
       - name: Test Pod Mounter Transition After Restart
         run: |
           echo "=== Testing automatic transition from systemd to pod mounter ==="
-          
+
           # The upgrade test uses standalone pods (not deployments), so we need to recreate them manually
           echo "Getting test pods (standalone pods, not managed by deployment)..."
           kubectl get pods -n default | grep upgrade-test || true
-          
+
           # Check if any mountpoint pods exist (v1.2.0 uses systemd, so there shouldn't be any)
           echo "Checking for existing mountpoint pods (should be none with systemd mounter)..."
           kubectl get pods -n mount-s3 2>/dev/null || echo "No mountpoint pods namespace yet (expected for systemd)"
-          
+
           # Store the manifests we'll need to recreate the pods
           STATIC_POD_MANIFEST="tests/upgrade/manifests/static-pod.yaml"
           DYNAMIC_POD_MANIFEST="tests/upgrade/manifests/dynamic-pod.yaml"
-          
+
           # Delete the standalone test pods to trigger transition to pod mounter
           echo "Deleting standalone test pods..."
           kubectl delete pod upgrade-test-pod -n default --wait=true --ignore-not-found=true
           kubectl delete pod upgrade-test-dynamic-pod -n default --wait=true --ignore-not-found=true
-          
+
           # Recreate the pods (they will now use the pod mounter instead of systemd)
           echo "Recreating test pods (will use pod mounter now)..."
           if [ -f "$STATIC_POD_MANIFEST" ]; then
             echo "Recreating static test pod..."
             kubectl apply -f "$STATIC_POD_MANIFEST"
           fi
-          
+
           if [ -f "$DYNAMIC_POD_MANIFEST" ]; then
             echo "Recreating dynamic test pod..."
             kubectl apply -f "$DYNAMIC_POD_MANIFEST"
           fi
-          
+
           # Wait for pods to come up and be ready
           echo "Waiting for recreated pods to become ready..."
           kubectl wait --for=condition=Ready pod/upgrade-test-pod -n default --timeout=120s || true
           kubectl wait --for=condition=Ready pod/upgrade-test-dynamic-pod -n default --timeout=120s || true
-          
+
           # Show pod status
           echo "Test pods after recreation:"
           kubectl get pods -n default | grep upgrade-test || true
-          
+
           # Now check for mountpoint pods (should exist after restart with v2)
           echo "Checking for mountpoint pods after restart (should exist with pod mounter)..."
           kubectl get pods -n mount-s3 -o wide
-          
+
           # Verify mountpoint pods are running
           MOUNTPOINT_PODS=$(kubectl get pods -n mount-s3 --no-headers 2>/dev/null | wc -l)
           if [ "$MOUNTPOINT_PODS" -gt 0 ]; then
@@ -152,14 +152,14 @@ jobs:
             echo "✗ No mountpoint pods found - pod mounter may not be working"
             exit 1
           fi
-          
+
           # Test that we can still write to the volumes
           echo "Testing write access to volumes after mounter transition..."
-          
+
           # Test static provisioning pod
           if kubectl get pod upgrade-test-pod -n default &>/dev/null; then
             echo "Testing static provisioning pod..."
-            
+
             # CRITICAL: Verify data written before upgrade still exists
             echo "Checking for data persistence (before-upgrade.txt should exist)..."
             if kubectl exec -n default upgrade-test-pod -- test -f /data/before-upgrade.txt; then
@@ -169,23 +169,23 @@ jobs:
               echo "✗ FAILURE: Pre-upgrade data lost after pod recreation!"
               exit 1
             fi
-            
+
             # Write a new test file to verify mount is working
             kubectl exec -n default upgrade-test-pod -- sh -c "echo 'Pod mounter transition test - static' > /data/transition-test.txt"
-            
+
             # Read it back
             echo "Reading back new test file from static pod..."
             kubectl exec -n default upgrade-test-pod -- cat /data/transition-test.txt
-            
+
             # List all files to verify
             echo "All files in static pod mount:"
             kubectl exec -n default upgrade-test-pod -- ls -la /data/
           fi
-          
+
           # Test dynamic provisioning pod
           if kubectl get pod upgrade-test-dynamic-pod -n default &>/dev/null; then
             echo "Testing dynamic provisioning pod..."
-            
+
             # CRITICAL: Verify data written before upgrade still exists
             echo "Checking for data persistence (before-upgrade.txt should exist)..."
             if kubectl exec -n default upgrade-test-dynamic-pod -- test -f /data/before-upgrade.txt; then
@@ -195,19 +195,19 @@ jobs:
               echo "✗ FAILURE: Pre-upgrade data lost after pod recreation!"
               exit 1
             fi
-            
+
             # Write a test file to verify mount is working
             kubectl exec -n default upgrade-test-dynamic-pod -- sh -c "echo 'Pod mounter transition test - dynamic' > /data/transition-test-dynamic.txt"
-            
+
             # Read it back
             echo "Reading back test file from dynamic pod..."
             kubectl exec -n default upgrade-test-dynamic-pod -- cat /data/transition-test-dynamic.txt
-            
+
             # List files to verify (should include before-upgrade.txt from original test)
             echo "Files in dynamic pod mount:"
             kubectl exec -n default upgrade-test-dynamic-pod -- ls -la /data/
           fi
-          
+
           echo "✓ Pod mounter transition test completed successfully"
 
       - name: Stop K8s Event Capture and Generate Debug Report

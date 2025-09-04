@@ -3,6 +3,7 @@
 This repository hosts the Container Storage Interface (CSI) driver enabling Kubernetes applications to mount Scality S3 buckets as file system volumes.
 
 **Version 2.0 Features:**
+
 - **SELinux Support**: Full support for SELinux-enabled Kubernetes workloads through pod-based mounting
 - **Pod Sharing**: Multiple pods can efficiently share the same S3 volume using reference-counted locking
 - **Resource Optimization**: Headroom management ensures mount pods can be scheduled efficiently

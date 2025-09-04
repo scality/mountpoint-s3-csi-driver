@@ -129,8 +129,10 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 	args := mountpoint.ParseArgs(mountpointArgs)
 
 	// Pod mounter is always used in v2
+	fsGroup := ""
 	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
+			fsGroup = volumeMountGroup
 			// We need to add the following flags to support fsGroup
 			// If these flags were already set by customer in PV mountOptions then we won't override them
 			args.SetIfAbsent(mountpoint.ArgGid, volumeMountGroup)
@@ -154,7 +156,7 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 
 	credentialCtx := credentialProvideContextFromPublishRequest(req, args)
 
-	if err := ns.Mounter.Mount(ctx, bucket, target, credentialCtx, args); err != nil {
+	if err := ns.Mounter.Mount(ctx, bucket, target, credentialCtx, args, fsGroup); err != nil {
 		_ = os.Remove(target)
 		return nil, status.Errorf(codes.Internal, "Could not mount %q at %q: %v", bucket, target, err)
 	}

@@ -164,12 +164,12 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		// Create a controller-runtime client for CRD operations
 		// This is optional - if nil, the pod mounter will work in backward compatibility mode
 		var k8sClient client.Client
-		
+
 		// Initialize controller-runtime scheme and client
 		scheme := runtime.NewScheme()
 		utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 		utilruntime.Must(crdv2.AddToScheme(scheme))
-		
+
 		k8sClient, err = client.New(config, client.Options{
 			Scheme: scheme,
 		})
@@ -178,8 +178,8 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 			// Continue with nil client for backward compatibility
 			k8sClient = nil
 		}
-		
-		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, kubernetesVersion, k8sClient)
+
+		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, nil, kubernetesVersion, k8sClient)
 		if err != nil {
 			klog.Fatalln(err)
 		}
