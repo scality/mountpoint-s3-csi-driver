@@ -1,6 +1,0 @@
-==== START logs for container coredns of pod kube-system/coredns-6f5f77fcb7-fdx4j ====
-.:53
-[INFO] plugin/reload: Running configuration SHA512 = 27e6839075689f6b0d538082d5dcb94c9a3dd24d1a8ae74793ebeb887633502469d797c37ede46c92eda1590425d387aeb69b50997d670d8e0e1d9b400dc7d72
-CoreDNS-1.11.3
-linux/amd64, go1.21.11, a6338e9
-==== END logs for container coredns of pod kube-system/coredns-6f5f77fcb7-fdx4j ====

@@ -1,3 +1,0 @@
-==== START logs for container mountpoint of pod mount-s3/mp-159b10046d4e6e59585206321e043d7e26ef27ddda8259914b58fa7b ====
-I0904 08:30:27.351163       1 main.go:59] Trying to receive mount options from /comm/mount.sock
-==== END logs for container mountpoint of pod mount-s3/mp-159b10046d4e6e59585206321e043d7e26ef27ddda8259914b58fa7b ====
