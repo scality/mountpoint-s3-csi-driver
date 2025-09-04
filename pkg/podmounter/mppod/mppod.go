@@ -10,6 +10,8 @@ import (
 const (
 	// AnnotationNeedsUnmount is the annotation used to mark a pod for unmounting
 	AnnotationNeedsUnmount = "s3.csi.scality.com/needs-unmount"
+	// AnnotationNoNewWorkload is the annotation used to prevent new workloads from being assigned
+	AnnotationNoNewWorkload = "s3.csi.scality.com/no-new-workload"
 )
 
 // Pod labels

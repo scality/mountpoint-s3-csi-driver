@@ -64,6 +64,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Setup field indexers for MountpointS3PodAttachment CRDs
+	if err := crdv2.SetupManagerIndices(mgr); err != nil {
+		log.Error(err, "failed to setup field indexers")
+		os.Exit(1)
+	}
+
 	podConfig := mppod.Config{
 		Namespace:                   *mountpointNamespace,
 		MountpointVersion:           *mountpointVersion,
@@ -80,17 +86,10 @@ func main() {
 		ClusterVariant:   cluster.DetectVariant(conf, log),
 	}
 
-	// Setup the original pod reconciler for backward compatibility
+	// Setup the pod reconciler that will create MountpointS3PodAttachments
 	err = csicontroller.NewReconciler(mgr.GetClient(), podConfig).SetupWithManager(mgr)
 	if err != nil {
 		log.Error(err, "failed to create pod reconciler")
-		os.Exit(1)
-	}
-
-	// Setup the S3PodAttachment reconciler for v2 pod creation
-	s3paReconciler := csicontroller.NewS3PodAttachmentReconciler(mgr.GetClient(), scheme, podConfig)
-	if err := s3paReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "failed to create S3PodAttachment reconciler")
 		os.Exit(1)
 	}
 

@@ -34,6 +34,7 @@ const (
 	AuthenticationSourceUnspecified AuthenticationSource = ""
 	AuthenticationSourceDriver      AuthenticationSource = "driver"
 	AuthenticationSourceSecret      AuthenticationSource = "secret"
+	AuthenticationSourcePod         AuthenticationSource = "pod"
 )
 
 // MountKind represents the type of mount operation
