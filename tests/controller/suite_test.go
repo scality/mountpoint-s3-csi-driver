@@ -11,8 +11,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubectl/pkg/scheme"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -20,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/scality/mountpoint-s3-csi-driver/cmd/scality-csi-controller/csicontroller"
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
@@ -58,6 +61,7 @@ var (
 	cfg       *rest.Config
 	k8sClient client.Client
 	testEnv   *envtest.Environment
+	scheme    = runtime.NewScheme()
 )
 
 // Context to cancel after the suite to stop the controller and the manager.
@@ -65,6 +69,11 @@ var (
 	ctx    context.Context
 	cancel context.CancelFunc
 )
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(crdv2.AddToScheme(scheme))
+}
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -78,18 +87,24 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("Bootstrapping test environment")
-	testEnv = &envtest.Environment{}
+	testEnv = &envtest.Environment{
+		CRDDirectoryPaths: []string{"../../deploy/crd"},
+	}
 
 	var err error
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme.Scheme})
+	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme})
+	Expect(err).ToNot(HaveOccurred())
+
+	// Set up indices for MountpointS3PodAttachment
+	err = crdv2.SetupManagerIndices(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = csicontroller.NewReconciler(k8sManager.GetClient(), mppod.Config{
