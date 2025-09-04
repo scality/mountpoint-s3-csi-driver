@@ -85,10 +85,13 @@ To upgrade the Scality S3 CSI driver to a newer version:
 If the new version includes CRD changes, apply them using one of these methods:
 
 ```bash
-# Option 1: Direct from GitHub (specify the version tag)
+# Option 1: Using Kustomize (simplest, specify version tag)
+kubectl apply -k github.com/scality/mountpoint-s3-csi-driver?ref=v1.2.0
+
+# Option 2: Direct from GitHub raw content (specify version tag)
 kubectl apply -f https://raw.githubusercontent.com/scality/mountpoint-s3-csi-driver/v1.2.0/charts/scality-mountpoint-s3-csi-driver/crds/
 
-# Option 2: Using helm show (requires Helm 3.7+)
+# Option 3: Using helm show (requires Helm 3.7+)
 helm show crds oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver | kubectl apply -f -
 ```
 
