@@ -53,6 +53,10 @@ type WorkloadAttachment struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=s3pa
 // +kubebuilder:selectablefield:JSONPath=`.spec.nodeName`
+// +kubebuilder:selectablefield:JSONPath=`.spec.persistentVolumeName`
+// +kubebuilder:selectablefield:JSONPath=`.spec.volumeID`
+// +kubebuilder:selectablefield:JSONPath=`.spec.mountOptions`
+// +kubebuilder:selectablefield:JSONPath=`.spec.workloadFSGroup`
 // +kubebuilder:printcolumn:name="Node",type=string,JSONPath=`.spec.nodeName`,description="The node where the volume is mounted"
 // +kubebuilder:printcolumn:name="PV Name",type=string,JSONPath=`.spec.persistentVolumeName`,description="The persistent volume name"
 // +kubebuilder:printcolumn:name="Mount Options",type=string,JSONPath=`.spec.mountOptions`,description="Comma separated mount options"
