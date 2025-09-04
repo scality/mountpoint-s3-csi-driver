@@ -10,7 +10,7 @@ import (
 type FakeMounter struct{}
 
 func (m *FakeMounter) Mount(ctx context.Context, bucketName string, target string,
-	credentialCtx credentialprovider.ProvideContext, args mountpoint.Args,
+	credentialCtx credentialprovider.ProvideContext, args mountpoint.Args, fsGroup string,
 ) error {
 	return nil
 }

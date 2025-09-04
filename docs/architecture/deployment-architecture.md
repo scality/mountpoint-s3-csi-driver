@@ -23,7 +23,7 @@ graph TB
             subgraph init1["CSI Driver Init Container"]
                 I1[mount-s3 Installer: Copies binary to host]
             end
-            S1[Host systemd]
+            S1[Mountpoint Pod]
             M1[mount-s3 FUSE processes: One per mounted volume]
             A1[Application Pods]
         end
@@ -44,7 +44,7 @@ graph TB
             subgraph init2["CSI Driver Init Container"]
                 I2[mount-s3 Installer: Copies binary to host]
             end
-            S2[Host systemd]
+            S2[Mountpoint Pod]
             M2[mount-s3 FUSE processes: One per mounted volume]
             A2[Application Pods]
         end
@@ -59,7 +59,7 @@ graph TB
             subgraph init3["CSI Driver Init Container"]
                 I3[mount-s3 Installer: Copies binary to host]
             end
-            S3[Host systemd]
+            S3[Mountpoint Pod]
             M3[mount-s3 FUSE processes: One per mounted volume]
             A3[Application Pods]
         end
@@ -94,9 +94,9 @@ graph TB
     K2 -->|Volume requests via gRPC on host Unix socket| N2
     K3 -->|Volume requests via gRPC on host Unix socket| N3
 
-    N1 -->|Create/stop services via D-Bus| S1
-    N2 -->|Create/stop services via D-Bus| S2
-    N3 -->|Create/stop services via D-Bus| S3
+    N1 -->|Create/manage Mountpoint Pods| S1
+    N2 -->|Create/manage Mountpoint Pods| S2
+    N3 -->|Create/manage Mountpoint Pods| S3
 
     S1 -->|Start/stop/monitor processes| M1
     S2 -->|Start/stop/monitor processes| M2
@@ -131,17 +131,19 @@ graph TB
 
 | Component | Type | Purpose | Details |
 |-----------|------|---------|---------|
-| **mount-s3 Installer** | Init Container | Binary deployment | • Copies `mount-s3` binary from container to host at `/opt/mountpoint-s3-csi/bin/`<br/>• Runs first and must complete successfully before main containers start<br/>• Required because systemd executes processes on host filesystem<br/>• Sets appropriate file permissions for systemd execution |
-| **CSI Driver Node Service** | Main Container | Core CSI functionality | • Binary: `scality-s3-csi-driver`<br/>• Creates gRPC server on `/csi/csi.sock` Unix socket file<br/>• Exposes HTTP `/healthz` endpoint for Kubernetes liveness probe<br/>• Pod restart triggered if HTTP health check fails<br/>• Handles volume mount/unmount operations by launching `mount-s3` binary installed by init container<br/>• Manages systemd services via D-Bus that execute the `mount-s3` binary installed by init container |
+| **mount-s3 Installer** | Init Container | Binary deployment | • Copies `mount-s3` binary from container to host at `/opt/mountpoint-s3-csi/bin/`<br/>• Runs first and must complete successfully before main containers start<br/>• Required for Mountpoint Pods to access the binary<br/>• Sets appropriate file permissions for execution |
+| **CSI Driver Node Service** | Main Container | Core CSI functionality | • Binary: `scality-s3-csi-driver`<br/>• Creates gRPC server on `/csi/csi.sock` Unix socket file<br/>• Exposes HTTP `/healthz` endpoint for Kubernetes liveness probe<br/>• Pod restart triggered if HTTP health check fails<br/>• Handles volume mount/unmount operations<br/>• Creates and manages Mountpoint Pods that execute the `mount-s3` binary<br/>• Tracks pod attachments using MountpointS3PodAttachment CRDs |
 | **CSI Driver Registrar** | Sidecar | Kubelet registration | • Creates registration entry in `/registration/` directory watched by kubelet<br/>• Registration entry announces CSI driver name `s3.csi.scality.com` and Unix socket location `/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock`<br/>• Maintains registration while driver is deployed on node<br/>• Has own liveness probe for registration health<br/>• Uses standard Kubernetes CSI node-driver-registrar sidecar |
 | **CSI Driver Liveness Probe** | Sidecar | CSI socket health logging | • Checks CSI Driver Node Service via `/csi/csi.sock` Unix socket file<br/>• Logs health status to container logs for troubleshooting<br/>• Does NOT trigger pod restarts (logging only) |
 
-### Host-Level Components
+### Pod Mounter v2 Components
 
 | Scope | Component | Purpose | Details |
 |-------|-----------|---------|---------|
-| **Per Kubernetes Node** | Host systemd | Service management | • Host's service manager receiving D-Bus commands from CSI Driver Node Service<br/>• Creates transient systemd services that execute `mount-s3` binary installed by init container<br/>• Manages service lifecycle: start, stop, monitor mount processes<br/>• Provides process supervision and cleanup on service failures<br/>• Runs on host filesystem context, not in container |
-| **Per Volume** | mount-s3 FUSE processes | S3 filesystem mounting | • One process per mounted volume using `mount-s3` binary installed by init container<br/>• Executed by systemd services created via D-Bus by CSI Driver Node Service<br/>• Creates FUSE mount presenting S3 bucket as POSIX filesystem<br/>• Handles S3 API communication, caching, and file system semantics |
+| **Per Kubernetes Node** | Mountpoint Pods | Mount management | • Dedicated pods running in `mount-s3` namespace<br/>• Created and managed by CSI Driver Node Service<br/>• Supports SELinux contexts through Kubernetes pod security<br/>• Enables pod sharing through reference-counted locking<br/>• Runs with appropriate priority classes for resource management |
+| **Per Volume** | mount-s3 FUSE processes | S3 filesystem mounting | • One process per mounted volume running inside Mountpoint Pods<br/>• Executed with volume-specific credentials and mount options<br/>• Creates FUSE mount presenting S3 bucket as POSIX filesystem<br/>• Handles S3 API communication, caching, and file system semantics |
+| **Cluster-wide** | MountpointS3PodAttachment CRD | Attachment tracking | • Custom Resource tracking pod-to-volume attachments<br/>• Enables efficient pod sharing and cleanup<br/>• Manages lifecycle of shared mounts across pods |
+| **Resource Optimization** | Headroom Pods | Resource reservation | • Placeholder pods ensuring resources for Mountpoint Pods<br/>• Use scheduling gates and priority classes<br/>• Automatically preempted when real Mountpoint Pods need resources |
 
 ## Key Deployment Characteristics
 
@@ -151,7 +153,7 @@ graph TB
 |----------------|-------------------|-------------------|---------------|
 | **Cluster-wide** | One CSI Controller pod | Deployment (1 replica) | Dynamic provisioning only |
 | **Per Kubernetes Node** | One CSI Driver pod | DaemonSet | Always |
-| **Per Volume** | One mount-s3 process | systemd service | Always |
+| **Per Volume** | One or more Mountpoint Pods | Pod (can be shared) | Always |
 
 ### Communication Paths
 
@@ -163,7 +165,7 @@ graph TB
 | **CSI Driver Registration** | CSI Driver Registrar | Kubelet | Unix socket `/registration/` | Register driver per Kubernetes node | Both |
 | **Volume Operations** | Kubelet | CSI Driver Node Service | gRPC on Unix socket `/var/lib/kubelet/plugins/s3.csi.scality.com/csi.sock` | Mount/unmount requests | Both |
 | **Health Monitoring** | CSI Driver Liveness Probe | CSI Driver Node Service | gRPC on Unix socket `/csi/csi.sock` | Health status checks | Both |
-| **Service Management** | CSI Driver Node Service | systemd | D-Bus on `/run/systemd/` | Create/stop services | Both |
+| **Pod Management** | CSI Driver Node Service | Kubernetes API | HTTPS | Create/manage Mountpoint Pods | Both |
 | **File I/O** | Application pods | mount-s3 processes | FUSE | File system operations | Both |
 | **Storage Access** | mount-s3 processes | S3 endpoint | HTTPS | S3 API calls | Both |
 
