@@ -100,7 +100,7 @@ func (m *MockDbusObject) EXPECT() *MockDbusObjectMockRecorder {
 }
 
 // Go mocks base method.
-func (m *MockDbusObject) Go(method string, flags dbus.Flags, ch chan *dbus.Call, args ...interface{}) *dbus.Call {
+func (m *MockDbusObject) Go(method string, flags dbus.Flags, ch chan *dbus.Call, args ...any) *dbus.Call {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{method, flags, ch}
 	for _, a := range args {
@@ -116,6 +116,44 @@ func (mr *MockDbusObjectMockRecorder) Go(method, flags, ch interface{}, args ...
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{method, flags, ch}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Go", reflect.TypeOf((*MockDbusObject)(nil).Go), varargs...)
+}
+
+// MockSystemdSupervisorFactory is a mock of SystemdSupervisorFactory interface.
+type MockSystemdSupervisorFactory struct {
+	ctrl     *gomock.Controller
+	recorder *MockSystemdSupervisorFactoryMockRecorder
+}
+
+// MockSystemdSupervisorFactoryMockRecorder is the mock recorder for MockSystemdSupervisorFactory.
+type MockSystemdSupervisorFactoryMockRecorder struct {
+	mock *MockSystemdSupervisorFactory
+}
+
+// NewMockSystemdSupervisorFactory creates a new mock instance.
+func NewMockSystemdSupervisorFactory(ctrl *gomock.Controller) *MockSystemdSupervisorFactory {
+	mock := &MockSystemdSupervisorFactory{ctrl: ctrl}
+	mock.recorder = &MockSystemdSupervisorFactoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSystemdSupervisorFactory) EXPECT() *MockSystemdSupervisorFactoryMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockSystemdSupervisorFactory) Create() (*system.SystemdSupervisor, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create")
+	ret0, _ := ret[0].(*system.SystemdSupervisor)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockSystemdSupervisorFactoryMockRecorder) Create() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSystemdSupervisorFactory)(nil).Create))
 }
 
 // MockSystemdConnection is a mock of SystemdConnection interface.

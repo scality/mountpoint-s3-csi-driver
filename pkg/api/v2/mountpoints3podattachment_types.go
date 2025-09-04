@@ -10,15 +10,11 @@ const SelectableFieldNodeNameJSONPath = ".spec.nodeName"
 
 // The following fields are used as matching criteria to determine if a mountpoint s3 pod can be shared by having the same MountpointS3PodAttachment resource:
 const (
-	FieldNodeName                         = "spec.nodeName"
-	FieldPersistentVolumeName             = "spec.persistentVolumeName"
-	FieldVolumeID                         = "spec.volumeID"
-	FieldMountOptions                     = "spec.mountOptions"
-	FieldAuthenticationSource             = "spec.authenticationSource"
-	FieldWorkloadFSGroup                  = "spec.workloadFSGroup"
-	FieldWorkloadServiceAccountName       = "spec.workloadServiceAccountName"
-	FieldWorkloadNamespace                = "spec.workloadNamespace"
-	FieldWorkloadServiceAccountIAMRoleARN = "spec.workloadServiceAccountIAMRoleARN"
+	FieldNodeName             = "spec.nodeName"
+	FieldPersistentVolumeName = "spec.persistentVolumeName"
+	FieldVolumeID             = "spec.volumeID"
+	FieldMountOptions         = "spec.mountOptions"
+	FieldWorkloadFSGroup      = "spec.workloadFSGroup"
 )
 
 // MountpointS3PodAttachmentSpec defines the desired state of MountpointS3PodAttachment.
@@ -37,20 +33,8 @@ type MountpointS3PodAttachmentSpec struct {
 	// Comma separated mount options taken from volume.
 	MountOptions string `json:"mountOptions"`
 
-	// Authentication source taken from volume attribute field `authenticationSource`.
-	AuthenticationSource string `json:"authenticationSource"`
-
 	// Workload pod's `fsGroup` from pod security context
 	WorkloadFSGroup string `json:"workloadFSGroup"`
-
-	// Workload pod's service account name. Exists only if `authenticationSource: pod`.
-	WorkloadServiceAccountName string `json:"workloadServiceAccountName,omitempty"`
-
-	// Workload pod's namespace. Exists only if `authenticationSource: pod`.
-	WorkloadNamespace string `json:"workloadNamespace,omitempty"`
-
-	// EKS IAM Role ARN from workload pod's service account annotation (IRSA). Exists only if `authenticationSource: pod` and service account has `eks.amazonaws.com/role-arn` annotation.
-	WorkloadServiceAccountIAMRoleARN string `json:"workloadServiceAccountIAMRoleARN,omitempty"`
 
 	// Maps each Mountpoint S3 pod name to its workload attachments
 	MountpointS3PodAttachments map[string][]WorkloadAttachment `json:"mountpointS3PodAttachments"`

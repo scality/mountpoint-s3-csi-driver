@@ -1,5 +1,5 @@
 NAMESPACE            LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default              5m43s       Normal    Starting                  node/helm-test-cluster-control-plane                              
+default              5m43s       Normal    Starting                  node/helm-test-cluster-control-plane
 kube-system          5m57s       Normal    Pulled                    pod/kube-apiserver-helm-test-cluster-control-plane                Container image "registry.k8s.io/kube-apiserver:v1.32.0" already present on machine
 kube-system          5m57s       Normal    Pulled                    pod/kube-scheduler-helm-test-cluster-control-plane                Container image "registry.k8s.io/kube-scheduler:v1.32.0" already present on machine
 kube-system          5m57s       Normal    Pulled                    pod/kube-controller-manager-helm-test-cluster-control-plane       Container image "registry.k8s.io/kube-controller-manager:v1.32.0" already present on machine

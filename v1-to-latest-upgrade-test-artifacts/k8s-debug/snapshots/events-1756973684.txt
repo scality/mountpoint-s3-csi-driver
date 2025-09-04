@@ -1,5 +1,5 @@
 NAMESPACE            LAST SEEN   TYPE      REASON                    OBJECT                                                           MESSAGE
-default              4m46s       Normal    Starting                  node/upgrade-test-cluster-control-plane                          
+default              4m46s       Normal    Starting                  node/upgrade-test-cluster-control-plane
 default              5m          Normal    NodeHasSufficientPID      node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientPID
 default              5m          Normal    NodeHasSufficientMemory   node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientMemory
 default              5m          Normal    NodeHasNoDiskPressure     node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasNoDiskPressure

@@ -3,7 +3,7 @@ I0904 08:15:18.485866       1 main.go:390] probe TCP address helm-test-cluster-c
 I0904 08:15:18.487042       1 main.go:109] connected to apiserver: https://helm-test-cluster-control-plane:6443
 I0904 08:15:18.487223       1 main.go:139] hostIP = 172.18.0.2
 podIP = 172.18.0.2
-I0904 08:15:18.487335       1 main.go:148] setting mtu 1500 for CNI 
+I0904 08:15:18.487335       1 main.go:148] setting mtu 1500 for CNI
 I0904 08:15:18.487352       1 main.go:178] kindnetd IP family: "ipv4"
 I0904 08:15:18.487373       1 main.go:182] noMask IPv4 subnets: [10.244.0.0/16]
 I0904 08:15:18.899319       1 controller.go:361] Starting controller kube-network-policies

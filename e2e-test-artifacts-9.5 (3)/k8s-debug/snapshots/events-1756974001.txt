@@ -1,5 +1,5 @@
 NAMESPACE            LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default              4m43s       Normal    Starting                  node/helm-test-cluster-control-plane                              
+default              4m43s       Normal    Starting                  node/helm-test-cluster-control-plane
 default              4m57s       Normal    NodeHasNoDiskPressure     node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasNoDiskPressure
 kube-system          4m57s       Normal    Pulled                    pod/etcd-helm-test-cluster-control-plane                          Container image "registry.k8s.io/etcd:3.5.16-0" already present on machine
 kube-system          4m57s       Normal    Pulled                    pod/kube-apiserver-helm-test-cluster-control-plane                Container image "registry.k8s.io/kube-apiserver:v1.32.0" already present on machine

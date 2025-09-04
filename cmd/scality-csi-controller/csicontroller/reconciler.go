@@ -20,8 +20,6 @@ import (
 	"github.com/go-logr/logr"
 	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/volumecontext"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 )
 
@@ -29,7 +27,6 @@ const debugLevel = 4
 
 const (
 	mountpointCSIDriverName = constants.DriverName
-	defaultServiceAccount   = "default"
 )
 
 const (
@@ -218,8 +215,7 @@ func (r *Reconciler) spawnOrDeleteMountpointPodIfNeeded(
 	pv *corev1.PersistentVolume,
 ) (bool, error) {
 	workloadUID := string(workloadPod.UID)
-	roleArn := "" // For now, we don't support IRSA
-	fieldFilters := r.buildFieldFilters(workloadPod, pv, roleArn)
+	fieldFilters := r.buildFieldFilters(workloadPod, pv)
 	s3pa, err := r.getExistingS3PodAttachment(ctx, fieldFilters)
 	if err != nil {
 		return Requeue, err
@@ -233,7 +229,7 @@ func (r *Reconciler) spawnOrDeleteMountpointPodIfNeeded(
 	if s3pa != nil {
 		return r.handleExistingS3PodAttachment(ctx, workloadPod, pv, s3pa, log)
 	} else {
-		return r.handleNewS3PodAttachment(ctx, workloadPod, pv, roleArn, log)
+		return r.handleNewS3PodAttachment(ctx, workloadPod, pv, log)
 	}
 }
 
@@ -270,8 +266,7 @@ func (r *Reconciler) setupLogger(
 }
 
 // buildFieldFilters build appropriate matching field filters for List operation on MountpointS3PodAttachments
-func (r *Reconciler) buildFieldFilters(workloadPod *corev1.Pod, pv *corev1.PersistentVolume, roleArn string) client.MatchingFields {
-	authSource := r.getAuthSource(pv)
+func (r *Reconciler) buildFieldFilters(workloadPod *corev1.Pod, pv *corev1.PersistentVolume) client.MatchingFields {
 	fsGroup := r.getFSGroup(workloadPod)
 
 	fieldFilters := client.MatchingFields{
@@ -280,27 +275,9 @@ func (r *Reconciler) buildFieldFilters(workloadPod *corev1.Pod, pv *corev1.Persi
 		crdv2.FieldVolumeID:             pv.Spec.CSI.VolumeHandle,
 		crdv2.FieldMountOptions:         strings.Join(pv.Spec.MountOptions, ","),
 		crdv2.FieldWorkloadFSGroup:      fsGroup,
-		crdv2.FieldAuthenticationSource: authSource,
-	}
-
-	if authSource == credentialprovider.AuthenticationSourcePod {
-		fieldFilters[crdv2.FieldWorkloadNamespace] = workloadPod.Namespace
-		fieldFilters[crdv2.FieldWorkloadServiceAccountName] = getServiceAccountName(workloadPod)
-		fieldFilters[crdv2.FieldWorkloadServiceAccountIAMRoleARN] = roleArn
 	}
 
 	return fieldFilters
-}
-
-// getAuthSource returns authentication source from given PV.
-// Defaults to `driver` if `authenticationSource` is not found in volume attributes.
-func (r *Reconciler) getAuthSource(pv *corev1.PersistentVolume) string {
-	volumeAttributes := mppod.ExtractVolumeAttributes(pv)
-	authSource := volumeAttributes[volumecontext.AuthenticationSource]
-	if authSource == credentialprovider.AuthenticationSourceUnspecified {
-		return credentialprovider.AuthenticationSourceDriver
-	}
-	return authSource
 }
 
 // getFSGroup returns the FSGroup value from the pod's security context as a string.
@@ -548,7 +525,6 @@ func (r *Reconciler) handleNewS3PodAttachment(
 	ctx context.Context,
 	workloadPod *corev1.Pod,
 	pv *corev1.PersistentVolume,
-	roleArn string,
 	log logr.Logger,
 ) (bool, error) {
 	if isPodRunning(workloadPod) {
@@ -559,7 +535,7 @@ func (r *Reconciler) handleNewS3PodAttachment(
 		return DontRequeue, nil
 	}
 
-	if err := r.createS3PodAttachmentWithMPPod(ctx, workloadPod, pv, roleArn, log); err != nil {
+	if err := r.createS3PodAttachmentWithMPPod(ctx, workloadPod, pv, log); err != nil {
 		return Requeue, err
 	}
 
@@ -571,10 +547,8 @@ func (r *Reconciler) createS3PodAttachmentWithMPPod(
 	ctx context.Context,
 	workloadPod *corev1.Pod,
 	pv *corev1.PersistentVolume,
-	roleArn string,
 	log logr.Logger,
 ) error {
-	authSource := r.getAuthSource(pv)
 	mpPod, err := r.spawnMountpointPod(ctx, workloadPod, pv, log)
 	if err != nil {
 		log.Error(err, "Failed to spawn Mountpoint Pod")
@@ -590,16 +564,10 @@ func (r *Reconciler) createS3PodAttachmentWithMPPod(
 			VolumeID:             pv.Spec.CSI.VolumeHandle,
 			MountOptions:         strings.Join(pv.Spec.MountOptions, ","),
 			WorkloadFSGroup:      r.getFSGroup(workloadPod),
-			AuthenticationSource: authSource,
 			MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
 				mpPod.Name: {{WorkloadPodUID: string(workloadPod.UID), AttachmentTime: metav1.NewTime(time.Now().UTC())}},
 			},
 		},
-	}
-	if authSource == credentialprovider.AuthenticationSourcePod {
-		s3pa.Spec.WorkloadNamespace = workloadPod.Namespace
-		s3pa.Spec.WorkloadServiceAccountName = getServiceAccountName(workloadPod)
-		s3pa.Spec.WorkloadServiceAccountIAMRoleARN = roleArn
 	}
 
 	err = r.Create(ctx, s3pa)
@@ -810,12 +778,4 @@ func s3paContainsWorkload(s3pa *crdv2.MountpointS3PodAttachment, workloadUID str
 		}
 	}
 	return false
-}
-
-// getServiceAccountName returns the pod's service account name or "default" if not specified
-func getServiceAccountName(pod *corev1.Pod) string {
-	if pod.Spec.ServiceAccountName != "" {
-		return pod.Spec.ServiceAccountName
-	}
-	return defaultServiceAccount
 }

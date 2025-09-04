@@ -1,5 +1,5 @@
 NAMESPACE                   LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default                     3m12s       Normal    Starting                  node/helm-test-cluster-control-plane                              
+default                     3m12s       Normal    Starting                  node/helm-test-cluster-control-plane
 kube-system                 3m26s       Normal    Pulled                    pod/kube-apiserver-helm-test-cluster-control-plane                Container image "registry.k8s.io/kube-apiserver:v1.32.0" already present on machine
 default                     3m26s       Normal    NodeHasNoDiskPressure     node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasNoDiskPressure
 default                     3m26s       Normal    NodeHasSufficientMemory   node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasSufficientMemory

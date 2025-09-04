@@ -1,5 +1,5 @@
 NAMESPACE                  LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default                    3m43s       Normal    Starting                  node/helm-test-cluster-control-plane                              
+default                    3m43s       Normal    Starting                  node/helm-test-cluster-control-plane
 kube-system                3m56s       Normal    Pulled                    pod/kube-scheduler-helm-test-cluster-control-plane                Container image "registry.k8s.io/kube-scheduler:v1.32.0" already present on machine
 default                    3m56s       Normal    NodeAllocatableEnforced   node/helm-test-cluster-control-plane                              Updated Node Allocatable limit across pods
 default                    3m56s       Normal    NodeHasSufficientPID      node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasSufficientPID

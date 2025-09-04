@@ -94,12 +94,6 @@ func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID,
 		crdv2.FieldPersistentVolumeName: volumeName,
 		crdv2.FieldVolumeID:             volumeID,
 		crdv2.FieldWorkloadFSGroup:      fsGroup,
-		crdv2.FieldAuthenticationSource: credentialCtx.AuthenticationSource,
-	}
-
-	if credentialCtx.AuthenticationSource == credentialprovider.AuthenticationSourcePod {
-		fieldFilters[crdv2.FieldWorkloadNamespace] = credentialCtx.PodNamespace
-		// TODO: Add ServiceAccountName when it's added to ProvideContext
 	}
 
 	klog.V(4).Infof("Waiting for MountpointS3PodAttachment for podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)

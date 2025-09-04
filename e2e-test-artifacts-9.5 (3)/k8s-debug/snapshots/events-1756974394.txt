@@ -1,5 +1,5 @@
 NAMESPACE                   LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default                     11m         Normal    Starting                  node/helm-test-cluster-control-plane                              
+default                     11m         Normal    Starting                  node/helm-test-cluster-control-plane
 default                     11m         Normal    NodeHasSufficientMemory   node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasSufficientMemory
 default                     11m         Normal    NodeHasNoDiskPressure     node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasNoDiskPressure
 default                     11m         Normal    NodeAllocatableEnforced   node/helm-test-cluster-control-plane                              Updated Node Allocatable limit across pods

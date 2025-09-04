@@ -12,15 +12,11 @@ import (
 // getIndexFields returns the set of field extractors
 func getIndexFields() map[string]func(*MountpointS3PodAttachment) string {
 	return map[string]func(*MountpointS3PodAttachment) string{
-		FieldNodeName:                         func(cr *MountpointS3PodAttachment) string { return cr.Spec.NodeName },
-		FieldPersistentVolumeName:             func(cr *MountpointS3PodAttachment) string { return cr.Spec.PersistentVolumeName },
-		FieldVolumeID:                         func(cr *MountpointS3PodAttachment) string { return cr.Spec.VolumeID },
-		FieldMountOptions:                     func(cr *MountpointS3PodAttachment) string { return cr.Spec.MountOptions },
-		FieldAuthenticationSource:             func(cr *MountpointS3PodAttachment) string { return cr.Spec.AuthenticationSource },
-		FieldWorkloadFSGroup:                  func(cr *MountpointS3PodAttachment) string { return cr.Spec.WorkloadFSGroup },
-		FieldWorkloadServiceAccountName:       func(cr *MountpointS3PodAttachment) string { return cr.Spec.WorkloadServiceAccountName },
-		FieldWorkloadNamespace:                func(cr *MountpointS3PodAttachment) string { return cr.Spec.WorkloadNamespace },
-		FieldWorkloadServiceAccountIAMRoleARN: func(cr *MountpointS3PodAttachment) string { return cr.Spec.WorkloadServiceAccountIAMRoleARN },
+		FieldNodeName:             func(cr *MountpointS3PodAttachment) string { return cr.Spec.NodeName },
+		FieldPersistentVolumeName: func(cr *MountpointS3PodAttachment) string { return cr.Spec.PersistentVolumeName },
+		FieldVolumeID:             func(cr *MountpointS3PodAttachment) string { return cr.Spec.VolumeID },
+		FieldMountOptions:         func(cr *MountpointS3PodAttachment) string { return cr.Spec.MountOptions },
+		FieldWorkloadFSGroup:      func(cr *MountpointS3PodAttachment) string { return cr.Spec.WorkloadFSGroup },
 	}
 }
 

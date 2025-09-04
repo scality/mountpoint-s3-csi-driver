@@ -1,5 +1,5 @@
 NAMESPACE                   LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default                     2m12s       Normal    Starting                  node/helm-test-cluster-control-plane                              
+default                     2m12s       Normal    Starting                  node/helm-test-cluster-control-plane
 default                     2m26s       Normal    NodeHasSufficientMemory   node/helm-test-cluster-control-plane                              Node helm-test-cluster-control-plane status is now: NodeHasSufficientMemory
 kube-system                 2m26s       Normal    Pulled                    pod/kube-controller-manager-helm-test-cluster-control-plane       Container image "registry.k8s.io/kube-controller-manager:v1.32.0" already present on machine
 default                     2m26s       Normal    NodeAllocatableEnforced   node/helm-test-cluster-control-plane                              Updated Node Allocatable limit across pods

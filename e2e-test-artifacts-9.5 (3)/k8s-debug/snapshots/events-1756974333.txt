@@ -1,5 +1,5 @@
 NAMESPACE                   LAST SEEN   TYPE      REASON                    OBJECT                                                            MESSAGE
-default                     10m         Normal    Starting                  node/helm-test-cluster-control-plane                              
+default                     10m         Normal    Starting                  node/helm-test-cluster-control-plane
 default                     10m         Normal    NodeAllocatableEnforced   node/helm-test-cluster-control-plane                              Updated Node Allocatable limit across pods
 kube-system                 10m         Normal    Pulled                    pod/kube-apiserver-helm-test-cluster-control-plane                Container image "registry.k8s.io/kube-apiserver:v1.32.0" already present on machine
 kube-system                 10m         Normal    Pulled                    pod/etcd-helm-test-cluster-control-plane                          Container image "registry.k8s.io/etcd:3.5.16-0" already present on machine
