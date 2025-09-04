@@ -137,5 +137,7 @@ nav:
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Administrator and User Guide: admin-user-guide.md
+  - Testing:
+      - V2 Test Limitations: testing/v2-test-limitations.md
   - Release Notes: release-notes.md
   - Glossary: glossary.md
