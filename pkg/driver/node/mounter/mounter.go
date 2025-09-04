@@ -4,6 +4,7 @@ package mounter
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint"
@@ -33,4 +34,10 @@ func MountS3Path() string {
 		mountS3Path = defaultMountS3Path
 	}
 	return mountS3Path
+}
+
+// SourceMountDir returns the internal S3 CSI Driver directory for source mount points.
+// This is where Mountpoint Pods mount S3 buckets before they are bind-mounted to targets.
+func SourceMountDir(kubeletPath string) string {
+	return filepath.Join(kubeletPath, "plugins", "s3.csi.scality.com", "mnt")
 }
