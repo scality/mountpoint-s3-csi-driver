@@ -72,6 +72,48 @@ Check CSI driver registration:
 kubectl get csidriver s3.csi.scality.com
 ```
 
+## Upgrading
+
+To upgrade the Scality S3 CSI driver to a newer version:
+
+!!! important "CRD Updates Required"
+    Helm 3 does not automatically update Custom Resource Definitions (CRDs) during upgrade for safety reasons.
+    If the new version includes CRD changes, you must apply them manually before upgrading.
+
+**Step 1. Apply CRD updates (if any):**
+
+First, check if there are CRD changes in the new version:
+
+```bash
+# Download and extract the new chart version
+helm pull oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver --untar
+
+# Apply CRD updates if they exist
+kubectl apply -f scality-mountpoint-s3-csi-driver/crds/
+```
+
+**Step 2. Upgrade the Helm release:**
+
+```bash
+helm upgrade \
+  scality-mountpoint-s3-csi-driver \
+  oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
+  --set node.s3EndpointUrl="${S3_ENDPOINT_URL}"
+```
+
+**Step 3. Verify the upgrade:**
+
+```bash
+# Check the Helm release status
+helm status scality-mountpoint-s3-csi-driver
+
+# Verify all pods are running with the new version
+kubectl get pods -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver
+```
+
+!!! note "Existing Volumes"
+    Existing mounted volumes will continue to work during and after the upgrade. The CSI driver is designed to handle upgrades gracefully without disrupting running workloads.
+
 ## Uninstallation
 
 !!! note "If Volumes Were Provisioned"
