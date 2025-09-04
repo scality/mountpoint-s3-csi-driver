@@ -292,16 +292,23 @@ var _ = Describe("Mountpoint Controller", func() {
 						// Wait for the S3PodAttachment to be updated with pod2's UID
 						Eventually(func(g Gomega) {
 							s3paList := &crdv2.MountpointS3PodAttachmentList{}
-							g.Expect(k8sClient.List(ctx, s3paList, client.MatchingFields{
-								"spec.nodeName":             "test-node",
-								"spec.persistentVolumeName": vol.pv.Name,
-							})).To(Succeed())
-							g.Expect(s3paList.Items).To(HaveLen(1))
+							// List all S3PodAttachments and filter manually
+							g.Expect(k8sClient.List(ctx, s3paList)).To(Succeed())
 
-							s3pa := &s3paList.Items[0]
+							// Filter for the one matching our node and PV
+							var matchingS3pa *crdv2.MountpointS3PodAttachment
+							for i := range s3paList.Items {
+								s3pa := &s3paList.Items[i]
+								if s3pa.Spec.NodeName == "test-node" && s3pa.Spec.PersistentVolumeName == vol.pv.Name {
+									matchingS3pa = s3pa
+									break
+								}
+							}
+							g.Expect(matchingS3pa).ToNot(BeNil(), "Should find MountpointS3PodAttachment for node and PV")
+
 							// Check that the Mountpoint Pod has both workload UIDs
-							g.Expect(s3pa.Spec.MountpointS3PodAttachments).To(HaveLen(1))
-							for _, attachments := range s3pa.Spec.MountpointS3PodAttachments {
+							g.Expect(matchingS3pa.Spec.MountpointS3PodAttachments).To(HaveLen(1))
+							for _, attachments := range matchingS3pa.Spec.MountpointS3PodAttachments {
 								uids := []string{}
 								for _, attachment := range attachments {
 									uids = append(uids, attachment.WorkloadPodUID)
@@ -334,16 +341,23 @@ var _ = Describe("Mountpoint Controller", func() {
 						// Wait for the S3PodAttachment to be updated with pod2's UID
 						Eventually(func(g Gomega) {
 							s3paList := &crdv2.MountpointS3PodAttachmentList{}
-							g.Expect(k8sClient.List(ctx, s3paList, client.MatchingFields{
-								"spec.nodeName":             "test-node",
-								"spec.persistentVolumeName": vol.pv.Name,
-							})).To(Succeed())
-							g.Expect(s3paList.Items).To(HaveLen(1))
+							// List all S3PodAttachments and filter manually
+							g.Expect(k8sClient.List(ctx, s3paList)).To(Succeed())
 
-							s3pa := &s3paList.Items[0]
+							// Filter for the one matching our node and PV
+							var matchingS3pa *crdv2.MountpointS3PodAttachment
+							for i := range s3paList.Items {
+								s3pa := &s3paList.Items[i]
+								if s3pa.Spec.NodeName == "test-node" && s3pa.Spec.PersistentVolumeName == vol.pv.Name {
+									matchingS3pa = s3pa
+									break
+								}
+							}
+							g.Expect(matchingS3pa).ToNot(BeNil(), "Should find MountpointS3PodAttachment for node and PV")
+
 							// Check that the Mountpoint Pod has both workload UIDs
-							g.Expect(s3pa.Spec.MountpointS3PodAttachments).To(HaveLen(1))
-							for _, attachments := range s3pa.Spec.MountpointS3PodAttachments {
+							g.Expect(matchingS3pa.Spec.MountpointS3PodAttachments).To(HaveLen(1))
+							for _, attachments := range matchingS3pa.Spec.MountpointS3PodAttachments {
 								uids := []string{}
 								for _, attachment := range attachments {
 									uids = append(uids, attachment.WorkloadPodUID)
