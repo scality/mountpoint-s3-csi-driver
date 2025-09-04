@@ -1,0 +1,126 @@
+NAMESPACE            LAST SEEN   TYPE      REASON                    OBJECT                                                           MESSAGE
+default              3m46s       Normal    Starting                  node/upgrade-test-cluster-control-plane                          
+default              3m59s       Normal    NodeHasSufficientPID      node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientPID
+default              3m59s       Normal    NodeHasSufficientMemory   node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientMemory
+default              3m59s       Normal    NodeHasNoDiskPressure     node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasNoDiskPressure
+kube-system          3m58s       Normal    Started                   pod/kube-scheduler-upgrade-test-cluster-control-plane            Started container kube-scheduler
+kube-system          3m58s       Normal    Pulled                    pod/kube-apiserver-upgrade-test-cluster-control-plane            Container image "registry.k8s.io/kube-apiserver:v1.32.0" already present on machine
+kube-system          3m58s       Normal    Pulled                    pod/etcd-upgrade-test-cluster-control-plane                      Container image "registry.k8s.io/etcd:3.5.16-0" already present on machine
+kube-system          3m58s       Normal    Created                   pod/kube-scheduler-upgrade-test-cluster-control-plane            Created container: kube-scheduler
+kube-system          3m58s       Normal    Pulled                    pod/kube-scheduler-upgrade-test-cluster-control-plane            Container image "registry.k8s.io/kube-scheduler:v1.32.0" already present on machine
+kube-system          3m58s       Normal    Created                   pod/kube-apiserver-upgrade-test-cluster-control-plane            Created container: kube-apiserver
+kube-system          3m58s       Normal    Started                   pod/kube-apiserver-upgrade-test-cluster-control-plane            Started container kube-apiserver
+kube-system          3m58s       Normal    Pulled                    pod/kube-controller-manager-upgrade-test-cluster-control-plane   Container image "registry.k8s.io/kube-controller-manager:v1.32.0" already present on machine
+kube-system          3m58s       Normal    Created                   pod/kube-controller-manager-upgrade-test-cluster-control-plane   Created container: kube-controller-manager
+kube-system          3m58s       Normal    Started                   pod/kube-controller-manager-upgrade-test-cluster-control-plane   Started container kube-controller-manager
+kube-system          3m57s       Normal    Started                   pod/etcd-upgrade-test-cluster-control-plane                      Started container etcd
+kube-system          3m57s       Normal    Created                   pod/etcd-upgrade-test-cluster-control-plane                      Created container: etcd
+kube-system          3m53s       Normal    LeaderElection            lease/kube-controller-manager                                    upgrade-test-cluster-control-plane_37d68d4d-f39d-4b71-8cd4-b680581712e7 became leader
+kube-system          3m52s       Warning   Unhealthy                 pod/kube-scheduler-upgrade-test-cluster-control-plane            Readiness probe failed: HTTP probe failed with statuscode: 500
+default              3m52s       Normal    Starting                  node/upgrade-test-cluster-control-plane                          Starting kubelet.
+default              3m52s       Normal    NodeAllocatableEnforced   node/upgrade-test-cluster-control-plane                          Updated Node Allocatable limit across pods
+default              3m52s       Normal    NodeHasNoDiskPressure     node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasNoDiskPressure
+default              3m52s       Normal    NodeHasSufficientMemory   node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientMemory
+default              3m52s       Normal    NodeHasSufficientPID      node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientPID
+kube-system          3m51s       Normal    LeaderElection            lease/kube-scheduler                                             upgrade-test-cluster-control-plane_68d3a523-290b-4140-a0dd-928cf4227243 became leader
+default              3m48s       Normal    RegisteredNode            node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane event: Registered Node upgrade-test-cluster-control-plane in Controller
+local-path-storage   3m48s       Normal    ScalingReplicaSet         deployment/local-path-provisioner                                Scaled up replica set local-path-provisioner-58cc7856b6 from 0 to 1
+kube-system          3m48s       Normal    ScalingReplicaSet         deployment/coredns                                               Scaled up replica set coredns-668d6bf9bc from 0 to 2
+kube-system          3m47s       Warning   FailedScheduling          pod/coredns-668d6bf9bc-hjn2b                                     0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+kube-system          3m47s       Normal    SuccessfulCreate          daemonset/kindnet                                                Created pod: kindnet-4sf8z
+kube-system          3m47s       Normal    Pulled                    pod/kindnet-4sf8z                                                Container image "docker.io/kindest/kindnetd:v20241212-9f82dd49" already present on machine
+kube-system          3m47s       Normal    SuccessfulCreate          replicaset/coredns-668d6bf9bc                                    Created pod: coredns-668d6bf9bc-hjn2b
+kube-system          3m47s       Normal    SuccessfulCreate          replicaset/coredns-668d6bf9bc                                    Created pod: coredns-668d6bf9bc-wcm4n
+kube-system          3m47s       Warning   FailedScheduling          pod/coredns-668d6bf9bc-wcm4n                                     0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+local-path-storage   3m47s       Normal    SuccessfulCreate          replicaset/local-path-provisioner-58cc7856b6                     Created pod: local-path-provisioner-58cc7856b6-7rksv
+local-path-storage   3m47s       Warning   FailedScheduling          pod/local-path-provisioner-58cc7856b6-7rksv                      0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+kube-system          3m47s       Normal    SuccessfulCreate          daemonset/kube-proxy                                             Created pod: kube-proxy-9jhzh
+kube-system          3m47s       Normal    Scheduled                 pod/kindnet-4sf8z                                                Successfully assigned kube-system/kindnet-4sf8z to upgrade-test-cluster-control-plane
+kube-system          3m47s       Normal    Scheduled                 pod/kube-proxy-9jhzh                                             Successfully assigned kube-system/kube-proxy-9jhzh to upgrade-test-cluster-control-plane
+kube-system          3m47s       Normal    Pulled                    pod/kube-proxy-9jhzh                                             Container image "registry.k8s.io/kube-proxy:v1.32.0" already present on machine
+kube-system          3m47s       Normal    Created                   pod/kube-proxy-9jhzh                                             Created container: kube-proxy
+kube-system          3m46s       Normal    Started                   pod/kube-proxy-9jhzh                                             Started container kube-proxy
+kube-system          3m46s       Normal    Created                   pod/kindnet-4sf8z                                                Created container: kindnet-cni
+kube-system          3m45s       Normal    Started                   pod/kindnet-4sf8z                                                Started container kindnet-cni
+default              3m35s       Normal    NodeReady                 node/upgrade-test-cluster-control-plane                          Node upgrade-test-cluster-control-plane status is now: NodeReady
+kube-system          3m34s       Normal    Scheduled                 pod/coredns-668d6bf9bc-hjn2b                                     Successfully assigned kube-system/coredns-668d6bf9bc-hjn2b to upgrade-test-cluster-control-plane
+kube-system          3m34s       Normal    Pulled                    pod/coredns-668d6bf9bc-hjn2b                                     Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          3m34s       Normal    Scheduled                 pod/coredns-668d6bf9bc-wcm4n                                     Successfully assigned kube-system/coredns-668d6bf9bc-wcm4n to upgrade-test-cluster-control-plane
+kube-system          3m34s       Normal    Pulled                    pod/coredns-668d6bf9bc-wcm4n                                     Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+local-path-storage   3m34s       Normal    Pulled                    pod/local-path-provisioner-58cc7856b6-7rksv                      Container image "docker.io/kindest/local-path-provisioner:v20241212-8ac705d0" already present on machine
+local-path-storage   3m34s       Normal    Scheduled                 pod/local-path-provisioner-58cc7856b6-7rksv                      Successfully assigned local-path-storage/local-path-provisioner-58cc7856b6-7rksv to upgrade-test-cluster-control-plane
+kube-system          3m33s       Normal    Started                   pod/coredns-668d6bf9bc-wcm4n                                     Started container coredns
+kube-system          3m33s       Normal    Created                   pod/coredns-668d6bf9bc-wcm4n                                     Created container: coredns
+local-path-storage   3m33s       Normal    Created                   pod/local-path-provisioner-58cc7856b6-7rksv                      Created container: local-path-provisioner
+local-path-storage   3m33s       Normal    Started                   pod/local-path-provisioner-58cc7856b6-7rksv                      Started container local-path-provisioner
+kube-system          3m33s       Normal    Started                   pod/coredns-668d6bf9bc-hjn2b                                     Started container coredns
+kube-system          3m33s       Normal    Created                   pod/coredns-668d6bf9bc-hjn2b                                     Created container: coredns
+kube-system          2m32s       Normal    ScalingReplicaSet         deployment/coredns                                               Scaled down replica set coredns-668d6bf9bc from 2 to 1
+kube-system          2m32s       Normal    ScalingReplicaSet         deployment/coredns                                               Scaled up replica set coredns-7bf54f7fcd from 0 to 1
+kube-system          2m32s       Normal    SuccessfulCreate          replicaset/coredns-7bf54f7fcd                                    Created pod: coredns-7bf54f7fcd-psthl
+kube-system          2m32s       Normal    Scheduled                 pod/coredns-7bf54f7fcd-psthl                                     Successfully assigned kube-system/coredns-7bf54f7fcd-psthl to upgrade-test-cluster-control-plane
+kube-system          2m32s       Normal    SuccessfulDelete          replicaset/coredns-668d6bf9bc                                    Deleted pod: coredns-668d6bf9bc-wcm4n
+kube-system          2m32s       Normal    Killing                   pod/coredns-668d6bf9bc-wcm4n                                     Stopping container coredns
+kube-system          2m32s       Normal    ScalingReplicaSet         deployment/coredns                                               Scaled up replica set coredns-7bf54f7fcd from 1 to 2
+kube-system          2m31s       Normal    Created                   pod/coredns-7bf54f7fcd-psthl                                     Created container: coredns
+kube-system          2m31s       Normal    Started                   pod/coredns-7bf54f7fcd-psthl                                     Started container coredns
+kube-system          2m31s       Normal    SuccessfulCreate          replicaset/coredns-7bf54f7fcd                                    Created pod: coredns-7bf54f7fcd-2llkl
+kube-system          2m31s       Normal    ScalingReplicaSet         deployment/coredns                                               Scaled down replica set coredns-668d6bf9bc from 1 to 0
+kube-system          2m31s       Normal    Killing                   pod/coredns-668d6bf9bc-hjn2b                                     Stopping container coredns
+kube-system          2m31s       Normal    Pulled                    pod/coredns-7bf54f7fcd-psthl                                     Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          2m31s       Normal    Started                   pod/coredns-7bf54f7fcd-2llkl                                     Started container coredns
+kube-system          2m31s       Normal    Created                   pod/coredns-7bf54f7fcd-2llkl                                     Created container: coredns
+kube-system          2m31s       Normal    Pulled                    pod/coredns-7bf54f7fcd-2llkl                                     Container image "registry.k8s.io/coredns/coredns:v1.11.3" already present on machine
+kube-system          2m31s       Normal    Scheduled                 pod/coredns-7bf54f7fcd-2llkl                                     Successfully assigned kube-system/coredns-7bf54f7fcd-2llkl to upgrade-test-cluster-control-plane
+kube-system          2m31s       Normal    SuccessfulDelete          replicaset/coredns-668d6bf9bc                                    Deleted pod: coredns-668d6bf9bc-hjn2b
+default              2m30s       Normal    ScalingReplicaSet         deployment/s3-csi-controller                                     Scaled up replica set s3-csi-controller-557bcd8dcd from 0 to 1
+default              2m30s       Normal    Scheduled                 pod/s3-csi-node-j5n6f                                            Successfully assigned default/s3-csi-node-j5n6f to upgrade-test-cluster-control-plane
+default              2m30s       Normal    Pulling                   pod/s3-csi-node-j5n6f                                            Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0"
+default              2m30s       Normal    SuccessfulCreate          replicaset/s3-csi-controller-557bcd8dcd                          Created pod: s3-csi-controller-557bcd8dcd-v9sqv
+default              2m30s       Normal    Scheduled                 pod/s3-csi-controller-557bcd8dcd-v9sqv                           Successfully assigned default/s3-csi-controller-557bcd8dcd-v9sqv to upgrade-test-cluster-control-plane
+default              2m30s       Normal    Pulling                   pod/s3-csi-controller-557bcd8dcd-v9sqv                           Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0"
+default              2m30s       Normal    SuccessfulCreate          daemonset/s3-csi-node                                            Created pod: s3-csi-node-j5n6f
+default              2m25s       Normal    Pulled                    pod/s3-csi-node-j5n6f                                            Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0" in 219ms (4.668s including waiting). Image size: 164897674 bytes.
+default              2m25s       Normal    Pulled                    pod/s3-csi-controller-557bcd8dcd-v9sqv                           Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0" in 4.466s (4.466s including waiting). Image size: 164897674 bytes.
+default              2m25s       Normal    Created                   pod/s3-csi-controller-557bcd8dcd-v9sqv                           Created container: s3-csi-controller
+default              2m25s       Normal    Created                   pod/s3-csi-node-j5n6f                                            Created container: install-mountpoint
+default              2m25s       Normal    Started                   pod/s3-csi-controller-557bcd8dcd-v9sqv                           Started container s3-csi-controller
+default              2m25s       Normal    Started                   pod/s3-csi-node-j5n6f                                            Started container install-mountpoint
+default              2m25s       Normal    Pulling                   pod/s3-csi-controller-557bcd8dcd-v9sqv                           Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0"
+default              2m24s       Normal    Pulled                    pod/s3-csi-node-j5n6f                                            Container image "ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0" already present on machine
+default              2m24s       Normal    Created                   pod/s3-csi-node-j5n6f                                            Created container: s3-plugin
+default              2m24s       Normal    Started                   pod/s3-csi-node-j5n6f                                            Started container s3-plugin
+default              2m24s       Normal    Pulling                   pod/s3-csi-node-j5n6f                                            Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0"
+default              2m23s       Normal    Created                   pod/s3-csi-controller-557bcd8dcd-v9sqv                           Created container: csi-provisioner
+default              2m23s       Normal    Pulled                    pod/s3-csi-controller-557bcd8dcd-v9sqv                           Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0" in 1.591s (1.715s including waiting). Image size: 35709312 bytes.
+default              2m23s       Normal    Started                   pod/s3-csi-controller-557bcd8dcd-v9sqv                           Started container csi-provisioner
+default              2m22s       Normal    Started                   pod/s3-csi-node-j5n6f                                            Started container node-driver-registrar
+default              2m22s       Normal    Created                   pod/s3-csi-node-j5n6f                                            Created container: node-driver-registrar
+default              2m22s       Normal    Pulled                    pod/s3-csi-node-j5n6f                                            Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0" in 1.152s (1.545s including waiting). Image size: 15579380 bytes.
+default              2m22s       Normal    Pulling                   pod/s3-csi-node-j5n6f                                            Pulling image "ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0"
+default              2m21s       Normal    Created                   pod/s3-csi-node-j5n6f                                            Created container: liveness-probe
+default              2m21s       Normal    Pulled                    pod/s3-csi-node-j5n6f                                            Successfully pulled image "ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0" in 920ms (920ms including waiting). Image size: 15557083 bytes.
+default              2m21s       Normal    Started                   pod/s3-csi-node-j5n6f                                            Started container liveness-probe
+default              2m20s       Normal    Pulling                   pod/dns-show-test                                                Pulling image "busybox:1.36"
+default              2m20s       Normal    Scheduled                 pod/dns-show-test                                                Successfully assigned default/dns-show-test to upgrade-test-cluster-control-plane
+default              2m19s       Normal    Started                   pod/dns-show-test                                                Started container dns-show-test
+default              2m19s       Normal    Pulled                    pod/dns-show-test                                                Successfully pulled image "busybox:1.36" in 924ms (924ms including waiting). Image size: 2220000 bytes.
+default              2m19s       Normal    Created                   pod/dns-show-test                                                Created container: dns-show-test
+default              2m17s       Normal    Scheduled                 pod/s3-test                                                      Successfully assigned default/s3-test to upgrade-test-cluster-control-plane
+default              2m16s       Normal    Pulling                   pod/s3-test                                                      Pulling image "curlimages/curl:latest"
+default              2m15s       Normal    Created                   pod/s3-test                                                      Created container: s3-test
+default              2m15s       Normal    Started                   pod/s3-test                                                      Started container s3-test
+default              2m15s       Normal    Pulled                    pod/s3-test                                                      Successfully pulled image "curlimages/curl:latest" in 969ms (969ms including waiting). Image size: 9853525 bytes.
+default              2m13s       Normal    Scheduled                 pod/upgrade-test-pod                                             Successfully assigned default/upgrade-test-pod to upgrade-test-cluster-control-plane
+default              2m12s       Normal    Pulling                   pod/upgrade-test-pod                                             Pulling image "busybox:latest"
+default              2m11s       Normal    Started                   pod/upgrade-test-pod                                             Started container test
+default              2m11s       Normal    Created                   pod/upgrade-test-pod                                             Created container: test
+default              2m11s       Normal    Pulled                    pod/upgrade-test-pod                                             Successfully pulled image "busybox:latest" in 950ms (950ms including waiting). Image size: 2223685 bytes.
+default              2m10s       Normal    Provisioning              persistentvolumeclaim/upgrade-test-dynamic-pvc                   External provisioner is provisioning volume for claim "default/upgrade-test-dynamic-pvc"
+default              2m10s       Normal    Pulled                    pod/upgrade-test-dynamic-pod                                     Successfully pulled image "busybox:latest" in 231ms (231ms including waiting). Image size: 2223685 bytes.
+default              2m10s       Normal    Scheduled                 pod/upgrade-test-dynamic-pod                                     Successfully assigned default/upgrade-test-dynamic-pod to upgrade-test-cluster-control-plane
+default              2m10s       Normal    Created                   pod/upgrade-test-dynamic-pod                                     Created container: test
+default              2m10s       Normal    ProvisioningSucceeded     persistentvolumeclaim/upgrade-test-dynamic-pvc                   Successfully provisioned volume pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077
+default              2m10s       Normal    ExternalProvisioning      persistentvolumeclaim/upgrade-test-dynamic-pvc                   Waiting for a volume to be created either by the external provisioner 's3.csi.scality.com' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+default              2m10s       Normal    Pulling                   pod/upgrade-test-dynamic-pod                                     Pulling image "busybox:latest"
+default              2m9s        Normal    Started                   pod/upgrade-test-dynamic-pod                                     Started container test

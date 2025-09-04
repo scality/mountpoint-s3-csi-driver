@@ -1,0 +1,66 @@
+{
+    "kind": "ServiceList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "4314"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "kube-dns",
+                "namespace": "kube-system",
+                "uid": "66ebe9cc-5b3f-43dd-81f1-1d91d31b6d6e",
+                "resourceVersion": "268",
+                "creationTimestamp": "2025-09-04T08:15:10Z",
+                "labels": {
+                    "k8s-app": "kube-dns",
+                    "kubernetes.io/cluster-service": "true",
+                    "kubernetes.io/name": "CoreDNS"
+                },
+                "annotations": {
+                    "prometheus.io/port": "9153",
+                    "prometheus.io/scrape": "true"
+                }
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "dns",
+                        "protocol": "UDP",
+                        "port": 53,
+                        "targetPort": 53
+                    },
+                    {
+                        "name": "dns-tcp",
+                        "protocol": "TCP",
+                        "port": 53,
+                        "targetPort": 53
+                    },
+                    {
+                        "name": "metrics",
+                        "protocol": "TCP",
+                        "port": 9153,
+                        "targetPort": 9153
+                    }
+                ],
+                "selector": {
+                    "k8s-app": "kube-dns"
+                },
+                "clusterIP": "10.96.0.10",
+                "clusterIPs": [
+                    "10.96.0.10"
+                ],
+                "type": "ClusterIP",
+                "sessionAffinity": "None",
+                "ipFamilies": [
+                    "IPv4"
+                ],
+                "ipFamilyPolicy": "SingleStack",
+                "internalTrafficPolicy": "Cluster"
+            },
+            "status": {
+                "loadBalancer": {}
+            }
+        }
+    ]
+}

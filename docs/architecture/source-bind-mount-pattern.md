@@ -2,7 +2,8 @@
 
 ## Overview
 
-The Scality CSI Driver v2 implements a source/bind mount pattern for efficient pod mount sharing. This architecture allows multiple containers to share the same S3 bucket mount while maintaining isolation and proper cleanup.
+The Scality CSI Driver v2 implements a source/bind mount pattern for efficient pod mount sharing.
+This architecture allows multiple containers to share the same S3 bucket mount while maintaining isolation and cleanup.
 
 ## Architecture
 
@@ -13,7 +14,7 @@ The pod mounter uses a two-step mounting process:
 1. **Source Mount**: S3 bucket is mounted to a dedicated source directory
 2. **Bind Mount**: Source directory is bind-mounted to the target container path
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │                    Mountpoint Pod                    │
 │                                                      │
@@ -45,11 +46,13 @@ The pod mounter uses a two-step mounting process:
 ### Source Directory Structure
 
 Source mounts are located at:
-```
+
+```text
 /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<mountpoint-pod-name>
 ```
 
 Where `<mountpoint-pod-name>` is deterministically generated using:
+
 ```go
 func MountpointPodNameFor(podUID string, volumeName string) string {
     return fmt.Sprintf("mp-%x", sha256.Sum224(fmt.Appendf(nil, "%s%s", podUID, volumeName)))
@@ -62,13 +65,13 @@ func MountpointPodNameFor(podUID string, volumeName string) string {
 func (pm *PodMounter) Mount(...) error {
     // 1. Determine source path
     source := filepath.Join(SourceMountDir(kubeletPath), mpPodName)
-    
+
     // 2. Check if source is already mounted
     if !isSourceMounted {
         // Mount S3 bucket to source directory
         mountS3AtSource(source, bucketName, args)
     }
-    
+
     // 3. Bind mount from source to target
     bindMountSyscall(source, target)
 }
@@ -80,7 +83,7 @@ func (pm *PodMounter) Mount(...) error {
 func (pm *PodMounter) Unmount(target string, ...) error {
     // Only unmount the bind mount
     unmountTarget(target)
-    
+
     // Source remains mounted for other containers
     // PodUnmounter will clean up source when no longer needed
 }
@@ -144,6 +147,7 @@ if fsGroup != "" {
 ### Bind Mount Cleanup
 
 When a container is terminated:
+
 1. CSI Driver receives `NodeUnpublishVolume` call
 2. Only the bind mount to the container's target is removed
 3. Source mount remains for other containers
@@ -151,6 +155,7 @@ When a container is terminated:
 ### Source Mount Cleanup
 
 The PodUnmounter component handles source cleanup:
+
 1. Monitors for orphaned source mounts
 2. Waits for all bind mount references to be removed
 3. Unmounts the source when no longer in use
@@ -171,6 +176,7 @@ See `pkg/driver/node/mounter/pod_mount_sharing_test.go` for detailed test scenar
 ## Migration from v1
 
 The source/bind mount pattern is transparent to users:
+
 - No changes required to PersistentVolumes or PersistentVolumeClaims
 - Existing workloads continue to function
 - Performance improvements are automatic

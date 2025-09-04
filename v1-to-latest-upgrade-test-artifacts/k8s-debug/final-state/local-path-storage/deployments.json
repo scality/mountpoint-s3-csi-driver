@@ -1,0 +1,146 @@
+{
+    "kind": "DeploymentList",
+    "apiVersion": "apps/v1",
+    "metadata": {
+        "resourceVersion": "2001"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "local-path-provisioner",
+                "namespace": "local-path-storage",
+                "uid": "689a0447-6ed7-4bf0-9120-0aed930167a6",
+                "resourceVersion": "461",
+                "generation": 1,
+                "creationTimestamp": "2025-09-04T08:09:53Z",
+                "annotations": {
+                    "deployment.kubernetes.io/revision": "1",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"name\":\"local-path-provisioner\",\"namespace\":\"local-path-storage\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"local-path-provisioner\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"local-path-provisioner\"}},\"spec\":{\"containers\":[{\"command\":[\"local-path-provisioner\",\"--debug\",\"start\",\"--helper-image\",\"docker.io/kindest/local-path-helper:v20241212-8ac705d0\",\"--config\",\"/etc/config/config.json\"],\"env\":[{\"name\":\"POD_NAMESPACE\",\"valueFrom\":{\"fieldRef\":{\"fieldPath\":\"metadata.namespace\"}}},{\"name\":\"CONFIG_MOUNT_PATH\",\"value\":\"/etc/config/\"}],\"image\":\"docker.io/kindest/local-path-provisioner:v20241212-8ac705d0\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"local-path-provisioner\",\"volumeMounts\":[{\"mountPath\":\"/etc/config/\",\"name\":\"config-volume\"}]}],\"nodeSelector\":{\"kubernetes.io/os\":\"linux\"},\"serviceAccountName\":\"local-path-provisioner-service-account\",\"tolerations\":[{\"effect\":\"NoSchedule\",\"key\":\"node-role.kubernetes.io/control-plane\",\"operator\":\"Equal\"},{\"effect\":\"NoSchedule\",\"key\":\"node-role.kubernetes.io/master\",\"operator\":\"Equal\"}],\"volumes\":[{\"configMap\":{\"name\":\"local-path-config\"},\"name\":\"config-volume\"}]}}}}\n"
+                }
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "matchLabels": {
+                        "app": "local-path-provisioner"
+                    }
+                },
+                "template": {
+                    "metadata": {
+                        "creationTimestamp": null,
+                        "labels": {
+                            "app": "local-path-provisioner"
+                        }
+                    },
+                    "spec": {
+                        "volumes": [
+                            {
+                                "name": "config-volume",
+                                "configMap": {
+                                    "name": "local-path-config",
+                                    "defaultMode": 420
+                                }
+                            }
+                        ],
+                        "containers": [
+                            {
+                                "name": "local-path-provisioner",
+                                "image": "docker.io/kindest/local-path-provisioner:v20241212-8ac705d0",
+                                "command": [
+                                    "local-path-provisioner",
+                                    "--debug",
+                                    "start",
+                                    "--helper-image",
+                                    "docker.io/kindest/local-path-helper:v20241212-8ac705d0",
+                                    "--config",
+                                    "/etc/config/config.json"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "POD_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "apiVersion": "v1",
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "CONFIG_MOUNT_PATH",
+                                        "value": "/etc/config/"
+                                    }
+                                ],
+                                "resources": {},
+                                "volumeMounts": [
+                                    {
+                                        "name": "config-volume",
+                                        "mountPath": "/etc/config/"
+                                    }
+                                ],
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File",
+                                "imagePullPolicy": "IfNotPresent"
+                            }
+                        ],
+                        "restartPolicy": "Always",
+                        "terminationGracePeriodSeconds": 30,
+                        "dnsPolicy": "ClusterFirst",
+                        "nodeSelector": {
+                            "kubernetes.io/os": "linux"
+                        },
+                        "serviceAccountName": "local-path-provisioner-service-account",
+                        "serviceAccount": "local-path-provisioner-service-account",
+                        "securityContext": {},
+                        "schedulerName": "default-scheduler",
+                        "tolerations": [
+                            {
+                                "key": "node-role.kubernetes.io/control-plane",
+                                "operator": "Equal",
+                                "effect": "NoSchedule"
+                            },
+                            {
+                                "key": "node-role.kubernetes.io/master",
+                                "operator": "Equal",
+                                "effect": "NoSchedule"
+                            }
+                        ]
+                    }
+                },
+                "strategy": {
+                    "type": "RollingUpdate",
+                    "rollingUpdate": {
+                        "maxUnavailable": "25%",
+                        "maxSurge": "25%"
+                    }
+                },
+                "revisionHistoryLimit": 10,
+                "progressDeadlineSeconds": 600
+            },
+            "status": {
+                "observedGeneration": 1,
+                "replicas": 1,
+                "updatedReplicas": 1,
+                "readyReplicas": 1,
+                "availableReplicas": 1,
+                "conditions": [
+                    {
+                        "type": "Available",
+                        "status": "True",
+                        "lastUpdateTime": "2025-09-04T08:10:11Z",
+                        "lastTransitionTime": "2025-09-04T08:10:11Z",
+                        "reason": "MinimumReplicasAvailable",
+                        "message": "Deployment has minimum availability."
+                    },
+                    {
+                        "type": "Progressing",
+                        "status": "True",
+                        "lastUpdateTime": "2025-09-04T08:10:11Z",
+                        "lastTransitionTime": "2025-09-04T08:09:55Z",
+                        "reason": "NewReplicaSetAvailable",
+                        "message": "ReplicaSet \"local-path-provisioner-58cc7856b6\" has successfully progressed."
+                    }
+                ]
+            }
+        }
+    ]
+}

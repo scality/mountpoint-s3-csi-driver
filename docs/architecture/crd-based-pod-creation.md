@@ -2,13 +2,15 @@
 
 ## Overview
 
-The Scality CSI Driver v2 uses a Custom Resource Definition (CRD) based architecture for managing Mountpoint Pods. This architecture aligns with the AWS upstream implementation and provides better separation of concerns between the controller and node components.
+The Scality CSI Driver v2 uses a Custom Resource Definition (CRD) based architecture for managing Mountpoint Pods.
+This architecture aligns with AWS upstream and provides better separation of concerns between controller and node components.
 
 ## Architecture Components
 
 ### MountpointS3PodAttachment CRD
 
-The `MountpointS3PodAttachment` is a cluster-scoped Custom Resource that represents the relationship between workload pods and Mountpoint pods. It serves as the coordination point between the CSI controller and node components.
+The `MountpointS3PodAttachment` is a cluster-scoped Custom Resource that represents the relationship between workload pods
+and Mountpoint pods. It serves as the coordination point between the CSI controller and node components.
 
 Key characteristics:
 

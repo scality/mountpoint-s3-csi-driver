@@ -1,0 +1,3 @@
+==== START logs for container write-pod of pod directorypermissions-3932/pvc-tester-74jfr ====
+Request log error: the server rejected our request for an unknown reason (get pods pvc-tester-74jfr)
+==== END logs for container write-pod of pod directorypermissions-3932/pvc-tester-74jfr ====

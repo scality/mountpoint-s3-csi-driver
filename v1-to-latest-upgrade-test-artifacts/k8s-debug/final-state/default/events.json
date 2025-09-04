@@ -1,0 +1,3380 @@
+{
+    "kind": "EventList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "1999"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "dns-show-test.1862061309989d23",
+                "namespace": "default",
+                "uid": "799c8cfe-a0c0-4f57-8b09-e4078b362eb7",
+                "resourceVersion": "701",
+                "creationTimestamp": "2025-09-04T08:11:23Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "7048563f-1285-4c93-938a-af8264b4cb96",
+                "apiVersion": "v1",
+                "resourceVersion": "699"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/dns-show-test to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:23Z",
+            "lastTimestamp": "2025-09-04T08:11:23Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.18620613221f1a95",
+                "namespace": "default",
+                "uid": "4cff23b9-68b9-4a61-88ca-4955b79076db",
+                "resourceVersion": "705",
+                "creationTimestamp": "2025-09-04T08:11:23Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "7048563f-1285-4c93-938a-af8264b4cb96",
+                "apiVersion": "v1",
+                "resourceVersion": "700",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"busybox:1.36\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:23Z",
+            "lastTimestamp": "2025-09-04T08:11:23Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.186206135937b306",
+                "namespace": "default",
+                "uid": "28664111-8592-42c6-886d-8908500ef07c",
+                "resourceVersion": "706",
+                "creationTimestamp": "2025-09-04T08:11:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "7048563f-1285-4c93-938a-af8264b4cb96",
+                "apiVersion": "v1",
+                "resourceVersion": "700",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"busybox:1.36\" in 924ms (924ms including waiting). Image size: 2220000 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:24Z",
+            "lastTimestamp": "2025-09-04T08:11:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.1862061359b0d241",
+                "namespace": "default",
+                "uid": "00fa5b3d-af6f-4024-a6ea-03151e9b1071",
+                "resourceVersion": "707",
+                "creationTimestamp": "2025-09-04T08:11:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "7048563f-1285-4c93-938a-af8264b4cb96",
+                "apiVersion": "v1",
+                "resourceVersion": "700",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Created",
+            "message": "Created container: dns-show-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:24Z",
+            "lastTimestamp": "2025-09-04T08:11:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.186206135eacb86a",
+                "namespace": "default",
+                "uid": "2a2d9347-5c6a-4a4b-b701-f63283b48d60",
+                "resourceVersion": "708",
+                "creationTimestamp": "2025-09-04T08:11:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "7048563f-1285-4c93-938a-af8264b4cb96",
+                "apiVersion": "v1",
+                "resourceVersion": "700",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Started",
+            "message": "Started container dns-show-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:24Z",
+            "lastTimestamp": "2025-09-04T08:11:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.18620674f913616d",
+                "namespace": "default",
+                "uid": "d90cd897-1ecf-40d9-a927-7e2e3963fe13",
+                "resourceVersion": "1516",
+                "creationTimestamp": "2025-09-04T08:18:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "f63072a1-f58c-46dd-9ee8-480110f03545",
+                "apiVersion": "v1",
+                "resourceVersion": "1514"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/dns-show-test to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:18:24Z",
+            "lastTimestamp": "2025-09-04T08:18:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.1862067511b045a2",
+                "namespace": "default",
+                "uid": "0fadf5f4-eb31-4641-bfa0-5fd5bb754088",
+                "resourceVersion": "1519",
+                "creationTimestamp": "2025-09-04T08:18:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "f63072a1-f58c-46dd-9ee8-480110f03545",
+                "apiVersion": "v1",
+                "resourceVersion": "1515",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"busybox:1.36\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:24Z",
+            "lastTimestamp": "2025-09-04T08:18:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.1862067512217967",
+                "namespace": "default",
+                "uid": "d83e0ba1-2813-4cac-9eaf-99993778912c",
+                "resourceVersion": "1520",
+                "creationTimestamp": "2025-09-04T08:18:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "f63072a1-f58c-46dd-9ee8-480110f03545",
+                "apiVersion": "v1",
+                "resourceVersion": "1515",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Created",
+            "message": "Created container: dns-show-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:24Z",
+            "lastTimestamp": "2025-09-04T08:18:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "dns-show-test.186206751822e9bf",
+                "namespace": "default",
+                "uid": "c5fc4879-62e3-4d06-9ada-048f38cee823",
+                "resourceVersion": "1521",
+                "creationTimestamp": "2025-09-04T08:18:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "dns-show-test",
+                "uid": "f63072a1-f58c-46dd-9ee8-480110f03545",
+                "apiVersion": "v1",
+                "resourceVersion": "1515",
+                "fieldPath": "spec.containers{dns-show-test}"
+            },
+            "reason": "Started",
+            "message": "Started container dns-show-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:24Z",
+            "lastTimestamp": "2025-09-04T08:18:24Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620610b4b400c2",
+                "namespace": "default",
+                "uid": "62964c81-b218-429c-aa7d-fdc28e2f3a69",
+                "resourceVersion": "638",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "631"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/s3-csi-controller-557bcd8dcd-v9sqv to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620610ce0dd117",
+                "namespace": "default",
+                "uid": "f6fbd44b-d506-4719-bbcf-d96143fd7a98",
+                "resourceVersion": "647",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620611d845c400",
+                "namespace": "default",
+                "uid": "f846afc3-c726-4805-aaf2-3b5e82aec8b5",
+                "resourceVersion": "657",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0\" in 4.466s (4.466s including waiting). Image size: 164897674 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620611d8ca4d28",
+                "namespace": "default",
+                "uid": "ee3c5e76-5385-43f2-bd97-9456e38f2024",
+                "resourceVersion": "658",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-csi-controller",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620611ddebf522",
+                "namespace": "default",
+                "uid": "3f924759-b65b-431d-ab8f-e2eac916ab9d",
+                "resourceVersion": "659",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-csi-controller",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620611ddf8e784",
+                "namespace": "default",
+                "uid": "b4c1e95a-cb65-47ac-ad2d-59c385ff1636",
+                "resourceVersion": "660",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620612443e03fc",
+                "namespace": "default",
+                "uid": "73f3a446-4ad1-450d-a83d-df55667ee0f4",
+                "resourceVersion": "675",
+                "creationTimestamp": "2025-09-04T08:11:20Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0\" in 1.591s (1.715s including waiting). Image size: 35709312 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:20Z",
+            "lastTimestamp": "2025-09-04T08:11:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.1862061244b67820",
+                "namespace": "default",
+                "uid": "c8a7fa30-cdd6-44b1-87e3-230d856c5eac",
+                "resourceVersion": "676",
+                "creationTimestamp": "2025-09-04T08:11:20Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Created",
+            "message": "Created container: csi-provisioner",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:20Z",
+            "lastTimestamp": "2025-09-04T08:11:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.186206124a5e6063",
+                "namespace": "default",
+                "uid": "792e647e-8cc2-48d9-8e9b-a23ac2bf2365",
+                "resourceVersion": "677",
+                "creationTimestamp": "2025-09-04T08:11:20Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Started",
+            "message": "Started container csi-provisioner",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:20Z",
+            "lastTimestamp": "2025-09-04T08:11:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620658a33d91bc",
+                "namespace": "default",
+                "uid": "dce1ed3c-da9a-459d-b357-f31ce30d28f3",
+                "resourceVersion": "1279",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container csi-provisioner",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv.18620658a3464478",
+                "namespace": "default",
+                "uid": "b3de8482-353f-4234-8a84-b5eb12190a64",
+                "resourceVersion": "1281",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd-v9sqv",
+                "uid": "b030ca21-e61e-4344-b0f4-752dcd88e7f2",
+                "apiVersion": "v1",
+                "resourceVersion": "633",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container s3-csi-controller",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd.18620610b3f4ddb4",
+                "namespace": "default",
+                "uid": "ac1e3233-b6ff-4a77-8518-4cee4eabb0e5",
+                "resourceVersion": "637",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd",
+                "uid": "cc0bd0c6-f483-4f2e-a7ab-dc11b229d403",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "627"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: s3-csi-controller-557bcd8dcd-v9sqv",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-557bcd8dcd.18620658a2bbf459",
+                "namespace": "default",
+                "uid": "b5f7a97d-70de-43ed-a594-deffa1822f4d",
+                "resourceVersion": "1278",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "default",
+                "name": "s3-csi-controller-557bcd8dcd",
+                "uid": "cc0bd0c6-f483-4f2e-a7ab-dc11b229d403",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1274"
+            },
+            "reason": "SuccessfulDelete",
+            "message": "Deleted pod: s3-csi-controller-557bcd8dcd-v9sqv",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.186206585825f4a9",
+                "namespace": "default",
+                "uid": "f49410fd-0b36-4721-ade8-9205db051d7c",
+                "resourceVersion": "1238",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1236"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/s3-csi-controller-5659dd8fcf-bv94v to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.186206588464d8b6",
+                "namespace": "default",
+                "uid": "1e68fe15-208c-435a-a7fb-935fa5299101",
+                "resourceVersion": "1255",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver:local\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.1862065884ed701a",
+                "namespace": "default",
+                "uid": "5b77b27d-fe07-4cac-82ca-70a1e979ee86",
+                "resourceVersion": "1256",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-csi-controller",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.186206588a2d19db",
+                "namespace": "default",
+                "uid": "4b7c612a-4720-4319-9224-e3b0b190a464",
+                "resourceVersion": "1257",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-csi-controller}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-csi-controller",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.186206588a3b740b",
+                "namespace": "default",
+                "uid": "efeceae2-de33-48ea-897e-cafeece685bb",
+                "resourceVersion": "1893",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-pod-reconciler}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver:local\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:22:12Z",
+            "count": 7,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.186206588b3f992b",
+                "namespace": "default",
+                "uid": "c0131f21-3b32-4059-bc40-98ad045655fb",
+                "resourceVersion": "1894",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-pod-reconciler}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-pod-reconciler",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:22:12Z",
+            "count": 7,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.1862065892a081f8",
+                "namespace": "default",
+                "uid": "b0df9de7-e65f-47ca-b089-65b3b0595084",
+                "resourceVersion": "1629",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-pod-reconciler}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-pod-reconciler",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:19:22Z",
+            "count": 6,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.1862065892b57395",
+                "namespace": "default",
+                "uid": "74877641-999f-43d0-8891-63682c74a851",
+                "resourceVersion": "1262",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.1862065893cc0e83",
+                "namespace": "default",
+                "uid": "92b764bc-175f-4ce4-9639-a8d6328959ae",
+                "resourceVersion": "1264",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Created",
+            "message": "Created container: csi-provisioner",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.186206589bcf5575",
+                "namespace": "default",
+                "uid": "92abe6a3-ea64-4309-8c2f-19edc12ead47",
+                "resourceVersion": "1266",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{csi-provisioner}"
+            },
+            "reason": "Started",
+            "message": "Started container csi-provisioner",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf-bv94v.1862065916826dc6",
+                "namespace": "default",
+                "uid": "8561a5d9-cdbc-4890-8a1a-30db583ee39f",
+                "resourceVersion": "1860",
+                "creationTimestamp": "2025-09-04T08:16:24Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf-bv94v",
+                "uid": "d0a44ea9-0a0e-48f2-90b0-16deada2fca8",
+                "apiVersion": "v1",
+                "resourceVersion": "1237",
+                "fieldPath": "spec.containers{s3-pod-reconciler}"
+            },
+            "reason": "BackOff",
+            "message": "Back-off restarting failed container s3-pod-reconciler in pod s3-csi-controller-5659dd8fcf-bv94v_default(d0a44ea9-0a0e-48f2-90b0-16deada2fca8)",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:24Z",
+            "lastTimestamp": "2025-09-04T08:21:47Z",
+            "count": 26,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller-5659dd8fcf.186206585761c3ba",
+                "namespace": "default",
+                "uid": "7f7f7efd-32e1-4ea0-a10a-1c08f188c947",
+                "resourceVersion": "1240",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "default",
+                "name": "s3-csi-controller-5659dd8fcf",
+                "uid": "12f441cf-84c8-4d92-8c83-7a59aac7feb9",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1229"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: s3-csi-controller-5659dd8fcf-bv94v",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller.18620610b350943a",
+                "namespace": "default",
+                "uid": "c3244730-6f9f-474f-9461-a6b128d9187a",
+                "resourceVersion": "630",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "default",
+                "name": "s3-csi-controller",
+                "uid": "2f5e2c67-30c2-4089-925c-8b6eb54af9a6",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "625"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set s3-csi-controller-557bcd8dcd from 0 to 1",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller.1862065855d65ef7",
+                "namespace": "default",
+                "uid": "33c22366-4abb-4505-8dca-4dd91be1ae0e",
+                "resourceVersion": "1232",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "default",
+                "name": "s3-csi-controller",
+                "uid": "2f5e2c67-30c2-4089-925c-8b6eb54af9a6",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1226"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set s3-csi-controller-5659dd8fcf from 0 to 1",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-controller.18620658a1c00d89",
+                "namespace": "default",
+                "uid": "51e5de03-9d0b-4fd5-921e-c94e98944384",
+                "resourceVersion": "1275",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "default",
+                "name": "s3-csi-controller",
+                "uid": "2f5e2c67-30c2-4089-925c-8b6eb54af9a6",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1244"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled down replica set s3-csi-controller-557bcd8dcd from 1 to 0",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.18620658784845e0",
+                "namespace": "default",
+                "uid": "ad6b0e8d-6e77-4188-8692-f411f27d7f23",
+                "resourceVersion": "1249",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1246"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/s3-csi-node-8x5jl to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.1862065891c2b613",
+                "namespace": "default",
+                "uid": "c49141f6-b94e-441e-8adb-1635e82fc553",
+                "resourceVersion": "1260",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver:local\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.1862065892e851ee",
+                "namespace": "default",
+                "uid": "e259dc41-2b22-4b02-8498-cfbaa19639bd",
+                "resourceVersion": "1263",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-plugin",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.186206589d120f60",
+                "namespace": "default",
+                "uid": "a1dfb004-b905-4da1-aaea-20a38bcca88d",
+                "resourceVersion": "1267",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-plugin",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.186206589d321bfc",
+                "namespace": "default",
+                "uid": "17865e17-8646-4f57-9cc6-29e812f89b60",
+                "resourceVersion": "1268",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.186206589f7994d4",
+                "namespace": "default",
+                "uid": "2936b23e-c291-4715-9cc3-a29bcf8c2f21",
+                "resourceVersion": "1270",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Created",
+            "message": "Created container: node-driver-registrar",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.18620658a988c2ac",
+                "namespace": "default",
+                "uid": "2f0120d1-ffed-4fed-8f04-222b377325db",
+                "resourceVersion": "1284",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Started",
+            "message": "Started container node-driver-registrar",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.18620658a9ae27cf",
+                "namespace": "default",
+                "uid": "f93f79d6-7954-4c23-9521-922d883494fb",
+                "resourceVersion": "1285",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.18620658aa96eb9b",
+                "namespace": "default",
+                "uid": "7040496b-fc42-4ce8-bbdd-302191c37d31",
+                "resourceVersion": "1286",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Created",
+            "message": "Created container: liveness-probe",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-8x5jl.18620658b1e5a8dd",
+                "namespace": "default",
+                "uid": "4032555e-99dc-4d22-a693-15e873279244",
+                "resourceVersion": "1290",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-8x5jl",
+                "uid": "9be68313-ae46-41b4-9404-53dc3481706c",
+                "apiVersion": "v1",
+                "resourceVersion": "1247",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Started",
+            "message": "Started container liveness-probe",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620610b54f4a25",
+                "namespace": "default",
+                "uid": "251f0310-b153-4f82-83df-5e33e2ba3619",
+                "resourceVersion": "641",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "629"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/s3-csi-node-j5n6f to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620610cf1c5edc",
+                "namespace": "default",
+                "uid": "aa46485c-af81-4830-bb65-0ea79546ebed",
+                "resourceVersion": "648",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.initContainers{install-mountpoint}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620611e55f275f",
+                "namespace": "default",
+                "uid": "28ac91ba-5311-4887-9db6-acf7a05e843b",
+                "resourceVersion": "661",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.initContainers{install-mountpoint}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0\" in 219ms (4.668s including waiting). Image size: 164897674 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620611e5f05f43",
+                "namespace": "default",
+                "uid": "ddbb66ae-647d-43a0-95a4-a74db8b0dc7d",
+                "resourceVersion": "662",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.initContainers{install-mountpoint}"
+            },
+            "reason": "Created",
+            "message": "Created container: install-mountpoint",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620611ecdb544c",
+                "namespace": "default",
+                "uid": "aeb613a6-5b5b-4d67-81af-3ed44ab3e889",
+                "resourceVersion": "667",
+                "creationTimestamp": "2025-09-04T08:11:18Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.initContainers{install-mountpoint}"
+            },
+            "reason": "Started",
+            "message": "Started container install-mountpoint",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:18Z",
+            "lastTimestamp": "2025-09-04T08:11:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.1862061225ea02c5",
+                "namespace": "default",
+                "uid": "2f0d2a82-106b-4462-a337-1377ff3ec5a6",
+                "resourceVersion": "670",
+                "creationTimestamp": "2025-09-04T08:11:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:19Z",
+            "lastTimestamp": "2025-09-04T08:11:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.1862061226c9bc62",
+                "namespace": "default",
+                "uid": "46389f95-5eb3-4bd5-9e5b-3d839d6d905d",
+                "resourceVersion": "672",
+                "creationTimestamp": "2025-09-04T08:11:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-plugin",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:19Z",
+            "lastTimestamp": "2025-09-04T08:11:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.186206122cb54ade",
+                "namespace": "default",
+                "uid": "1486ca68-2ba7-4fe7-afeb-c80cba11428d",
+                "resourceVersion": "673",
+                "creationTimestamp": "2025-09-04T08:11:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-plugin",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:19Z",
+            "lastTimestamp": "2025-09-04T08:11:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.186206122cd23efa",
+                "namespace": "default",
+                "uid": "b602fa87-df7d-46b7-94b4-e2d698f432ae",
+                "resourceVersion": "674",
+                "creationTimestamp": "2025-09-04T08:11:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:19Z",
+            "lastTimestamp": "2025-09-04T08:11:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.1862061288f5fb06",
+                "namespace": "default",
+                "uid": "908a30ea-10fd-4360-b9c9-65245a658bea",
+                "resourceVersion": "685",
+                "creationTimestamp": "2025-09-04T08:11:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0\" in 1.152s (1.545s including waiting). Image size: 15579380 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:21Z",
+            "lastTimestamp": "2025-09-04T08:11:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.1862061289766ef6",
+                "namespace": "default",
+                "uid": "c1d780c6-ccd0-4327-9fc3-13dc3b09c1ae",
+                "resourceVersion": "686",
+                "creationTimestamp": "2025-09-04T08:11:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Created",
+            "message": "Created container: node-driver-registrar",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:21Z",
+            "lastTimestamp": "2025-09-04T08:11:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.186206128ed1534b",
+                "namespace": "default",
+                "uid": "08cf7ac4-8080-4fae-847a-e4ef6df13ea2",
+                "resourceVersion": "687",
+                "creationTimestamp": "2025-09-04T08:11:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Started",
+            "message": "Started container node-driver-registrar",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:21Z",
+            "lastTimestamp": "2025-09-04T08:11:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.186206128edaacfb",
+                "namespace": "default",
+                "uid": "665bc8a8-48a5-4585-8fe6-c8a1e54038b2",
+                "resourceVersion": "688",
+                "creationTimestamp": "2025-09-04T08:11:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:21Z",
+            "lastTimestamp": "2025-09-04T08:11:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620612c5b2add5",
+                "namespace": "default",
+                "uid": "0fd6bbac-222c-4be2-bd35-7f22222a8d95",
+                "resourceVersion": "692",
+                "creationTimestamp": "2025-09-04T08:11:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0\" in 920ms (920ms including waiting). Image size: 15557083 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:22Z",
+            "lastTimestamp": "2025-09-04T08:11:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620612c62e14f7",
+                "namespace": "default",
+                "uid": "e51916be-bd3f-42e0-8a7f-bd077fb1abfa",
+                "resourceVersion": "693",
+                "creationTimestamp": "2025-09-04T08:11:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Created",
+            "message": "Created container: liveness-probe",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:22Z",
+            "lastTimestamp": "2025-09-04T08:11:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620612cb762e19",
+                "namespace": "default",
+                "uid": "92beb648-c73b-4361-84c2-8d5cc17e0077",
+                "resourceVersion": "694",
+                "creationTimestamp": "2025-09-04T08:11:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Started",
+            "message": "Started container liveness-probe",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:22Z",
+            "lastTimestamp": "2025-09-04T08:11:22Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.18620658548f726a",
+                "namespace": "default",
+                "uid": "fb7eb450-2f55-4abb-ac01-3e7f09d13e79",
+                "resourceVersion": "1228",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{s3-plugin}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container s3-plugin",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.186206585490095f",
+                "namespace": "default",
+                "uid": "56c06e6a-f254-4936-9bfd-68fe092d72d4",
+                "resourceVersion": "1231",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{liveness-probe}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container liveness-probe",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node-j5n6f.1862065854906c23",
+                "namespace": "default",
+                "uid": "1b1e2ee5-51b8-4671-8b2b-aff1f5f8c72e",
+                "resourceVersion": "1234",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-csi-node-j5n6f",
+                "uid": "6e3ade12-c0fd-4509-a32c-726d5db3b18e",
+                "apiVersion": "v1",
+                "resourceVersion": "634",
+                "fieldPath": "spec.containers{node-driver-registrar}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container node-driver-registrar",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node.18620610b3da61b6",
+                "namespace": "default",
+                "uid": "cb8bc5fb-7321-48b7-902e-c5bfb9427633",
+                "resourceVersion": "632",
+                "creationTimestamp": "2025-09-04T08:11:13Z"
+            },
+            "involvedObject": {
+                "kind": "DaemonSet",
+                "namespace": "default",
+                "name": "s3-csi-node",
+                "uid": "9e8d95a8-5db4-493a-a8f1-680349269dff",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "623"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: s3-csi-node-j5n6f",
+            "source": {
+                "component": "daemonset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:13Z",
+            "lastTimestamp": "2025-09-04T08:11:13Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "daemonset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node.1862065854661b4e",
+                "namespace": "default",
+                "uid": "8b71a491-806b-46d9-9e1d-3ccf1e483a83",
+                "resourceVersion": "1227",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "DaemonSet",
+                "namespace": "default",
+                "name": "s3-csi-node",
+                "uid": "9e8d95a8-5db4-493a-a8f1-680349269dff",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1223"
+            },
+            "reason": "SuccessfulDelete",
+            "message": "Deleted pod: s3-csi-node-j5n6f",
+            "source": {
+                "component": "daemonset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "daemonset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-csi-node.186206587815b4c8",
+                "namespace": "default",
+                "uid": "10130c45-0d2f-4ad6-9e04-e0909d74ac9d",
+                "resourceVersion": "1248",
+                "creationTimestamp": "2025-09-04T08:16:21Z"
+            },
+            "involvedObject": {
+                "kind": "DaemonSet",
+                "namespace": "default",
+                "name": "s3-csi-node",
+                "uid": "9e8d95a8-5db4-493a-a8f1-680349269dff",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1230"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: s3-csi-node-8x5jl",
+            "source": {
+                "component": "daemonset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:21Z",
+            "lastTimestamp": "2025-09-04T08:16:21Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "daemonset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620613d1840230",
+                "namespace": "default",
+                "uid": "6cdd9e61-28ba-4d8f-bbd3-e7993912018c",
+                "resourceVersion": "717",
+                "creationTimestamp": "2025-09-04T08:11:26Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "4f602f47-398e-4b9c-a14f-07107aa43a20",
+                "apiVersion": "v1",
+                "resourceVersion": "715"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/s3-test to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:26Z",
+            "lastTimestamp": "2025-09-04T08:11:26Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620613ea28506a",
+                "namespace": "default",
+                "uid": "d5f13201-b065-44b3-9d6c-a8fd38e051bb",
+                "resourceVersion": "721",
+                "creationTimestamp": "2025-09-04T08:11:27Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "4f602f47-398e-4b9c-a14f-07107aa43a20",
+                "apiVersion": "v1",
+                "resourceVersion": "716",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"curlimages/curl:latest\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:27Z",
+            "lastTimestamp": "2025-09-04T08:11:27Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.1862061423f7b152",
+                "namespace": "default",
+                "uid": "84729cad-f2eb-4dd3-ac70-9e46d6aca1ea",
+                "resourceVersion": "722",
+                "creationTimestamp": "2025-09-04T08:11:28Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "4f602f47-398e-4b9c-a14f-07107aa43a20",
+                "apiVersion": "v1",
+                "resourceVersion": "716",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"curlimages/curl:latest\" in 969ms (969ms including waiting). Image size: 9853525 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:28Z",
+            "lastTimestamp": "2025-09-04T08:11:28Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620614247965e4",
+                "namespace": "default",
+                "uid": "cb909b43-42dc-4734-9ce4-d77b68dd677c",
+                "resourceVersion": "723",
+                "creationTimestamp": "2025-09-04T08:11:28Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "4f602f47-398e-4b9c-a14f-07107aa43a20",
+                "apiVersion": "v1",
+                "resourceVersion": "716",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:28Z",
+            "lastTimestamp": "2025-09-04T08:11:28Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620614294fa6c6",
+                "namespace": "default",
+                "uid": "db0e6d37-cba6-45e2-8919-8bc6e1af2a40",
+                "resourceVersion": "724",
+                "creationTimestamp": "2025-09-04T08:11:28Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "4f602f47-398e-4b9c-a14f-07107aa43a20",
+                "apiVersion": "v1",
+                "resourceVersion": "716",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:28Z",
+            "lastTimestamp": "2025-09-04T08:11:28Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.1862067594d57438",
+                "namespace": "default",
+                "uid": "bc8f5003-b304-40cc-87c1-c4e8471693a2",
+                "resourceVersion": "1530",
+                "creationTimestamp": "2025-09-04T08:18:26Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "b063e4ec-8553-4dd0-99ee-086accfc97bf",
+                "apiVersion": "v1",
+                "resourceVersion": "1528"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/s3-test to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:18:26Z",
+            "lastTimestamp": "2025-09-04T08:18:26Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620675ad4df4ef",
+                "namespace": "default",
+                "uid": "56073c4c-3f5d-4558-92e5-41e3eb1eaaab",
+                "resourceVersion": "1532",
+                "creationTimestamp": "2025-09-04T08:18:27Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "b063e4ec-8553-4dd0-99ee-086accfc97bf",
+                "apiVersion": "v1",
+                "resourceVersion": "1529",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"curlimages/curl:latest\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:27Z",
+            "lastTimestamp": "2025-09-04T08:18:27Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620675bd1e270c",
+                "namespace": "default",
+                "uid": "b839a037-dd19-4660-8f4b-a49cb0e43fae",
+                "resourceVersion": "1533",
+                "creationTimestamp": "2025-09-04T08:18:27Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "b063e4ec-8553-4dd0-99ee-086accfc97bf",
+                "apiVersion": "v1",
+                "resourceVersion": "1529",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"curlimages/curl:latest\" in 265ms (265ms including waiting). Image size: 9853525 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:27Z",
+            "lastTimestamp": "2025-09-04T08:18:27Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620675bd9dd652",
+                "namespace": "default",
+                "uid": "77d7b163-f47f-48e4-bb9b-90878847efe8",
+                "resourceVersion": "1534",
+                "creationTimestamp": "2025-09-04T08:18:27Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "b063e4ec-8553-4dd0-99ee-086accfc97bf",
+                "apiVersion": "v1",
+                "resourceVersion": "1529",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Created",
+            "message": "Created container: s3-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:27Z",
+            "lastTimestamp": "2025-09-04T08:18:27Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "s3-test.18620675c39d4214",
+                "namespace": "default",
+                "uid": "f291c339-b28e-4f83-b529-f509e99ffa6a",
+                "resourceVersion": "1535",
+                "creationTimestamp": "2025-09-04T08:18:27Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "s3-test",
+                "uid": "b063e4ec-8553-4dd0-99ee-086accfc97bf",
+                "apiVersion": "v1",
+                "resourceVersion": "1529",
+                "fieldPath": "spec.containers{s3-test}"
+            },
+            "reason": "Started",
+            "message": "Started container s3-test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:27Z",
+            "lastTimestamp": "2025-09-04T08:18:27Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fc0171b5f4",
+                "namespace": "default",
+                "uid": "6c01b765-410c-47e0-9e33-6255ed1b157a",
+                "resourceVersion": "86",
+                "creationTimestamp": "2025-09-04T08:09:48Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeHasSufficientMemory",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientMemory",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:44Z",
+            "lastTimestamp": "2025-09-04T08:09:44Z",
+            "count": 8,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fc0171e58a",
+                "namespace": "default",
+                "uid": "373c0ab0-15bf-485f-af6f-f03a1659d5b2",
+                "resourceVersion": "87",
+                "creationTimestamp": "2025-09-04T08:09:48Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeHasNoDiskPressure",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeHasNoDiskPressure",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:44Z",
+            "lastTimestamp": "2025-09-04T08:09:44Z",
+            "count": 8,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fc0171f1ca",
+                "namespace": "default",
+                "uid": "da841af4-eda6-485f-9c75-9b21d0cc1d70",
+                "resourceVersion": "85",
+                "creationTimestamp": "2025-09-04T08:09:48Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeHasSufficientPID",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientPID",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:44Z",
+            "lastTimestamp": "2025-09-04T08:09:44Z",
+            "count": 7,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fd9ad9ec2a",
+                "namespace": "default",
+                "uid": "72a9187e-b7c2-48fd-a9b6-daf5688d89e7",
+                "resourceVersion": "268",
+                "creationTimestamp": "2025-09-04T08:09:51Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "Starting",
+            "message": "Starting kubelet.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:51Z",
+            "lastTimestamp": "2025-09-04T08:09:51Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fd9e8ef0be",
+                "namespace": "default",
+                "uid": "0cf994ef-e5da-4548-bf9b-9d4a3a33c5fa",
+                "resourceVersion": "270",
+                "creationTimestamp": "2025-09-04T08:09:51Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeAllocatableEnforced",
+            "message": "Updated Node Allocatable limit across pods",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:51Z",
+            "lastTimestamp": "2025-09-04T08:09:51Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fda47f5666",
+                "namespace": "default",
+                "uid": "d00287b7-36cd-4e52-9917-a0be4940e81e",
+                "resourceVersion": "275",
+                "creationTimestamp": "2025-09-04T08:09:51Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeHasSufficientMemory",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientMemory",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:51Z",
+            "lastTimestamp": "2025-09-04T08:09:51Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fda47f8625",
+                "namespace": "default",
+                "uid": "44ab6d4d-6093-4f1a-973d-aba268bb6452",
+                "resourceVersion": "276",
+                "creationTimestamp": "2025-09-04T08:09:51Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeHasNoDiskPressure",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeHasNoDiskPressure",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:51Z",
+            "lastTimestamp": "2025-09-04T08:09:51Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fda47f9477",
+                "namespace": "default",
+                "uid": "27e540d6-e59d-4df7-9503-b4b9e940c6fa",
+                "resourceVersion": "277",
+                "creationTimestamp": "2025-09-04T08:09:51Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeHasSufficientPID",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeHasSufficientPID",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:51Z",
+            "lastTimestamp": "2025-09-04T08:09:51Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fe7f34891c",
+                "namespace": "default",
+                "uid": "705bf1c9-4d38-44a9-982d-72006432aab7",
+                "resourceVersion": "336",
+                "creationTimestamp": "2025-09-04T08:09:55Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "e1d6efcf-5196-4b32-8217-5c68af63e5b3",
+                "apiVersion": "v1"
+            },
+            "reason": "RegisteredNode",
+            "message": "Node upgrade-test-cluster-control-plane event: Registered Node upgrade-test-cluster-control-plane in Controller",
+            "source": {
+                "component": "node-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:09:55Z",
+            "lastTimestamp": "2025-09-04T08:09:55Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "node-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.186205fef5ec18ef",
+                "namespace": "default",
+                "uid": "dad5f663-a02f-474f-8fb5-e33b563f04c4",
+                "resourceVersion": "405",
+                "creationTimestamp": "2025-09-04T08:09:57Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "Starting",
+            "source": {},
+            "firstTimestamp": null,
+            "lastTimestamp": null,
+            "type": "Normal",
+            "eventTime": "2025-09-04T08:09:57.233636Z",
+            "action": "StartKubeProxy",
+            "reportingComponent": "kube-proxy",
+            "reportingInstance": "kube-proxy-upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-cluster-control-plane.18620601b300b1ca",
+                "namespace": "default",
+                "uid": "3cc8997f-fe53-4135-a9ff-96516e50e1b9",
+                "resourceVersion": "434",
+                "creationTimestamp": "2025-09-04T08:10:08Z"
+            },
+            "involvedObject": {
+                "kind": "Node",
+                "name": "upgrade-test-cluster-control-plane",
+                "uid": "upgrade-test-cluster-control-plane"
+            },
+            "reason": "NodeReady",
+            "message": "Node upgrade-test-cluster-control-plane status is now: NodeReady",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:08Z",
+            "lastTimestamp": "2025-09-04T08:10:08Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.18620615524e22f9",
+                "namespace": "default",
+                "uid": "680670f0-920e-4957-a286-c762c444ced3",
+                "resourceVersion": "765",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "763"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/upgrade-test-dynamic-pod to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.186206156b59db43",
+                "namespace": "default",
+                "uid": "e59bd7c1-a943-4fa1-97c1-01f2c2a50325",
+                "resourceVersion": "767",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "764",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"busybox:latest\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.1862061579264906",
+                "namespace": "default",
+                "uid": "155b2594-2c69-4f70-b33a-c56356ae6960",
+                "resourceVersion": "768",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "764",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"busybox:latest\" in 231ms (231ms including waiting). Image size: 2223685 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.1862061579be6ea6",
+                "namespace": "default",
+                "uid": "3a6f94a2-5085-4f68-8c2a-dcc9039c4513",
+                "resourceVersion": "769",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "764",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Created",
+            "message": "Created container: test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.186206157f5e2807",
+                "namespace": "default",
+                "uid": "8a6a9850-d837-47a6-a08d-3cf910f2fdf0",
+                "resourceVersion": "771",
+                "creationTimestamp": "2025-09-04T08:11:34Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "764",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Started",
+            "message": "Started container test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:34Z",
+            "lastTimestamp": "2025-09-04T08:11:34Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.1862065d8e3377a6",
+                "namespace": "default",
+                "uid": "f9121993-c681-4fa9-9d3e-0f5f8d29acbd",
+                "resourceVersion": "1577",
+                "creationTimestamp": "2025-09-04T08:16:43Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "764"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077\" : rpc error: code = Internal desc = Could not mount \"csi-s3-211863c7-81e1-46ce-bdff-e221af5d962a\" at \"/var/lib/kubelet/pods/64236a3f-f3ca-4db4-bda7-476e10084905/volumes/kubernetes.io~csi/pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077/mount\": failed to wait for MountpointS3PodAttachment for \"/var/lib/kubelet/pods/64236a3f-f3ca-4db4-bda7-476e10084905/volumes/kubernetes.io~csi/pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077/mount\": no matches for kind \"MountpointS3PodAttachment\" in version \"s3.csi.scality.com/v2\". You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:43Z",
+            "lastTimestamp": "2025-09-04T08:18:51Z",
+            "count": 9,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.1862067d7dffdcc7",
+                "namespace": "default",
+                "uid": "829337a8-2c4b-4f64-9142-e11cc8cfa03d",
+                "resourceVersion": "1596",
+                "creationTimestamp": "2025-09-04T08:19:00Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "64236a3f-f3ca-4db4-bda7-476e10084905",
+                "apiVersion": "v1",
+                "resourceVersion": "764",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:19:00Z",
+            "lastTimestamp": "2025-09-04T08:19:00Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.18620684c2359e4b",
+                "namespace": "default",
+                "uid": "96a08524-a919-400b-af69-19586d4783b0",
+                "resourceVersion": "1652",
+                "creationTimestamp": "2025-09-04T08:19:31Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "5c69bd42-d7fe-4ccb-a8e6-dbc89ad63b23",
+                "apiVersion": "v1",
+                "resourceVersion": "1650"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/upgrade-test-dynamic-pod to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:19:31Z",
+            "lastTimestamp": "2025-09-04T08:19:31Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pod.18620684d2e15b39",
+                "namespace": "default",
+                "uid": "a75f1e09-fd37-4d58-ab7b-6589240a78b3",
+                "resourceVersion": "1848",
+                "creationTimestamp": "2025-09-04T08:19:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pod",
+                "uid": "5c69bd42-d7fe-4ccb-a8e6-dbc89ad63b23",
+                "apiVersion": "v1",
+                "resourceVersion": "1651"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077\" : rpc error: code = Internal desc = Could not mount \"csi-s3-211863c7-81e1-46ce-bdff-e221af5d962a\" at \"/var/lib/kubelet/pods/5c69bd42-d7fe-4ccb-a8e6-dbc89ad63b23/volumes/kubernetes.io~csi/pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077/mount\": failed to wait for MountpointS3PodAttachment for \"/var/lib/kubelet/pods/5c69bd42-d7fe-4ccb-a8e6-dbc89ad63b23/volumes/kubernetes.io~csi/pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077/mount\": no matches for kind \"MountpointS3PodAttachment\" in version \"s3.csi.scality.com/v2\". You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:19:32Z",
+            "lastTimestamp": "2025-09-04T08:21:40Z",
+            "count": 9,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pvc.186206154730f00a",
+                "namespace": "default",
+                "uid": "a7317beb-877d-4d76-a32c-ad419d9ecf44",
+                "resourceVersion": "755",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "PersistentVolumeClaim",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pvc",
+                "uid": "f1c2b928-8a77-4050-a83c-47f9c93ed077",
+                "apiVersion": "v1",
+                "resourceVersion": "754"
+            },
+            "reason": "ExternalProvisioning",
+            "message": "Waiting for a volume to be created either by the external provisioner 's3.csi.scality.com' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.",
+            "source": {
+                "component": "persistentvolume-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "persistentvolume-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pvc.18620615473c4578",
+                "namespace": "default",
+                "uid": "2c9affee-67c2-4884-89d2-51c8ad2acfe0",
+                "resourceVersion": "756",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "PersistentVolumeClaim",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pvc",
+                "uid": "f1c2b928-8a77-4050-a83c-47f9c93ed077",
+                "apiVersion": "v1",
+                "resourceVersion": "754"
+            },
+            "reason": "Provisioning",
+            "message": "External provisioner is provisioning volume for claim \"default/upgrade-test-dynamic-pvc\"",
+            "source": {
+                "component": "s3.csi.scality.com_s3-csi-controller-557bcd8dcd-v9sqv_9efefaef-e297-4016-a8fe-47a58d1dba6e"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "s3.csi.scality.com_s3-csi-controller-557bcd8dcd-v9sqv_9efefaef-e297-4016-a8fe-47a58d1dba6e",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-dynamic-pvc.186206154991e9e7",
+                "namespace": "default",
+                "uid": "c5772615-cfbb-43d2-9b0b-d3e0b9b642a2",
+                "resourceVersion": "759",
+                "creationTimestamp": "2025-09-04T08:11:33Z"
+            },
+            "involvedObject": {
+                "kind": "PersistentVolumeClaim",
+                "namespace": "default",
+                "name": "upgrade-test-dynamic-pvc",
+                "uid": "f1c2b928-8a77-4050-a83c-47f9c93ed077",
+                "apiVersion": "v1",
+                "resourceVersion": "754"
+            },
+            "reason": "ProvisioningSucceeded",
+            "message": "Successfully provisioned volume pvc-f1c2b928-8a77-4050-a83c-47f9c93ed077",
+            "source": {
+                "component": "s3.csi.scality.com_s3-csi-controller-557bcd8dcd-v9sqv_9efefaef-e297-4016-a8fe-47a58d1dba6e"
+            },
+            "firstTimestamp": "2025-09-04T08:11:33Z",
+            "lastTimestamp": "2025-09-04T08:11:33Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "s3.csi.scality.com_s3-csi-controller-557bcd8dcd-v9sqv_9efefaef-e297-4016-a8fe-47a58d1dba6e",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.18620614af1a4328",
+                "namespace": "default",
+                "uid": "85993f0f-39b7-4053-90e2-70129d1d9569",
+                "resourceVersion": "741",
+                "creationTimestamp": "2025-09-04T08:11:30Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "739"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/upgrade-test-pod to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:30Z",
+            "lastTimestamp": "2025-09-04T08:11:30Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.18620614d99e711e",
+                "namespace": "default",
+                "uid": "146e1e4c-fc6c-4115-9f6a-5d5cb1f30abb",
+                "resourceVersion": "746",
+                "creationTimestamp": "2025-09-04T08:11:31Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Pulling",
+            "message": "Pulling image \"busybox:latest\"",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:31Z",
+            "lastTimestamp": "2025-09-04T08:11:31Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.186206151248398c",
+                "namespace": "default",
+                "uid": "ad041d3a-ce8d-44e3-a1ae-73b3f9608394",
+                "resourceVersion": "747",
+                "creationTimestamp": "2025-09-04T08:11:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Pulled",
+            "message": "Successfully pulled image \"busybox:latest\" in 950ms (950ms including waiting). Image size: 2223685 bytes.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:32Z",
+            "lastTimestamp": "2025-09-04T08:11:32Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.1862061512dd5a51",
+                "namespace": "default",
+                "uid": "48dd788f-866e-4aa8-ac52-768457cf289b",
+                "resourceVersion": "748",
+                "creationTimestamp": "2025-09-04T08:11:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Created",
+            "message": "Created container: test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:32Z",
+            "lastTimestamp": "2025-09-04T08:11:32Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.1862061518064975",
+                "namespace": "default",
+                "uid": "6d85acca-d4d3-44a1-9d9d-6347dade888b",
+                "resourceVersion": "749",
+                "creationTimestamp": "2025-09-04T08:11:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Started",
+            "message": "Started container test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:32Z",
+            "lastTimestamp": "2025-09-04T08:11:32Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.1862065c68904195",
+                "namespace": "default",
+                "uid": "d8f83222-561e-49fb-9215-dd29214f4bc4",
+                "resourceVersion": "1340",
+                "creationTimestamp": "2025-09-04T08:16:38Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"upgrade-test-pv\" : rpc error: code = Internal desc = Could not mount \"upgrade-test-static\" at \"/var/lib/kubelet/pods/25a2aead-29b9-4ad3-9a78-b48b897bc0e7/volumes/kubernetes.io~csi/upgrade-test-pv/mount\": failed to wait for MountpointS3PodAttachment for \"/var/lib/kubelet/pods/25a2aead-29b9-4ad3-9a78-b48b897bc0e7/volumes/kubernetes.io~csi/upgrade-test-pv/mount\": unable to retrieve the complete list of server APIs: s3.csi.scality.com/v2: no matches for s3.csi.scality.com/v2, Resource=. You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:38Z",
+            "lastTimestamp": "2025-09-04T08:16:38Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.1862065c8c3d1b96",
+                "namespace": "default",
+                "uid": "6224d195-2374-4009-a164-ea39723fca94",
+                "resourceVersion": "1569",
+                "creationTimestamp": "2025-09-04T08:16:39Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"upgrade-test-pv\" : rpc error: code = Internal desc = Could not mount \"upgrade-test-static\" at \"/var/lib/kubelet/pods/25a2aead-29b9-4ad3-9a78-b48b897bc0e7/volumes/kubernetes.io~csi/upgrade-test-pv/mount\": failed to wait for MountpointS3PodAttachment for \"/var/lib/kubelet/pods/25a2aead-29b9-4ad3-9a78-b48b897bc0e7/volumes/kubernetes.io~csi/upgrade-test-pv/mount\": no matches for kind \"MountpointS3PodAttachment\" in version \"s3.csi.scality.com/v2\". You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:39Z",
+            "lastTimestamp": "2025-09-04T08:18:46Z",
+            "count": 8,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.1862067664bf2b8a",
+                "namespace": "default",
+                "uid": "e28301c0-96ab-4079-9206-640e9f486cf9",
+                "resourceVersion": "1545",
+                "creationTimestamp": "2025-09-04T08:18:30Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "25a2aead-29b9-4ad3-9a78-b48b897bc0e7",
+                "apiVersion": "v1",
+                "resourceVersion": "740",
+                "fieldPath": "spec.containers{test}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container test",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:18:30Z",
+            "lastTimestamp": "2025-09-04T08:18:30Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.18620684bb86ac87",
+                "namespace": "default",
+                "uid": "2032eb96-a1b1-443d-9105-06e5bebd1088",
+                "resourceVersion": "1648",
+                "creationTimestamp": "2025-09-04T08:19:31Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "d845e34a-01a4-434d-9b55-8659eaeee207",
+                "apiVersion": "v1",
+                "resourceVersion": "1646"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned default/upgrade-test-pod to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:19:31Z",
+            "lastTimestamp": "2025-09-04T08:19:31Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "upgrade-test-pod.18620684ccd58673",
+                "namespace": "default",
+                "uid": "4612b395-fa46-4586-b8be-6f90f43741ff",
+                "resourceVersion": "1847",
+                "creationTimestamp": "2025-09-04T08:19:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "upgrade-test-pod",
+                "uid": "d845e34a-01a4-434d-9b55-8659eaeee207",
+                "apiVersion": "v1",
+                "resourceVersion": "1647"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"upgrade-test-pv\" : rpc error: code = Internal desc = Could not mount \"upgrade-test-static\" at \"/var/lib/kubelet/pods/d845e34a-01a4-434d-9b55-8659eaeee207/volumes/kubernetes.io~csi/upgrade-test-pv/mount\": failed to wait for MountpointS3PodAttachment for \"/var/lib/kubelet/pods/d845e34a-01a4-434d-9b55-8659eaeee207/volumes/kubernetes.io~csi/upgrade-test-pv/mount\": no matches for kind \"MountpointS3PodAttachment\" in version \"s3.csi.scality.com/v2\". You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`.",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:19:32Z",
+            "lastTimestamp": "2025-09-04T08:21:40Z",
+            "count": 9,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        }
+    ]
+}

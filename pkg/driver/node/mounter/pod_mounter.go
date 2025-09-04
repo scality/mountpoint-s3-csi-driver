@@ -335,7 +335,6 @@ func (pm *PodMounter) IsMountPoint(target string) (bool, error) {
 // waitForMountpointPod waints until Mountpoint Pod for given `podID` and `volumeName` is in `Running` state.
 // It returns found Mountpoint Pod and it's base directory.
 func (pm *PodMounter) waitForMountpointPod(ctx context.Context, podName string) (*corev1.Pod, string, error) {
-
 	pod, err := pm.podWatcher.Wait(ctx, podName)
 	if err != nil {
 		return nil, "", err

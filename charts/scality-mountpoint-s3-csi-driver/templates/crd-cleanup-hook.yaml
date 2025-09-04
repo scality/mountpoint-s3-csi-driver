@@ -82,19 +82,19 @@ spec:
             - -c
             - |
               echo "Starting CRD cleanup for {{ include "s3-csi.fullname" . }}..."
-              
+
               # Delete all MountpointS3PodAttachment CRDs
               echo "Deleting MountpointS3PodAttachment CRDs..."
               kubectl delete mountpoints3podattachments.s3.csi.scality.com --all --ignore-not-found=true
-              
+
               # Delete all Mountpoint Pods
               echo "Deleting Mountpoint Pods..."
               kubectl delete pods -n {{ .Values.namespace }} -l app=mountpoint-s3 --ignore-not-found=true
-              
+
               # Wait for resources to be deleted
               echo "Waiting for resources to be deleted..."
               kubectl wait --for=delete mountpoints3podattachments.s3.csi.scality.com --all --timeout=60s || true
               kubectl wait --for=delete pods -n {{ .Values.namespace }} -l app=mountpoint-s3 --timeout=60s || true
-              
+
               echo "CRD cleanup completed successfully"
 {{- end -}}

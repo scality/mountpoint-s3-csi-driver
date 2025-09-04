@@ -1,0 +1,2286 @@
+{
+    "kind": "EventList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "2001"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-hjn2b.186205fec1f0f935",
+                "namespace": "kube-system",
+                "uid": "3c71ccd8-f19c-498e-a3bc-e334987af11b",
+                "resourceVersion": "390",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-hjn2b",
+                "uid": "498812ab-be35-4c3f-be84-29923e6e8949",
+                "apiVersion": "v1",
+                "resourceVersion": "384"
+            },
+            "reason": "FailedScheduling",
+            "message": "0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-hjn2b.18620601b43b5ce0",
+                "namespace": "kube-system",
+                "uid": "0b472e40-b366-42fc-a0b9-7e2d5c2a1ae6",
+                "resourceVersion": "442",
+                "creationTimestamp": "2025-09-04T08:10:09Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-hjn2b",
+                "uid": "498812ab-be35-4c3f-be84-29923e6e8949",
+                "apiVersion": "v1",
+                "resourceVersion": "394"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/coredns-668d6bf9bc-hjn2b to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:10:09Z",
+            "lastTimestamp": "2025-09-04T08:10:09Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-hjn2b.18620601d081aeff",
+                "namespace": "kube-system",
+                "uid": "d41e1b47-ff65-491e-8a88-d056041e33fa",
+                "resourceVersion": "449",
+                "creationTimestamp": "2025-09-04T08:10:09Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-hjn2b",
+                "uid": "498812ab-be35-4c3f-be84-29923e6e8949",
+                "apiVersion": "v1",
+                "resourceVersion": "439",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/coredns/coredns:v1.11.3\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:09Z",
+            "lastTimestamp": "2025-09-04T08:10:09Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-hjn2b.1862060210fd81a8",
+                "namespace": "kube-system",
+                "uid": "047a863c-ae8d-42ba-a5ff-b520b05e4d4d",
+                "resourceVersion": "452",
+                "creationTimestamp": "2025-09-04T08:10:10Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-hjn2b",
+                "uid": "498812ab-be35-4c3f-be84-29923e6e8949",
+                "apiVersion": "v1",
+                "resourceVersion": "439",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Created",
+            "message": "Created container: coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:10Z",
+            "lastTimestamp": "2025-09-04T08:10:10Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-hjn2b.186206021b9add43",
+                "namespace": "kube-system",
+                "uid": "318d3dc1-1bc3-4b45-81fd-73bc0df656c5",
+                "resourceVersion": "457",
+                "creationTimestamp": "2025-09-04T08:10:10Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-hjn2b",
+                "uid": "498812ab-be35-4c3f-be84-29923e6e8949",
+                "apiVersion": "v1",
+                "resourceVersion": "439",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Started",
+            "message": "Started container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:10Z",
+            "lastTimestamp": "2025-09-04T08:10:10Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-hjn2b.1862061085db9b37",
+                "namespace": "kube-system",
+                "uid": "51f59fc5-9168-43fb-bb7e-3368c9f88a0a",
+                "resourceVersion": "606",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-hjn2b",
+                "uid": "498812ab-be35-4c3f-be84-29923e6e8949",
+                "apiVersion": "v1",
+                "resourceVersion": "439",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-wcm4n.186205fec1203775",
+                "namespace": "kube-system",
+                "uid": "3b80135e-ffaf-406d-9d9c-3fa65768b418",
+                "resourceVersion": "385",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-wcm4n",
+                "uid": "e696f365-1c80-4411-9f1c-8f1ca74ae4da",
+                "apiVersion": "v1",
+                "resourceVersion": "381"
+            },
+            "reason": "FailedScheduling",
+            "message": "0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-wcm4n.18620601b438e921",
+                "namespace": "kube-system",
+                "uid": "7488b28e-c51e-4559-854b-ddba298a2087",
+                "resourceVersion": "440",
+                "creationTimestamp": "2025-09-04T08:10:09Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-wcm4n",
+                "uid": "e696f365-1c80-4411-9f1c-8f1ca74ae4da",
+                "apiVersion": "v1",
+                "resourceVersion": "388"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/coredns-668d6bf9bc-wcm4n to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:10:09Z",
+            "lastTimestamp": "2025-09-04T08:10:09Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-wcm4n.18620601d007d9c1",
+                "namespace": "kube-system",
+                "uid": "1d643ea6-b5b2-4432-91d7-d40466282377",
+                "resourceVersion": "448",
+                "creationTimestamp": "2025-09-04T08:10:09Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-wcm4n",
+                "uid": "e696f365-1c80-4411-9f1c-8f1ca74ae4da",
+                "apiVersion": "v1",
+                "resourceVersion": "437",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/coredns/coredns:v1.11.3\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:09Z",
+            "lastTimestamp": "2025-09-04T08:10:09Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-wcm4n.1862060210795f6c",
+                "namespace": "kube-system",
+                "uid": "05eb94d2-5a98-40bb-a839-fd4ed1358b30",
+                "resourceVersion": "451",
+                "creationTimestamp": "2025-09-04T08:10:10Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-wcm4n",
+                "uid": "e696f365-1c80-4411-9f1c-8f1ca74ae4da",
+                "apiVersion": "v1",
+                "resourceVersion": "437",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Created",
+            "message": "Created container: coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:10Z",
+            "lastTimestamp": "2025-09-04T08:10:10Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-wcm4n.186206021946afd7",
+                "namespace": "kube-system",
+                "uid": "9feb71a0-58a6-459e-b644-9446cc061b26",
+                "resourceVersion": "454",
+                "creationTimestamp": "2025-09-04T08:10:10Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-wcm4n",
+                "uid": "e696f365-1c80-4411-9f1c-8f1ca74ae4da",
+                "apiVersion": "v1",
+                "resourceVersion": "437",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Started",
+            "message": "Started container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:10:10Z",
+            "lastTimestamp": "2025-09-04T08:10:10Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc-wcm4n.186206105cd5baed",
+                "namespace": "kube-system",
+                "uid": "6fd31a63-09a7-4a3c-adb1-3bbc9b5538a7",
+                "resourceVersion": "568",
+                "creationTimestamp": "2025-09-04T08:11:11Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc-wcm4n",
+                "uid": "e696f365-1c80-4411-9f1c-8f1ca74ae4da",
+                "apiVersion": "v1",
+                "resourceVersion": "437",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc.186205fec1138b40",
+                "namespace": "kube-system",
+                "uid": "bc2716a1-fbe0-4289-86d4-c37372a9c39f",
+                "resourceVersion": "383",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc",
+                "uid": "fd859651-dc5e-4ff2-96b6-13fb1957d2dc",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "344"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: coredns-668d6bf9bc-wcm4n",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc.186205fec1715173",
+                "namespace": "kube-system",
+                "uid": "d6a7fe41-c4ed-4283-a32a-7531da837521",
+                "resourceVersion": "392",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc",
+                "uid": "fd859651-dc5e-4ff2-96b6-13fb1957d2dc",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "344"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: coredns-668d6bf9bc-hjn2b",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc.186206105cbf0490",
+                "namespace": "kube-system",
+                "uid": "cb06e5bd-4c0f-41ff-a36f-ed5951257926",
+                "resourceVersion": "567",
+                "creationTimestamp": "2025-09-04T08:11:11Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc",
+                "uid": "fd859651-dc5e-4ff2-96b6-13fb1957d2dc",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "559"
+            },
+            "reason": "SuccessfulDelete",
+            "message": "Deleted pod: coredns-668d6bf9bc-wcm4n",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-668d6bf9bc.1862061085dc2462",
+                "namespace": "kube-system",
+                "uid": "01edc49f-812c-4706-b8aa-1eb4568c0780",
+                "resourceVersion": "608",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-668d6bf9bc",
+                "uid": "fd859651-dc5e-4ff2-96b6-13fb1957d2dc",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "597"
+            },
+            "reason": "SuccessfulDelete",
+            "message": "Deleted pod: coredns-668d6bf9bc-hjn2b",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-2llkl.186206105fac1f51",
+                "namespace": "kube-system",
+                "uid": "9f3f48f6-ff1d-42eb-9b8e-8639cda81b3f",
+                "resourceVersion": "579",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-2llkl",
+                "uid": "911e5980-de6c-4885-af01-145cf5bf0b39",
+                "apiVersion": "v1",
+                "resourceVersion": "574"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/coredns-7bf54f7fcd-2llkl to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-2llkl.186206107a201d56",
+                "namespace": "kube-system",
+                "uid": "a3c171c4-289f-4edc-b4f1-56c7206d9b5f",
+                "resourceVersion": "586",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-2llkl",
+                "uid": "911e5980-de6c-4885-af01-145cf5bf0b39",
+                "apiVersion": "v1",
+                "resourceVersion": "578",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/coredns/coredns:v1.11.3\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-2llkl.186206107ab6ed9e",
+                "namespace": "kube-system",
+                "uid": "814d3e24-b22e-4a8b-a112-bd1b1ea357f4",
+                "resourceVersion": "587",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-2llkl",
+                "uid": "911e5980-de6c-4885-af01-145cf5bf0b39",
+                "apiVersion": "v1",
+                "resourceVersion": "578",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Created",
+            "message": "Created container: coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-2llkl.18620610805ef6a4",
+                "namespace": "kube-system",
+                "uid": "21037ded-d7ea-4f66-b54c-5aeb47237fa2",
+                "resourceVersion": "589",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-2llkl",
+                "uid": "911e5980-de6c-4885-af01-145cf5bf0b39",
+                "apiVersion": "v1",
+                "resourceVersion": "578",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Started",
+            "message": "Started container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-2llkl.1862065827652319",
+                "namespace": "kube-system",
+                "uid": "19741f32-8613-45dc-bdd7-65a8786284c1",
+                "resourceVersion": "1201",
+                "creationTimestamp": "2025-09-04T08:16:20Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-2llkl",
+                "uid": "911e5980-de6c-4885-af01-145cf5bf0b39",
+                "apiVersion": "v1",
+                "resourceVersion": "578",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:20Z",
+            "lastTimestamp": "2025-09-04T08:16:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-2llkl.18620658b07e366f",
+                "namespace": "kube-system",
+                "uid": "f65f158c-5d6b-4491-84f4-94f6189b3887",
+                "resourceVersion": "1288",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-2llkl",
+                "uid": "911e5980-de6c-4885-af01-145cf5bf0b39",
+                "apiVersion": "v1",
+                "resourceVersion": "578",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Unhealthy",
+            "message": "Readiness probe failed: Get \"http://10.244.0.6:8181/ready\": dial tcp 10.244.0.6:8181: connect: connection refused",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-psthl.186206105b57b713",
+                "namespace": "kube-system",
+                "uid": "7896a9f6-60bb-40a1-a4e7-0218030222e0",
+                "resourceVersion": "561",
+                "creationTimestamp": "2025-09-04T08:11:11Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-psthl",
+                "uid": "0018f93b-3e6e-4603-bafd-d4d316389541",
+                "apiVersion": "v1",
+                "resourceVersion": "554"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/coredns-7bf54f7fcd-psthl to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-psthl.186206107472a146",
+                "namespace": "kube-system",
+                "uid": "e012c0cd-c7e9-4221-80f2-7427f5e97d57",
+                "resourceVersion": "584",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-psthl",
+                "uid": "0018f93b-3e6e-4603-bafd-d4d316389541",
+                "apiVersion": "v1",
+                "resourceVersion": "557",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/coredns/coredns:v1.11.3\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-psthl.18620610751f9929",
+                "namespace": "kube-system",
+                "uid": "2f5a5503-fa34-4f5e-8f25-d2d208fd4e7e",
+                "resourceVersion": "585",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-psthl",
+                "uid": "0018f93b-3e6e-4603-bafd-d4d316389541",
+                "apiVersion": "v1",
+                "resourceVersion": "557",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Created",
+            "message": "Created container: coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-psthl.186206107b8ba039",
+                "namespace": "kube-system",
+                "uid": "c0a30cc4-3ab2-4be0-ab6b-bb76f4baff28",
+                "resourceVersion": "588",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-psthl",
+                "uid": "0018f93b-3e6e-4603-bafd-d4d316389541",
+                "apiVersion": "v1",
+                "resourceVersion": "557",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Started",
+            "message": "Started container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-psthl.18620657daac9e79",
+                "namespace": "kube-system",
+                "uid": "2d714311-6dd3-4756-90d3-4d94a0ad45b8",
+                "resourceVersion": "1159",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-psthl",
+                "uid": "0018f93b-3e6e-4603-bafd-d4d316389541",
+                "apiVersion": "v1",
+                "resourceVersion": "557",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Killing",
+            "message": "Stopping container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd-psthl.18620658b0aa52fd",
+                "namespace": "kube-system",
+                "uid": "3b4859df-5d48-46f4-a0fd-5ac10ff4a21c",
+                "resourceVersion": "1289",
+                "creationTimestamp": "2025-09-04T08:16:22Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd-psthl",
+                "uid": "0018f93b-3e6e-4603-bafd-d4d316389541",
+                "apiVersion": "v1",
+                "resourceVersion": "557",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Unhealthy",
+            "message": "Readiness probe failed: Get \"http://10.244.0.5:8181/ready\": dial tcp 10.244.0.5:8181: connect: connection refused",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:22Z",
+            "lastTimestamp": "2025-09-04T08:16:22Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd.186206105aedcb86",
+                "namespace": "kube-system",
+                "uid": "cefe1980-2f33-42f6-aa70-acda783a5be6",
+                "resourceVersion": "558",
+                "creationTimestamp": "2025-09-04T08:11:11Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd",
+                "uid": "6c77c9af-0357-47ad-a913-6681a5f99235",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "553"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: coredns-7bf54f7fcd-psthl",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd.186206105ef38390",
+                "namespace": "kube-system",
+                "uid": "07295a75-c5bb-4f86-ab55-34c827944656",
+                "resourceVersion": "576",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd",
+                "uid": "6c77c9af-0357-47ad-a913-6681a5f99235",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "570"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: coredns-7bf54f7fcd-2llkl",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd.18620657daafa5fd",
+                "namespace": "kube-system",
+                "uid": "55bed3dc-c73e-4353-8cfd-6e2286121678",
+                "resourceVersion": "1160",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd",
+                "uid": "6c77c9af-0357-47ad-a913-6681a5f99235",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1153"
+            },
+            "reason": "SuccessfulDelete",
+            "message": "Deleted pod: coredns-7bf54f7fcd-psthl",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-7bf54f7fcd.1862065827740aa7",
+                "namespace": "kube-system",
+                "uid": "e0445c67-0bb2-465b-9049-206d2436147f",
+                "resourceVersion": "1200",
+                "creationTimestamp": "2025-09-04T08:16:20Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-7bf54f7fcd",
+                "uid": "6c77c9af-0357-47ad-a913-6681a5f99235",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1193"
+            },
+            "reason": "SuccessfulDelete",
+            "message": "Deleted pod: coredns-7bf54f7fcd-2llkl",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:20Z",
+            "lastTimestamp": "2025-09-04T08:16:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-bs58n.18620657d97ef4aa",
+                "namespace": "kube-system",
+                "uid": "ec034c1d-f36a-4927-8c72-0b4b519501bf",
+                "resourceVersion": "1154",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-bs58n",
+                "uid": "4a9269f4-c028-485f-ad74-73316381bc9a",
+                "apiVersion": "v1",
+                "resourceVersion": "1149"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/coredns-86f89cc758-bs58n to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-bs58n.18620657f2f3d9d9",
+                "namespace": "kube-system",
+                "uid": "854764aa-5624-4475-ac5c-4b92454fbf81",
+                "resourceVersion": "1177",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-bs58n",
+                "uid": "4a9269f4-c028-485f-ad74-73316381bc9a",
+                "apiVersion": "v1",
+                "resourceVersion": "1152",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/coredns/coredns:v1.11.3\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-bs58n.18620657f3c11bf4",
+                "namespace": "kube-system",
+                "uid": "c05acec8-e56b-4ea0-b119-faee921ef895",
+                "resourceVersion": "1178",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-bs58n",
+                "uid": "4a9269f4-c028-485f-ad74-73316381bc9a",
+                "apiVersion": "v1",
+                "resourceVersion": "1152",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Created",
+            "message": "Created container: coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-bs58n.18620657fac4c509",
+                "namespace": "kube-system",
+                "uid": "c0432fc2-9b47-443f-a4e0-9a0891e8b08b",
+                "resourceVersion": "1181",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-bs58n",
+                "uid": "4a9269f4-c028-485f-ad74-73316381bc9a",
+                "apiVersion": "v1",
+                "resourceVersion": "1152",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Started",
+            "message": "Started container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-ztmcp.18620657dd47e983",
+                "namespace": "kube-system",
+                "uid": "16ce3f99-bf64-4239-8e45-24bea6078ea8",
+                "resourceVersion": "1172",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-ztmcp",
+                "uid": "f9e8874a-7ac1-4245-9f4f-c5268661fa91",
+                "apiVersion": "v1",
+                "resourceVersion": "1165"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/coredns-86f89cc758-ztmcp to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-ztmcp.18620657f704ff19",
+                "namespace": "kube-system",
+                "uid": "a3fdf7e2-8f14-4d1e-84e9-d2a5019a8f36",
+                "resourceVersion": "1179",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-ztmcp",
+                "uid": "f9e8874a-7ac1-4245-9f4f-c5268661fa91",
+                "apiVersion": "v1",
+                "resourceVersion": "1171",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/coredns/coredns:v1.11.3\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-ztmcp.18620657f7aa3697",
+                "namespace": "kube-system",
+                "uid": "3bc49146-1ede-452c-8019-e5babb7a0715",
+                "resourceVersion": "1180",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-ztmcp",
+                "uid": "f9e8874a-7ac1-4245-9f4f-c5268661fa91",
+                "apiVersion": "v1",
+                "resourceVersion": "1171",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Created",
+            "message": "Created container: coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758-ztmcp.18620657fe5bce17",
+                "namespace": "kube-system",
+                "uid": "3f0f6b6c-789e-425c-a6f1-bca5554ae91e",
+                "resourceVersion": "1182",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758-ztmcp",
+                "uid": "f9e8874a-7ac1-4245-9f4f-c5268661fa91",
+                "apiVersion": "v1",
+                "resourceVersion": "1171",
+                "fieldPath": "spec.containers{coredns}"
+            },
+            "reason": "Started",
+            "message": "Started container coredns",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758.18620657d9295fde",
+                "namespace": "kube-system",
+                "uid": "28982c30-c74b-4e04-821f-8a13b5be19eb",
+                "resourceVersion": "1150",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758",
+                "uid": "242f318d-e409-4160-b3b2-d07fd99af061",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1146"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: coredns-86f89cc758-bs58n",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns-86f89cc758.18620657dc6fd09d",
+                "namespace": "kube-system",
+                "uid": "6d8197b6-e225-4a90-9c78-0ba6869882f0",
+                "resourceVersion": "1169",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "ReplicaSet",
+                "namespace": "kube-system",
+                "name": "coredns-86f89cc758",
+                "uid": "242f318d-e409-4160-b3b2-d07fd99af061",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1164"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: coredns-86f89cc758-ztmcp",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.186205feab3299b1",
+                "namespace": "kube-system",
+                "uid": "02ad1040-29f2-4f8a-9dc2-22e30f91d90b",
+                "resourceVersion": "348",
+                "creationTimestamp": "2025-09-04T08:09:55Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "281"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set coredns-668d6bf9bc from 0 to 2",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:09:55Z",
+            "lastTimestamp": "2025-09-04T08:09:55Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.186206105a3b96e7",
+                "namespace": "kube-system",
+                "uid": "7045d743-9e1b-4390-9680-6d1f59785c8a",
+                "resourceVersion": "555",
+                "creationTimestamp": "2025-09-04T08:11:11Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "552"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set coredns-7bf54f7fcd from 0 to 1",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.186206105c0a3e93",
+                "namespace": "kube-system",
+                "uid": "12459c0f-1a8b-43c0-a4a9-7230f0224763",
+                "resourceVersion": "564",
+                "creationTimestamp": "2025-09-04T08:11:11Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "552"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled down replica set coredns-668d6bf9bc from 2 to 1",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.186206105e22af18",
+                "namespace": "kube-system",
+                "uid": "e9e89ba1-a41a-4df3-9b4e-f5d1f9054067",
+                "resourceVersion": "572",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "556"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set coredns-7bf54f7fcd from 1 to 2",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:11Z",
+            "lastTimestamp": "2025-09-04T08:11:11Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.186206108520bea0",
+                "namespace": "kube-system",
+                "uid": "831462f9-de4a-4799-a0c7-e370fe9c19f7",
+                "resourceVersion": "600",
+                "creationTimestamp": "2025-09-04T08:11:12Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "582"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled down replica set coredns-668d6bf9bc from 1 to 0",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:11:12Z",
+            "lastTimestamp": "2025-09-04T08:11:12Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.18620657d8a4ca50",
+                "namespace": "kube-system",
+                "uid": "166d1037-e7e6-45ab-9dc9-1268beeadcb8",
+                "resourceVersion": "1148",
+                "creationTimestamp": "2025-09-04T08:16:18Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1145"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set coredns-86f89cc758 from 0 to 1",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:18Z",
+            "lastTimestamp": "2025-09-04T08:16:18Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.18620657d9c2be81",
+                "namespace": "kube-system",
+                "uid": "94e1c1ce-c4a6-4aeb-9f6e-c0471efd2479",
+                "resourceVersion": "1155",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1145"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled down replica set coredns-7bf54f7fcd from 2 to 1",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.18620657dc13d5de",
+                "namespace": "kube-system",
+                "uid": "549ff24c-b627-457c-9cbe-1c38cd2ccbde",
+                "resourceVersion": "1168",
+                "creationTimestamp": "2025-09-04T08:16:19Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1147"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled up replica set coredns-86f89cc758 from 1 to 2",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:19Z",
+            "lastTimestamp": "2025-09-04T08:16:19Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "coredns.1862065827036d30",
+                "namespace": "kube-system",
+                "uid": "2b8d0095-3c2b-485f-9e66-0276d353f321",
+                "resourceVersion": "1196",
+                "creationTimestamp": "2025-09-04T08:16:20Z"
+            },
+            "involvedObject": {
+                "kind": "Deployment",
+                "namespace": "kube-system",
+                "name": "coredns",
+                "uid": "90a1b17c-30b2-453b-97c9-0718e142505b",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "1176"
+            },
+            "reason": "ScalingReplicaSet",
+            "message": "Scaled down replica set coredns-7bf54f7fcd from 1 to 0",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:16:20Z",
+            "lastTimestamp": "2025-09-04T08:16:20Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "etcd-upgrade-test-cluster-control-plane.186205fc23c2ee08",
+                "namespace": "kube-system",
+                "uid": "7bfff8d4-933a-46a0-bec6-eead798e6782",
+                "resourceVersion": "90",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "etcd-upgrade-test-cluster-control-plane",
+                "uid": "76dabf24ab1af91101090175cb4db8ee",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{etcd}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/etcd:3.5.16-0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "etcd-upgrade-test-cluster-control-plane.186205fc85988e1f",
+                "namespace": "kube-system",
+                "uid": "65453608-71f8-45f6-9f76-c04fa919120b",
+                "resourceVersion": "99",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "etcd-upgrade-test-cluster-control-plane",
+                "uid": "76dabf24ab1af91101090175cb4db8ee",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{etcd}"
+            },
+            "reason": "Created",
+            "message": "Created container: etcd",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:46Z",
+            "lastTimestamp": "2025-09-04T08:09:46Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "etcd-upgrade-test-cluster-control-plane.186205fc8e6183ad",
+                "namespace": "kube-system",
+                "uid": "166e332d-8193-48e3-8982-dc28f6f5fb51",
+                "resourceVersion": "100",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "etcd-upgrade-test-cluster-control-plane",
+                "uid": "76dabf24ab1af91101090175cb4db8ee",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{etcd}"
+            },
+            "reason": "Started",
+            "message": "Started container etcd",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:46Z",
+            "lastTimestamp": "2025-09-04T08:09:46Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kindnet-4sf8z.186205feb87e41de",
+                "namespace": "kube-system",
+                "uid": "23fd4a53-82e9-412f-a237-d955c628cb22",
+                "resourceVersion": "370",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kindnet-4sf8z",
+                "uid": "4eb6b5ad-a971-4e57-9c6f-c52c48bc315b",
+                "apiVersion": "v1",
+                "resourceVersion": "364"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/kindnet-4sf8z to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "kindnet-4sf8z.186205fedee24107",
+                "namespace": "kube-system",
+                "uid": "8154583c-f25d-411d-9823-79d17723e3f0",
+                "resourceVersion": "402",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kindnet-4sf8z",
+                "uid": "4eb6b5ad-a971-4e57-9c6f-c52c48bc315b",
+                "apiVersion": "v1",
+                "resourceVersion": "366",
+                "fieldPath": "spec.containers{kindnet-cni}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"docker.io/kindest/kindnetd:v20241212-9f82dd49\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kindnet-4sf8z.186205ff1308758b",
+                "namespace": "kube-system",
+                "uid": "b00ff2da-1121-43d1-9c36-d499e5fd0839",
+                "resourceVersion": "408",
+                "creationTimestamp": "2025-09-04T08:09:57Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kindnet-4sf8z",
+                "uid": "4eb6b5ad-a971-4e57-9c6f-c52c48bc315b",
+                "apiVersion": "v1",
+                "resourceVersion": "366",
+                "fieldPath": "spec.containers{kindnet-cni}"
+            },
+            "reason": "Created",
+            "message": "Created container: kindnet-cni",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:57Z",
+            "lastTimestamp": "2025-09-04T08:09:57Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kindnet-4sf8z.186205ff2c3ee00a",
+                "namespace": "kube-system",
+                "uid": "c11de41a-37af-4e39-ad9a-dd10262f7bc9",
+                "resourceVersion": "409",
+                "creationTimestamp": "2025-09-04T08:09:58Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kindnet-4sf8z",
+                "uid": "4eb6b5ad-a971-4e57-9c6f-c52c48bc315b",
+                "apiVersion": "v1",
+                "resourceVersion": "366",
+                "fieldPath": "spec.containers{kindnet-cni}"
+            },
+            "reason": "Started",
+            "message": "Started container kindnet-cni",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:58Z",
+            "lastTimestamp": "2025-09-04T08:09:58Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kindnet.186205feb8412a51",
+                "namespace": "kube-system",
+                "uid": "7850c8d4-1699-46d0-97d2-a4672b353cc1",
+                "resourceVersion": "368",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "DaemonSet",
+                "namespace": "kube-system",
+                "name": "kindnet",
+                "uid": "547fa167-6614-4a32-818d-a584c6c30e8a",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "308"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: kindnet-4sf8z",
+            "source": {
+                "component": "daemonset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "daemonset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "kube-apiserver-upgrade-test-cluster-control-plane.186205fc236ee99d",
+                "namespace": "kube-system",
+                "uid": "afe2b93d-1b10-42d9-b03d-9c572c0103b6",
+                "resourceVersion": "89",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-apiserver-upgrade-test-cluster-control-plane",
+                "uid": "4e66e4d54560c6ffca9112f3d53a3755",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-apiserver}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/kube-apiserver:v1.32.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-apiserver-upgrade-test-cluster-control-plane.186205fc45df48ef",
+                "namespace": "kube-system",
+                "uid": "5919cecd-3a89-4691-bb43-2ec4cfe895b5",
+                "resourceVersion": "95",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-apiserver-upgrade-test-cluster-control-plane",
+                "uid": "4e66e4d54560c6ffca9112f3d53a3755",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-apiserver}"
+            },
+            "reason": "Created",
+            "message": "Created container: kube-apiserver",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-apiserver-upgrade-test-cluster-control-plane.186205fc4f9e0909",
+                "namespace": "kube-system",
+                "uid": "775d4ff5-7937-4263-a105-ea9d1ba01356",
+                "resourceVersion": "98",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-apiserver-upgrade-test-cluster-control-plane",
+                "uid": "4e66e4d54560c6ffca9112f3d53a3755",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-apiserver}"
+            },
+            "reason": "Started",
+            "message": "Started container kube-apiserver",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-controller-manager-upgrade-test-cluster-control-plane.186205fc247c074a",
+                "namespace": "kube-system",
+                "uid": "273cd230-d448-4b33-9fd0-83e3e1906763",
+                "resourceVersion": "91",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-controller-manager-upgrade-test-cluster-control-plane",
+                "uid": "6823d5be925bfb5d11b9427e64c0a064",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-controller-manager}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/kube-controller-manager:v1.32.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-controller-manager-upgrade-test-cluster-control-plane.186205fc44d3f9fb",
+                "namespace": "kube-system",
+                "uid": "ca7aa4a4-ba5d-42c4-8f91-be409f012786",
+                "resourceVersion": "94",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-controller-manager-upgrade-test-cluster-control-plane",
+                "uid": "6823d5be925bfb5d11b9427e64c0a064",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-controller-manager}"
+            },
+            "reason": "Created",
+            "message": "Created container: kube-controller-manager",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-controller-manager-upgrade-test-cluster-control-plane.186205fc4f9c07a0",
+                "namespace": "kube-system",
+                "uid": "b061886f-9984-4323-b6e0-53e2cfbd4ae6",
+                "resourceVersion": "97",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-controller-manager-upgrade-test-cluster-control-plane",
+                "uid": "6823d5be925bfb5d11b9427e64c0a064",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-controller-manager}"
+            },
+            "reason": "Started",
+            "message": "Started container kube-controller-manager",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-controller-manager.186205fd6cd05de8",
+                "namespace": "kube-system",
+                "uid": "3b9f666b-e027-4f75-873e-8e4545165c34",
+                "resourceVersion": "234",
+                "creationTimestamp": "2025-09-04T08:09:50Z"
+            },
+            "involvedObject": {
+                "kind": "Lease",
+                "namespace": "kube-system",
+                "name": "kube-controller-manager",
+                "uid": "2d22e29e-44e3-4d50-9e48-de1cf9e0b6cc",
+                "apiVersion": "coordination.k8s.io/v1",
+                "resourceVersion": "232"
+            },
+            "reason": "LeaderElection",
+            "message": "upgrade-test-cluster-control-plane_37d68d4d-f39d-4b71-8cd4-b680581712e7 became leader",
+            "source": {
+                "component": "kube-controller-manager"
+            },
+            "firstTimestamp": "2025-09-04T08:09:50Z",
+            "lastTimestamp": "2025-09-04T08:09:50Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kube-controller-manager",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "kube-proxy-9jhzh.186205feb9275c63",
+                "namespace": "kube-system",
+                "uid": "14e98074-0c73-463b-8670-ded3294d92f8",
+                "resourceVersion": "373",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-proxy-9jhzh",
+                "uid": "f27dbb12-26f5-40f5-8773-99bf809e795e",
+                "apiVersion": "v1",
+                "resourceVersion": "365"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned kube-system/kube-proxy-9jhzh to upgrade-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "kube-proxy-9jhzh.186205fed071b021",
+                "namespace": "kube-system",
+                "uid": "426e0792-e70b-4f71-8965-d71324e5beb1",
+                "resourceVersion": "399",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-proxy-9jhzh",
+                "uid": "f27dbb12-26f5-40f5-8773-99bf809e795e",
+                "apiVersion": "v1",
+                "resourceVersion": "371",
+                "fieldPath": "spec.containers{kube-proxy}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/kube-proxy:v1.32.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-proxy-9jhzh.186205fee5ae7cea",
+                "namespace": "kube-system",
+                "uid": "9aad940f-636b-4987-92f2-4ce1bc034861",
+                "resourceVersion": "403",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-proxy-9jhzh",
+                "uid": "f27dbb12-26f5-40f5-8773-99bf809e795e",
+                "apiVersion": "v1",
+                "resourceVersion": "371",
+                "fieldPath": "spec.containers{kube-proxy}"
+            },
+            "reason": "Created",
+            "message": "Created container: kube-proxy",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-proxy-9jhzh.186205feed6fa0d8",
+                "namespace": "kube-system",
+                "uid": "2f5ed9aa-47f4-457b-beea-db65bb1e8080",
+                "resourceVersion": "404",
+                "creationTimestamp": "2025-09-04T08:09:57Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-proxy-9jhzh",
+                "uid": "f27dbb12-26f5-40f5-8773-99bf809e795e",
+                "apiVersion": "v1",
+                "resourceVersion": "371",
+                "fieldPath": "spec.containers{kube-proxy}"
+            },
+            "reason": "Started",
+            "message": "Started container kube-proxy",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:57Z",
+            "lastTimestamp": "2025-09-04T08:09:57Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-proxy.186205feb8621730",
+                "namespace": "kube-system",
+                "uid": "c9fa275f-b97b-4c06-9373-a8d1c603f751",
+                "resourceVersion": "372",
+                "creationTimestamp": "2025-09-04T08:09:56Z"
+            },
+            "involvedObject": {
+                "kind": "DaemonSet",
+                "namespace": "kube-system",
+                "name": "kube-proxy",
+                "uid": "99e0863c-54b3-4448-bb3e-75cc859c87cc",
+                "apiVersion": "apps/v1",
+                "resourceVersion": "285"
+            },
+            "reason": "SuccessfulCreate",
+            "message": "Created pod: kube-proxy-9jhzh",
+            "source": {
+                "component": "daemonset-controller"
+            },
+            "firstTimestamp": "2025-09-04T08:09:56Z",
+            "lastTimestamp": "2025-09-04T08:09:56Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "daemonset-controller",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane.186205fc21f045fa",
+                "namespace": "kube-system",
+                "uid": "1c6da9ba-b1f5-41dd-99c1-c6538946c383",
+                "resourceVersion": "88",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane",
+                "uid": "21e573f4b75d52be133da0aab969f210",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-scheduler}"
+            },
+            "reason": "Pulled",
+            "message": "Container image \"registry.k8s.io/kube-scheduler:v1.32.0\" already present on machine",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane.186205fc437700d9",
+                "namespace": "kube-system",
+                "uid": "e4db97d4-a24a-41b9-9dc9-c30c48f04311",
+                "resourceVersion": "93",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane",
+                "uid": "21e573f4b75d52be133da0aab969f210",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-scheduler}"
+            },
+            "reason": "Created",
+            "message": "Created container: kube-scheduler",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane.186205fc4ee582c8",
+                "namespace": "kube-system",
+                "uid": "8e7399f8-c536-42da-9d74-e3ee56d11681",
+                "resourceVersion": "96",
+                "creationTimestamp": "2025-09-04T08:09:49Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane",
+                "uid": "21e573f4b75d52be133da0aab969f210",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-scheduler}"
+            },
+            "reason": "Started",
+            "message": "Started container kube-scheduler",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:45Z",
+            "lastTimestamp": "2025-09-04T08:09:45Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane.186205fdbcc3a068",
+                "namespace": "kube-system",
+                "uid": "19a17fd9-9a43-4eed-a550-82ac220a17c4",
+                "resourceVersion": "290",
+                "creationTimestamp": "2025-09-04T08:09:51Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "kube-system",
+                "name": "kube-scheduler-upgrade-test-cluster-control-plane",
+                "uid": "21e573f4b75d52be133da0aab969f210",
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{kube-scheduler}"
+            },
+            "reason": "Unhealthy",
+            "message": "Readiness probe failed: HTTP probe failed with statuscode: 500",
+            "source": {
+                "component": "kubelet",
+                "host": "upgrade-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:09:51Z",
+            "lastTimestamp": "2025-09-04T08:09:51Z",
+            "count": 1,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "upgrade-test-cluster-control-plane"
+        },
+        {
+            "metadata": {
+                "name": "kube-scheduler.186205fde88ab757",
+                "namespace": "kube-system",
+                "uid": "f30c5cc4-6a93-4a1c-a5d7-78fa35c620fa",
+                "resourceVersion": "310",
+                "creationTimestamp": "2025-09-04T08:09:52Z"
+            },
+            "involvedObject": {
+                "kind": "Lease",
+                "namespace": "kube-system",
+                "name": "kube-scheduler",
+                "uid": "6b57fbeb-6b25-400e-84c5-82686240afdf",
+                "apiVersion": "coordination.k8s.io/v1",
+                "resourceVersion": "309"
+            },
+            "reason": "LeaderElection",
+            "message": "upgrade-test-cluster-control-plane_68d3a523-290b-4140-a0dd-928cf4227243 became leader",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:09:52Z",
+            "lastTimestamp": "2025-09-04T08:09:52Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        }
+    ]
+}

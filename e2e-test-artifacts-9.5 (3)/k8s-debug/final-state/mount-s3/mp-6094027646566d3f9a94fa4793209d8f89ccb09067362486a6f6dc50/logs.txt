@@ -1,0 +1,4 @@
+==== START logs for container mountpoint of pod mount-s3/mp-6094027646566d3f9a94fa4793209d8f89ccb09067362486a6f6dc50 ====
+I0904 08:29:35.383917       1 main.go:59] Trying to receive mount options from /comm/mount.sock
+F0904 08:31:35.477664       1 main.go:62] failed to receive mount options from /comm/mount.sock: failed to accept connection from unix socket /comm/mount.sock: accept unix /comm/mount.sock: i/o timeout
+==== END logs for container mountpoint of pod mount-s3/mp-6094027646566d3f9a94fa4793209d8f89ccb09067362486a6f6dc50 ====

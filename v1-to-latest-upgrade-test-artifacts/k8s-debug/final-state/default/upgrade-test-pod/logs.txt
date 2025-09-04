@@ -1,0 +1,3 @@
+==== START logs for container test of pod default/upgrade-test-pod ====
+Request log error: the server rejected our request for an unknown reason (get pods upgrade-test-pod)
+==== END logs for container test of pod default/upgrade-test-pod ====

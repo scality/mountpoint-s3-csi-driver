@@ -213,6 +213,12 @@ func InstallCSI() error {
 	fmt.Printf("  Image tag: %s\n", imageTag)
 	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
 
+	// Apply CRDs first (Helm 3 doesn't update CRDs on upgrade)
+	fmt.Println("Applying CRDs...")
+	if err := sh.RunV("kubectl", "apply", "-f", "./charts/scality-mountpoint-s3-csi-driver/crds/"); err != nil {
+		return fmt.Errorf("failed to apply CRDs: %v", err)
+	}
+
 	// Helm upgrade --install command
 	args := []string{
 		"upgrade", "--install", "scality-s3-csi",
@@ -473,6 +479,27 @@ func InstallCSIWithVersion() error {
 	fmt.Printf("  Chart version: %s (from OCI registry)\n", chartVersion)
 	fmt.Printf("  Using published images from version %s\n", chartVersion)
 	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
+
+	// Apply CRDs first (Helm 3 doesn't update CRDs on upgrade)
+	// For OCI charts, we need to extract CRDs from the chart
+	fmt.Println("Extracting and applying CRDs...")
+	tempDir := "/tmp/scality-csi-chart-" + chartVersion
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
+
+	// Pull chart to extract CRDs
+	if err := sh.RunV("helm", "pull", chartPath, "--version", chartVersion, "--untar", "--untardir", tempDir); err != nil {
+		return fmt.Errorf("failed to pull chart: %v", err)
+	}
+
+	// Apply CRDs if they exist
+	crdPath := tempDir + "/scality-mountpoint-s3-csi-driver/crds/"
+	if _, err := os.Stat(crdPath); err == nil {
+		if err := sh.RunV("kubectl", "apply", "-f", crdPath); err != nil {
+			return fmt.Errorf("failed to apply CRDs: %v", err)
+		}
+	}
 
 	// Build helm args - NOTE: Same release name "scality-s3-csi" as InstallCSI
 	args := []string{

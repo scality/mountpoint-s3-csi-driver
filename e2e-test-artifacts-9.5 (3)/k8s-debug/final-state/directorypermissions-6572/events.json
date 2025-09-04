@@ -1,0 +1,68 @@
+{
+    "kind": "EventList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "4171"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "pvc-tester-jbd48.186206e6bbd846a2",
+                "namespace": "directorypermissions-6572",
+                "uid": "53584528-0b5e-49d5-9754-98bd7b6c07c2",
+                "resourceVersion": "2962",
+                "creationTimestamp": "2025-09-04T08:26:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "directorypermissions-6572",
+                "name": "pvc-tester-jbd48",
+                "uid": "b943896b-d412-41ef-93c1-e47a998b6388",
+                "apiVersion": "v1",
+                "resourceVersion": "2960"
+            },
+            "reason": "Scheduled",
+            "message": "Successfully assigned directorypermissions-6572/pvc-tester-jbd48 to helm-test-cluster-control-plane",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "firstTimestamp": "2025-09-04T08:26:32Z",
+            "lastTimestamp": "2025-09-04T08:26:32Z",
+            "count": 1,
+            "type": "Normal",
+            "eventTime": null,
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": ""
+        },
+        {
+            "metadata": {
+                "name": "pvc-tester-jbd48.186206e6c7f4efd2",
+                "namespace": "directorypermissions-6572",
+                "uid": "e2e51d1a-3ef2-4713-9304-25b152936fd4",
+                "resourceVersion": "3985",
+                "creationTimestamp": "2025-09-04T08:26:32Z"
+            },
+            "involvedObject": {
+                "kind": "Pod",
+                "namespace": "directorypermissions-6572",
+                "name": "pvc-tester-jbd48",
+                "uid": "b943896b-d412-41ef-93c1-e47a998b6388",
+                "apiVersion": "v1",
+                "resourceVersion": "2961"
+            },
+            "reason": "FailedMount",
+            "message": "MountVolume.SetUp failed for volume \"s3-e2e-pv-ef5554ed-f02a-4d33-83a7-6217e6a581b0\" : rpc error: code = Internal desc = Could not mount \"s3-csi-k8s-e2e-7bqh46rjmb6fj46mm9xpzrh84f7wfr8mq64nhghb68qtxbn8\" at \"/var/lib/kubelet/pods/b943896b-d412-41ef-93c1-e47a998b6388/volumes/kubernetes.io~csi/s3-e2e-pv-ef5554ed-f02a-4d33-83a7-6217e6a581b0/mount\": failed to wait for MountpointS3PodAttachment for \"/var/lib/kubelet/pods/b943896b-d412-41ef-93c1-e47a998b6388/volumes/kubernetes.io~csi/s3-e2e-pv-ef5554ed-f02a-4d33-83a7-6217e6a581b0/mount\": field label not supported: spec.authenticationSource. You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`.",
+            "source": {
+                "component": "kubelet",
+                "host": "helm-test-cluster-control-plane"
+            },
+            "firstTimestamp": "2025-09-04T08:26:32Z",
+            "lastTimestamp": "2025-09-04T08:30:42Z",
+            "count": 10,
+            "type": "Warning",
+            "eventTime": null,
+            "reportingComponent": "kubelet",
+            "reportingInstance": "helm-test-cluster-control-plane"
+        }
+    ]
+}

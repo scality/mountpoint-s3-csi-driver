@@ -27,8 +27,10 @@ import (
 
 const debugLevel = 4
 
-const mountpointCSIDriverName = constants.DriverName
-const defaultServiceAccount = "default"
+const (
+	mountpointCSIDriverName = constants.DriverName
+	defaultServiceAccount   = "default"
+)
 
 const (
 	Requeue     = true
@@ -727,11 +729,6 @@ func (r *Reconciler) isInMountpointNamespace(pod *corev1.Pod) bool {
 	return pod.Namespace == r.mountpointPodConfig.Namespace
 }
 
-// isMountpointPod returns whether given `pod` is a Mountpoint Pod.
-func (r *Reconciler) isMountpointPod(pod *corev1.Pod) bool {
-	return r.isInMountpointNamespace(pod)
-}
-
 // errPVCIsNotBoundToAPV is returned when given PVC is not bound to a PV yet.
 // This is not a terminal error - as PVCs can be bound to PVs dynamically - and just a transient error
 // to be retried later.
@@ -750,7 +747,7 @@ func (r *Reconciler) getBoundPVForPodClaim(
 	err := r.Get(ctx, types.NamespacedName{Namespace: pod.Namespace, Name: claim.ClaimName}, pvc)
 	if err != nil {
 		log.Error(err, "Failed to get PVC for Pod")
-		return nil, nil, fmt.Errorf("Failed to get PVC for Pod: %w", err)
+		return nil, nil, fmt.Errorf("failed to get PVC for Pod: %w", err)
 	}
 
 	if pvc.Status.Phase != corev1.ClaimBound || pvc.Spec.VolumeName == "" {
@@ -764,12 +761,12 @@ func (r *Reconciler) getBoundPVForPodClaim(
 	err = r.Get(ctx, types.NamespacedName{Name: pvc.Spec.VolumeName}, pv)
 	if err != nil {
 		log.Error(err, "Failed to get PV bound to PVC", "volumeName", pvc.Spec.VolumeName)
-		return nil, nil, fmt.Errorf("Failed to get PV bound to PVC: %w", err)
+		return nil, nil, fmt.Errorf("failed to get PV bound to PVC: %w", err)
 	}
 
 	if pv.Spec.ClaimRef == nil || pv.Spec.ClaimRef.Name != pvc.Name {
 		log.Info("Found the PV but its `ClaimRef` is not bound to the PVC", "volumeName", pvc.Spec.VolumeName)
-		return nil, nil, errors.New("The PV has a different `ClaimRef` than the PVC")
+		return nil, nil, errors.New("the PV has a different `ClaimRef` than the PVC")
 	}
 
 	return pvc, pv, nil

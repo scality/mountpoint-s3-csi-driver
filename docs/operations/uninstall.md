@@ -50,6 +50,7 @@ cleanupCRDOnUninstall: true
 ```
 
 **Warning**: Enabling automatic cleanup will:
+
 - Forcefully terminate all active S3 mounts
 - Delete all Mountpoint Pods immediately
 - Remove all MountpointS3PodAttachment CRDs
@@ -60,22 +61,26 @@ cleanupCRDOnUninstall: true
 Before uninstalling the CSI driver:
 
 1. **Check for active mounts**:
+
    ```bash
    kubectl get mountpoints3podattachments -A
    kubectl get pods -n mount-s3 -l app=mountpoint-s3
    ```
 
 2. **Verify no PersistentVolumes are in use**:
+
    ```bash
    kubectl get pv -o json | jq '.items[] | select(.spec.csi.driver=="s3.csi.scality.com") | .metadata.name'
    ```
 
 3. **Check for PersistentVolumeClaims**:
+
    ```bash
    kubectl get pvc -A -o json | jq '.items[] | select(.spec.storageClassName | contains("s3")) | {namespace: .metadata.namespace, name: .metadata.name}'
    ```
 
 4. **Identify workloads using S3 volumes**:
+
    ```bash
    kubectl get pods -A -o json | jq '.items[] | select(.spec.volumes[]? | select(.persistentVolumeClaim)) | {namespace: .metadata.namespace, name: .metadata.name}'
    ```
@@ -85,26 +90,31 @@ Before uninstalling the CSI driver:
 For production environments, follow this graceful migration process:
 
 1. **Stop workloads using S3 volumes**:
+
    ```bash
    kubectl scale deployment <deployment-name> --replicas=0
    ```
 
 2. **Delete PersistentVolumeClaims**:
+
    ```bash
    kubectl delete pvc <pvc-name> -n <namespace>
    ```
 
 3. **Delete PersistentVolumes** (if using static provisioning):
+
    ```bash
    kubectl delete pv <pv-name>
    ```
 
 4. **Uninstall the CSI driver**:
+
    ```bash
    helm uninstall s3-csi-driver -n kube-system
    ```
 
 5. **Clean up remaining resources** (if needed):
+
    ```bash
    kubectl delete mountpoints3podattachments.s3.csi.scality.com --all
    kubectl delete pods -n mount-s3 -l app=mountpoint-s3
@@ -117,11 +127,13 @@ For production environments, follow this graceful migration process:
 If resources are stuck in terminating state:
 
 1. Check for finalizers:
+
    ```bash
    kubectl get mountpoints3podattachments -o json | jq '.items[] | {name: .metadata.name, finalizers: .metadata.finalizers}'
    ```
 
 2. Remove finalizers if necessary:
+
    ```bash
    kubectl patch mountpoints3podattachment <name> -p '{"metadata":{"finalizers":null}}' --type=merge
    ```
@@ -171,6 +183,7 @@ If you plan to reinstall the CSI driver:
 1. Ensure all resources are completely removed
 2. Wait for any terminating pods to complete
 3. Reinstall using Helm:
+
    ```bash
    helm install s3-csi-driver ./charts/scality-mountpoint-s3-csi-driver -n kube-system
    ```

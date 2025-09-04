@@ -39,9 +39,7 @@ var (
 	mountpointContainerCommand            = flag.String("mountpoint-container-command", "/bin/scality-s3-csi-mounter", "Entrypoint command of the Mountpoint Pods.")
 )
 
-var (
-	scheme = runtime.NewScheme()
-)
+var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))

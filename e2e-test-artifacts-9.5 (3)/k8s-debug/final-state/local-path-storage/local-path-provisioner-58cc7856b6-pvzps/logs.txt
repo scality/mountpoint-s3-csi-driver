@@ -1,0 +1,6 @@
+==== START logs for container local-path-provisioner of pod local-path-storage/local-path-provisioner-58cc7856b6-pvzps ====
+time="2025-09-04T08:15:30Z" level=debug msg="Applied config: {\"nodePathMap\":[{\"node\":\"DEFAULT_PATH_FOR_NON_LISTED_NODES\",\"paths\":[\"/var/local-path-provisioner\"]}],\"storageClassConfigs\":null}" 
+time="2025-09-04T08:15:30Z" level=debug msg="Provisioner started" 
+I0904 08:15:30.640177       1 controller.go:824] "Starting provisioner controller" component="rancher.io/local-path_local-path-provisioner-58cc7856b6-pvzps_419fdc48-2339-4dc8-9de7-3daf12995700"
+I0904 08:15:30.741125       1 controller.go:873] "Started provisioner controller" component="rancher.io/local-path_local-path-provisioner-58cc7856b6-pvzps_419fdc48-2339-4dc8-9de7-3daf12995700"
+==== END logs for container local-path-provisioner of pod local-path-storage/local-path-provisioner-58cc7856b6-pvzps ====
