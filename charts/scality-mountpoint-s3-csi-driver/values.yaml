@@ -143,3 +143,8 @@ mountpointPod:
   headroomPriorityClassName: mount-s3-headroom
   # Image to use for headroom pods (typically a pause container)
   headroomImage: registry.k8s.io/pause:3.10
+
+# CRD Cleanup Configuration
+# Enable automatic cleanup of MountpointS3PodAttachment CRDs and Mountpoint Pods during helm uninstall
+# Warning: This will forcefully terminate all active S3 mounts
+cleanupCRDOnUninstall: false
