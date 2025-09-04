@@ -41,8 +41,10 @@ The node component waits for the controller to create the necessary resources be
 1. Wait for MountpointS3PodAttachment CRD to be created by the controller
 2. Wait for the associated Mountpoint Pod to be running
 3. Provide credentials to the Mountpoint Pod
-4. Execute the FUSE mount operation
+4. Execute the FUSE mount operation using source/bind mount pattern
 5. Send mount options to the Mountpoint Pod
+
+The Pod Mounter implements a [source/bind mount pattern](./source-bind-mount-pattern.md) for efficient pod sharing.
 
 ## Workflow Sequence
 
