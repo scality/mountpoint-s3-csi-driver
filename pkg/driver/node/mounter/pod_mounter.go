@@ -481,3 +481,13 @@ func (pm *PodMounter) volumeNameFromTargetPath(target string) (string, error) {
 func (pm *PodMounter) helpMessageForGettingMountpointLogs(pod *corev1.Pod) string {
 	return fmt.Sprintf("You can see Mountpoint logs by running: `kubectl logs -n %s %s`. If the Mountpoint Pod already restarted, you can also pass `--previous` to get logs from the previous run.", pod.Namespace, pod.Name)
 }
+
+// GetPodWatcher returns the pod watcher instance
+func (pm *PodMounter) GetPodWatcher() *watcher.Watcher {
+	return pm.podWatcher
+}
+
+// GetCredentialProvider returns the credential provider instance
+func (pm *PodMounter) GetCredentialProvider() *credentialprovider.Provider {
+	return pm.credProvider
+}
