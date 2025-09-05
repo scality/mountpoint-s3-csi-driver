@@ -65,7 +65,7 @@ container:
 
 .PHONY: unit-test
 unit-test:
-	go test -v -parallel 8 ./{cmd,pkg}/... -coverprofile=./coverage.out -covermode=atomic -coverpkg=./{cmd,pkg}/...
+	go test -v -parallel 8 ./{cmd,pkg}/... -coverprofile=./coverage.out -covermode=atomic -coverpkg=./cmd/...,./pkg/...
 
 # Skip patterns for CSI sanity tests
 # - ValidateVolumeCapabilities: stub implementation, tested in unit tests (see https://github.com/kubernetes-csi/csi-test/issues/214)
@@ -79,7 +79,7 @@ csi-compliance-test:
 
 .PHONY: test
 test:
-	go test -v -race ./{cmd,pkg}/... -coverprofile=./cover.out -covermode=atomic -coverpkg=./{cmd,pkg}/...
+	go test -v -race ./{cmd,pkg}/... -coverprofile=./cover.out -covermode=atomic -coverpkg=./cmd/...,./pkg/...
 	go test -v ./tests/sanity/... -ginkgo.skip="$(CSI_SKIP_PATTERNS)"
 
 .PHONY: cover
