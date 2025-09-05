@@ -4,6 +4,22 @@ package mppod
 import (
 	"crypto/sha256"
 	"fmt"
+
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
+)
+
+// Pod annotations
+const (
+	// AnnotationNeedsUnmount is the annotation used to mark a pod for unmounting
+	AnnotationNeedsUnmount = constants.DriverName + "/needs-unmount"
+	// AnnotationNoNewWorkload is the annotation used to prevent new workloads from being assigned
+	AnnotationNoNewWorkload = constants.DriverName + "/no-new-workload"
+)
+
+// Pod labels
+const (
+	// LabelVolumeId is the label used to store the volume ID
+	LabelVolumeId = constants.DriverName + "/volume-id"
 )
 
 // MountpointPodNameFor returns a consistent and unique Pod name for
