@@ -3,13 +3,14 @@ package csicontroller_test
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
@@ -45,7 +46,7 @@ func init() {
 
 // testReconciler creates a test reconciler with a fake client
 func testReconciler(objects ...client.Object) (*csicontroller.Reconciler, client.Client) {
-	s := runtime.NewScheme()
+	s := k8sruntime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = crdv2.AddToScheme(s)
 
@@ -681,7 +682,95 @@ func TestReconciler_IsPodActive(t *testing.T) {
 	}
 }
 
-// Benchmark tests
+// TestReconciler_Performance tests that reconciliation completes within acceptable time limits
+func TestReconciler_Performance(t *testing.T) {
+	// Performance thresholds
+	const (
+		maxDuration   = 100 * time.Millisecond // Maximum time for a single reconciliation
+		avgDuration   = 50 * time.Millisecond  // Expected average time
+		maxMemAllocMB = 10                     // Maximum memory allocation in MB
+		numIterations = 100                    // Number of iterations for performance testing
+	)
+
+	workloadPod := createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
+		{
+			Name: "test-volume",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: testPVCName,
+				},
+			},
+		},
+	})
+	pvc := createTestPVC(testPVCName, testNamespace, testPVName)
+	pv := createTestPV(testPVName, testPVCName, testNamespace)
+
+	reconciler, _ := testReconciler(workloadPod, pvc, pv)
+
+	// Warm up - run once to initialize any caches
+	_, _ = reconciler.Reconcile(context.Background(), reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      testPodName,
+			Namespace: testNamespace,
+		},
+	})
+
+	// Measure memory before
+	var memStatsBefore runtime.MemStats
+	runtime.ReadMemStats(&memStatsBefore)
+
+	// Run performance test
+	var totalDuration time.Duration
+	var maxObserved time.Duration
+
+	for i := 0; i < numIterations; i++ {
+		start := time.Now()
+		_, _ = reconciler.Reconcile(context.Background(), reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      testPodName,
+				Namespace: testNamespace,
+			},
+		})
+		duration := time.Since(start)
+		totalDuration += duration
+		if duration > maxObserved {
+			maxObserved = duration
+		}
+
+		// Check if any single reconciliation exceeds max duration
+		if duration > maxDuration {
+			t.Errorf("Reconciliation %d took %v, exceeding maximum of %v", i, duration, maxDuration)
+		}
+	}
+
+	// Measure memory after
+	var memStatsAfter runtime.MemStats
+	runtime.ReadMemStats(&memStatsAfter)
+
+	// Calculate averages and memory usage
+	avgObserved := totalDuration / time.Duration(numIterations)
+	// Use TotalAlloc which is cumulative and always increases
+	memUsedBytes := int64(memStatsAfter.TotalAlloc - memStatsBefore.TotalAlloc)
+	memUsedMB := memUsedBytes / 1024 / 1024
+
+	// Performance assertions
+	if avgObserved > avgDuration {
+		t.Errorf("Average reconciliation time %v exceeds expected %v", avgObserved, avgDuration)
+	}
+
+	if memUsedMB > int64(maxMemAllocMB) {
+		t.Errorf("Memory allocation %d MB exceeds maximum %d MB", memUsedMB, maxMemAllocMB)
+	}
+
+	// Log performance metrics for tracking
+	t.Logf("Performance metrics:")
+	t.Logf("  Average duration: %v", avgObserved)
+	t.Logf("  Maximum duration: %v", maxObserved)
+	t.Logf("  Total memory allocated: %d MB", memUsedMB)
+	t.Logf("  Iterations: %d", numIterations)
+}
+
+// Benchmark tests for detailed performance profiling
 func BenchmarkReconciler_Reconcile(b *testing.B) {
 	workloadPod := createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
 		{
@@ -699,6 +788,7 @@ func BenchmarkReconciler_Reconcile(b *testing.B) {
 	reconciler, _ := testReconciler(workloadPod, pvc, pv)
 
 	b.ResetTimer()
+	b.ReportAllocs() // Report memory allocations
 	for i := 0; i < b.N; i++ {
 		_, _ = reconciler.Reconcile(context.Background(), reconcile.Request{
 			NamespacedName: types.NamespacedName{
