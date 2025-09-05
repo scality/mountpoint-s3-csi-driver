@@ -28,5 +28,6 @@ flag_management:
     statuses: []
 
 ignore:
-  - "**/*.pb.go"  # Ignore all protobuf generated files
-  - "docs/**"     # Ignore all documentation files
+  - "**/*.pb.go"    # Ignore all protobuf generated files
+  - "docs/**"       # Ignore all documentation files
+  - "pkg/api/v2/**" # Ignore API definitions and generated code

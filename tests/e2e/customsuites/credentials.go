@@ -36,7 +36,7 @@ func getCredentialsFromEnv() (account1AK, account1SK, account1CID, account2AK, a
 	account2SK = GetEnv("ACCOUNT2_SECRET_KEY", "verySecretKey2")
 	account2CID = GetEnv("ACCOUNT2_CANONICAL_ID", "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf")
 
-	return
+	return account1AK, account1SK, account1CID, account2AK, account2SK, account2CID
 }
 
 // NegativeCredentialTestSpec defines parameters for a negative credential test.

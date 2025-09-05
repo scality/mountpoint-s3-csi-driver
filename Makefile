@@ -151,6 +151,20 @@ generate-licenses: download-tools
 	@mkdir -p LICENSES/
 	go tool go-licenses save --save_path="./LICENSES" --force ./...
 
+# Generate CRD manifests and deepcopy functions
+# Note: Currently the CRD is placed directly in crds/ subdirectory
+# AWS upstream uses a different approach with patches for K8s version compatibility
+.PHONY: generate
+generate:
+	@echo "Generating deepcopy functions..."
+	@controller-gen object paths="./pkg/api/v2/..."
+	@echo "Generating CRD manifests..."
+	@controller-gen crd paths="./pkg/api/v2/..." output:crd:artifacts:config=charts/scality-mountpoint-s3-csi-driver/crds
+	@echo "Generation complete. Note: selectableFields requires K8s >= 1.30 for our CRD"
+	@# Rename to simpler filename since we only have one CRD
+	@mv charts/scality-mountpoint-s3-csi-driver/crds/s3.csi.scality.com_mountpoints3podattachments.yaml \
+	    charts/scality-mountpoint-s3-csi-driver/crds/mountpoints3podattachments.yaml 2>/dev/null || true
+
 ## Binaries used in tests.
 
 TESTBIN ?= $(shell pwd)/tests/bin

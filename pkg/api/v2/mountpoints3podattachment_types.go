@@ -1,0 +1,84 @@
+package v2
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var MountpointS3PodAttachmentsCRDName = "mountpoints3podattachments." + GroupVersion.Group
+
+const SelectableFieldNodeNameJSONPath = ".spec.nodeName"
+
+// The following fields are used as matching criteria to determine if a mountpoint s3 pod can be shared by having the same MountpointS3PodAttachment resource:
+const (
+	FieldNodeName             = "spec.nodeName"
+	FieldPersistentVolumeName = "spec.persistentVolumeName"
+	FieldVolumeID             = "spec.volumeID"
+	FieldMountOptions         = "spec.mountOptions"
+	FieldWorkloadFSGroup      = "spec.workloadFSGroup"
+)
+
+// MountpointS3PodAttachmentSpec defines the desired state of MountpointS3PodAttachment.
+type MountpointS3PodAttachmentSpec struct {
+	// Important: Run "make generate" to regenerate code after modifying this file
+
+	// Name of the node.
+	NodeName string `json:"nodeName"`
+
+	// Name of the Persistent Volume.
+	PersistentVolumeName string `json:"persistentVolumeName"`
+
+	// Volume ID.
+	VolumeID string `json:"volumeID"`
+
+	// Comma separated mount options taken from volume.
+	MountOptions string `json:"mountOptions"`
+
+	// Workload pod's `fsGroup` from pod security context
+	WorkloadFSGroup string `json:"workloadFSGroup"`
+
+	// Maps each Mountpoint S3 pod name to its workload attachments
+	MountpointS3PodAttachments map[string][]WorkloadAttachment `json:"mountpointS3PodAttachments"`
+}
+
+// WorkloadAttachment represents the attachment details of a workload pod to a Mountpoint S3 pod.
+type WorkloadAttachment struct {
+	// WorkloadPodUID is the unique identifier of the attached workload pod
+	WorkloadPodUID string `json:"workloadPodUID"`
+
+	// AttachmentTime represents when the workload pod was attached to the Mountpoint S3 pod
+	AttachmentTime metav1.Time `json:"attachmentTime"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster,shortName=s3pa
+// +kubebuilder:selectablefield:JSONPath=`.spec.nodeName`
+// +kubebuilder:selectablefield:JSONPath=`.spec.persistentVolumeName`
+// +kubebuilder:selectablefield:JSONPath=`.spec.volumeID`
+// +kubebuilder:selectablefield:JSONPath=`.spec.mountOptions`
+// +kubebuilder:selectablefield:JSONPath=`.spec.workloadFSGroup`
+// +kubebuilder:printcolumn:name="Node",type=string,JSONPath=`.spec.nodeName`,description="The node where the volume is mounted"
+// +kubebuilder:printcolumn:name="PV Name",type=string,JSONPath=`.spec.persistentVolumeName`,description="The persistent volume name"
+// +kubebuilder:printcolumn:name="Mount Options",type=string,JSONPath=`.spec.mountOptions`,description="Comma separated mount options"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+
+// MountpointS3PodAttachment is the Schema for the mountpoints3podattachments API.
+type MountpointS3PodAttachment struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec MountpointS3PodAttachmentSpec `json:"spec,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// MountpointS3PodAttachmentList contains a list of MountpointS3PodAttachment.
+type MountpointS3PodAttachmentList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []MountpointS3PodAttachment `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&MountpointS3PodAttachment{}, &MountpointS3PodAttachmentList{})
+}
