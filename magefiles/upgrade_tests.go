@@ -21,39 +21,42 @@ import (
 // =============================================================================
 
 type TestConfig struct {
-	Type         string
-	PodName      string
-	PVCName      string
-	PVName       string // only for static
-	SCName       string // only for dynamic
-	BucketName   string // only for static
-	Namespace    string
-	PVCTimeout   int // seconds
-	PodTimeout   int // seconds
-	ManifestPath string
+	Type          string
+	RSName        string // ReplicaSet name
+	LabelSelector string // Label selector for pods
+	PVCName       string
+	PVName        string // only for static
+	SCName        string // only for dynamic
+	BucketName    string // only for static
+	Namespace     string
+	PVCTimeout    int // seconds
+	PodTimeout    int // seconds
+	ManifestPath  string
 }
 
 var staticConfig = TestConfig{
-	Type:         "static",
-	PodName:      "upgrade-test-pod",
-	PVCName:      "upgrade-test-pvc",
-	PVName:       "upgrade-test-pv",
-	BucketName:   "upgrade-test-static",
-	Namespace:    "default",
-	PVCTimeout:   60,
-	PodTimeout:   120,
-	ManifestPath: "tests/upgrade/manifests/static",
+	Type:          "static",
+	RSName:        "upgrade-test-replicaset",
+	LabelSelector: "app=upgrade-test-static",
+	PVCName:       "upgrade-test-pvc",
+	PVName:        "upgrade-test-pv",
+	BucketName:    "upgrade-test-static",
+	Namespace:     "default",
+	PVCTimeout:    60,
+	PodTimeout:    120,
+	ManifestPath:  "tests/upgrade/manifests/static",
 }
 
 var dynamicConfig = TestConfig{
-	Type:         "dynamic",
-	PodName:      "upgrade-test-dynamic-pod",
-	PVCName:      "upgrade-test-dynamic-pvc",
-	SCName:       "upgrade-test-sc",
-	Namespace:    "default",
-	PVCTimeout:   120,
-	PodTimeout:   120,
-	ManifestPath: "tests/upgrade/manifests/dynamic",
+	Type:          "dynamic",
+	RSName:        "upgrade-test-dynamic-replicaset",
+	LabelSelector: "app=upgrade-test-dynamic",
+	PVCName:       "upgrade-test-dynamic-pvc",
+	SCName:        "upgrade-test-sc",
+	Namespace:     "default",
+	PVCTimeout:    120,
+	PodTimeout:    120,
+	ManifestPath:  "tests/upgrade/manifests/dynamic",
 }
 
 // =============================================================================
@@ -180,8 +183,8 @@ func setupTest(config TestConfig) error {
 		return fmt.Errorf("PVC failed to bind: %v", err)
 	}
 
-	if err := applyManifest(config, "pod"); err != nil {
-		return fmt.Errorf("failed to create Pod: %v", err)
+	if err := applyManifest(config, "replicaset"); err != nil {
+		return fmt.Errorf("failed to create ReplicaSet: %v", err)
 	}
 
 	if err := waitForPodReady(config); err != nil {
@@ -231,8 +234,8 @@ func verifyTest(config TestConfig, beforeContent, afterContent string) error {
 func cleanupTest(config TestConfig) error {
 	fmt.Printf("Cleaning up %s provisioning test resources...\n", config.Type)
 
-	// Delete Pod
-	_ = sh.Run("kubectl", "delete", "pod", config.PodName, "-n", config.Namespace, "--ignore-not-found=true")
+	// Delete ReplicaSet
+	_ = sh.Run("kubectl", "delete", "replicaset", config.RSName, "-n", config.Namespace, "--ignore-not-found=true")
 
 	// Delete PVC
 	_ = sh.Run("kubectl", "delete", "pvc", config.PVCName, "-n", config.Namespace, "--ignore-not-found=true")
@@ -261,6 +264,24 @@ func cleanupTest(config TestConfig) error {
 // Generic Helper Functions
 // =============================================================================
 
+// getPodNameFromReplicaSet gets the pod name managed by the ReplicaSet
+func getPodNameFromReplicaSet(config TestConfig) (string, error) {
+	output, err := sh.Output("kubectl", "get", "pods",
+		"-l", config.LabelSelector,
+		"-n", config.Namespace,
+		"-o", "jsonpath={.items[0].metadata.name}")
+	if err != nil {
+		return "", fmt.Errorf("failed to get pod from ReplicaSet: %v", err)
+	}
+
+	podName := strings.TrimSpace(output)
+	if podName == "" {
+		return "", fmt.Errorf("no pod found for ReplicaSet %s", config.RSName)
+	}
+
+	return podName, nil
+}
+
 func applyManifest(config TestConfig, resourceType string) error {
 	manifestFile := fmt.Sprintf("%s-%s.yaml", config.ManifestPath, resourceType)
 
@@ -277,8 +298,8 @@ func applyManifest(config TestConfig, resourceType string) error {
 
 func getResourceName(config TestConfig, resourceType string) string {
 	switch resourceType {
-	case "pod":
-		return config.PodName
+	case "replicaset":
+		return config.RSName
 	case "pvc":
 		return config.PVCName
 	case "pv":
@@ -313,24 +334,30 @@ func waitForPVCBound(config TestConfig) error {
 }
 
 func waitForPodReady(config TestConfig) error {
-	fmt.Println("Waiting for pod to be ready...")
+	fmt.Println("Waiting for ReplicaSet pod to be ready...")
 
 	timeoutStr := fmt.Sprintf("%ds", config.PodTimeout)
 	if err := sh.Run("kubectl", "wait", "--for=condition=Ready",
-		fmt.Sprintf("pod/%s", config.PodName),
+		"pod", "-l", config.LabelSelector,
 		"-n", config.Namespace,
 		fmt.Sprintf("--timeout=%s", timeoutStr)); err != nil {
-		return fmt.Errorf("Pod did not become ready within timeout: %v", err)
+		return fmt.Errorf("ReplicaSet pod did not become ready within timeout: %v", err)
 	}
 
-	fmt.Println("✓ Pod ready")
+	fmt.Println("✓ ReplicaSet pod ready")
 	return nil
 }
 
 func writeTestData(config TestConfig, filename, content string) error {
 	fmt.Printf("Writing test data to %s...\n", filename)
 
-	if err := sh.Run("kubectl", "exec", config.PodName, "-n", config.Namespace, "--",
+	// Get the pod name from ReplicaSet
+	podName, err := getPodNameFromReplicaSet(config)
+	if err != nil {
+		return fmt.Errorf("failed to get pod name: %v", err)
+	}
+
+	if err := sh.Run("kubectl", "exec", podName, "-n", config.Namespace, "--",
 		"sh", "-c", fmt.Sprintf("echo '%s' > /data/%s", content, filename)); err != nil {
 		return fmt.Errorf("failed to write test data: %v", err)
 	}
@@ -342,7 +369,13 @@ func writeTestData(config TestConfig, filename, content string) error {
 func verifyTestDataExists(config TestConfig, filename, expectedContent string) error {
 	fmt.Printf("Verifying test data in %s...\n", filename)
 
-	output, err := sh.Output("kubectl", "exec", config.PodName, "-n", config.Namespace, "--",
+	// Get the pod name from ReplicaSet
+	podName, err := getPodNameFromReplicaSet(config)
+	if err != nil {
+		return fmt.Errorf("failed to get pod name: %v", err)
+	}
+
+	output, err := sh.Output("kubectl", "exec", podName, "-n", config.Namespace, "--",
 		"cat", fmt.Sprintf("/data/%s", filename))
 	if err != nil {
 		return fmt.Errorf("failed to read test data: %v", err)
@@ -357,9 +390,15 @@ func verifyTestDataExists(config TestConfig, filename, expectedContent string) e
 }
 
 func verifyPodRunning(config TestConfig) error {
-	fmt.Println("Checking pod status...")
+	fmt.Println("Checking ReplicaSet pod status...")
 
-	output, err := sh.Output("kubectl", "get", "pod", config.PodName,
+	// Get the pod name from ReplicaSet
+	podName, err := getPodNameFromReplicaSet(config)
+	if err != nil {
+		return fmt.Errorf("failed to get pod name: %v", err)
+	}
+
+	output, err := sh.Output("kubectl", "get", "pod", podName,
 		"-n", config.Namespace,
 		"-o", "jsonpath={.status.phase}")
 	if err != nil {
@@ -370,7 +409,7 @@ func verifyPodRunning(config TestConfig) error {
 		return fmt.Errorf("pod not running, status: %s", output)
 	}
 
-	fmt.Println("✓ Pod is running")
+	fmt.Println("✓ ReplicaSet pod is running")
 	return nil
 }
 
