@@ -1,6 +1,7 @@
 package mppod
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/cluster"
@@ -27,17 +28,20 @@ const EmptyDirSizeLimit = 10 * 1024 * 1024 // 10MiB
 type ContainerConfig struct {
 	Command         string
 	Image           string
+	HeadroomImage   string // Image to use for headroom pods (typically a pause container)
 	ImagePullPolicy corev1.PullPolicy
 }
 
 // A Config represents configuration for spawned Mountpoint Pods.
 type Config struct {
-	Namespace         string
-	MountpointVersion string
-	PriorityClassName string
-	Container         ContainerConfig
-	CSIDriverVersion  string
-	ClusterVariant    cluster.Variant
+	Namespace                   string
+	MountpointVersion           string
+	PriorityClassName           string
+	PreemptingPriorityClassName string // Priority class for pods that can preempt headroom pods
+	HeadroomPriorityClassName   string // Priority class for headroom pods (typically low priority)
+	Container                   ContainerConfig
+	CSIDriverVersion            string
+	ClusterVariant              cluster.Variant
 }
 
 // A Creator allows creating specification for Mountpoint Pods to schedule.
@@ -163,4 +167,70 @@ func extractVolumeAttributes(pv *corev1.PersistentVolume) map[string]string {
 	}
 
 	return volumeAttributes
+}
+
+// ExtractVolumeAttributes is a public wrapper for extractVolumeAttributes for use in other packages
+func ExtractVolumeAttributes(pv *corev1.PersistentVolume) map[string]string {
+	return extractVolumeAttributes(pv)
+}
+
+// configureResourceRequests configures resource requests of the container if its specified in the volume attributes.
+func (c *Creator) configureResourceRequests(mpContainer *corev1.Container, volumeAttributes map[string]string) error {
+	resourceRequestsCpu := volumeAttributes[volumecontext.MountpointContainerResourcesRequestsCpu]
+	resourceRequestsMemory := volumeAttributes[volumecontext.MountpointContainerResourcesRequestsMemory]
+
+	if resourceRequestsCpu != "" || resourceRequestsMemory != "" {
+		mpContainer.Resources.Requests = make(corev1.ResourceList)
+
+		if resourceRequestsCpu != "" {
+			quantity, err := resource.ParseQuantity(resourceRequestsCpu)
+			if err != nil {
+				return failedToParseQuantityError(err, volumecontext.MountpointContainerResourcesRequestsCpu, resourceRequestsCpu)
+			}
+			mpContainer.Resources.Requests[corev1.ResourceCPU] = quantity
+		}
+
+		if resourceRequestsMemory != "" {
+			quantity, err := resource.ParseQuantity(resourceRequestsMemory)
+			if err != nil {
+				return failedToParseQuantityError(err, volumecontext.MountpointContainerResourcesRequestsMemory, resourceRequestsMemory)
+			}
+			mpContainer.Resources.Requests[corev1.ResourceMemory] = quantity
+		}
+	}
+
+	return nil
+}
+
+// configureResourceLimits configures resource limits of the container if its specified in the volume attributes.
+func (c *Creator) configureResourceLimits(mpContainer *corev1.Container, volumeAttributes map[string]string) error {
+	resourceLimitsCpu := volumeAttributes[volumecontext.MountpointContainerResourcesLimitsCpu]
+	resourceLimitsMemory := volumeAttributes[volumecontext.MountpointContainerResourcesLimitsMemory]
+
+	if resourceLimitsCpu != "" || resourceLimitsMemory != "" {
+		mpContainer.Resources.Limits = make(corev1.ResourceList)
+
+		if resourceLimitsCpu != "" {
+			quantity, err := resource.ParseQuantity(resourceLimitsCpu)
+			if err != nil {
+				return failedToParseQuantityError(err, volumecontext.MountpointContainerResourcesLimitsCpu, resourceLimitsCpu)
+			}
+			mpContainer.Resources.Limits[corev1.ResourceCPU] = quantity
+		}
+
+		if resourceLimitsMemory != "" {
+			quantity, err := resource.ParseQuantity(resourceLimitsMemory)
+			if err != nil {
+				return failedToParseQuantityError(err, volumecontext.MountpointContainerResourcesLimitsMemory, resourceLimitsMemory)
+			}
+			mpContainer.Resources.Limits[corev1.ResourceMemory] = quantity
+		}
+	}
+
+	return nil
+}
+
+// failedToParseQuantityError creates an error if provided quantity is not parsable.
+func failedToParseQuantityError(err error, field, value string) error {
+	return fmt.Errorf("failed to parse quantity %q for %q: %w", value, field, err)
 }
