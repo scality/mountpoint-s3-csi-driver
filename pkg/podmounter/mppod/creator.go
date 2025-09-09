@@ -175,6 +175,8 @@ func ExtractVolumeAttributes(pv *corev1.PersistentVolume) map[string]string {
 }
 
 // configureResourceRequests configures resource requests of the container if its specified in the volume attributes.
+//
+//nolint:unused,unusedfunc // This function will be used in future iterations
 func (c *Creator) configureResourceRequests(mpContainer *corev1.Container, volumeAttributes map[string]string) error {
 	resourceRequestsCpu := volumeAttributes[volumecontext.MountpointContainerResourcesRequestsCpu]
 	resourceRequestsMemory := volumeAttributes[volumecontext.MountpointContainerResourcesRequestsMemory]
@@ -203,6 +205,8 @@ func (c *Creator) configureResourceRequests(mpContainer *corev1.Container, volum
 }
 
 // configureResourceLimits configures resource limits of the container if its specified in the volume attributes.
+//
+//nolint:unused,unusedfunc // This function will be used in future iterations
 func (c *Creator) configureResourceLimits(mpContainer *corev1.Container, volumeAttributes map[string]string) error {
 	resourceLimitsCpu := volumeAttributes[volumecontext.MountpointContainerResourcesLimitsCpu]
 	resourceLimitsMemory := volumeAttributes[volumecontext.MountpointContainerResourcesLimitsMemory]
@@ -231,6 +235,8 @@ func (c *Creator) configureResourceLimits(mpContainer *corev1.Container, volumeA
 }
 
 // failedToParseQuantityError creates an error if provided quantity is not parsable.
+//
+//nolint:unused,deadcode // Helper function for resource parsing errors
 func failedToParseQuantityError(err error, field, value string) error {
 	return fmt.Errorf("failed to parse quantity %q for %q: %w", value, field, err)
 }
