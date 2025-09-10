@@ -750,7 +750,7 @@ func extractCSISpecFromPV(pv *corev1.PersistentVolume) *corev1.CSIPersistentVolu
 	return csi
 }
 
-// isPodActive returns whether given the Pod is active and not in the process of termination.
+// isPodActive returns whether the given Pod is active and not in the process of termination.
 // Copied from https://github.com/kubernetes/kubernetes/blob/8770bd58d04555303a3a15b30c245a58723d0f4a/pkg/controller/controller_utils.go#L1009-L1013.
 func isPodActive(p *corev1.Pod) bool {
 	return corev1.PodSucceeded != p.Status.Phase &&
