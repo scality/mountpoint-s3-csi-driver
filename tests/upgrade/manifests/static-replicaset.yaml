@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: upgrade-test-replicaset
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upgrade-test-static
+  template:
+    metadata:
+      labels:
+        app: upgrade-test-static
+    spec:
+      containers:
+      - name: test
+        image: busybox:latest
+        command: ["sleep", "3600"]
+        volumeMounts:
+        - name: s3-volume
+          mountPath: /data
+      volumes:
+      - name: s3-volume
+        persistentVolumeClaim:
+          claimName: upgrade-test-pvc
