@@ -160,3 +160,50 @@ func TestCreatingMountpointPods(t *testing.T) {
 func TestCreatingMountpointPodsInOpenShift(t *testing.T) {
 	createAndVerifyPod(t, cluster.OpenShift, (*int64)(nil))
 }
+
+func TestNewCreator(t *testing.T) {
+	config := mppod.Config{
+		Namespace:         "test-namespace",
+		MountpointVersion: "1.2.3",
+		PriorityClassName: "high-priority",
+		Container: mppod.ContainerConfig{
+			Command:         "/bin/cmd",
+			Image:           "test-image:latest",
+			ImagePullPolicy: corev1.PullIfNotPresent,
+		},
+		CSIDriverVersion: "2.0.0",
+		ClusterVariant:   cluster.DefaultKubernetes,
+	}
+
+	creator := mppod.NewCreator(config)
+	if creator == nil {
+		t.Fatal("NewCreator should not return nil")
+	}
+
+	// Create a simple pod to verify the creator uses the config
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID: "test-uid",
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+		},
+	}
+
+	pv := &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pv",
+		},
+	}
+
+	mpPod := creator.Create(pod, pv)
+
+	// Verify config values are used
+	assert.Equals(t, config.Namespace, mpPod.Namespace)
+	assert.Equals(t, config.MountpointVersion, mpPod.Labels[mppod.LabelMountpointVersion])
+	assert.Equals(t, config.CSIDriverVersion, mpPod.Labels[mppod.LabelCSIDriverVersion])
+	assert.Equals(t, config.PriorityClassName, mpPod.Spec.PriorityClassName)
+	assert.Equals(t, config.Container.Image, mpPod.Spec.Containers[0].Image)
+	assert.Equals(t, config.Container.ImagePullPolicy, mpPod.Spec.Containers[0].ImagePullPolicy)
+	assert.Equals(t, []string{config.Container.Command}, mpPod.Spec.Containers[0].Command)
+}
