@@ -242,7 +242,7 @@ func TestCreateVolume(t *testing.T) {
 				if resp == nil {
 					t.Fatal("Response is nil")
 				}
-				if resp.Volume == nil {
+				if resp != nil && resp.Volume == nil {
 					t.Fatal("Volume is nil")
 				}
 				if resp.Volume.VolumeId == "" {
