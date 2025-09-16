@@ -46,13 +46,15 @@ type testCtx struct {
 
 	podMounter *mounter.PodMounter
 
-	client       *fake.Clientset
-	mount        *mount.FakeMounter
-	mountSyscall func(target string, args mountpoint.Args) (fd int, err error)
+	client           *fake.Clientset
+	mount            *mount.FakeMounter
+	mountSyscall     func(target string, args mountpoint.Args) (fd int, err error)
+	bindMountSyscall func(source, target string) error
 
 	bucketName  string
 	kubeletPath string
 	targetPath  string
+	sourcePath  string
 	podUID      string
 	volumeID    string
 	pvName      string
@@ -100,6 +102,10 @@ func setup(t *testing.T) *testCtx {
 	client := fake.NewClientset()
 	mount := mount.NewFakeMounter(nil)
 
+	// Setup source path for bind mount architecture
+	mpPodName := mppod.MountpointPodNameFor(podUID, pvName)
+	sourcePath := filepath.Join(mounter.SourceMountDir(kubeletPath), mpPodName)
+
 	testCtx := &testCtx{
 		t:           t,
 		ctx:         ctx,
@@ -108,6 +114,7 @@ func setup(t *testing.T) *testCtx {
 		bucketName:  bucketName,
 		kubeletPath: kubeletPath,
 		targetPath:  targetPath,
+		sourcePath:  sourcePath,
 		podUID:      podUID,
 		volumeID:    volumeID,
 		pvName:      pvName,
@@ -122,6 +129,14 @@ func setup(t *testing.T) *testCtx {
 		return int(mountertest.OpenDevNull(t).Fd()), nil
 	}
 
+	bindMountSyscall := func(source, target string) error {
+		if testCtx.bindMountSyscall != nil {
+			return testCtx.bindMountSyscall(source, target)
+		}
+		// Default: simulate bind mount with fake mounter
+		return mount.Mount(source, target, "", []string{"bind"})
+	}
+
 	credProvider := credentialprovider.New(client.CoreV1())
 
 	podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
@@ -132,7 +147,11 @@ func setup(t *testing.T) *testCtx {
 	err = podWatcher.Start(stopCh)
 	assert.NoError(t, err)
 
-	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, testK8sVersion)
+	// Pass nil for k8sClient to test backward compatibility mode
+	// This simulates the behavior during CSI upgrade where existing workload pods
+	// continue using direct pod creation until they're restarted, at which point
+	// they'll switch to the new CRD-based coordination with source/bind mounts
+	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, bindMountSyscall, testK8sVersion, nil)
 	assert.NoError(t, err)
 
 	testCtx.podMounter = podMounter
@@ -148,6 +167,8 @@ func TestPodMounter(t *testing.T) {
 			devNull := mountertest.OpenDevNull(t)
 
 			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
+				// Verify that mount is called on source path, not target
+				assert.Equals(t, testCtx.sourcePath, target)
 				_ = testCtx.mount.Mount("mountpoint-s3", target, "fuse", nil)
 
 				// Since `PodMounter.Mount` closes the file descriptor once it passes it to Mountpoint,
@@ -157,6 +178,14 @@ func TestPodMounter(t *testing.T) {
 				assert.NoError(t, err)
 
 				return fd, nil
+			}
+
+			var bindMountCalled bool
+			testCtx.bindMountSyscall = func(source, target string) error {
+				bindMountCalled = true
+				assert.Equals(t, testCtx.sourcePath, source)
+				assert.Equals(t, testCtx.targetPath, target)
+				return testCtx.mount.Mount(source, target, "", []string{"bind"})
 			}
 
 			args := mountpoint.ParseArgs([]string{mountpoint.ArgReadOnly})
@@ -181,6 +210,9 @@ func TestPodMounter(t *testing.T) {
 
 			err := <-mountRes
 			assert.NoError(t, err)
+
+			// Verify bind mount was called
+			assert.Equals(t, true, bindMountCalled)
 
 			gotFile := os.NewFile(uintptr(got.Fd), "fd")
 			mountertest.AssertSameFile(t, devNull, gotFile)

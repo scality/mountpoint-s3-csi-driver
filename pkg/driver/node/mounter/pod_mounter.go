@@ -13,7 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/targetpath"
@@ -22,50 +24,174 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mountoptions"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 )
 
 // targetDirPerm is the permission to use while creating target directory if its not exists.
 const targetDirPerm = fs.FileMode(0o755)
 
-// mountSyscall is the function that performs `mount` operation for given `target` with given Mountpoint `args`.
-// It returns mounted FUSE file descriptor as a result.
-// This is mainly exposed for testing, in production platform-native function (`mountSyscallDefault`) will be used.
+// mountSyscall is the function that performs FUSE mount operation for S3 buckets.
+// It mounts the S3 bucket to the target directory and returns the FUSE device file descriptor.
+// This abstraction allows for dependency injection during testing.
+// In production, the platform-native mount implementation is used.
+// Parameters:
+//   - target: The directory where S3 bucket will be mounted (source directory in our architecture)
+//   - args: Mountpoint-s3 arguments for the mount operation
+//
+// Returns:
+//   - fd: FUSE device file descriptor for passing to Mountpoint Pod
+//   - err: Any error that occurred during mount
 type mountSyscall func(target string, args mountpoint.Args) (fd int, err error)
 
+// bindMountSyscall is the function that performs bind mount operation.
+// It creates a bind mount from source (shared S3 mount) to target (container-specific path).
+// This abstraction enables testing without actual mount operations.
+// In production, uses standard Linux bind mount via mount-utils.
+// Parameters:
+//   - source: The source directory with mounted S3 bucket
+//   - target: The target directory requested by the container
+type bindMountSyscall func(source, target string) error
+
 // A PodMounter is a [Mounter] that mounts Mountpoint on pre-created Kubernetes Pod running in the same node.
+// It implements a source/bind mount architecture where:
+// - S3 buckets are mounted to a "source" directory first (shared mount point)
+// - Individual containers get bind mounts from the source to their target paths
+// - This enables multiple containers to share the same S3 mount efficiently
+// - During CSI upgrade, existing workloads continue with direct mounts (backward compatibility)
+// - New/restarted workloads use CRD-based coordination for mount sharing
 type PodMounter struct {
 	podWatcher        *watcher.Watcher
 	mount             mount.Interface
 	kubeletPath       string
 	mountSyscall      mountSyscall
+	bindMountSyscall  bindMountSyscall
 	kubernetesVersion string
 	credProvider      *credentialprovider.Provider
+	k8sClient         client.Client
+	nodeName          string
 }
 
 // NewPodMounter creates a new [PodMounter] with given Kubernetes client.
-func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, kubernetesVersion string) (*PodMounter, error) {
+// Parameters:
+// - podWatcher: Watches for Mountpoint Pod status changes
+// - credProvider: Manages AWS credentials for S3 access
+// - mount: Interface for mount operations
+// - mountSyscall: Custom mount syscall function (nil uses default)
+// - bindMountSyscall: Custom bind mount function (nil uses default)
+// - kubernetesVersion: K8s version for compatibility checks
+// - k8sClient: Client for CRD operations (nil enables backward compatibility mode)
+//
+// When k8sClient is nil, the mounter operates in backward compatibility mode,
+// creating Mountpoint Pods directly without CRD coordination. This supports
+// existing workloads during CSI driver upgrades.
+func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
+	kubeletPath := os.Getenv("KUBELET_PATH")
+	if kubeletPath == "" {
+		kubeletPath = "/var/lib/kubelet"
+	}
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" && k8sClient != nil {
+		// NODE_NAME is required only when using CRD mode (k8sClient is provided)
+		return nil, fmt.Errorf("NODE_NAME environment variable must be set when using CRD mode")
+	}
 	return &PodMounter{
 		podWatcher:        podWatcher,
 		credProvider:      credProvider,
 		mount:             mount,
-		kubeletPath:       util.KubeletPath(),
+		kubeletPath:       kubeletPath,
 		mountSyscall:      mountSyscall,
+		bindMountSyscall:  bindMountSyscall,
 		kubernetesVersion: kubernetesVersion,
+		k8sClient:         k8sClient,
+		nodeName:          nodeName,
 	}, nil
+}
+
+// waitForMountpointPodAttachment waits for a MountpointS3PodAttachment CRD to be created by the controller.
+// It continuously polls until the CRD is found or the context times out.
+//
+// The CRD-based coordination enables:
+// - Controller to determine optimal Mountpoint Pod placement
+// - Sharing of Mountpoint Pods across multiple workload pods
+// - Better resource utilization and scheduling decisions
+//
+// In backward compatibility mode (k8sClient == nil), it returns a deterministic
+// pod name without waiting for CRD, maintaining existing behavior for workloads
+// that haven't been restarted after the CSI upgrade.
+func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, credentialCtx credentialprovider.ProvideContext) (string, error) {
+	if pm.k8sClient == nil {
+		// Backward compatibility mode: Direct pod creation without CRD coordination
+		// Used for existing workloads during CSI upgrade until they restart
+		klog.Warningf("k8sClient is nil, operating in backward compatibility mode")
+		return mppod.MountpointPodNameFor(podID, volumeName), nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	// Build field filters for searching MountpointS3PodAttachments
+	fieldFilters := client.MatchingFields{
+		crdv2.FieldNodeName:             pm.nodeName,
+		crdv2.FieldPersistentVolumeName: volumeName,
+		crdv2.FieldVolumeID:             volumeID,
+	}
+
+	klog.V(4).Infof("Waiting for MountpointS3PodAttachment for podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return "", fmt.Errorf("timed out waiting for MountpointS3PodAttachment: %w", ctx.Err())
+		default:
+		}
+
+		s3paList := &crdv2.MountpointS3PodAttachmentList{}
+		err := pm.k8sClient.List(ctx, s3paList, fieldFilters)
+		if err != nil {
+			klog.Errorf("Failed to list MountpointS3PodAttachments: %v", err)
+			return "", err
+		}
+
+		for _, s3pa := range s3paList.Items {
+			for mpPodName, attachments := range s3pa.Spec.MountpointS3PodAttachments {
+				for _, attachment := range attachments {
+					if attachment.WorkloadPodUID == podID {
+						klog.V(4).Infof("Found MountpointS3PodAttachment %s with Mountpoint Pod %s", s3pa.Name, mpPodName)
+						return mpPodName, nil
+					}
+				}
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return "", fmt.Errorf("timed out waiting for MountpointS3PodAttachment: %w", ctx.Err())
+		case <-time.After(2 * time.Second):
+			// Poll every 2 seconds
+		}
+	}
+}
+
+// helpMessageForGettingControllerLogs returns a help message for getting controller logs.
+func (pm *PodMounter) helpMessageForGettingControllerLogs() string {
+	return "You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`."
 }
 
 // Mount mounts the given `bucketName` at the `target` path using provided credential context and Mountpoint arguments.
 //
-// At high level, this method will:
-//  1. Wait for Mountpoint Pod to be `Running`
-//  2. Write credentials to Mountpoint Pod's credentials directory
-//  3. Obtain a FUSE file descriptor
-//  4. Call `mount` syscall with `target` and obtained FUSE file descriptor
-//  5. Send mount options (including FUSE file descriptor) to Mountpoint Pod
-//  6. Wait until Mountpoint successfully mounts at `target`
+// Source/Bind Mount Architecture:
+//  1. Wait for controller to assign a Mountpoint Pod via CRD (or use direct creation in backward compatibility mode)
+//  2. Mount S3 bucket to a "source" directory: /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<pod-name>
+//  3. Create bind mount from source to target path requested by the container
+//  4. Multiple containers can share the same source mount via different bind mounts
 //
-// If Mountpoint is already mounted at `target`, it will return early at step 2 to ensure credentials are up-to-date.
+// Benefits:
+// - Resource efficiency: One Mountpoint Pod serves multiple containers
+// - Better scheduling: Controller can optimize Mountpoint Pod placement
+// - Graceful upgrades: Existing workloads continue working during CSI upgrade
+// - Mount reuse: Source mount persists across container restarts
+//
+// The source mount is only created once and reused for subsequent bind mounts.
+// Credentials are always updated to ensure they remain current.
 func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args) error {
 	volumeName, err := pm.volumeNameFromTargetPath(target)
 	if err != nil {
@@ -73,20 +199,46 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	}
 
 	podID := credentialCtx.PodID
+	volumeID := credentialCtx.VolumeID
 
+	// Step 1: Determine which Mountpoint Pod to use
+	// In CRD mode: Controller assigns optimal pod via MountpointS3PodAttachment
+	// In backward compatibility: Use deterministic pod name
+	mpPodName, err := pm.waitForMountpointPodAttachment(ctx, podID, volumeName, volumeID, credentialCtx)
+	if err != nil {
+		klog.Errorf("failed to wait for MountpointS3PodAttachment for %q: %v. %s", target, err, pm.helpMessageForGettingControllerLogs())
+		return fmt.Errorf("failed to wait for MountpointS3PodAttachment for %q: %w. %s", target, err, pm.helpMessageForGettingControllerLogs())
+	}
+
+	// Step 2: Setup source mount directory
+	// Source path: /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<mp-pod-name>
+	// This is where S3 bucket will be mounted (shared across containers)
+	source := filepath.Join(SourceMountDir(pm.kubeletPath), mpPodName)
+
+	// Verify source mount directory can be used
+	err = pm.verifyOrSetupMountTarget(source)
+	if err != nil {
+		return fmt.Errorf("failed to verify source path can be used as a mount point %q: %w", source, err)
+	}
+
+	// Check if source is already mounted
+	isSourceMounted, err := pm.IsMountPoint(source)
+	if err != nil {
+		return fmt.Errorf("could not check if source %q is already a mount point: %w", source, err)
+	}
+
+	// Check if target is already mounted (bind mount)
 	err = pm.verifyOrSetupMountTarget(target)
 	if err != nil {
 		return fmt.Errorf("failed to verify target path can be used as a mount point %q: %w", target, err)
 	}
 
-	isMountPoint, err := pm.IsMountPoint(target)
+	isTargetMounted, err := pm.IsMountPoint(target)
 	if err != nil {
-		return fmt.Errorf("could not check if %q is already a mount point: %w", target, err)
+		return fmt.Errorf("could not check if target %q is already a mount point: %w", target, err)
 	}
 
-	// TODO: If `target` is a `systemd`-mounted Mountpoint, this would return an error,
-	// but we should still update the credentials for it by calling `credProvider.Provide`.
-	pod, podPath, err := pm.waitForMountpointPod(ctx, podID, volumeName)
+	pod, podPath, err := pm.waitForMountpointPod(ctx, mpPodName)
 	if err != nil {
 		klog.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %v", target, err)
 		return fmt.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %w", target, err)
@@ -100,130 +252,133 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 
 	credentialCtx.SetWriteAndEnvPath(podCredentialsPath, mppod.PathInsideMountpointPod(mppod.KnownPathCredentials))
 
-	// Note that this part happens before `isMountPoint` check, as we want to update credentials even though
-	// there is an existing mount point at `target`.
+	// Always provide credentials to ensure they're up-to-date
 	credEnv, authenticationSource, err := pm.credProvider.Provide(ctx, credentialCtx)
 	if err != nil {
 		klog.Errorf("failed to provide credentials for %s: %v\n%s", target, err, pm.helpMessageForGettingMountpointLogs(pod))
 		return fmt.Errorf("failed to provide credentials for %q: %w\n%s", target, err, pm.helpMessageForGettingMountpointLogs(pod))
 	}
 
-	if isMountPoint {
-		klog.V(4).Infof("Target path %q is already mounted", target)
+	// Step 3: Mount S3 bucket to source directory (if not already mounted)
+	// This creates the shared mount point that multiple containers can use
+	if !isSourceMounted {
+		env := envprovider.Default()
+		env.Merge(credEnv)
+
+		// Move `--aws-max-attempts` to env if provided
+		if maxAttempts, ok := args.Remove(mountpoint.ArgAWSMaxAttempts); ok {
+			env.Set(envprovider.EnvMaxAttempts, maxAttempts)
+		}
+
+		enforceCSIDriverMountArgPolicy(&args)
+
+		// Remove the read-only argument from the list as mount-s3 does not support it when using FUSE
+		if args.Has(mountpoint.ArgReadOnly) {
+			args.Remove(mountpoint.ArgReadOnly)
+		}
+
+		args.Set(mountpoint.ArgUserAgentPrefix, UserAgent(authenticationSource, pm.kubernetesVersion))
+		podMountSockPath := mppod.PathOnHost(podPath, mppod.KnownPathMountSock)
+		podMountErrorPath := mppod.PathOnHost(podPath, mppod.KnownPathMountError)
+
+		klog.V(4).Infof("Mounting S3 bucket to source %s for %s", source, pod.Name)
+
+		fuseDeviceFD, err := pm.mountSyscallWithDefault(source, args)
+		if err != nil {
+			klog.Errorf("failed to mount source %s: %v", source, err)
+			return fmt.Errorf("failed to mount source %s: %w", source, err)
+		}
+
+		// This will set to false in the success condition. This is set to `true` by default to
+		// ensure we don't leave `source` mounted if Mountpoint is not started to serve requests for it.
+		unmountSource := true
+		defer func() {
+			if unmountSource {
+				if err := pm.unmountTarget(source); err != nil {
+					klog.V(4).ErrorS(err, "failed to unmount mounted source %s\n", source)
+				} else {
+					klog.V(4).Infof("Source %s unmounted successfully\n", source)
+				}
+			}
+		}()
+
+		// This function can either fail or successfully send mount options to Mountpoint Pod - in which
+		// Mountpoint Pod will get its own fd referencing the same underlying file description.
+		// In both case we need to close the fd in this process.
+		defer mpmounter.CloseFUSEDevice(fuseDeviceFD)
+
+		// Remove old mount error file if exists
+		_ = os.Remove(podMountErrorPath)
+
+		klog.V(4).Infof("Sending mount options to Mountpoint Pod %s on %s", pod.Name, podMountSockPath)
+
+		err = mountoptions.Send(ctx, podMountSockPath, mountoptions.Options{
+			Fd:         fuseDeviceFD,
+			BucketName: bucketName,
+			Args:       args.SortedList(),
+			Env:        env.List(),
+		})
+		if err != nil {
+			klog.Errorf("failed to send mount option to Mountpoint Pod %s for source %s: %v\n%s", pod.Name, source, err, pm.helpMessageForGettingMountpointLogs(pod))
+			return fmt.Errorf("failed to send mount options to Mountpoint Pod %s for source %s: %w\n%s", pod.Name, source, err, pm.helpMessageForGettingMountpointLogs(pod))
+		}
+
+		err = pm.waitForMount(ctx, source, pod.Name, podMountErrorPath)
+		if err != nil {
+			klog.Errorf("failed to wait for Mountpoint Pod %s to be ready for source %s: %v\n%s", pod.Name, source, err, pm.helpMessageForGettingMountpointLogs(pod))
+			return fmt.Errorf("failed to wait for Mountpoint Pod %s to be ready for source %s: %w\n%s", pod.Name, source, err, pm.helpMessageForGettingMountpointLogs(pod))
+		}
+
+		// Mountpoint successfully started at source, so don't unmount it
+		unmountSource = false
+		klog.V(4).Infof("Successfully mounted S3 bucket to source %s", source)
+	} else {
+		klog.V(4).Infof("Source %s is already mounted, reusing existing mount", source)
+	}
+
+	// Step 4: Create bind mount from source to target
+	// Skip if target already has a bind mount (idempotency)
+	if isTargetMounted {
+		klog.V(4).Infof("Target path %q is already bind-mounted", target)
 		return nil
 	}
 
-	env := envprovider.Default()
-	env.Merge(credEnv)
-
-	// Move `--aws-max-attempts` to env if provided
-	if maxAttempts, ok := args.Remove(mountpoint.ArgAWSMaxAttempts); ok {
-		env.Set(envprovider.EnvMaxAttempts, maxAttempts)
-	}
-
-	enforceCSIDriverMountArgPolicy(&args)
-
-	// Remove the read-only argument from the list as mount-s3 does not support it when using FUSE
-	if args.Has(mountpoint.ArgReadOnly) {
-		args.Remove(mountpoint.ArgReadOnly)
-	}
-
-	args.Set(mountpoint.ArgUserAgentPrefix, UserAgent(authenticationSource, pm.kubernetesVersion))
-	podMountSockPath := mppod.PathOnHost(podPath, mppod.KnownPathMountSock)
-	podMountErrorPath := mppod.PathOnHost(podPath, mppod.KnownPathMountError)
-
-	klog.V(4).Infof("Mounting %s for %s", target, pod.Name)
-
-	fuseDeviceFD, err := pm.mountSyscallWithDefault(target, args)
+	// Create bind mount: source (shared S3 mount) -> target (container-specific path)
+	// This allows the container to access S3 at its requested path while sharing
+	// the underlying S3 mount with other containers
+	klog.V(4).Infof("Creating bind mount from source %s to target %s", source, target)
+	err = pm.bindMountSyscallWithDefault(source, target)
 	if err != nil {
-		klog.Errorf("failed to mount %s: %v", target, err)
-		return fmt.Errorf("failed to mount %s: %w", target, err)
+		klog.Errorf("failed to bind mount %q to target %q: %v", source, target, err)
+		return fmt.Errorf("failed to bind mount %q to target %q: %w", source, target, err)
 	}
 
-	// This will set to false in the success condition. This is set to `true` by default to
-	// ensure we don't leave `target` mounted if Mountpoint is not started to serve requests for it.
-	unmount := true
-	defer func() {
-		if unmount {
-			if err := pm.unmountTarget(target); err != nil {
-				klog.V(4).ErrorS(err, "failed to unmount mounted target %s\n", target)
-			} else {
-				klog.V(4).Infof("Target %s unmounted successfully\n", target)
-			}
-		}
-	}()
-
-	// This function can either fail or successfully send mount options to Mountpoint Pod - in which
-	// Mountpoint Pod will get its own fd referencing the same underlying file description.
-	// In both case we need to close the fd in this process.
-	defer mpmounter.CloseFUSEDevice(fuseDeviceFD)
-
-	// Remove old mount error file if exists
-	_ = os.Remove(podMountErrorPath)
-
-	klog.V(4).Infof("Sending mount options to Mountpoint Pod %s on %s", pod.Name, podMountSockPath)
-
-	err = mountoptions.Send(ctx, podMountSockPath, mountoptions.Options{
-		Fd:         fuseDeviceFD,
-		BucketName: bucketName,
-		Args:       args.SortedList(),
-		Env:        env.List(),
-	})
-	if err != nil {
-		klog.Errorf("failed to send mount option to Mountpoint Pod %s for %s: %v\n%s", pod.Name, target, err, pm.helpMessageForGettingMountpointLogs(pod))
-		return fmt.Errorf("failed to send mount options to Mountpoint Pod %s for %s: %w\n%s", pod.Name, target, err, pm.helpMessageForGettingMountpointLogs(pod))
-	}
-
-	err = pm.waitForMount(ctx, target, pod.Name, podMountErrorPath)
-	if err != nil {
-		klog.Errorf("failed to wait for Mountpoint Pod %s to be ready for %s: %v\n%s", pod.Name, target, err, pm.helpMessageForGettingMountpointLogs(pod))
-		return fmt.Errorf("failed to wait for Mountpoint Pod %s to be ready for %s: %w\n%s", pod.Name, target, err, pm.helpMessageForGettingMountpointLogs(pod))
-	}
-
-	// Mountpoint successfully started, so don't unmount the filesystem
-	unmount = false
+	klog.V(4).Infof("Successfully created bind mount to target %s from source %s", target, source)
 	return nil
 }
 
-// Unmount unmounts the mount point at `target` and cleans all credentials.
+// Unmount unmounts only the bind mount point at `target`.
+//
+// Important: This only removes the bind mount, NOT the source mount.
+// The source mount at /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<pod-name>
+// remains active because:
+// - Other containers might still be using it
+// - Preserving it avoids expensive S3 remounts for new containers
+// - The controller manages source mount lifecycle separately
+//
+// Source mount cleanup happens when:
+// - The Mountpoint Pod is terminated by the controller
+// - No workload pods need the mount anymore
+// - During node shutdown or driver restart
 func (pm *PodMounter) Unmount(ctx context.Context, target string, credentialCtx credentialprovider.CleanupContext) error {
-	volumeName, err := pm.volumeNameFromTargetPath(target)
+	// Only unmount the bind mount at target, preserve the shared source mount
+	err := pm.unmountTarget(target)
 	if err != nil {
-		return fmt.Errorf("failed to extract volume name from %q: %w", target, err)
+		klog.Errorf("failed to unmount target %q: %v", target, err)
+		return fmt.Errorf("failed to unmount target %q: %w", target, err)
 	}
 
-	podID := credentialCtx.PodID
-
-	// TODO: If `target` is a `systemd`-mounted Mountpoint, this would return an error,
-	// but we should still unmount it and clean the credentials.
-	pod, podPath, err := pm.waitForMountpointPod(ctx, podID, volumeName)
-	if err != nil {
-		klog.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %v", target, err)
-		return fmt.Errorf("failed to wait for Mountpoint Pod for %q: %w", target, err)
-	}
-
-	credentialCtx.WritePath = pm.credentialsDir(podPath)
-
-	// Write `mount.exit` file to indicate Mountpoint Pod to cleanly exit.
-	podMountExitPath := mppod.PathOnHost(podPath, mppod.KnownPathMountExit)
-	_, err = os.OpenFile(podMountExitPath, os.O_RDONLY|os.O_CREATE, credentialprovider.CredentialFilePerm)
-	if err != nil {
-		klog.Errorf("failed to send a exit message to Mountpoint Pod for %q: %s\n%s", target, err, pm.helpMessageForGettingMountpointLogs(pod))
-		return fmt.Errorf("failed to send a exit message to Mountpoint Pod for %q: %w\n%s", target, err, pm.helpMessageForGettingMountpointLogs(pod))
-	}
-
-	err = pm.unmountTarget(target)
-	if err != nil {
-		klog.Errorf("failed to unmount %q: %v", target, err)
-		return fmt.Errorf("failed to unmount %q: %w", target, err)
-	}
-
-	err = pm.credProvider.Cleanup(credentialCtx)
-	if err != nil {
-		klog.Errorf("failed to clean up credentials for %s: %v\n%s", target, err, pm.helpMessageForGettingMountpointLogs(pod))
-		return fmt.Errorf("failed to clean up credentials for %q: %w\n%s", target, err, pm.helpMessageForGettingMountpointLogs(pod))
-	}
-
+	klog.V(4).Infof("Target %q successfully unmounted (bind mount removed)", target)
 	return nil
 }
 
@@ -235,9 +390,7 @@ func (pm *PodMounter) IsMountPoint(target string) (bool, error) {
 
 // waitForMountpointPod waints until Mountpoint Pod for given `podID` and `volumeName` is in `Running` state.
 // It returns found Mountpoint Pod and it's base directory.
-func (pm *PodMounter) waitForMountpointPod(ctx context.Context, podID, volumeName string) (*corev1.Pod, string, error) {
-	podName := mppod.MountpointPodNameFor(podID, volumeName)
-
+func (pm *PodMounter) waitForMountpointPod(ctx context.Context, podName string) (*corev1.Pod, string, error) {
 	pod, err := pm.podWatcher.Wait(ctx, podName)
 	if err != nil {
 		return nil, "", err
@@ -356,6 +509,16 @@ func (pm *PodMounter) mountSyscallWithDefault(target string, args mountpoint.Arg
 	return pm.mountSyscallDefault(target, args)
 }
 
+// bindMountSyscallWithDefault delegates to `bindMountSyscall` if set, or fallbacks to platform-native bind mount.
+func (pm *PodMounter) bindMountSyscallWithDefault(source, target string) error {
+	if pm.bindMountSyscall != nil {
+		return pm.bindMountSyscall(source, target)
+	}
+
+	// Default bind mount using mount-utils
+	return pm.mount.Mount(source, target, "", []string{"bind"})
+}
+
 // unmountTarget calls `unmount` syscall on `target`.
 func (pm *PodMounter) unmountTarget(target string) error {
 	return mpmounter.UnmountTarget(pm.mount, target)
@@ -372,4 +535,14 @@ func (pm *PodMounter) volumeNameFromTargetPath(target string) (string, error) {
 
 func (pm *PodMounter) helpMessageForGettingMountpointLogs(pod *corev1.Pod) string {
 	return fmt.Sprintf("You can see Mountpoint logs by running: `kubectl logs -n %s %s`. If the Mountpoint Pod already restarted, you can also pass `--previous` to get logs from the previous run.", pod.Namespace, pod.Name)
+}
+
+// GetPodWatcher returns the pod watcher instance
+func (pm *PodMounter) GetPodWatcher() *watcher.Watcher {
+	return pm.podWatcher
+}
+
+// GetCredentialProvider returns the credential provider instance
+func (pm *PodMounter) GetCredentialProvider() *credentialprovider.Provider {
+	return pm.credProvider
 }

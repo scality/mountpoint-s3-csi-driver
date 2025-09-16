@@ -171,7 +171,12 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 			klog.Fatalf("failed to start Pod watcher: %v\n", err)
 		}
 
-		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, kubernetesVersion)
+		// Create PodMounter with source/bind mount architecture support
+		// nil for both mountSyscall and bindMountSyscall ensures backward compatibility ensures zero-downtime upgrades:
+		// 1. Existing pods keep their current Mountpoint Pods
+		// 2. When pods restart, they'll get a proper k8sClient and use CRD coordination
+		// 3. This enables gradual migration to the optimized mount sharing architecture
+		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, nil, kubernetesVersion, nil)
 		if err != nil {
 			klog.Fatalln(err)
 		}
