@@ -222,3 +222,151 @@ func TestConstructors(t *testing.T) {
 		t.Fatal("NewDefaultMounter() failed to create valid mounter")
 	}
 }
+
+func TestFindReferencesToMountpoint(t *testing.T) {
+	tests := []struct {
+		name               string
+		source             string
+		mountPoints        []mount.MountPoint
+		listError          error
+		expectedReferences []string
+		expectedError      bool
+	}{
+		{
+			name:   "no references found",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/other", Device: "/dev/sda1"},
+				{Path: "/mnt/another", Device: "/dev/sdb1"},
+			},
+			expectedReferences: []string{},
+			expectedError:      false,
+		},
+		{
+			name:   "single bind mount reference by device",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/source", Device: "/dev/sda1"},
+				{Path: "/mnt/bind1", Device: "/mnt/source"},
+				{Path: "/mnt/other", Device: "/dev/sdb1"},
+			},
+			expectedReferences: []string{"/mnt/bind1"},
+			expectedError:      false,
+		},
+		{
+			name:   "finds bind mount where device matches source",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/source", Device: "/dev/sda1"},
+				{Path: "/mnt/bind1", Device: "/dev/sda1"},
+				{Path: "/mnt/bind2", Device: "/mnt/source"},
+			},
+			expectedReferences: []string{"/mnt/bind2"},
+			expectedError:      false,
+		},
+		{
+			name:   "multiple bind mount references",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/source", Device: "/dev/sda1"},
+				{Path: "/mnt/bind1", Device: "/mnt/source"},
+				{Path: "/mnt/bind2", Device: "/mnt/source"},
+				{Path: "/mnt/bind3", Device: "/mnt/source"},
+				{Path: "/mnt/other", Device: "/dev/sdb1"},
+			},
+			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2", "/mnt/bind3"},
+			expectedError:      false,
+		},
+		{
+			name:   "source mount point excludes itself",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/source", Device: "/mnt/source"},
+				{Path: "/mnt/bind1", Device: "/mnt/source"},
+			},
+			expectedReferences: []string{"/mnt/bind1"},
+			expectedError:      false,
+		},
+		{
+			name:   "source as device and path match - excludes exact match",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/source", Device: "/mnt/source"},
+			},
+			expectedReferences: []string{},
+			expectedError:      false,
+		},
+		{
+			name:               "list mounts fails",
+			source:             "/mnt/source",
+			listError:          errors.New("failed to list mounts"),
+			expectedReferences: nil,
+			expectedError:      true,
+		},
+		{
+			name:               "empty mount points list",
+			source:             "/mnt/source",
+			mountPoints:        []mount.MountPoint{},
+			expectedReferences: []string{},
+			expectedError:      false,
+		},
+		{
+			name:   "mixed references with same and different devices",
+			source: "/mnt/source",
+			mountPoints: []mount.MountPoint{
+				{Path: "/mnt/source", Device: "/dev/sda1"},
+				{Path: "/mnt/bind1", Device: "/mnt/source"}, // bind mount by device
+				{Path: "/mnt/bind2", Device: "/mnt/source"}, // bind mount by device
+				{Path: "/mnt/different", Device: "/dev/sdb1"},
+				{Path: "/mnt/another", Device: "/mnt/different"},
+			},
+			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2"},
+			expectedError:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockMounter := &mockMountInterface{
+				mountPoints: tt.mountPoints,
+				listError:   tt.listError,
+			}
+
+			mounter := NewMounter(mockMounter)
+			references, err := mounter.FindReferencesToMountpoint(tt.source)
+
+			if (err != nil) != tt.expectedError {
+				t.Errorf("FindReferencesToMountpoint() error = %v, expectedError %v", err, tt.expectedError)
+				return
+			}
+
+			if tt.expectedError {
+				return // Don't check references if we expected an error
+			}
+
+			// Compare slices
+			if len(references) != len(tt.expectedReferences) {
+				t.Errorf("FindReferencesToMountpoint() references count = %d, expected %d", len(references), len(tt.expectedReferences))
+				return
+			}
+
+			// Create a map for easier comparison since order might not matter
+			expectedMap := make(map[string]bool)
+			for _, ref := range tt.expectedReferences {
+				expectedMap[ref] = true
+			}
+
+			for _, ref := range references {
+				if !expectedMap[ref] {
+					t.Errorf("FindReferencesToMountpoint() found unexpected reference %s", ref)
+				}
+				delete(expectedMap, ref)
+			}
+
+			// Check if any expected references were missed
+			for missed := range expectedMap {
+				t.Errorf("FindReferencesToMountpoint() missed expected reference %s", missed)
+			}
+		})
+	}
+}

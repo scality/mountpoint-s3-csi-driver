@@ -84,6 +84,34 @@ func TestGettingNotYetScheduledPod(t *testing.T) {
 	assert.Equals(t, mpPod.pod, pod)
 }
 
+func TestGet(t *testing.T) {
+	t.Run("get existing pod", func(t *testing.T) {
+		client := fake.NewClientset()
+
+		mpPod := createMountpointPod(t, client, testMountpointPodName)
+		mpPodWatcher := createAndStartWatcher(t, client)
+
+		pod, err := mpPodWatcher.Get(testMountpointPodName)
+		assert.NoError(t, err)
+		assert.Equals(t, mpPod.pod.Name, pod.Name)
+		assert.Equals(t, mpPod.pod.UID, pod.UID)
+	})
+
+	t.Run("get non-existent pod", func(t *testing.T) {
+		client := fake.NewClientset()
+
+		mpPodWatcher := createAndStartWatcher(t, client)
+
+		pod, err := mpPodWatcher.Get("non-existent-pod")
+		if err == nil {
+			t.Fatalf("Expected error for non-existent pod, but got nil")
+		}
+		if pod != nil {
+			t.Fatalf("Expected nil pod for non-existent pod, but got %#v", pod)
+		}
+	})
+}
+
 func TestGettingPodsConcurrently(t *testing.T) {
 	client := fake.NewClientset()
 
