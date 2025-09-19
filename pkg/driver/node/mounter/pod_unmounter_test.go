@@ -14,8 +14,33 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 )
+
+// Helper functions for tests
+
+// setupTestDirectories creates the expected directory structure for testing
+func setupTestDirectories(t *testing.T, tmpDir, podUID, mpPodName string) (podPath, sourcePath string) {
+	t.Helper()
+	podPath = filepath.Join(tmpDir, "pods", podUID)
+	// Use the correct directory name: "comm" not "mount-s3"
+	commPath := filepath.Join(podPath, "volumes", "kubernetes.io~empty-dir", "comm")
+	if err := os.MkdirAll(commPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Use SourceMountDir to get the correct path structure
+	sourcePath = filepath.Join(SourceMountDir(tmpDir), mpPodName)
+	if err := os.MkdirAll(sourcePath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return podPath, sourcePath
+}
+
+// getExitFilePath returns the expected path for the exit file
+func getExitFilePath(podPath string) string {
+	// Use mppod.PathOnHost to get the exact same path the production code uses
+	return mppod.PathOnHost(podPath, mppod.KnownPathMountExit)
+}
 
 // Mock implementations for testing
 
@@ -48,10 +73,16 @@ func (m *mockPodWatcher) Get(name string) (*corev1.Pod, error) {
 
 // mockCredentialProvider implements CredentialProvider interface for unit testing
 type mockCredentialProvider struct {
-	cleanupErr error
+	cleanupErr   error
+	cleanupCalls []credentialprovider.CleanupContext
+	cleanupError error
 }
 
 func (m *mockCredentialProvider) Cleanup(ctx credentialprovider.CleanupContext) error {
+	m.cleanupCalls = append(m.cleanupCalls, ctx)
+	if m.cleanupError != nil {
+		return m.cleanupError
+	}
 	return m.cleanupErr
 }
 
@@ -65,6 +96,14 @@ type mockMountInterface struct {
 	referencesErr         error
 	// For tracking calls made during periodic cleanup
 	cleanupCallCount int32
+	// Additional fields for new tests - when set, these override the old fields
+	checkMountpointReturn bool
+	checkMountpointError  error
+	unmountCalls          []string
+	unmountError          error
+	findReferencesReturn  []string
+	findReferencesError   error
+	useNewFields          bool // Flag to indicate using new test fields
 }
 
 func (m *mockMountInterface) IncrementCleanupCalls() {
@@ -76,6 +115,18 @@ func (m *mockMountInterface) GetCleanupCallCount() int32 {
 }
 
 func (m *mockMountInterface) CheckMountpoint(target string) (bool, error) {
+	if m.useNewFields {
+		// For new tests, simulate proper mount state transitions
+		// First call: returns the initial state (mounted or not)
+		// After Unmount is called: always returns false (unmounted)
+		for _, unmountedPath := range m.unmountCalls {
+			if unmountedPath == target {
+				// This path has been unmounted, so it's no longer a mountpoint
+				return false, m.checkMountpointError
+			}
+		}
+		return m.checkMountpointReturn, m.checkMountpointError
+	}
 	return m.isMountpoint, m.mountpointErr
 }
 
@@ -84,10 +135,19 @@ func (m *mockMountInterface) IsMountpointCorrupted(err error) bool {
 }
 
 func (m *mockMountInterface) Unmount(target string) error {
+	// Track unmount calls
+	m.unmountCalls = append(m.unmountCalls, target)
+	// Use appropriate error based on which fields are set
+	if m.useNewFields {
+		return m.unmountError
+	}
 	return m.unmountErr
 }
 
 func (m *mockMountInterface) FindReferencesToMountpoint(source string) ([]string, error) {
+	if m.useNewFields {
+		return m.findReferencesReturn, m.findReferencesError
+	}
 	return m.references, m.referencesErr
 }
 
@@ -192,34 +252,6 @@ func TestWriteExitFile(t *testing.T) {
 	}
 }
 
-func TestMountpointPodSourcePath(t *testing.T) {
-	unmounter := &PodUnmounter{
-		kubeletPath: "/var/lib/kubelet",
-	}
-
-	podName := "test-pod"
-	expected := "/var/lib/kubelet/plugins/s3.csi.scality.com/mnt/test-pod"
-	result := unmounter.mountpointPodSourcePath(podName)
-
-	if result != expected {
-		t.Errorf("mountpointPodSourcePath() = %s, expected %s", result, expected)
-	}
-}
-
-func TestPodPath(t *testing.T) {
-	unmounter := &PodUnmounter{
-		kubeletPath: "/var/lib/kubelet",
-	}
-
-	podUID := "test-uid"
-	expected := "/var/lib/kubelet/pods/test-uid"
-	result := unmounter.podPath(podUID)
-
-	if result != expected {
-		t.Errorf("podPath() = %s, expected %s", result, expected)
-	}
-}
-
 func TestCleanupCredentials(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -247,7 +279,15 @@ func TestCleanupCredentials(t *testing.T) {
 				credProvider: mockCredProvider,
 			}
 
-			pod := createTestPod("test-pod")
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pod",
+					UID:  "test-uid",
+					Labels: map[string]string{
+						mppod.LabelVolumeId: "test-volume",
+					},
+				},
+			}
 			err := unmounter.cleanupCredentials(pod)
 
 			if (err != nil) != tt.expectErr {
@@ -258,6 +298,19 @@ func TestCleanupCredentials(t *testing.T) {
 }
 
 func TestCleanupDanglingMounts(t *testing.T) {
+	// Local helper for this test
+	createTestPod := func(name string) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+				UID:  "test-uid",
+				Labels: map[string]string{
+					mppod.LabelVolumeId: "test-volume",
+				},
+			},
+		}
+	}
+
 	tests := []struct {
 		name                  string
 		setupDirs             []string
@@ -383,66 +436,6 @@ func TestCleanupDanglingMounts(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestHandleMountpointPodUpdate_NodeFiltering(t *testing.T) {
-	tests := []struct {
-		name        string
-		nodeID      string
-		podNodeName string
-		shouldSkip  bool
-	}{
-		{
-			name:        "pod on different node - should skip",
-			nodeID:      "node1",
-			podNodeName: "node2",
-			shouldSkip:  true,
-		},
-		{
-			name:        "pod on same node - should process",
-			nodeID:      "node1",
-			podNodeName: "node1",
-			shouldSkip:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockWatcher := &mockPodWatcher{}
-			mockMount := &mockMountInterface{}
-			mockCredProvider := &mockCredentialProvider{}
-
-			unmounter := &PodUnmounter{
-				nodeID:       tt.nodeID,
-				mount:        mockMount,
-				podWatcher:   mockWatcher,
-				credProvider: mockCredProvider,
-			}
-
-			pod := createTestPod("test-pod")
-			pod.Spec.NodeName = tt.podNodeName
-
-			// This should not panic - we're testing the node filtering logic
-			// The actual unmounting would require more setup but the method should handle
-			// the node filtering correctly
-			unmounter.HandleMountpointPodUpdate(nil, pod)
-		})
-	}
-}
-
-func createTestPod(name string) *corev1.Pod {
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			UID:  types.UID("test-uid-" + name),
-			Labels: map[string]string{
-				mppod.LabelVolumeId: "test-volume",
-			},
-		},
-		Spec: corev1.PodSpec{
-			NodeName: "test-node",
-		},
 	}
 }
 
@@ -606,6 +599,305 @@ func TestStartPeriodicCleanup(t *testing.T) {
 			t.Log("Cleanup loop terminated promptly on stop signal")
 		case <-time.After(50 * time.Millisecond):
 			t.Fatal("Cleanup loop did not terminate within expected time")
+		}
+	})
+}
+
+func TestCleanUnmount(t *testing.T) {
+	t.Run("successful clean unmount with all operations", func(t *testing.T) {
+		mockMount := &mockMountInterface{
+			checkMountpointReturn: true,
+			useNewFields:          true,
+		}
+		mockCredProvider := &mockCredentialProvider{}
+		mockWatcher := &mockPodWatcher{}
+
+		unmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test-kubelet",
+			credProvider: mockCredProvider,
+			podWatcher:   mockWatcher,
+		}
+
+		// Create temp directory for exit file
+		tmpDir := t.TempDir()
+		unmounter.kubeletPath = tmpDir
+
+		mpPod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mp-test-pod",
+				UID:  "test-uid",
+				Labels: map[string]string{
+					mppod.LabelVolumeId: "test-volume",
+				},
+			},
+		}
+
+		// Create test directory structure
+		podPath, sourcePath := setupTestDirectories(t, tmpDir, string(mpPod.UID), mpPod.Name)
+
+		// Execute clean unmount directly since we're in the same package
+		unmounter.cleanUnmount(mpPod)
+
+		// Verify exit file was created at the correct location
+		exitFilePath := getExitFilePath(podPath)
+		if _, err := os.Stat(exitFilePath); os.IsNotExist(err) {
+			t.Error("Exit file was not created")
+		}
+
+		// Verify unmount was called
+		if len(mockMount.unmountCalls) != 1 {
+			t.Errorf("Expected 1 unmount call, got %d", len(mockMount.unmountCalls))
+		} else if mockMount.unmountCalls[0] != sourcePath {
+			t.Errorf("Unmount called with wrong path: expected %s, got %s", sourcePath, mockMount.unmountCalls[0])
+		}
+
+		// Verify credentials cleanup was called
+		if len(mockCredProvider.cleanupCalls) != 1 {
+			t.Errorf("Expected 1 cleanup call, got %d", len(mockCredProvider.cleanupCalls))
+		} else {
+			ctx := mockCredProvider.cleanupCalls[0]
+			if ctx.VolumeID != "test-volume" {
+				t.Errorf("Cleanup called with wrong VolumeID: %s", ctx.VolumeID)
+			}
+			if ctx.PodID != "test-uid" {
+				t.Errorf("Cleanup called with wrong PodID: %s", ctx.PodID)
+			}
+		}
+	})
+
+	t.Run("handles writeExitFile error gracefully", func(t *testing.T) {
+		mockMount := &mockMountInterface{
+			useNewFields: true,
+		}
+		mockCredProvider := &mockCredentialProvider{}
+
+		unmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/invalid/path/that/does/not/exist",
+			credProvider: mockCredProvider,
+		}
+
+		mpPod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mp-test-pod",
+				UID:  "test-uid",
+			},
+		}
+
+		// Should not panic even when writeExitFile fails
+		unmounter.cleanUnmount(mpPod)
+
+		// Should return early - no unmount or cleanup calls
+		if len(mockMount.unmountCalls) != 0 {
+			t.Errorf("Expected no unmount calls when writeExitFile fails, got %d", len(mockMount.unmountCalls))
+		}
+		if len(mockCredProvider.cleanupCalls) != 0 {
+			t.Errorf("Expected no cleanup calls when writeExitFile fails, got %d", len(mockCredProvider.cleanupCalls))
+		}
+	})
+
+	t.Run("handles mountpoint still in use", func(t *testing.T) {
+		mockMount := &mockMountInterface{
+			checkMountpointReturn: true,
+			findReferencesReturn:  []string{"/mnt/bind1"}, // Still has references
+			useNewFields:          true,
+		}
+		mockCredProvider := &mockCredentialProvider{}
+		mockWatcher := &mockPodWatcher{}
+
+		unmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test-kubelet",
+			credProvider: mockCredProvider,
+			podWatcher:   mockWatcher,
+		}
+
+		tmpDir := t.TempDir()
+		unmounter.kubeletPath = tmpDir
+
+		mpPod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mp-test-pod",
+				UID:  "test-uid",
+			},
+		}
+
+		// Create test directory structure
+		podPath, _ := setupTestDirectories(t, tmpDir, string(mpPod.UID), mpPod.Name)
+
+		// Execute clean unmount directly since we're in the same package
+		unmounter.cleanUnmount(mpPod)
+
+		// Exit file should be created
+		exitFilePath := getExitFilePath(podPath)
+		if _, err := os.Stat(exitFilePath); os.IsNotExist(err) {
+			t.Error("Exit file was not created")
+		}
+
+		// Should not unmount when still in use
+		if len(mockMount.unmountCalls) != 0 {
+			t.Errorf("Expected no unmount calls when mountpoint is still in use, got %d", len(mockMount.unmountCalls))
+		}
+
+		// Should not cleanup credentials when unmount fails
+		if len(mockCredProvider.cleanupCalls) != 0 {
+			t.Errorf("Expected no cleanup calls when mountpoint is still in use, got %d", len(mockCredProvider.cleanupCalls))
+		}
+	})
+
+	t.Run("handles unmount failure", func(t *testing.T) {
+		mockMount := &mockMountInterface{
+			checkMountpointReturn: true,
+			unmountError:          errors.New("unmount failed"),
+			useNewFields:          true,
+		}
+		mockCredProvider := &mockCredentialProvider{}
+		mockWatcher := &mockPodWatcher{}
+
+		unmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test-kubelet",
+			credProvider: mockCredProvider,
+			podWatcher:   mockWatcher,
+		}
+
+		tmpDir := t.TempDir()
+		unmounter.kubeletPath = tmpDir
+
+		mpPod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mp-test-pod",
+				UID:  "test-uid",
+			},
+		}
+
+		// Create test directory structure
+		podPath, _ := setupTestDirectories(t, tmpDir, string(mpPod.UID), mpPod.Name)
+
+		// Execute clean unmount directly since we're in the same package
+		unmounter.cleanUnmount(mpPod)
+
+		// Exit file should be created
+		exitFilePath := getExitFilePath(podPath)
+		if _, err := os.Stat(exitFilePath); os.IsNotExist(err) {
+			t.Error("Exit file was not created")
+		}
+
+		// Unmount should be attempted
+		if len(mockMount.unmountCalls) != 1 {
+			t.Errorf("Expected 1 unmount call, got %d", len(mockMount.unmountCalls))
+		}
+
+		// Should not cleanup credentials when unmount fails
+		if len(mockCredProvider.cleanupCalls) != 0 {
+			t.Errorf("Expected no cleanup calls when unmount fails, got %d", len(mockCredProvider.cleanupCalls))
+		}
+	})
+
+	t.Run("handles credential cleanup failure", func(t *testing.T) {
+		mockMount := &mockMountInterface{
+			checkMountpointReturn: true,
+			useNewFields:          true,
+		}
+		mockCredProvider := &mockCredentialProvider{
+			cleanupError: errors.New("cleanup failed"),
+		}
+
+		unmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test-kubelet",
+			credProvider: mockCredProvider,
+		}
+
+		tmpDir := t.TempDir()
+		unmounter.kubeletPath = tmpDir
+
+		mpPod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mp-test-pod",
+				UID:  "test-uid",
+				Labels: map[string]string{
+					mppod.LabelVolumeId: "test-volume",
+				},
+			},
+		}
+
+		// Create test directory structure
+		podPath, _ := setupTestDirectories(t, tmpDir, string(mpPod.UID), mpPod.Name)
+
+		// Execute clean unmount - should not panic even with cleanup error
+		unmounter.cleanUnmount(mpPod)
+
+		// Verify all operations were attempted despite cleanup error
+		exitFilePath := getExitFilePath(podPath)
+		if _, err := os.Stat(exitFilePath); os.IsNotExist(err) {
+			t.Error("Exit file was not created")
+		}
+
+		if len(mockMount.unmountCalls) != 1 {
+			t.Errorf("Expected 1 unmount call, got %d", len(mockMount.unmountCalls))
+		}
+
+		if len(mockCredProvider.cleanupCalls) != 1 {
+			t.Errorf("Expected 1 cleanup call despite error, got %d", len(mockCredProvider.cleanupCalls))
+		}
+	})
+
+	t.Run("handles pod without mountpoint", func(t *testing.T) {
+		mockMount := &mockMountInterface{
+			checkMountpointReturn: false, // Not a mountpoint
+			useNewFields:          true,
+		}
+		mockCredProvider := &mockCredentialProvider{}
+		mockWatcher := &mockPodWatcher{}
+
+		unmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test-kubelet",
+			credProvider: mockCredProvider,
+			podWatcher:   mockWatcher,
+		}
+
+		tmpDir := t.TempDir()
+		unmounter.kubeletPath = tmpDir
+
+		mpPod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mp-test-pod",
+				UID:  "test-uid",
+				Labels: map[string]string{
+					mppod.LabelVolumeId: "test-volume",
+				},
+			},
+		}
+
+		// Create test directory structure (source is created but not as mountpoint)
+		podPath, _ := setupTestDirectories(t, tmpDir, string(mpPod.UID), mpPod.Name)
+
+		// Execute clean unmount directly since we're in the same package
+		unmounter.cleanUnmount(mpPod)
+
+		// Exit file should still be created
+		exitFilePath := getExitFilePath(podPath)
+		if _, err := os.Stat(exitFilePath); os.IsNotExist(err) {
+			t.Error("Exit file was not created")
+		}
+
+		// Should not attempt unmount if not a mountpoint
+		if len(mockMount.unmountCalls) != 0 {
+			t.Errorf("Expected no unmount calls for non-mountpoint, got %d", len(mockMount.unmountCalls))
+		}
+
+		// Should still cleanup credentials
+		if len(mockCredProvider.cleanupCalls) != 1 {
+			t.Errorf("Expected 1 cleanup call even for non-mountpoint, got %d", len(mockCredProvider.cleanupCalls))
 		}
 	})
 }
