@@ -69,27 +69,27 @@ func TestSourceMountDir(t *testing.T) {
 		{
 			name:        "standard kubelet path",
 			kubeletPath: "/var/lib/kubelet",
-			expected:    "/var/lib/kubelet/plugins/s3.csi.scality.com/mnt",
+			expected:    filepath.Join("/var/lib/kubelet", "plugins", constants.DriverName, "mnt"),
 		},
 		{
 			name:        "custom kubelet path",
 			kubeletPath: "/custom/kubelet",
-			expected:    "/custom/kubelet/plugins/s3.csi.scality.com/mnt",
+			expected:    filepath.Join("/custom/kubelet", "plugins", constants.DriverName, "mnt"),
 		},
 		{
 			name:        "root path",
 			kubeletPath: "/",
-			expected:    "/plugins/s3.csi.scality.com/mnt",
+			expected:    filepath.Join("/", "plugins", constants.DriverName, "mnt"),
 		},
 		{
 			name:        "empty path",
 			kubeletPath: "",
-			expected:    "plugins/s3.csi.scality.com/mnt",
+			expected:    filepath.Join("", "plugins", constants.DriverName, "mnt"),
 		},
 		{
 			name:        "path with trailing slash",
 			kubeletPath: "/var/lib/kubelet/",
-			expected:    "/var/lib/kubelet/plugins/s3.csi.scality.com/mnt",
+			expected:    filepath.Join("/var/lib/kubelet/", "plugins", constants.DriverName, "mnt"),
 		},
 	}
 
@@ -125,8 +125,9 @@ func TestSourceMountDirUsesDriverNameConstant(t *testing.T) {
 	}
 
 	// Verify it doesn't contain hardcoded driver name
-	hardcodedPath := filepath.Join(kubeletPath, "plugins", "s3.csi.scality.com", "mnt")
-	if result == hardcodedPath && constants.DriverName != "s3.csi.scality.com" {
+	hardcodedDriverName := "s3.csi.scality.com" // The actual hardcoded value we're checking against
+	hardcodedPath := filepath.Join(kubeletPath, "plugins", hardcodedDriverName, "mnt")
+	if result == hardcodedPath && constants.DriverName != hardcodedDriverName {
 		t.Error("SourceMountDir() appears to use hardcoded driver name instead of constants.DriverName")
 	}
 
