@@ -10,14 +10,30 @@ import (
 	"time"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
-	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 )
+
+// PodWatcher defines the interface for watching and retrieving pods
+type PodWatcher interface {
+	Get(name string) (*corev1.Pod, error)
+}
+
+// CredentialProvider defines the interface for credential management
+type CredentialProvider interface {
+	Cleanup(ctx credentialprovider.CleanupContext) error
+}
+
+// MountInterface defines the interface for mount operations
+type MountInterface interface {
+	CheckMountpoint(target string) (bool, error)
+	IsMountpointCorrupted(err error) bool
+	Unmount(target string) error
+	FindReferencesToMountpoint(source string) ([]string, error)
+}
 
 const (
 	danglingMountpointCleanupInterval = 2 * time.Minute
@@ -32,18 +48,18 @@ const (
 // PodUnmounter handles unmounting of Mountpoint Pods and cleanup of associated resources
 type PodUnmounter struct {
 	nodeID       string
-	mount        *mpmounter.Mounter
+	mount        MountInterface
 	kubeletPath  string
-	podWatcher   *watcher.Watcher
-	credProvider *credentialprovider.Provider
+	podWatcher   PodWatcher
+	credProvider CredentialProvider
 }
 
 // NewPodUnmounter creates a new PodUnmounter instance with the given parameters
 func NewPodUnmounter(
 	nodeID string,
-	mount *mpmounter.Mounter,
-	podWatcher *watcher.Watcher,
-	credProvider *credentialprovider.Provider,
+	mount MountInterface,
+	podWatcher PodWatcher,
+	credProvider CredentialProvider,
 ) *PodUnmounter {
 	kubeletPath := os.Getenv("KUBELET_PATH")
 	if kubeletPath == "" {
