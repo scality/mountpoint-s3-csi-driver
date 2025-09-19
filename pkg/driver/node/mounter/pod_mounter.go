@@ -117,7 +117,7 @@ func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider
 // In backward compatibility mode (k8sClient == nil), it returns a deterministic
 // pod name without waiting for CRD, maintaining existing behavior for workloads
 // that haven't been restarted after the CSI upgrade.
-func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, credentialCtx credentialprovider.ProvideContext) (string, error) {
+func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, credentialCtx credentialprovider.ProvideContext, fsGroup string) (string, error) {
 	if pm.k8sClient == nil {
 		// Backward compatibility mode: Direct pod creation without CRD coordination
 		// Used for existing workloads during CSI upgrade until they restart
@@ -133,6 +133,7 @@ func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID,
 		crdv2.FieldNodeName:             pm.nodeName,
 		crdv2.FieldPersistentVolumeName: volumeName,
 		crdv2.FieldVolumeID:             volumeID,
+		crdv2.FieldWorkloadFSGroup:      fsGroup,
 	}
 
 	klog.V(4).Infof("Waiting for MountpointS3PodAttachment for podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)
@@ -192,7 +193,7 @@ func (pm *PodMounter) helpMessageForGettingControllerLogs() string {
 //
 // The source mount is only created once and reused for subsequent bind mounts.
 // Credentials are always updated to ensure they remain current.
-func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args) error {
+func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args, fsGroup string) error {
 	volumeName, err := pm.volumeNameFromTargetPath(target)
 	if err != nil {
 		return fmt.Errorf("failed to extract volume name from %q: %w", target, err)
@@ -204,7 +205,7 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	// Step 1: Determine which Mountpoint Pod to use
 	// In CRD mode: Controller assigns optimal pod via MountpointS3PodAttachment
 	// In backward compatibility: Use deterministic pod name
-	mpPodName, err := pm.waitForMountpointPodAttachment(ctx, podID, volumeName, volumeID, credentialCtx)
+	mpPodName, err := pm.waitForMountpointPodAttachment(ctx, podID, volumeName, volumeID, credentialCtx, fsGroup)
 	if err != nil {
 		klog.Errorf("failed to wait for MountpointS3PodAttachment for %q: %v. %s", target, err, pm.helpMessageForGettingControllerLogs())
 		return fmt.Errorf("failed to wait for MountpointS3PodAttachment for %q: %w. %s", target, err, pm.helpMessageForGettingControllerLogs())

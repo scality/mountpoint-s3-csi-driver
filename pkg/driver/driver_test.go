@@ -205,7 +205,7 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 	}
 }
 
-func (n *noopMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args) error {
+func (n *noopMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args, fsGroup string) error {
 	return nil
 }
 

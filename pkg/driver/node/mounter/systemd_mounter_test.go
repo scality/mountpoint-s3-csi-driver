@@ -395,7 +395,7 @@ func TestS3MounterMount(t *testing.T) {
 				tc.before(t, env)
 			}
 
-			err := env.mounter.Mount(env.ctx, tc.bucketName, tc.targetPath, provideCtx, mountpoint.ParseArgs(tc.options))
+			err := env.mounter.Mount(env.ctx, tc.bucketName, tc.targetPath, provideCtx, mountpoint.ParseArgs(tc.options), "")
 
 			if tc.expectedErr {
 				if err == nil {

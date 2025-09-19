@@ -196,7 +196,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -245,7 +245,7 @@ func TestPodMounter(t *testing.T) {
 			err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 				VolumeID: testCtx.volumeID,
 				PodID:    testCtx.podUID,
-			}, mountpoint.ParseArgs(nil))
+			}, mountpoint.ParseArgs(nil), "")
 			assert.NoError(t, err)
 		})
 
@@ -259,7 +259,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -303,7 +303,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -356,7 +356,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -419,7 +419,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -485,7 +485,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -532,7 +532,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -613,7 +613,7 @@ func TestPodMounter(t *testing.T) {
 							AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 							VolumeID:             testCtx.volumeID,
 							PodID:                testCtx.podUID,
-						}, args)
+						}, args, "")
 						if err != nil {
 							log.Println("Mount failed", err)
 						}
@@ -670,7 +670,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				if err != nil {
 					log.Println("Mount failed", err)
 				}
@@ -708,7 +708,7 @@ func TestPodMounter(t *testing.T) {
 					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
 					VolumeID:             testCtx.volumeID,
 					PodID:                testCtx.podUID,
-				}, args)
+				}, args, "")
 				mountRes <- err
 			}()
 
@@ -750,7 +750,7 @@ func TestPodMounter(t *testing.T) {
 				err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 					VolumeID: testCtx.volumeID,
 					PodID:    testCtx.podUID,
-				}, mountpoint.ParseArgs(nil))
+				}, mountpoint.ParseArgs(nil), "")
 				assert.NoError(t, err)
 			}
 
@@ -774,7 +774,7 @@ func TestPodMounter(t *testing.T) {
 			err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 				VolumeID: testCtx.volumeID,
 				PodID:    testCtx.podUID,
-			}, mountpoint.ParseArgs(nil))
+			}, mountpoint.ParseArgs(nil), "")
 			if err == nil {
 				t.Errorf("mount shouldn't succeeded if Mountpoint does not receive the mount options")
 			}
@@ -808,7 +808,7 @@ func TestPodMounter(t *testing.T) {
 			err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 				VolumeID: testCtx.volumeID,
 				PodID:    testCtx.podUID,
-			}, mountpoint.ParseArgs(nil))
+			}, mountpoint.ParseArgs(nil), "")
 			if err == nil {
 				t.Errorf("mount shouldn't succeeded if Mountpoint fails to start")
 			}
@@ -843,7 +843,7 @@ func TestPodMounter(t *testing.T) {
 			err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 				VolumeID: testCtx.volumeID,
 				PodID:    testCtx.podUID,
-			}, mountpoint.ParseArgs(nil))
+			}, mountpoint.ParseArgs(nil), "")
 			if err == nil {
 				t.Errorf("mount shouldn't succeeded if Mountpoint fails to start")
 			}
@@ -876,7 +876,7 @@ func TestPodMounter(t *testing.T) {
 		err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 			VolumeID: testCtx.volumeID,
 			PodID:    testCtx.podUID,
-		}, mountpoint.ParseArgs(nil))
+		}, mountpoint.ParseArgs(nil), "")
 		assert.NoError(t, err)
 
 		ok, err = testCtx.podMounter.IsMountPoint(testCtx.targetPath)
@@ -896,7 +896,7 @@ func TestPodMounter(t *testing.T) {
 		err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
 			VolumeID: testCtx.volumeID,
 			PodID:    testCtx.podUID,
-		}, mountpoint.ParseArgs(nil))
+		}, mountpoint.ParseArgs(nil), "")
 		assert.NoError(t, err)
 
 		ok, err := testCtx.podMounter.IsMountPoint(testCtx.targetPath)
