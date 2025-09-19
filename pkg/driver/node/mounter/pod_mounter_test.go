@@ -46,13 +46,15 @@ type testCtx struct {
 
 	podMounter *mounter.PodMounter
 
-	client       *fake.Clientset
-	mount        *mount.FakeMounter
-	mountSyscall func(target string, args mountpoint.Args) (fd int, err error)
+	client           *fake.Clientset
+	mount            *mount.FakeMounter
+	mountSyscall     func(target string, args mountpoint.Args) (fd int, err error)
+	bindMountSyscall func(source, target string) error
 
 	bucketName  string
 	kubeletPath string
 	targetPath  string
+	sourcePath  string
 	podUID      string
 	volumeID    string
 	pvName      string
@@ -100,6 +102,10 @@ func setup(t *testing.T) *testCtx {
 	client := fake.NewClientset()
 	mount := mount.NewFakeMounter(nil)
 
+	// Setup source path for bind mount architecture
+	mpPodName := mppod.MountpointPodNameFor(podUID, pvName)
+	sourcePath := filepath.Join(mounter.SourceMountDir(kubeletPath), mpPodName)
+
 	testCtx := &testCtx{
 		t:           t,
 		ctx:         ctx,
@@ -108,6 +114,7 @@ func setup(t *testing.T) *testCtx {
 		bucketName:  bucketName,
 		kubeletPath: kubeletPath,
 		targetPath:  targetPath,
+		sourcePath:  sourcePath,
 		podUID:      podUID,
 		volumeID:    volumeID,
 		pvName:      pvName,
@@ -122,6 +129,14 @@ func setup(t *testing.T) *testCtx {
 		return int(mountertest.OpenDevNull(t).Fd()), nil
 	}
 
+	bindMountSyscall := func(source, target string) error {
+		if testCtx.bindMountSyscall != nil {
+			return testCtx.bindMountSyscall(source, target)
+		}
+		// Default: simulate bind mount with fake mounter
+		return mount.Mount(source, target, "", []string{"bind"})
+	}
+
 	credProvider := credentialprovider.New(client.CoreV1())
 
 	podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
@@ -132,7 +147,11 @@ func setup(t *testing.T) *testCtx {
 	err = podWatcher.Start(stopCh)
 	assert.NoError(t, err)
 
-	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, testK8sVersion)
+	// Pass nil for k8sClient to test backward compatibility mode
+	// This simulates the behavior during CSI upgrade where existing workload pods
+	// continue using direct pod creation until they're restarted, at which point
+	// they'll switch to the new CRD-based coordination with source/bind mounts
+	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, bindMountSyscall, testK8sVersion, nil)
 	assert.NoError(t, err)
 
 	testCtx.podMounter = podMounter
@@ -148,6 +167,8 @@ func TestPodMounter(t *testing.T) {
 			devNull := mountertest.OpenDevNull(t)
 
 			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
+				// Verify that mount is called on source path, not target
+				assert.Equals(t, testCtx.sourcePath, target)
 				_ = testCtx.mount.Mount("mountpoint-s3", target, "fuse", nil)
 
 				// Since `PodMounter.Mount` closes the file descriptor once it passes it to Mountpoint,
@@ -157,6 +178,14 @@ func TestPodMounter(t *testing.T) {
 				assert.NoError(t, err)
 
 				return fd, nil
+			}
+
+			var bindMountCalled bool
+			testCtx.bindMountSyscall = func(source, target string) error {
+				bindMountCalled = true
+				assert.Equals(t, testCtx.sourcePath, source)
+				assert.Equals(t, testCtx.targetPath, target)
+				return testCtx.mount.Mount(source, target, "", []string{"bind"})
 			}
 
 			args := mountpoint.ParseArgs([]string{mountpoint.ArgReadOnly})
@@ -181,6 +210,9 @@ func TestPodMounter(t *testing.T) {
 
 			err := <-mountRes
 			assert.NoError(t, err)
+
+			// Verify bind mount was called
+			assert.Equals(t, true, bindMountCalled)
 
 			gotFile := os.NewFile(uintptr(got.Fd), "fd")
 			mountertest.AssertSameFile(t, devNull, gotFile)
@@ -963,4 +995,256 @@ func assertMountOptionsEqual(t *testing.T, expected, actual mountoptions.Options
 	if !containsCredentials {
 		t.Error("Expected environment variables to contain AWS credential configuration")
 	}
+}
+
+func TestPodMounterComponents(t *testing.T) {
+	t.Run("Accessor methods return correct instances", func(t *testing.T) {
+		client := fake.NewClientset()
+		originalCredProvider := credentialprovider.New(client.CoreV1())
+		originalPodWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+
+		mountImpl := mount.NewFakeMounter(nil)
+
+		podMounter, err := mounter.NewPodMounter(originalPodWatcher, originalCredProvider, mountImpl, nil, nil, testK8sVersion, nil)
+		assert.NoError(t, err)
+
+		// Test GetPodWatcher returns the same instance
+		returnedWatcher := podMounter.GetPodWatcher()
+		if returnedWatcher != originalPodWatcher {
+			t.Fatal("GetPodWatcher() did not return the original pod watcher instance")
+		}
+
+		// Test GetCredentialProvider returns the same instance
+		returnedCredProvider := podMounter.GetCredentialProvider()
+		if returnedCredProvider != originalCredProvider {
+			t.Fatal("GetCredentialProvider() did not return the original credential provider instance")
+		}
+	})
+
+	t.Run("Mount arguments are parsed and preserved correctly", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			input    string
+			expected string
+		}{
+			{"AWS max attempts", mountpoint.ArgAWSMaxAttempts + "=10", "10"},
+			{"Read only flag", mountpoint.ArgReadOnly, mountpoint.ArgNoValue},
+			{"Cache size", "--cache=1024", "1024"},
+			{"Custom endpoint", "--endpoint-url=https://s3.example.com", "https://s3.example.com"},
+		}
+
+		for _, tc := range testCases {
+			args := mountpoint.ParseArgs([]string{tc.input})
+
+			key := tc.input
+			if idx := strings.Index(key, "="); idx != -1 {
+				key = key[:idx]
+			}
+
+			// Normalize the key, done in the service code as well
+			if !strings.HasPrefix(key, "--") {
+				key = "--" + key
+			}
+
+			if !args.Has(key) {
+				t.Errorf("%s: Expected argument %s to exist", tc.name, key)
+			}
+
+			val, found := args.Value(key)
+			if tc.expected != mountpoint.ArgNoValue && !found {
+				t.Errorf("%s: Expected to find value for %s", tc.name, key)
+			}
+			if string(val) != tc.expected {
+				t.Errorf("%s: Expected value %q, got %q", tc.name, tc.expected, string(val))
+			}
+		}
+	})
+
+	t.Run("Custom mount and bind mount syscalls are accepted", func(t *testing.T) {
+		client := fake.NewClientset()
+		credProvider := credentialprovider.New(client.CoreV1())
+		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		mountImpl := mount.NewFakeMounter(nil)
+
+		mountSyscallWouldBeCalled := false
+		bindMountSyscallWouldBeCalled := false
+
+		mountSyscall := func(target string, args mountpoint.Args) (fd int, err error) {
+			mountSyscallWouldBeCalled = true
+			devNull := mountertest.OpenDevNull(&testing.T{})
+			return int(devNull.Fd()), nil
+		}
+
+		bindMountSyscall := func(source, target string) error {
+			bindMountSyscallWouldBeCalled = true
+			return nil
+		}
+
+		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, mountSyscall, bindMountSyscall, testK8sVersion, nil)
+		assert.NoError(t, err)
+
+		// Verify mounter was created
+		if podMounter == nil {
+			t.Fatal("Expected podMounter to be created with custom syscalls")
+		}
+
+		// Note: The syscalls are stored but not called during construction
+		// They would be called during actual Mount operations
+		if mountSyscallWouldBeCalled || bindMountSyscallWouldBeCalled {
+			t.Error("Syscalls should not be called during construction")
+		}
+	})
+
+	t.Run("IsMountPoint correctly identifies mount points", func(t *testing.T) {
+		client := fake.NewClientset()
+
+		// IsMountPoint checks if the path exists first, so we need real directories
+		// Create test directories
+		tempDir := t.TempDir()
+		mountedPath := filepath.Join(tempDir, "mounted")
+		unmountedPath := filepath.Join(tempDir, "unmounted")
+
+		_ = os.MkdirAll(mountedPath, 0o755)
+		_ = os.MkdirAll(unmountedPath, 0o755)
+
+		// Set up fake mounter with the test mount point
+		mountImpl := mount.NewFakeMounter([]mount.MountPoint{
+			{Path: mountedPath, Device: "mountpoint-s3", Type: "fuse"},
+		})
+
+		credProvider := credentialprovider.New(client.CoreV1())
+		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+
+		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, nil)
+		assert.NoError(t, err)
+
+		// Test various paths
+		testCases := []struct {
+			path     string
+			expected bool
+			desc     string
+		}{
+			{mountedPath, true, "Mounted path should be detected as mount point"},
+			{unmountedPath, false, "Unmounted path should not be detected as mount point"},
+			{"/path/that/does/not/exist", false, "Non-existent path should return false (with error)"},
+		}
+
+		for _, tc := range testCases {
+			isMounted, err := podMounter.IsMountPoint(tc.path)
+
+			// For non-existent paths, we expect an error but still check the result
+			if tc.path == "/path/that/does/not/exist" {
+				if err == nil {
+					t.Errorf("%s: Expected error for non-existent path", tc.desc)
+				}
+				continue
+			}
+
+			assert.NoError(t, err)
+			if isMounted != tc.expected {
+				t.Errorf("%s: Expected IsMountPoint(%q) = %v, got %v",
+					tc.desc, tc.path, tc.expected, isMounted)
+			}
+		}
+	})
+
+	t.Run("Nil syscalls use default implementations", func(t *testing.T) {
+		client := fake.NewClientset()
+		mountImpl := mount.NewFakeMounter(nil)
+		credProvider := credentialprovider.New(client.CoreV1())
+		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+
+		// Create with all nil syscalls - should use defaults
+		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, nil)
+		assert.NoError(t, err)
+
+		if podMounter == nil {
+			t.Fatal("Expected podMounter to be created with default implementations")
+		}
+
+		// Create with mixed nil and non-nil syscalls
+		customBindMount := func(source, target string) error {
+			return nil // Custom implementation
+		}
+
+		podMounter2, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, customBindMount, testK8sVersion, nil)
+		assert.NoError(t, err)
+
+		if podMounter2 == nil {
+			t.Fatal("Expected podMounter to be created with mixed default and custom implementations")
+		}
+	})
+
+	t.Run("Mount arguments support variable placeholders", func(t *testing.T) {
+		// The actual replacement happens during mount, not during parsing
+
+		testCases := []struct {
+			desc        string
+			input       string
+			key         string
+			expectValue string
+		}{
+			{
+				desc:        "UID variable in prefix",
+				input:       "prefix=${uid}/data",
+				key:         "--prefix",
+				expectValue: "${uid}/data",
+			},
+			{
+				desc:        "Region variable in cache path",
+				input:       "cache=/tmp/${region}/cache",
+				key:         "--cache",
+				expectValue: "/tmp/${region}/cache",
+			},
+			{
+				desc:        "Bucket variable in path",
+				input:       "cache=/data/${bucket}/temp",
+				key:         "--cache",
+				expectValue: "/data/${bucket}/temp",
+			},
+			{
+				desc:        "Multiple variables in single argument",
+				input:       "cache=${region}/${bucket}/${uid}",
+				key:         "--cache",
+				expectValue: "${region}/${bucket}/${uid}",
+			},
+			{
+				desc:        "No variables in argument",
+				input:       "cache=/tmp/static/path",
+				key:         "--cache",
+				expectValue: "/tmp/static/path",
+			},
+		}
+
+		for _, tc := range testCases {
+			args := mountpoint.ParseArgs([]string{tc.input})
+
+			val, found := args.Value(tc.key)
+			if !found {
+				t.Errorf("%s: Expected to find key %s", tc.desc, tc.key)
+				continue
+			}
+
+			if string(val) != tc.expectValue {
+				t.Errorf("%s: Expected value %q, got %q", tc.desc, tc.expectValue, string(val))
+			}
+		}
+
+		// Verify that common variables are recognized as placeholders
+		variables := []string{"${uid}", "${region}", "${bucket}"}
+		testArg := "path=" + strings.Join(variables, "/")
+		args := mountpoint.ParseArgs([]string{testArg})
+
+		val, found := args.Value("--path")
+		if !found {
+			t.Error("Expected to find path argument")
+		}
+
+		// All variables should be preserved unchanged
+		for _, v := range variables {
+			if !strings.Contains(string(val), v) {
+				t.Errorf("Variable %s was not preserved in parsed argument", v)
+			}
+		}
+	})
 }
