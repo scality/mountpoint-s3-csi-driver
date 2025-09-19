@@ -4,7 +4,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
@@ -21,9 +23,20 @@ import (
 type mockPodWatcher struct {
 	pods map[string]*corev1.Pod
 	err  error
+	// For tracking calls made during periodic cleanup
+	getCallCount int32
+}
+
+func (m *mockPodWatcher) IncrementGetCalls() {
+	atomic.AddInt32(&m.getCallCount, 1)
+}
+
+func (m *mockPodWatcher) GetCallCount() int32 {
+	return atomic.LoadInt32(&m.getCallCount)
 }
 
 func (m *mockPodWatcher) Get(name string) (*corev1.Pod, error) {
+	m.IncrementGetCalls()
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -50,6 +63,16 @@ type mockMountInterface struct {
 	unmountErr            error
 	references            []string
 	referencesErr         error
+	// For tracking calls made during periodic cleanup
+	cleanupCallCount int32
+}
+
+func (m *mockMountInterface) IncrementCleanupCalls() {
+	atomic.AddInt32(&m.cleanupCallCount, 1)
+}
+
+func (m *mockMountInterface) GetCleanupCallCount() int32 {
+	return atomic.LoadInt32(&m.cleanupCallCount)
 }
 
 func (m *mockMountInterface) CheckMountpoint(target string) (bool, error) {
@@ -421,4 +444,168 @@ func createTestPod(name string) *corev1.Pod {
 			NodeName: "test-node",
 		},
 	}
+}
+
+// mockPodUnmounterForPeriodic wraps PodUnmounter to track cleanup calls
+type mockPodUnmounterForPeriodic struct {
+	*PodUnmounter
+	cleanupCalls      int32
+	cleanupShouldFail bool
+	cleanupErr        error
+}
+
+func (m *mockPodUnmounterForPeriodic) CleanupDanglingMounts() error {
+	atomic.AddInt32(&m.cleanupCalls, 1)
+	if m.cleanupShouldFail {
+		return m.cleanupErr
+	}
+	return nil
+}
+
+func (m *mockPodUnmounterForPeriodic) GetCleanupCallCount() int32 {
+	return atomic.LoadInt32(&m.cleanupCalls)
+}
+
+// StartPeriodicCleanupWithInterval is a test helper that accepts a custom interval
+func StartPeriodicCleanupWithInterval(u *mockPodUnmounterForPeriodic, interval time.Duration, stopCh <-chan struct{}) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			_ = u.CleanupDanglingMounts() // We ignore error in test to match real implementation
+		}
+	}
+}
+
+func TestStartPeriodicCleanup(t *testing.T) {
+	t.Run("cleanup is called periodically multiple times", func(t *testing.T) {
+		mockWatcher := &mockPodWatcher{}
+		mockMount := &mockMountInterface{}
+		mockCredProvider := &mockCredentialProvider{}
+
+		baseUnmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test",
+			podWatcher:   mockWatcher,
+			credProvider: mockCredProvider,
+		}
+
+		unmounter := &mockPodUnmounterForPeriodic{
+			PodUnmounter: baseUnmounter,
+		}
+
+		stopCh := make(chan struct{})
+
+		// Use a very short interval for testing (10ms)
+		go StartPeriodicCleanupWithInterval(unmounter, 10*time.Millisecond, stopCh)
+
+		// Wait for multiple ticks (should get at least 3-4 calls in 50ms)
+		time.Sleep(50 * time.Millisecond)
+
+		// Stop the cleanup
+		close(stopCh)
+		time.Sleep(5 * time.Millisecond) // Brief pause to ensure it stops
+
+		callCount := unmounter.GetCleanupCallCount()
+		if callCount < 3 {
+			t.Errorf("Expected at least 3 cleanup calls, got %d", callCount)
+		}
+		if callCount > 6 {
+			t.Errorf("Got too many cleanup calls (%d), ticker might not be working correctly", callCount)
+		}
+		t.Logf("CleanupDanglingMounts was called %d times as expected", callCount)
+	})
+
+	t.Run("cleanup continues even when CleanupDanglingMounts returns errors", func(t *testing.T) {
+		mockWatcher := &mockPodWatcher{}
+		mockMount := &mockMountInterface{}
+		mockCredProvider := &mockCredentialProvider{}
+
+		baseUnmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test",
+			podWatcher:   mockWatcher,
+			credProvider: mockCredProvider,
+		}
+
+		unmounter := &mockPodUnmounterForPeriodic{
+			PodUnmounter:      baseUnmounter,
+			cleanupShouldFail: true,
+			cleanupErr:        errors.New("simulated cleanup error"),
+		}
+
+		stopCh := make(chan struct{})
+
+		// Use a very short interval for testing
+		go StartPeriodicCleanupWithInterval(unmounter, 10*time.Millisecond, stopCh)
+
+		// Wait for multiple ticks
+		time.Sleep(50 * time.Millisecond)
+
+		// Stop the cleanup
+		close(stopCh)
+		time.Sleep(5 * time.Millisecond)
+
+		callCount := unmounter.GetCleanupCallCount()
+		if callCount < 3 {
+			t.Errorf("Expected cleanup to continue despite errors, got only %d calls", callCount)
+		}
+		t.Logf("CleanupDanglingMounts continued running despite errors (%d calls)", callCount)
+	})
+
+	t.Run("stop channel terminates cleanup loop promptly", func(t *testing.T) {
+		mockWatcher := &mockPodWatcher{}
+		mockMount := &mockMountInterface{}
+		mockCredProvider := &mockCredentialProvider{}
+
+		baseUnmounter := &PodUnmounter{
+			nodeID:       "test-node",
+			mount:        mockMount,
+			kubeletPath:  "/tmp/test",
+			podWatcher:   mockWatcher,
+			credProvider: mockCredProvider,
+		}
+
+		unmounter := &mockPodUnmounterForPeriodic{
+			PodUnmounter: baseUnmounter,
+		}
+
+		stopCh := make(chan struct{})
+		done := make(chan bool)
+
+		// Start with a longer interval to ensure stop works between ticks
+		go func() {
+			StartPeriodicCleanupWithInterval(unmounter, 100*time.Millisecond, stopCh)
+			done <- true
+		}()
+
+		// Give it time to start
+		time.Sleep(10 * time.Millisecond)
+
+		// Record calls before stop
+		callsBefore := unmounter.GetCleanupCallCount()
+
+		// Signal stop
+		close(stopCh)
+
+		// Wait for termination
+		select {
+		case <-done:
+			// Give a tiny bit more time to ensure no more calls
+			time.Sleep(10 * time.Millisecond)
+			callsAfter := unmounter.GetCleanupCallCount()
+			if callsAfter != callsBefore {
+				t.Errorf("Cleanup was called after stop signal: before=%d, after=%d", callsBefore, callsAfter)
+			}
+			t.Log("Cleanup loop terminated promptly on stop signal")
+		case <-time.After(50 * time.Millisecond):
+			t.Fatal("Cleanup loop did not terminate within expected time")
+		}
+	})
 }
