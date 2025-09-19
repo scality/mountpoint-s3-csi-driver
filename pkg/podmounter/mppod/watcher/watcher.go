@@ -51,6 +51,11 @@ func (w *Watcher) Start(stopCh <-chan struct{}) error {
 	return nil
 }
 
+// Get retrieves a Mountpoint Pod by name from the cache
+func (w *Watcher) Get(name string) (*corev1.Pod, error) {
+	return w.lister.Get(name)
+}
+
 // Wait blocks until the specified Mountpoint Pod is found and ready, or until the context is cancelled.
 func (w *Watcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
 	// Set a watcher for Pod create & update events
