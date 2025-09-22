@@ -1,5 +1,5 @@
 mkdocs==1.6.1                            # core SSG
-mkdocs-material==9.6.18                  # theme
+mkdocs-material==9.6.20                  # theme
 mkdocs-mermaid2-plugin==1.2.2            # diagrams
 mkdocs-awesome-pages-plugin==2.10.1      # sidebar ordering
 mkdocs-enumerate-headings-plugin==0.6.2  # auto-number headings
