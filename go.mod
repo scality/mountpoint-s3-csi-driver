@@ -15,13 +15,12 @@ require (
 	github.com/kubernetes-csi/csi-test/v4 v4.4.0
 	github.com/magefile/mage v1.15.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/ginkgo/v2 v2.25.2
+	github.com/onsi/ginkgo/v2 v2.25.3
 	github.com/onsi/gomega v1.38.2
 	google.golang.org/grpc v1.74.2
 	k8s.io/api v0.33.2
 	k8s.io/client-go v0.33.2
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/kubectl v0.33.2
 	k8s.io/mount-utils v0.33.2
 	sigs.k8s.io/controller-runtime v0.21.0
 )
