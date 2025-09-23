@@ -105,21 +105,5 @@ func (m *Mounter) IsMountpointCorrupted(err error) bool {
 
 // FindReferencesToMountpoint finds all bind mount references to the given mount point.
 func (m *Mounter) FindReferencesToMountpoint(source string) ([]string, error) {
-	var references []string
-
-	mountPoints, err := m.mountutils.List()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list mounts: %w", err)
-	}
-
-	for _, mp := range mountPoints {
-		// Check if this mount point is a bind mount referencing our source
-		if mp.Device == source || mp.Path == source {
-			if mp.Path != source {
-				references = append(references, mp.Path)
-			}
-		}
-	}
-
-	return references, nil
+	return m.mountutils.GetMountRefs(source)
 }

@@ -10,10 +10,12 @@ import (
 
 // mockMountInterface implements mount.Interface for testing
 type mockMountInterface struct {
-	mountPoints  []mount.MountPoint
-	listError    error
-	unmountError error
-	unmountCalls []string
+	mountPoints     []mount.MountPoint
+	listError       error
+	unmountError    error
+	unmountCalls    []string
+	mountRefs       map[string][]string
+	getMountRefsErr error
 }
 
 func (m *mockMountInterface) Mount(source, target, fstype string, options []string) error {
@@ -54,6 +56,14 @@ func (m *mockMountInterface) CanSafelySkipMountPointCheck() bool {
 }
 
 func (m *mockMountInterface) GetMountRefs(pathname string) ([]string, error) {
+	if m.getMountRefsErr != nil {
+		return nil, m.getMountRefsErr
+	}
+	if m.mountRefs != nil {
+		if refs, ok := m.mountRefs[pathname]; ok {
+			return refs, nil
+		}
+	}
 	return []string{}, nil
 }
 
@@ -227,100 +237,51 @@ func TestFindReferencesToMountpoint(t *testing.T) {
 	tests := []struct {
 		name               string
 		source             string
-		mountPoints        []mount.MountPoint
-		listError          error
+		mountRefs          map[string][]string
+		getMountRefsErr    error
 		expectedReferences []string
 		expectedError      bool
 	}{
 		{
-			name:   "no references found",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/other", Device: "/dev/sda1"},
-				{Path: "/mnt/another", Device: "/dev/sdb1"},
-			},
+			name:               "no references found",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {}},
 			expectedReferences: []string{},
 			expectedError:      false,
 		},
 		{
-			name:   "single bind mount reference by device",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/source", Device: "/dev/sda1"},
-				{Path: "/mnt/bind1", Device: "/mnt/source"},
-				{Path: "/mnt/other", Device: "/dev/sdb1"},
-			},
+			name:               "single bind mount reference",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1"}},
 			expectedReferences: []string{"/mnt/bind1"},
 			expectedError:      false,
 		},
 		{
-			name:   "finds bind mount where device matches source",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/source", Device: "/dev/sda1"},
-				{Path: "/mnt/bind1", Device: "/dev/sda1"},
-				{Path: "/mnt/bind2", Device: "/mnt/source"},
-			},
-			expectedReferences: []string{"/mnt/bind2"},
+			name:               "multiple bind mount references",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1", "/mnt/bind2"}},
+			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2"},
 			expectedError:      false,
 		},
 		{
-			name:   "multiple bind mount references",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/source", Device: "/dev/sda1"},
-				{Path: "/mnt/bind1", Device: "/mnt/source"},
-				{Path: "/mnt/bind2", Device: "/mnt/source"},
-				{Path: "/mnt/bind3", Device: "/mnt/source"},
-				{Path: "/mnt/other", Device: "/dev/sdb1"},
-			},
+			name:               "three bind mount references",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1", "/mnt/bind2", "/mnt/bind3"}},
 			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2", "/mnt/bind3"},
 			expectedError:      false,
 		},
 		{
-			name:   "source mount point excludes itself",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/source", Device: "/mnt/source"},
-				{Path: "/mnt/bind1", Device: "/mnt/source"},
-			},
-			expectedReferences: []string{"/mnt/bind1"},
-			expectedError:      false,
-		},
-		{
-			name:   "source as device and path match - excludes exact match",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/source", Device: "/mnt/source"},
-			},
-			expectedReferences: []string{},
-			expectedError:      false,
-		},
-		{
-			name:               "list mounts fails",
+			name:               "GetMountRefs returns error",
 			source:             "/mnt/source",
-			listError:          errors.New("failed to list mounts"),
+			getMountRefsErr:    errors.New("failed to get mount refs"),
 			expectedReferences: nil,
 			expectedError:      true,
 		},
 		{
-			name:               "empty mount points list",
-			source:             "/mnt/source",
-			mountPoints:        []mount.MountPoint{},
+			name:               "path not in map returns empty list",
+			source:             "/mnt/unknown",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1"}},
 			expectedReferences: []string{},
-			expectedError:      false,
-		},
-		{
-			name:   "mixed references with same and different devices",
-			source: "/mnt/source",
-			mountPoints: []mount.MountPoint{
-				{Path: "/mnt/source", Device: "/dev/sda1"},
-				{Path: "/mnt/bind1", Device: "/mnt/source"}, // bind mount by device
-				{Path: "/mnt/bind2", Device: "/mnt/source"}, // bind mount by device
-				{Path: "/mnt/different", Device: "/dev/sdb1"},
-				{Path: "/mnt/another", Device: "/mnt/different"},
-			},
-			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2"},
 			expectedError:      false,
 		},
 	}
@@ -328,8 +289,8 @@ func TestFindReferencesToMountpoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockMounter := &mockMountInterface{
-				mountPoints: tt.mountPoints,
-				listError:   tt.listError,
+				mountRefs:       tt.mountRefs,
+				getMountRefsErr: tt.getMountRefsErr,
 			}
 
 			mounter := NewMounter(mockMounter)
