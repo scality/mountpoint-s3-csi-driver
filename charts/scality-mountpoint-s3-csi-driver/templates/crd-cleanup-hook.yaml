@@ -1,0 +1,100 @@
+{{- if .Values.cleanupCRDOnUninstall -}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "s3-csi.serviceAccountName.controller" . }}-cleanup
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "s3-csi.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "s3-csi.fullname" . }}-cleanup
+  labels:
+    {{- include "s3-csi.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "-4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  - apiGroups: ["s3.csi.scality.com"]
+    resources: ["mountpoints3podattachments"]
+    verbs: ["list", "delete", "deletecollection"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list", "get", "delete"]
+    resourceNames:
+      - "mp-*"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "s3-csi.fullname" . }}-cleanup
+  labels:
+    {{- include "s3-csi.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "s3-csi.serviceAccountName.controller" . }}-cleanup
+    namespace: {{ .Values.namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "s3-csi.fullname" . }}-cleanup
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "s3-csi.fullname" . }}-cleanup-{{ randAlphaNum 5 | lower }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "s3-csi.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      name: {{ include "s3-csi.fullname" . }}-cleanup
+      labels:
+        {{- include "s3-csi.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "s3-csi.serviceAccountName.controller" . }}-cleanup
+      restartPolicy: Never
+      containers:
+        - name: cleanup
+          image: bitnami/kubectl:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting CRD cleanup for {{ include "s3-csi.fullname" . }}..."
+
+              # Delete all MountpointS3PodAttachment CRDs
+              echo "Deleting MountpointS3PodAttachment CRDs..."
+              kubectl delete mountpoints3podattachments.s3.csi.scality.com --all --ignore-not-found=true
+
+              # Delete all Mountpoint Pods
+              echo "Deleting Mountpoint Pods..."
+              kubectl delete pods -n {{ .Values.namespace }} -l app=mountpoint-s3 --ignore-not-found=true
+
+              # Wait for resources to be deleted
+              echo "Waiting for resources to be deleted..."
+              kubectl wait --for=delete mountpoints3podattachments.s3.csi.scality.com --all --timeout=60s || true
+              kubectl wait --for=delete pods -n {{ .Values.namespace }} -l app=mountpoint-s3 --timeout=60s || true
+
+              echo "CRD cleanup completed successfully"
+{{- end -}}

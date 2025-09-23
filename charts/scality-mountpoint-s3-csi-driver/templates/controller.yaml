@@ -41,6 +41,7 @@ spec:
       {{- end }}
       {{- end }}
       containers:
+        # CSI Controller Service for dynamic provisioning
         - name: s3-csi-controller
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -59,7 +60,6 @@ spec:
               role: {{ .role }}
               level: {{ .level }}
             {{- end }}
-          # TODO: Healthcheck for the controller.
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -86,6 +86,37 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.s3CredentialSecret.name }}
                   key: {{ .Values.s3CredentialSecret.secretAccessKey }}
+        # Reconciler for MountpointS3PodAttachment CRDs
+        - name: s3-pod-reconciler
+          image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - "/bin/scality-csi-controller"
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          {{- with .Values.controller.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            # Environment variables for Mountpoint Pod configuration
+            - name: MOUNTPOINT_NAMESPACE
+              value: {{ .Values.mountpointPod.namespace | quote }}
+            - name: MOUNTPOINT_VERSION
+              value: {{ .Values.node.mountpointVersion | quote }}
+            - name: MOUNTPOINT_PRIORITY_CLASS_NAME
+              value: {{ .Values.mountpointPod.priorityClassName | quote }}
+            - name: MOUNTPOINT_PREEMPTING_PRIORITY_CLASS_NAME
+              value: {{ .Values.mountpointPod.preemptingPriorityClassName | quote }}
+            - name: MOUNTPOINT_HEADROOM_PRIORITY_CLASS_NAME
+              value: {{ .Values.mountpointPod.headroomPriorityClassName | quote }}
+            - name: MOUNTPOINT_IMAGE
+              value: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
+            - name: MOUNTPOINT_HEADROOM_IMAGE
+              value: {{ .Values.mountpointPod.headroomImage | quote }}
+            - name: MOUNTPOINT_IMAGE_PULL_POLICY
+              value: {{ .Values.image.pullPolicy | quote }}
         - name: csi-provisioner
           image: {{ .Values.sidecars.csiProvisioner.image.repository }}:{{ .Values.sidecars.csiProvisioner.image.tag }}
           imagePullPolicy: {{ .Values.sidecars.csiProvisioner.image.pullPolicy }}
