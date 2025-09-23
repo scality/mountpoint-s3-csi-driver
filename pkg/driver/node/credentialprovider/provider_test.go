@@ -199,15 +199,15 @@ func TestCleanupContextWithMountKind(t *testing.T) {
 		mountKind credentialprovider.MountKind
 	}{
 		{
-			name:      "pod mount kind",
+			name:      "should cleanup credentials for pod-based mount strategy",
 			mountKind: credentialprovider.MountKindPod,
 		},
 		{
-			name:      "systemd mount kind",
+			name:      "should cleanup credentials for systemd mount strategy",
 			mountKind: credentialprovider.MountKindSystemd,
 		},
 		{
-			name:      "empty mount kind",
+			name:      "should cleanup credentials when mount kind is not specified",
 			mountKind: "",
 		},
 	}
