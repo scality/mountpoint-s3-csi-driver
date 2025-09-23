@@ -100,8 +100,16 @@ jobs:
       - name: Show Status of CSI Driver After Upgrade
         run: mage status && mage showS3DNSStatus
 
-      - name: Verify Upgrade Tests (Static + Dynamic Provisioning)
-        run: mage verifyUpgradeTests
+      - name: Verify Systemd Mounter Tests (Static + Dynamic Provisioning)
+        run: mage verifySystemdMounterTests
+
+      - name: Test Pod Mounter Transition After Pod Restart
+        run: |
+          echo "=== Testing automatic transition from systemd to pod mounter ==="
+          echo "This test verifies that when pods are deleted and recreated after upgrade,"
+          echo "they automatically transition from systemd mounter to pod mounter while"
+          echo "preserving all existing data."
+          mage testPodMounterTransition
 
       - name: Stop K8s Event Capture and Generate Debug Report
         if: always()
