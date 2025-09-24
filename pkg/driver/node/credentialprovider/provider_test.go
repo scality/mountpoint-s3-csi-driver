@@ -164,6 +164,95 @@ func TestCleanup(t *testing.T) {
 	})
 }
 
+func TestMountKindConstants(t *testing.T) {
+	t.Run("MountKind constant values", func(t *testing.T) {
+		// Test that MountKind constants have expected string values
+		assert.Equals(t, "pod", credentialprovider.MountKindPod)
+		assert.Equals(t, "systemd", credentialprovider.MountKindSystemd)
+	})
+
+	t.Run("MountKind type assignment", func(t *testing.T) {
+		// Test that MountKind can be assigned and compared
+		var mountKind credentialprovider.MountKind
+		mountKind = credentialprovider.MountKindPod
+		assert.Equals(t, credentialprovider.MountKindPod, mountKind)
+
+		mountKind = credentialprovider.MountKindSystemd
+		assert.Equals(t, credentialprovider.MountKindSystemd, mountKind)
+	})
+}
+
+func TestAuthenticationSourceConstants(t *testing.T) {
+	t.Run("AuthenticationSource constant values", func(t *testing.T) {
+		// Test that AuthenticationSource constants have expected string values
+		assert.Equals(t, "", credentialprovider.AuthenticationSourceUnspecified)
+		assert.Equals(t, "driver", credentialprovider.AuthenticationSourceDriver)
+		assert.Equals(t, "secret", credentialprovider.AuthenticationSourceSecret)
+	})
+}
+
+func TestCleanupContextWithMountKind(t *testing.T) {
+	provider := credentialprovider.New(nil)
+
+	testCases := []struct {
+		name      string
+		mountKind credentialprovider.MountKind
+	}{
+		{
+			name:      "should cleanup credentials for pod-based mount strategy",
+			mountKind: credentialprovider.MountKindPod,
+		},
+		{
+			name:      "should cleanup credentials for systemd mount strategy",
+			mountKind: credentialprovider.MountKindSystemd,
+		},
+		{
+			name:      "should cleanup credentials when mount kind is not specified",
+			mountKind: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set up credentials for testing cleanup
+			setEnvForLongTermCredentials(t)
+			writePath := t.TempDir()
+
+			// First provide credentials to create files
+			provideCtx := credentialprovider.ProvideContext{
+				AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+				WritePath:            writePath,
+				EnvPath:              testEnvPath,
+				PodID:                testPodID,
+				VolumeID:             testVolumeID,
+			}
+
+			_, _, err := provider.Provide(context.Background(), provideCtx)
+			assert.NoError(t, err)
+
+			// Verify files exist before cleanup
+			_, err = os.Stat(filepath.Join(writePath, testProfilePrefix+"s3-csi-config"))
+			assert.NoError(t, err)
+
+			// Perform cleanup with MountKind field
+			err = provider.Cleanup(credentialprovider.CleanupContext{
+				WritePath: writePath,
+				PodID:     testPodID,
+				VolumeID:  testVolumeID,
+				MountKind: tc.mountKind,
+			})
+			assert.NoError(t, err)
+
+			// Verify files were removed (cleanup should work regardless of MountKind)
+			_, err = os.Stat(filepath.Join(writePath, testProfilePrefix+"s3-csi-config"))
+			if err == nil {
+				t.Fatalf("S3 Config should be cleaned up regardless of MountKind")
+			}
+			assert.Equals(t, fs.ErrNotExist, err)
+		})
+	}
+}
+
 func setEnvForLongTermCredentials(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", testAccessKeyID)
 	t.Setenv("AWS_SECRET_ACCESS_KEY", testSecretAccessKey)

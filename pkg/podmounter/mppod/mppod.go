@@ -16,6 +16,12 @@ const (
 	AnnotationNoNewWorkload = constants.DriverName + "/no-new-workload"
 )
 
+// Pod labels
+const (
+	// LabelVolumeId is the label used to store the volume ID
+	LabelVolumeId = constants.DriverName + "/volume-id"
+)
+
 // MountpointPodNameFor returns a consistent and unique Pod name for
 // Mountpoint Pod for given `podUID` and `volumeName`.
 //

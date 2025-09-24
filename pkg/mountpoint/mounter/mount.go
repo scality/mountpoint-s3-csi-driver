@@ -89,3 +89,21 @@ func (m *Mounter) CheckMountpoint(target string) (bool, error) {
 func UnmountTarget(mounter mount.Interface, target string) error {
 	return mounter.Unmount(target)
 }
+
+// Unmount unmounts the given target path.
+func (m *Mounter) Unmount(target string) error {
+	return m.mountutils.Unmount(target)
+}
+
+// IsMountpointCorrupted checks if a mount point error indicates corruption.
+// A mount point is considered corrupted when it's in an inconsistent state.
+func (m *Mounter) IsMountpointCorrupted(err error) bool {
+	// Check if the error indicates a corrupted mount
+	// This typically happens when a mount point exists but is in an invalid state
+	return mount.IsCorruptedMnt(err)
+}
+
+// FindReferencesToMountpoint finds all bind mount references to the given mount point.
+func (m *Mounter) FindReferencesToMountpoint(source string) ([]string, error) {
+	return m.mountutils.GetMountRefs(source)
+}

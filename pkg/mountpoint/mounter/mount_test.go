@@ -10,10 +10,12 @@ import (
 
 // mockMountInterface implements mount.Interface for testing
 type mockMountInterface struct {
-	mountPoints  []mount.MountPoint
-	listError    error
-	unmountError error
-	unmountCalls []string
+	mountPoints     []mount.MountPoint
+	listError       error
+	unmountError    error
+	unmountCalls    []string
+	mountRefs       map[string][]string
+	getMountRefsErr error
 }
 
 func (m *mockMountInterface) Mount(source, target, fstype string, options []string) error {
@@ -54,6 +56,14 @@ func (m *mockMountInterface) CanSafelySkipMountPointCheck() bool {
 }
 
 func (m *mockMountInterface) GetMountRefs(pathname string) ([]string, error) {
+	if m.getMountRefsErr != nil {
+		return nil, m.getMountRefsErr
+	}
+	if m.mountRefs != nil {
+		if refs, ok := m.mountRefs[pathname]; ok {
+			return refs, nil
+		}
+	}
 	return []string{}, nil
 }
 
@@ -220,5 +230,104 @@ func TestConstructors(t *testing.T) {
 	defaultMounter := NewDefaultMounter()
 	if defaultMounter == nil || defaultMounter.mountutils == nil {
 		t.Fatal("NewDefaultMounter() failed to create valid mounter")
+	}
+}
+
+func TestFindReferencesToMountpoint(t *testing.T) {
+	tests := []struct {
+		name               string
+		source             string
+		mountRefs          map[string][]string
+		getMountRefsErr    error
+		expectedReferences []string
+		expectedError      bool
+	}{
+		{
+			name:               "no references found",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {}},
+			expectedReferences: []string{},
+			expectedError:      false,
+		},
+		{
+			name:               "single bind mount reference",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1"}},
+			expectedReferences: []string{"/mnt/bind1"},
+			expectedError:      false,
+		},
+		{
+			name:               "multiple bind mount references",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1", "/mnt/bind2"}},
+			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2"},
+			expectedError:      false,
+		},
+		{
+			name:               "three bind mount references",
+			source:             "/mnt/source",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1", "/mnt/bind2", "/mnt/bind3"}},
+			expectedReferences: []string{"/mnt/bind1", "/mnt/bind2", "/mnt/bind3"},
+			expectedError:      false,
+		},
+		{
+			name:               "GetMountRefs returns error",
+			source:             "/mnt/source",
+			getMountRefsErr:    errors.New("failed to get mount refs"),
+			expectedReferences: nil,
+			expectedError:      true,
+		},
+		{
+			name:               "path not in map returns empty list",
+			source:             "/mnt/unknown",
+			mountRefs:          map[string][]string{"/mnt/source": {"/mnt/bind1"}},
+			expectedReferences: []string{},
+			expectedError:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockMounter := &mockMountInterface{
+				mountRefs:       tt.mountRefs,
+				getMountRefsErr: tt.getMountRefsErr,
+			}
+
+			mounter := NewMounter(mockMounter)
+			references, err := mounter.FindReferencesToMountpoint(tt.source)
+
+			if (err != nil) != tt.expectedError {
+				t.Errorf("FindReferencesToMountpoint() error = %v, expectedError %v", err, tt.expectedError)
+				return
+			}
+
+			if tt.expectedError {
+				return // Don't check references if we expected an error
+			}
+
+			// Compare slices
+			if len(references) != len(tt.expectedReferences) {
+				t.Errorf("FindReferencesToMountpoint() references count = %d, expected %d", len(references), len(tt.expectedReferences))
+				return
+			}
+
+			// Create a map for easier comparison since order might not matter
+			expectedMap := make(map[string]bool)
+			for _, ref := range tt.expectedReferences {
+				expectedMap[ref] = true
+			}
+
+			for _, ref := range references {
+				if !expectedMap[ref] {
+					t.Errorf("FindReferencesToMountpoint() found unexpected reference %s", ref)
+				}
+				delete(expectedMap, ref)
+			}
+
+			// Check if any expected references were missed
+			for missed := range expectedMap {
+				t.Errorf("FindReferencesToMountpoint() missed expected reference %s", missed)
+			}
+		})
 	}
 }
