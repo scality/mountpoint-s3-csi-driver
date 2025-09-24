@@ -6,6 +6,12 @@ metadata:
   name: {{ .Values.mountpointPod.namespace }}
   labels:
     name: {{ .Values.mountpointPod.namespace }}
+    # Pod Security Standards - all set to 'restricted' for maximum security
+    # enforce: Blocks pods that don't comply with the restricted policy
     pod-security.kubernetes.io/enforce: restricted
+    # warn: Logs warnings for pods that violate the restricted policy (useful during dry-runs)
+    pod-security.kubernetes.io/warn: restricted
+    # audit: Creates audit log entries for policy violations (for compliance tracking)
+    pod-security.kubernetes.io/audit: restricted
 
 {{- end -}}
