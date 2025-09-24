@@ -138,3 +138,7 @@ nav:
       - Administrator and User Guide: admin-user-guide.md
   - Release Notes: release-notes.md
   - Glossary: glossary.md
+  - Development:
+      - SELinux v2 Implementation Tracker: development/selinux-v2-implementation-tracker.md
+      - Upgrade Testing Implementation Plan: development/upgrade-testing-implementation-plan.md
+      - SELinux V2 Development Plan: development/selinux-v2-development-plan.md
