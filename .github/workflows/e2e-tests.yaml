@@ -93,6 +93,11 @@ jobs:
           ./tests/e2e/scripts/capture-events-and-logs.sh artifacts/k8s-debug start &
           echo $! > capture.pid
 
+      - name: Apply CRDs
+        run: |
+          echo "Applying CRDs..."
+          kubectl apply -f ./charts/scality-mountpoint-s3-csi-driver/crds/
+
       - name: Run CSI Compliance Tests
         run: |
           # Load credentials and run CSI compliance tests against the deployed S3 backend

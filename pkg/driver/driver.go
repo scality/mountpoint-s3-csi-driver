@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node"
@@ -34,12 +35,15 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -59,9 +63,6 @@ var (
 	inClusterConfigFn        = rest.InClusterConfig
 	newKubernetesForConfigFn = func(c *rest.Config) (kubernetes.Interface, error) { return kubernetes.NewForConfig(c) }
 	kubernetesVersionFn      = kubernetesVersion
-	newSystemdMounterFn      = func(credProvider *credentialprovider.Provider, mpVersion string, kubernetesVersion string) (mounter.Mounter, error) {
-		return mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
-	}
 )
 
 // InClusterConfigTestHook allows tests to override the in-cluster config function.
@@ -92,18 +93,6 @@ func KubernetesVersionTestHook(hook func(kubernetes.Interface) (string, error)) 
 		return
 	}
 	kubernetesVersionFn = hook
-}
-
-// NewSystemdMounterTestHook allows tests to override systemd mounter creation.
-// Pass nil to restore the default behavior.
-func NewSystemdMounterTestHook(hook func(*credentialprovider.Provider, string, string) (mounter.Mounter, error)) {
-	if hook == nil {
-		newSystemdMounterFn = func(credProvider *credentialprovider.Provider, mpVersion string, kubernetesVersion string) (mounter.Mounter, error) {
-			return mounter.NewSystemdMounter(credProvider, mpVersion, kubernetesVersion)
-		}
-		return
-	}
-	newSystemdMounterFn = hook
 }
 
 type Driver struct {
@@ -164,29 +153,37 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		klog.Infoln("Running in controller-only mode, skipping mounter initialization")
 		// No mounter needed for controller-only mode
 		mounterImpl = nil
-	} else if util.UsePodMounter() {
+	} else {
+		// Always use pod mounter (v2 only supports pod mounter)
 		podWatcher := watcher.New(clientset, mountpointPodNamespace, podWatcherResyncPeriod)
 		err = podWatcher.Start(stopCh)
 		if err != nil {
 			klog.Fatalf("failed to start Pod watcher: %v\n", err)
 		}
 
-		// Create PodMounter with source/bind mount architecture support
-		// nil for both mountSyscall and bindMountSyscall ensures backward compatibility ensures zero-downtime upgrades:
-		// 1. Existing pods keep their current Mountpoint Pods
-		// 2. When pods restart, they'll get a proper k8sClient and use CRD coordination
-		// 3. This enables gradual migration to the optimized mount sharing architecture
-		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, nil, kubernetesVersion, nil)
+		// Create a controller-runtime client for CRD operations
+		// This is optional - if nil, the pod mounter will work in backward compatibility mode
+		var k8sClient client.Client
+
+		// Initialize controller-runtime scheme and client
+		scheme := runtime.NewScheme()
+		utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+		utilruntime.Must(crdv2.AddToScheme(scheme))
+
+		k8sClient, err = client.New(config, client.Options{
+			Scheme: scheme,
+		})
+		if err != nil {
+			klog.Errorf("Failed to create controller-runtime client: %v. Running in backward compatibility mode.", err)
+			// Continue with nil client for backward compatibility
+			k8sClient = nil
+		}
+
+		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, nil, kubernetesVersion, k8sClient)
 		if err != nil {
 			klog.Fatalln(err)
 		}
 		klog.Infoln("Using pod mounter")
-	} else {
-		mounterImpl, err = newSystemdMounterFn(credProvider, mpVersion, kubernetesVersion)
-		if err != nil {
-			klog.Fatalln(err)
-		}
-		klog.Infoln("Using systemd mounter")
 	}
 
 	var nodeServer *node.S3NodeServer

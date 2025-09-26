@@ -107,7 +107,7 @@ func TestNodePublishVolume(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--force-path-style"})),
+					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--allow-root", "--force-path-style"})),
 					gomock.Eq(""))
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {
@@ -146,7 +146,7 @@ func TestNodePublishVolume(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs([]string{"--bar", "--foo", "--read-only", "--test=123", "--force-path-style"})),
+					gomock.Eq(mountpoint.ParseArgs([]string{"--bar", "--foo", "--read-only", "--test=123", "--allow-root", "--force-path-style"})),
 					gomock.Eq(""))
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {
@@ -185,7 +185,7 @@ func TestNodePublishVolume(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--test=123", "--force-path-style"})),
+					gomock.Eq(mountpoint.ParseArgs([]string{"--read-only", "--test=123", "--allow-root", "--force-path-style"})),
 					gomock.Eq("")).Return(nil)
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {

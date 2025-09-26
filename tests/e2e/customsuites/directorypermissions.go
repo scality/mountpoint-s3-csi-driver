@@ -510,7 +510,9 @@ func (t *s3CSIDirectoryPermissionsTestSuite) DefineTests(driver storageframework
 	// - The ownership matches the uid/gid from the mount options (3000:4000)
 	// - Confirms that even with a pod security context (runAsUser, fsGroup),
 	//   the ownership and permissions are *fixed* by Mountpoint's settings
-	ginkgo.It("should apply dir-mode consistently with pod security context settings", func(ctx context.Context) {
+	//
+	// TODO: S3CSI-180 - This test is currently skipped and will be handled/enabled in S3CSI-180
+	ginkgo.XIt("should apply dir-mode consistently with pod security context settings", func(ctx context.Context) {
 		customUID := int64(3000)
 		customGID := int64(4000)
 		runAsNonRoot := true

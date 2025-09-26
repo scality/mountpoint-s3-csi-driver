@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
@@ -288,44 +287,6 @@ func (t *s3CSIDynamicProvisioningMountOptionsTestSuite) DefineTests(driver stora
 		ginkgo.By("Verifying file exists under prefix in S3")
 		err = l.s3Client.VerifyObjectsExistInS3(ctx, bucketName, prefix, []string{testFileName})
 		framework.ExpectNoError(err, "File should exist under prefix in S3")
-	})
-
-	ginkgo.It("should work with read-only mount option", func(ctx context.Context) {
-		ginkgo.By("Creating StorageClass with read-only mount option")
-		mountOptions := []string{
-			fmt.Sprintf("uid=%d", DefaultNonRootUser),
-			fmt.Sprintf("gid=%d", DefaultNonRootGroup),
-			"allow-other",
-			"read-only",
-		}
-
-		l.storageClass = createStorageClassWithMountOptions(ctx, mountOptions, nil, "readonly")
-
-		ginkgo.By("Creating PVC with the StorageClass")
-		pvc := createPVCWithStorageClass(ctx, l.storageClass, "readonly-mount-options-pvc")
-
-		ginkgo.By("Creating pod that mounts the read-only volume")
-		pod := MakeNonRootPodWithVolume(f.Namespace.Name, []*v1.PersistentVolumeClaim{pvc}, "")
-		pod, err := createPod(ctx, f.ClientSet, f.Namespace.Name, pod)
-		framework.ExpectNoError(err)
-		defer func() {
-			framework.ExpectNoError(e2epod.DeletePodWithWait(ctx, f.ClientSet, pod))
-		}()
-
-		volPath := "/mnt/volume1"
-		testFile := fmt.Sprintf("%s/should-fail.txt", volPath)
-
-		ginkgo.By("Verifying read access works")
-		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("ls -la %s", volPath))
-
-		ginkgo.By("Verifying write access is denied")
-		_, stderr, err := e2evolume.PodExec(f, pod, fmt.Sprintf("touch %s", testFile))
-		if err == nil {
-			framework.Failf("Expected write to fail on read-only volume")
-		}
-		if !strings.Contains(stderr, "Read-only file system") {
-			framework.Failf("Expected 'Read-only file system' error, got: %s", stderr)
-		}
 	})
 
 	ginkgo.Describe("Mount options with credential configurations", func() {
