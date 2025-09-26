@@ -126,7 +126,7 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 	args := mountpoint.ParseArgs(mountpointArgs)
 
 	fsGroup := ""
-	if capMount := volCap.GetMount(); capMount != nil && util.UsePodMounter() {
+	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
 			fsGroup = volumeMountGroup
 			// We need to add the following flags to support fsGroup
@@ -138,8 +138,9 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 		}
 	}
 
-	if util.UsePodMounter() && !args.Has(mountpoint.ArgAllowOther) {
+	if !args.Has(mountpoint.ArgAllowOther) {
 		// If customer container is running as root we need to add --allow-root as Mountpoint Pod is not run as root
+		// This is needed for both systemd and pod mounter for consistency
 		args.SetIfAbsent(mountpoint.ArgAllowRoot, mountpoint.ArgNoValue)
 	}
 
