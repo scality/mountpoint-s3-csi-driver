@@ -130,11 +130,14 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
 			fsGroup = volumeMountGroup
 			// We need to add the following flags to support fsGroup
-			// If these flags were already set by customer in PV mountOptions then we won't override them
-			args.SetIfAbsent(mountpoint.ArgGid, volumeMountGroup)
-			args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
-			args.SetIfAbsent(mountpoint.ArgDirMode, filePerm770)
-			args.SetIfAbsent(mountpoint.ArgFileMode, filePerm660)
+			// Only apply FSGroup defaults if gid is not already set in mount options
+			// This prevents conflicts when user has explicitly set gid in PV mountOptions
+			if !args.Has(mountpoint.ArgGid) {
+				args.SetIfAbsent(mountpoint.ArgGid, volumeMountGroup)
+				args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
+				args.SetIfAbsent(mountpoint.ArgDirMode, filePerm770)
+				args.SetIfAbsent(mountpoint.ArgFileMode, filePerm660)
+			}
 		}
 	}
 
