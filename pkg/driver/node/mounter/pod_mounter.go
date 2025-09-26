@@ -226,11 +226,11 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	// This fixes permission issues when transitioning from systemd to pod mounter
 	if util.SupportLegacySystemdMounts() {
 		// Ensure target directory exists and has proper permissions
-		if err := os.MkdirAll(target, 0755); err != nil && !os.IsExist(err) {
+		if err := os.MkdirAll(target, 0o755); err != nil && !os.IsExist(err) {
 			klog.V(4).Infof("Failed to create target directory %s: %v", target, err)
 		}
 		// Try to fix permissions if they're wrong (best effort)
-		if err := os.Chmod(target, 0755); err != nil {
+		if err := os.Chmod(target, 0o755); err != nil {
 			klog.V(4).Infof("Failed to chmod target directory %s: %v (continuing anyway)", target, err)
 		}
 	}

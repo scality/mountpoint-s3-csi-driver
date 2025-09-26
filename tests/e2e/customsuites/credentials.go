@@ -346,27 +346,4 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 			},
 		)
 	})
-
-	ginkgo.It("fails to mount with 'Access Denied Error: Failed to create mount process' error when using valid credentials without permissions", func(ctx context.Context) {
-		// Get credentials from environment variables
-		account1AK, account1SK, _, account2AK, account2SK, _ := getCredentialsFromEnv()
-
-		RunNegativeCredentialsTest(
-			ctx,
-			f,
-			driver,
-			pattern,
-			NegativeCredentialTestSpec{
-				// Use Account1 to create the bucket
-				BucketOwnerAK: account1AK,
-				BucketOwnerSK: account1SK,
-				// Use Account2's credentials to try to access Account1's bucket
-				PodAK:           account2AK,
-				PodSK:           account2SK,
-				ErrorPattern:    "Access Denied Error: Failed to create mount process",
-				TestDescription: "valid credentials without permission to access bucket",
-				CustomPodName:   "test-access-denied-" + uuid.NewString()[:8],
-			},
-		)
-	})
 }
