@@ -23,7 +23,6 @@ import (
 	mpmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mountoptions"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
-	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 )
 
@@ -60,7 +59,7 @@ type bindMountSyscall func(source, target string) error
 // - During CSI upgrade, existing workloads continue with direct mounts (backward compatibility)
 // - New/restarted workloads use CRD-based coordination for mount sharing
 type PodMounter struct {
-	podWatcher        *watcher.Watcher
+	podWatcher        PodWatcher
 	mount             mount.Interface
 	kubeletPath       string
 	mountSyscall      mountSyscall
@@ -84,7 +83,7 @@ type PodMounter struct {
 // When k8sClient is nil, the mounter operates in backward compatibility mode,
 // creating Mountpoint Pods directly without CRD coordination. This supports
 // existing workloads during CSI driver upgrades.
-func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
+func NewPodMounter(podWatcher PodWatcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
 	kubeletPath := os.Getenv("KUBELET_PATH")
 	if kubeletPath == "" {
 		kubeletPath = "/var/lib/kubelet"
@@ -580,7 +579,7 @@ func (pm *PodMounter) helpMessageForGettingMountpointLogs(pod *corev1.Pod) strin
 }
 
 // GetPodWatcher returns the pod watcher instance
-func (pm *PodMounter) GetPodWatcher() *watcher.Watcher {
+func (pm *PodMounter) GetPodWatcher() PodWatcher {
 	return pm.podWatcher
 }
 
