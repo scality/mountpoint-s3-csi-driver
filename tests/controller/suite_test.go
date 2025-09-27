@@ -13,8 +13,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -107,6 +110,13 @@ var _ = BeforeSuite(func() {
 	err = crdv2.SetupManagerIndices(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	// Create event recorder for the reconciler
+	clientset, err := kubernetes.NewForConfig(cfg)
+	Expect(err).ToNot(HaveOccurred())
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: clientset.CoreV1().Events("")})
+	eventRecorder := eventBroadcaster.NewRecorder(scheme, corev1.EventSource{Component: "scality-csi-controller-test"})
+
 	err = csicontroller.NewReconciler(k8sManager.GetClient(), mppod.Config{
 		Namespace:         mountpointNamespace,
 		MountpointVersion: mountpointVersion,
@@ -117,7 +127,7 @@ var _ = BeforeSuite(func() {
 			ImagePullPolicy: mountpointImagePullPolicy,
 		},
 		CSIDriverVersion: version.GetVersion().DriverVersion,
-	}).SetupWithManager(k8sManager)
+	}, eventRecorder).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
