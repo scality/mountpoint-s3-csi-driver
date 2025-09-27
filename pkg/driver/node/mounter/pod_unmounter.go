@@ -20,6 +20,7 @@ import (
 // PodWatcher defines the interface for watching and retrieving pods
 type PodWatcher interface {
 	Get(name string) (*corev1.Pod, error)
+	Wait(ctx context.Context, name string) (*corev1.Pod, error)
 }
 
 // CredentialProvider defines the interface for credential management

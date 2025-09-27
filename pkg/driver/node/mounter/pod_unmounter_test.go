@@ -1,6 +1,7 @@
 package mounter
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -69,6 +70,12 @@ func (m *mockPodWatcher) Get(name string) (*corev1.Pod, error) {
 		return pod, nil
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{Resource: "pods"}, name)
+}
+
+func (m *mockPodWatcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
+	// For pod unmounter tests, we can just call Get since we don't need
+	// the waiting behavior
+	return m.Get(name)
 }
 
 // mockCredentialProvider implements CredentialProvider interface for unit testing
