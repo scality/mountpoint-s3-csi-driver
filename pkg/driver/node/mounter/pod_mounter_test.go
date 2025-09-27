@@ -1039,8 +1039,9 @@ func createMountpointPod(testCtx *testCtx) *mountpointPod {
 	podName := mppod.MountpointPodNameFor(testCtx.podUID, testCtx.pvName)
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			UID:  types.UID(uuid.New().String()),
-			Name: podName,
+			UID:       types.UID(uuid.New().String()),
+			Name:      podName,
+			Namespace: mountpointPodNamespace,
 		},
 		Spec: corev1.PodSpec{
 			NodeName: "test-node", // Set node name so pod watcher can filter
