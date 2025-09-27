@@ -92,7 +92,7 @@ func testReconciler(objects ...client.Object) (*csicontroller.Reconciler, client
 	}
 
 	// Create a fake event recorder for testing
-	fakeRecorder := record.NewFakeRecorder(10)
+	fakeRecorder := record.NewFakeRecorder(200)
 
 	reconciler := csicontroller.NewReconciler(fakeClient, config, fakeRecorder)
 	return reconciler, fakeClient, fakeRecorder
@@ -768,7 +768,7 @@ func TestReconciler_ShouldAssignNewWorkloadToMountpointPod(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeRecorder := record.NewFakeRecorder(10)
+			fakeRecorder := record.NewFakeRecorder(200)
 			_ = csicontroller.NewReconciler(fake.NewClientBuilder().Build(), config, fakeRecorder)
 			// This tests a private method indirectly through the behavior it influences
 			// In a real scenario, you'd test this through the public interface
