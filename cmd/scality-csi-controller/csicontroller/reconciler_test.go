@@ -514,6 +514,20 @@ func TestReconciler_Reconcile(t *testing.T) {
 				}),
 				createTestPVC(testPVCName, testNamespace, testPVName),
 				createTestPV(testPVName, testPVCName, testNamespace),
+				// Add CSINode so that CSI daemon detection passes
+				&storagev1.CSINode{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: testNodeName,
+					},
+					Spec: storagev1.CSINodeSpec{
+						Drivers: []storagev1.CSINodeDriver{
+							{
+								Name:   constants.DriverName,
+								NodeID: testNodeName,
+							},
+						},
+					},
+				},
 			},
 			request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -565,6 +579,20 @@ func TestReconciler_Reconcile(t *testing.T) {
 				createTestPVC(testPVCName, testNamespace, testPVName),
 				createTestPV(testPVName, testPVCName, testNamespace),
 				createTestS3PodAttachment("test-s3pa", fmt.Sprintf("%s-uid", testPodName), "mp-test"),
+				// Add CSINode so that CSI daemon detection passes
+				&storagev1.CSINode{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: testNodeName,
+					},
+					Spec: storagev1.CSINodeSpec{
+						Drivers: []storagev1.CSINodeDriver{
+							{
+								Name:   constants.DriverName,
+								NodeID: testNodeName,
+							},
+						},
+					},
+				},
 			},
 			request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -951,7 +979,7 @@ func TestReconciler_Performance(t *testing.T) {
 	var totalDuration time.Duration
 	var maxObserved time.Duration
 
-	for i := 0; i < numIterations; i++ {
+	for i := range numIterations {
 		start := time.Now()
 		_, _ = reconciler.Reconcile(context.Background(), reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -967,7 +995,7 @@ func TestReconciler_Performance(t *testing.T) {
 
 		// Check if any single reconciliation exceeds max duration
 		if duration > maxDuration {
-			t.Errorf("Reconciliation %d took %v, exceeding maximum of %v", i, duration, maxDuration)
+			t.Errorf("Reconciliation %d took %v, exceeding maximum of %v", i+1, duration, maxDuration)
 		}
 	}
 
@@ -1017,7 +1045,7 @@ func BenchmarkReconciler_Reconcile(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs() // Report memory allocations
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = reconciler.Reconcile(context.Background(), reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Name:      testPodName,

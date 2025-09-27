@@ -815,27 +815,27 @@ func (r *Reconciler) nodeHasCSIDaemon(ctx context.Context, nodeName string) (boo
 	// Primary detection: Check CSINode object (standard Kubernetes resource)
 	csiNode := &storagev1.CSINode{}
 	err := r.Get(ctx, types.NamespacedName{Name: nodeName}, csiNode)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.V(debugLevel).Info("CSINode object not found for node - CSI drivers not present")
-			return false, nil
-		}
+	if err != nil && !apierrors.IsNotFound(err) {
 		return false, fmt.Errorf("failed to get CSINode for node %s: %w", nodeName, err)
 	}
 
-	// Check if our driver is registered
-	for _, driver := range csiNode.Spec.Drivers {
-		if driver.Name == mountpointCSIDriverName {
-			// Driver is registered - check if it has valid NodeID (indicates proper registration)
-			if driver.NodeID != "" {
-				log.V(debugLevel).Info("CSI driver is registered on node", "driverName", driver.Name, "nodeID", driver.NodeID)
-				return true, nil
+	// If CSINode exists, check if our driver is registered
+	if err == nil {
+		for _, driver := range csiNode.Spec.Drivers {
+			if driver.Name == mountpointCSIDriverName {
+				// Driver is registered - check if it has valid NodeID (indicates proper registration)
+				if driver.NodeID != "" {
+					log.V(debugLevel).Info("CSI driver is registered on node", "driverName", driver.Name, "nodeID", driver.NodeID)
+					return true, nil
+				}
+				log.Info("CSI driver found but NodeID is empty - driver may not be fully initialized")
 			}
-			log.Info("CSI driver found but NodeID is empty - driver may not be fully initialized")
 		}
+	} else {
+		log.V(debugLevel).Info("CSINode object not found for node - checking ConfigMap fallback")
 	}
 
-	// Optional: Check ConfigMap for additional metadata (useful for debugging/monitoring)
+	// Fallback: Check ConfigMap for additional metadata (useful for debugging/monitoring)
 	// This is a fallback mechanism and can provide additional context like SELinux status
 	if hasCSIFromConfigMap, _ := r.checkCSINodeStatusConfigMap(ctx, nodeName); hasCSIFromConfigMap {
 		log.Info("CSI driver not found in CSINode but ConfigMap indicates it's present - may be initializing")
