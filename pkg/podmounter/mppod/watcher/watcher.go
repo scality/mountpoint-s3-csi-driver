@@ -27,17 +27,23 @@ var ErrCacheDesync = errors.New("mppod/watcher: failed to sync pod informer cach
 
 // Watcher provides functionality to watch and wait for Mountpoint Pods in the cluster.
 // It uses the Kubernetes informer to watch and cache Pod events.
+// It filters pods to only those scheduled on the specified node to reduce API server load.
 type Watcher struct {
 	informer cache.SharedIndexInformer
 	lister   listerv1.PodNamespaceLister
+	nodeID   string // Node ID to filter pods (required)
 }
 
-// New creates a new [Watcher] with the given Kubernetes client, Mountpoint Pod namespace, and resync duration.
-func New(client kubernetes.Interface, namespace string, defaultResync time.Duration) *Watcher {
+// New creates a new [Watcher] with the given Kubernetes client, Mountpoint Pod namespace, nodeID, and resync duration.
+// The nodeID parameter is required and filters pods to only those scheduled on the specified node.
+func New(client kubernetes.Interface, namespace string, nodeID string, defaultResync time.Duration) *Watcher {
+	if nodeID == "" {
+		panic("watcher: nodeID is required and cannot be empty")
+	}
 	factory := informers.NewSharedInformerFactoryWithOptions(client, defaultResync, informers.WithNamespace(namespace))
 	informer := factory.Core().V1().Pods().Informer()
 	lister := factory.Core().V1().Pods().Lister().Pods(namespace)
-	return &Watcher{informer, lister}
+	return &Watcher{informer, lister, nodeID}
 }
 
 // Start begins watching for Pod events in the cluster.
@@ -64,7 +70,7 @@ func (w *Watcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
 	handle, err := w.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			pod := obj.(*corev1.Pod)
-			if pod.Name == name {
+			if pod.Name == name && w.isNodeMatch(pod) {
 				podFound.Store(true)
 				if w.isPodReady(pod) {
 					podChan <- pod
@@ -73,7 +79,7 @@ func (w *Watcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
 		},
 		UpdateFunc: func(old, new any) {
 			pod := new.(*corev1.Pod)
-			if pod.Name == name {
+			if pod.Name == name && w.isNodeMatch(pod) {
 				podFound.Store(true)
 				if w.isPodReady(pod) {
 					podChan <- pod
@@ -92,7 +98,7 @@ func (w *Watcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
 
 	// Check if the Pod already exists
 	pod, err := w.lister.Get(name)
-	if err == nil {
+	if err == nil && w.isNodeMatch(pod) {
 		podFound.Store(true)
 		if w.isPodReady(pod) {
 			// Pod already exists and ready
@@ -126,4 +132,9 @@ func (w *Watcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
 // isPodReady returns whether the given Mountpoint Pod is ready.
 func (w *Watcher) isPodReady(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodRunning
+}
+
+// isNodeMatch returns whether the given pod is scheduled on the watched node.
+func (w *Watcher) isNodeMatch(pod *corev1.Pod) bool {
+	return pod.Spec.NodeName == w.nodeID
 }
