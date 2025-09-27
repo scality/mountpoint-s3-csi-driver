@@ -139,7 +139,7 @@ func setup(t *testing.T) *testCtx {
 
 	credProvider := credentialprovider.New(client.CoreV1())
 
-	podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+	podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 	stopCh := make(chan struct{})
 	t.Cleanup(func() {
 		close(stopCh)
@@ -1001,7 +1001,7 @@ func TestPodMounterComponents(t *testing.T) {
 	t.Run("Accessor methods return correct instances", func(t *testing.T) {
 		client := fake.NewClientset()
 		originalCredProvider := credentialprovider.New(client.CoreV1())
-		originalPodWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		originalPodWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 
 		mountImpl := mount.NewFakeMounter(nil)
 
@@ -1063,7 +1063,7 @@ func TestPodMounterComponents(t *testing.T) {
 	t.Run("Custom mount and bind mount syscalls are accepted", func(t *testing.T) {
 		client := fake.NewClientset()
 		credProvider := credentialprovider.New(client.CoreV1())
-		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 		mountImpl := mount.NewFakeMounter(nil)
 
 		mountSyscallWouldBeCalled := false
@@ -1113,7 +1113,7 @@ func TestPodMounterComponents(t *testing.T) {
 		})
 
 		credProvider := credentialprovider.New(client.CoreV1())
-		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 
 		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, nil)
 		assert.NoError(t, err)
@@ -1152,7 +1152,7 @@ func TestPodMounterComponents(t *testing.T) {
 		client := fake.NewClientset()
 		mountImpl := mount.NewFakeMounter(nil)
 		credProvider := credentialprovider.New(client.CoreV1())
-		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 
 		// Create with all nil syscalls - should use defaults
 		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, nil)
