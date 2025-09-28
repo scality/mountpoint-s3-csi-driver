@@ -136,7 +136,7 @@ func TestGettingPodsConcurrently(t *testing.T) {
 }
 
 func createAndStartWatcher(t *testing.T, client kubernetes.Interface) *watcher.Watcher {
-	mpPodWatcher := watcher.New(client, testMountpointPodNamespace, 10*time.Second)
+	mpPodWatcher := watcher.New(client, testMountpointPodNamespace, "test-node-1", 10*time.Second)
 
 	stopCh := make(chan struct{})
 	t.Cleanup(func() {
@@ -167,6 +167,9 @@ func createMountpointPod(t *testing.T, client kubernetes.Interface, name string)
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  types.UID(uuid.New().String()),
 			Name: name,
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node-1",
 		},
 	}
 	pod, err := client.CoreV1().Pods(testMountpointPodNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
