@@ -20,7 +20,6 @@ func TestSetupS3PodAttachmentCache(t *testing.T) {
 		Host: "http://localhost:8080",
 	}
 
-
 	// Test cache creation
 	nodeID := "test-node-1"
 	kubernetesVersion := "v1.28.0"

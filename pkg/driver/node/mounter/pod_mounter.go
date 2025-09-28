@@ -66,7 +66,7 @@ type PodMounter struct {
 	bindMountSyscall  bindMountSyscall
 	kubernetesVersion string
 	credProvider      *credentialprovider.Provider
-	k8sClient         client.Reader  // Changed to Reader to support both client.Client and cache.Cache
+	k8sClient         client.Reader // Changed to Reader to support both client.Client and cache.Cache
 	nodeName          string
 }
 
