@@ -187,8 +187,6 @@ func createTestS3PodAttachment(name string, workloadUID string, mpPodName string
 	}
 }
 
-
-
 func TestReconciler_Reconcile(t *testing.T) {
 	tests := []struct {
 		name           string

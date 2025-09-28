@@ -786,4 +786,3 @@ func s3paContainsWorkload(s3pa *crdv2.MountpointS3PodAttachment, workloadUID str
 	}
 	return false
 }
-
