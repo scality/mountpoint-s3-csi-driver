@@ -10,8 +10,10 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -138,6 +140,7 @@ var _ = BeforeSuite(func() {
 
 	createMountpointNamespace()
 	createMountpointPriorityClass()
+	createCSINodesForTests()
 })
 
 var _ = AfterSuite(func() {
@@ -152,7 +155,7 @@ func createMountpointNamespace() {
 	By(fmt.Sprintf("Creating Mountpoint namespace %q", mountpointNamespace))
 	namespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: mountpointNamespace}}
 	Expect(k8sClient.Create(ctx, namespace)).To(Succeed())
-	waitForObject(namespace)
+	waitForObjectSimple(namespace)
 }
 
 // createMountpointPriorityClass creates priority class for Mountpoint Pods.
@@ -163,5 +166,43 @@ func createMountpointPriorityClass() {
 		Value:      1000000,
 	}
 	Expect(k8sClient.Create(ctx, priorityClass)).To(Succeed())
-	waitForObject(priorityClass)
+	waitForObjectSimple(priorityClass)
+}
+
+// createCSINodesForTests creates CSINode objects for test nodes to indicate CSI daemon is running
+func createCSINodesForTests() {
+	// Create CSINode for test-node
+	createCSINodeForNode("test-node")
+	// Create CSINode for test-node1
+	createCSINodeForNode("test-node1")
+	// Create CSINode for test-node2
+	createCSINodeForNode("test-node2")
+}
+
+// createCSINodeForNode creates a CSINode object for the given node name
+func createCSINodeForNode(nodeName string) {
+	By(fmt.Sprintf("Creating CSINode for node %q", nodeName))
+	csiNode := &storagev1.CSINode{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nodeName,
+		},
+		Spec: storagev1.CSINodeSpec{
+			Drivers: []storagev1.CSINodeDriver{
+				{
+					Name:   s3CSIDriver,
+					NodeID: nodeName,
+				},
+			},
+		},
+	}
+	Expect(k8sClient.Create(ctx, csiNode)).To(Succeed())
+	waitForObjectSimple(csiNode)
+}
+
+// waitForObjectSimple waits until `obj` appears in the control plane (simple version for suite setup)
+func waitForObjectSimple(obj client.Object) {
+	key := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
+	Eventually(func(g Gomega) {
+		g.Expect(k8sClient.Get(ctx, key, obj)).To(Succeed())
+	}, defaultWaitTimeout, defaultWaitRetryPeriod).Should(Succeed())
 }
