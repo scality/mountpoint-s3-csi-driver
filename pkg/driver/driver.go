@@ -82,6 +82,8 @@ var (
 	inClusterConfigFn        = rest.InClusterConfig
 	newKubernetesForConfigFn = func(c *rest.Config) (kubernetes.Interface, error) { return kubernetes.NewForConfig(c) }
 	kubernetesVersionFn      = kubernetesVersion
+	checkSelectableFieldsFn  = checkIfMountpointS3PodAttachmentHasNodeNameSelectableFieldInCurrentVersion
+	setupCacheFn             = setupS3PodAttachmentCache
 )
 
 // InClusterConfigTestHook allows tests to override the in-cluster config function.
@@ -114,6 +116,26 @@ func KubernetesVersionTestHook(hook func(kubernetes.Interface) (string, error)) 
 	kubernetesVersionFn = hook
 }
 
+// CheckSelectableFieldsTestHook allows tests to override CRD selectable fields check.
+// Pass nil to restore the default behavior.
+func CheckSelectableFieldsTestHook(hook func(context.Context, *rest.Config) (bool, error)) {
+	if hook == nil {
+		checkSelectableFieldsFn = checkIfMountpointS3PodAttachmentHasNodeNameSelectableFieldInCurrentVersion
+		return
+	}
+	checkSelectableFieldsFn = hook
+}
+
+// SetupCacheTestHook allows tests to override cache setup.
+// Pass nil to restore the default behavior.
+func SetupCacheTestHook(hook func(*rest.Config, <-chan struct{}, string, string) ctrlcache.Cache) {
+	if hook == nil {
+		setupCacheFn = setupS3PodAttachmentCache
+		return
+	}
+	setupCacheFn = hook
+}
+
 // setupS3PodAttachmentCache sets up cache for MountpointS3PodAttachment custom resource
 // following AWS's production-grade implementation with mandatory cache and field selector detection
 func setupS3PodAttachmentCache(config *rest.Config, stopCh <-chan struct{}, nodeID, kubernetesVersion string) ctrlcache.Cache {
@@ -126,7 +148,8 @@ func setupS3PodAttachmentCache(config *rest.Config, stopCh <-chan struct{}, node
 	}
 
 	// Check if the cluster supports field selectors for spec.nodeName
-	isSelectFieldsSupported, err := checkIfMountpointS3PodAttachmentHasNodeNameSelectableFieldInCurrentVersion(context.TODO(), config)
+	ctx := context.Background()
+	isSelectFieldsSupported, err := checkSelectableFieldsFn(ctx, config)
 	if err != nil {
 		klog.Fatalf("Failed to check support for selectable fields in the cluster: %v", err)
 	}
@@ -281,7 +304,7 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 
 		// Setup S3PodAttachment cache - mandatory for production use
 		// Fail-fast approach: if cache cannot be created, the driver should not start
-		s3paCache := setupS3PodAttachmentCache(config, stopCh, nodeID, kubernetesVersion)
+		s3paCache := setupCacheFn(config, stopCh, nodeID, kubernetesVersion)
 
 		// Create PodUnmounter for cleanup of dangling mounts
 		// Use the mountpoint mounter which implements the required MountInterface

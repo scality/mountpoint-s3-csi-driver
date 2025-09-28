@@ -1,6 +1,7 @@
 package driver_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
@@ -157,6 +159,8 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 		driver.InClusterConfigTestHook(nil)
 		driver.KubeClientForConfigTestHook(nil)
 		driver.KubernetesVersionTestHook(nil)
+		driver.CheckSelectableFieldsTestHook(nil)
+		driver.SetupCacheTestHook(nil)
 	}()
 
 	// Provide required env for NewDriver validation
@@ -173,6 +177,12 @@ func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
 	})
 	driver.KubernetesVersionTestHook(func(_ kubernetes.Interface) (string, error) {
 		return "v1.30.0", nil
+	})
+	driver.CheckSelectableFieldsTestHook(func(_ context.Context, _ *rest.Config) (bool, error) {
+		return true, nil // Assume selectable fields are supported in tests
+	})
+	driver.SetupCacheTestHook(func(_ *rest.Config, _ <-chan struct{}, _, _ string) ctrlcache.Cache {
+		return nil // Return nil cache for tests - this disables cache functionality
 	})
 
 	// 1) controller-only path: NodeServer should be nil
