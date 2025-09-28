@@ -66,11 +66,11 @@ type PodMounter struct {
 	bindMountSyscall  bindMountSyscall
 	kubernetesVersion string
 	credProvider      *credentialprovider.Provider
-	k8sClient         client.Client
+	k8sClient         client.Reader  // Changed to Reader to support both client.Client and cache.Cache
 	nodeName          string
 }
 
-// NewPodMounter creates a new [PodMounter] with given Kubernetes client.
+// NewPodMounter creates a new [PodMounter] with given Kubernetes client or cache.
 // Parameters:
 // - podWatcher: Watches for Mountpoint Pod status changes
 // - credProvider: Manages AWS credentials for S3 access
@@ -78,12 +78,15 @@ type PodMounter struct {
 // - mountSyscall: Custom mount syscall function (nil uses default)
 // - bindMountSyscall: Custom bind mount function (nil uses default)
 // - kubernetesVersion: K8s version for compatibility checks
-// - k8sClient: Client for CRD operations (nil enables backward compatibility mode)
+// - k8sClient: Reader for CRD operations (can be client.Client or cache.Cache, nil enables backward compatibility mode)
 //
 // When k8sClient is nil, the mounter operates in backward compatibility mode,
 // creating Mountpoint Pods directly without CRD coordination. This supports
 // existing workloads during CSI driver upgrades.
-func NewPodMounter(podWatcher PodWatcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
+//
+// When k8sClient is a cache.Cache, it provides optimized read operations
+// with local caching, reducing API server load and improving performance.
+func NewPodMounter(podWatcher PodWatcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Reader) (*PodMounter, error) {
 	kubeletPath := os.Getenv("KUBELET_PATH")
 	if kubeletPath == "" {
 		kubeletPath = "/var/lib/kubelet"

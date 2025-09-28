@@ -21,10 +21,14 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextensionsclientsetscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	controllerCredProvider "github.com/scality/mountpoint-s3-csi-driver/pkg/driver/controller/credentialprovider"
@@ -33,18 +37,33 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/version"
+	mppodmounter "github.com/scality/mountpoint-s3-csi-driver/pkg/mountpoint/mounter"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/s3client"
 	"google.golang.org/grpc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
+
+// Package-level scheme for controller-runtime operations
+var scheme = runtime.NewScheme()
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(crdv2.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsclientsetscheme.AddToScheme(scheme))
+}
 
 const (
 	driverName = constants.DriverName
@@ -95,6 +114,100 @@ func KubernetesVersionTestHook(hook func(kubernetes.Interface) (string, error)) 
 	kubernetesVersionFn = hook
 }
 
+// setupS3PodAttachmentCache sets up cache for MountpointS3PodAttachment custom resource
+// following AWS's production-grade implementation with mandatory cache and field selector detection
+func setupS3PodAttachmentCache(config *rest.Config, stopCh <-chan struct{}, nodeID, kubernetesVersion string) ctrlcache.Cache {
+	// Create a variable to hold the resync period for addressability
+	syncPeriod := podWatcherResyncPeriod
+	options := ctrlcache.Options{
+		Scheme:                      scheme,
+		SyncPeriod:                  &syncPeriod,
+		ReaderFailOnMissingInformer: true,
+	}
+
+	// Check if the cluster supports field selectors for spec.nodeName
+	isSelectFieldsSupported, err := checkIfMountpointS3PodAttachmentHasNodeNameSelectableFieldInCurrentVersion(context.TODO(), config)
+	if err != nil {
+		klog.Fatalf("Failed to check support for selectable fields in the cluster: %v", err)
+	}
+
+	if isSelectFieldsSupported {
+		klog.Info("Using `spec.nodeName` filter for caching MountpointS3PodAttachment as the cluster supports it")
+		options.ByObject = map[client.Object]ctrlcache.ByObject{
+			&crdv2.MountpointS3PodAttachment{}: {
+				Field: fields.OneTermEqualSelector("spec.nodeName", nodeID),
+			},
+		}
+	} else {
+		klog.Info("Cluster doesn't support selectable fields, falling back to client-side filtering")
+		// Client-side filtering - cache all but filter in application
+		options.ByObject = map[client.Object]ctrlcache.ByObject{
+			&crdv2.MountpointS3PodAttachment{}: {},
+		}
+	}
+
+	// Create the cache - fail-fast if it cannot be created
+	s3paCache, err := ctrlcache.New(config, options)
+	if err != nil {
+		klog.Fatalf("Failed to create cache: %v", err)
+	}
+
+	// Setup field indices for fast lookups
+	if err := crdv2.SetupCacheIndices(s3paCache); err != nil {
+		klog.Fatalf("Failed to setup field indexers: %v", err)
+	}
+
+	// Get the informer to verify sync
+	s3podAttachmentInformer, err := s3paCache.GetInformer(context.Background(), &crdv2.MountpointS3PodAttachment{})
+	if err != nil {
+		klog.Fatalf("Failed to create informer for MountpointS3PodAttachment: %v", err)
+	}
+
+	// Start the cache with signal handler for graceful shutdown
+	go func() {
+		if err := s3paCache.Start(signals.SetupSignalHandler()); err != nil {
+			klog.Fatalf("Failed to start cache: %v", err)
+		}
+	}()
+
+	// Wait for cache to sync - fail if it doesn't sync
+	if !cache.WaitForCacheSync(stopCh, s3podAttachmentInformer.HasSynced) {
+		klog.Fatalf("Failed to sync informer cache within the timeout")
+	}
+
+	klog.Infof("S3PodAttachment cache initialized for node %s (Kubernetes %s)", nodeID, kubernetesVersion)
+	return s3paCache
+}
+
+// checkIfMountpointS3PodAttachmentHasNodeNameSelectableFieldInCurrentVersion returns whether
+// MountpointS3PodAttachment CRD definition contains `spec.nodeName` as a `selectableField` in its current version.
+func checkIfMountpointS3PodAttachmentHasNodeNameSelectableFieldInCurrentVersion(ctx context.Context, config *rest.Config) (bool, error) {
+	client, err := apiextensionsclientset.NewForConfig(config)
+	if err != nil {
+		return false, fmt.Errorf("failed to create api extensions client: %w", err)
+	}
+
+	crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdv2.MountpointS3PodAttachmentsCRDName, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to get CRD %q: %w", crdv2.MountpointS3PodAttachmentsCRDName, err)
+	}
+
+	// Find the current version in the CRD spec
+	idx := slices.IndexFunc(crd.Spec.Versions,
+		func(version apiextensionsv1.CustomResourceDefinitionVersion) bool {
+			return version.Name == crdv2.GroupVersion.Version
+		})
+	if idx == -1 {
+		return false, fmt.Errorf("failed to find CRD version %q of %q", crdv2.GroupVersion.Version, crdv2.MountpointS3PodAttachmentsCRDName)
+	}
+
+	version := crd.Spec.Versions[idx]
+	// Check if spec.nodeName is in the selectableFields
+	return slices.ContainsFunc(version.SelectableFields, func(selectableField apiextensionsv1.SelectableField) bool {
+		return selectableField.JSONPath == crdv2.SelectableFieldNodeNameJSONPath
+	}), nil
+}
+
 type Driver struct {
 	Endpoint string
 	Srv      *grpc.Server
@@ -111,6 +224,10 @@ type Driver struct {
 	testS3ClientFactory func(context.Context, *aws.Config) (s3client.Client, error)
 
 	stopCh chan struct{}
+
+	// Context for managing cache and other long-running operations
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	// Embed the unimplemented servers to satisfy the interface
 	csi.UnimplementedIdentityServer
@@ -159,32 +276,39 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		podWatcher := watcher.New(clientset, mountpointPodNamespace, nodeID, podWatcherResyncPeriod)
 		err = podWatcher.Start(stopCh)
 		if err != nil {
-			klog.Fatalf("failed to start Pod watcher: %v\n", err)
+			klog.Fatalf("Failed to start Pod watcher: %v", err)
 		}
 
-		// Create a controller-runtime client for CRD operations
-		// This is optional - if nil, the pod mounter will work in backward compatibility mode
-		var k8sClient client.Client
+		// Setup S3PodAttachment cache - mandatory for production use
+		// Fail-fast approach: if cache cannot be created, the driver should not start
+		s3paCache := setupS3PodAttachmentCache(config, stopCh, nodeID, kubernetesVersion)
 
-		// Initialize controller-runtime scheme and client
-		scheme := runtime.NewScheme()
-		utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-		utilruntime.Must(crdv2.AddToScheme(scheme))
+		// Create PodUnmounter for cleanup of dangling mounts
+		// Use the mountpoint mounter which implements the required MountInterface
+		mountpointMounter := mppodmounter.NewDefaultMounter()
+		unmounter := mounter.NewPodUnmounter(nodeID, mountpointMounter, podWatcher, credProvider)
 
-		k8sClient, err = client.New(config, client.Options{
-			Scheme: scheme,
+		// Register event handler for immediate cleanup when pods are updated
+		// This enables immediate response to pod state changes
+		_, err = podWatcher.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				unmounter.HandleMountpointPodUpdate(oldObj, newObj)
+			},
 		})
 		if err != nil {
-			klog.Errorf("Failed to create controller-runtime client: %v. Running in backward compatibility mode.", err)
-			// Continue with nil client for backward compatibility
-			k8sClient = nil
+			klog.Errorf("Failed to add event handler for unmounter: %v", err)
 		}
 
-		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, nil, kubernetesVersion, k8sClient)
+		// Start periodic cleanup to handle missed events and dangling mounts
+		go unmounter.StartPeriodicCleanup(stopCh)
+
+		// Create PodMounter with cache for optimized mount operations
+		mounterImpl, err = mounter.NewPodMounter(podWatcher, credProvider, mount.New(""), nil, nil, kubernetesVersion, s3paCache)
 		if err != nil {
-			klog.Fatalln(err)
+			klog.Fatalf("Failed to create pod mounter: %v", err)
 		}
-		klog.Infoln("Using pod mounter")
+
+		klog.Infoln("Using pod mounter with S3PodAttachment cache and unmounter")
 	}
 
 	var nodeServer *node.S3NodeServer
@@ -195,12 +319,17 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 	// Initialize controller credential provider for dynamic provisioning
 	controllerCredProvider := controllerCredProvider.New(clientset)
 
+	// Create context for managing cache and long-running operations
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Driver{
 		Endpoint:               endpoint,
 		NodeID:                 nodeID,
 		NodeServer:             nodeServer,
 		controllerCredProvider: controllerCredProvider,
 		stopCh:                 stopCh,
+		ctx:                    ctx,
+		cancel:                 cancel,
 	}, nil
 }
 
@@ -270,6 +399,10 @@ func (d *Driver) Run() error {
 
 func (d *Driver) Stop() {
 	klog.Infof("Stopping server")
+	if d.cancel != nil {
+		d.cancel()
+		d.cancel = nil
+	}
 	if d.stopCh != nil {
 		close(d.stopCh)
 		d.stopCh = nil
