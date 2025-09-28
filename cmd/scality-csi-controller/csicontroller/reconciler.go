@@ -9,7 +9,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -130,24 +129,6 @@ func (r *Reconciler) reconcileWorkloadPod(ctx context.Context, pod *corev1.Pod) 
 	scheduled := isPodScheduled(pod)
 	if !scheduled {
 		log.V(debugLevel).Info("Pod is not scheduled to a node yet - ignoring")
-		return reconcile.Result{}, nil
-	}
-
-	// Check if the node has CSI daemon before proceeding
-	hasCSI, err := r.nodeHasCSIDaemon(ctx, pod.Spec.NodeName)
-	if err != nil {
-		log.Error(err, "Failed to check if node has CSI daemon")
-		return reconcile.Result{RequeueAfter: 30 * time.Second}, err
-	}
-
-	if !hasCSI {
-		log.Info("Node doesn't have S3 CSI daemon, skipping Mountpoint Pod creation",
-			"node", pod.Spec.NodeName)
-		// Emit event for visibility
-		if r.eventRecorder != nil {
-			r.eventRecorder.Eventf(pod, corev1.EventTypeWarning, "CSIDaemonMissing",
-				"Node %s doesn't have S3 CSI daemon installed. Pod won't be able to mount S3 volumes.", pod.Spec.NodeName)
-		}
 		return reconcile.Result{}, nil
 	}
 
@@ -806,71 +787,3 @@ func s3paContainsWorkload(s3pa *crdv2.MountpointS3PodAttachment, workloadUID str
 	return false
 }
 
-// nodeHasCSIDaemon checks if the given node has the S3 CSI daemon installed and running.
-// It uses CSINode object as the primary detection method, with optional ConfigMap fallback for additional metadata.
-// This is especially important for ROSA/OpenShift environments with SELinux enforcing.
-func (r *Reconciler) nodeHasCSIDaemon(ctx context.Context, nodeName string) (bool, error) {
-	log := logf.FromContext(ctx).WithValues("node", nodeName)
-
-	// Primary detection: Check CSINode object (standard Kubernetes resource)
-	csiNode := &storagev1.CSINode{}
-	err := r.Get(ctx, types.NamespacedName{Name: nodeName}, csiNode)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return false, fmt.Errorf("failed to get CSINode for node %s: %w", nodeName, err)
-	}
-
-	// If CSINode exists, check if our driver is registered
-	if err == nil {
-		for _, driver := range csiNode.Spec.Drivers {
-			if driver.Name == mountpointCSIDriverName {
-				// Driver is registered - check if it has valid NodeID (indicates proper registration)
-				if driver.NodeID != "" {
-					log.V(debugLevel).Info("CSI driver is registered on node", "driverName", driver.Name, "nodeID", driver.NodeID)
-					return true, nil
-				}
-				log.Info("CSI driver found but NodeID is empty - driver may not be fully initialized")
-			}
-		}
-	} else {
-		log.V(debugLevel).Info("CSINode object not found for node - checking ConfigMap fallback")
-	}
-
-	// Fallback: Check ConfigMap for additional metadata (useful for debugging/monitoring)
-	// This is a fallback mechanism and can provide additional context like SELinux status
-	if hasCSIFromConfigMap, _ := r.checkCSINodeStatusConfigMap(ctx, nodeName); hasCSIFromConfigMap {
-		log.Info("CSI driver not found in CSINode but ConfigMap indicates it's present - may be initializing")
-		return true, nil
-	}
-
-	log.V(debugLevel).Info("S3 CSI driver not found on node")
-	return false, nil
-}
-
-// checkCSINodeStatusConfigMap checks a ConfigMap for CSI daemon status information.
-// This is an optional fallback mechanism that can provide additional metadata about the CSI daemon status.
-// The ConfigMap would be updated by the CSI node driver on startup.
-func (r *Reconciler) checkCSINodeStatusConfigMap(ctx context.Context, nodeName string) (bool, error) {
-	// ConfigMap name where CSI node drivers report their status
-	// This ConfigMap would be in the same namespace as the CSI driver
-	configMap := &corev1.ConfigMap{}
-	err := r.Get(ctx, types.NamespacedName{
-		Namespace: r.mountpointPodConfig.Namespace,
-		Name:      "csi-node-status",
-	}, configMap)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			// ConfigMap doesn't exist - this is fine, it's optional
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to get CSI node status ConfigMap: %w", err)
-	}
-
-	// Check if this node has reported as ready
-	if nodeStatus, exists := configMap.Data[nodeName]; exists {
-		// Simple check - if node has any status data, consider it as having CSI
-		// In production, you'd parse this JSON and check ready status, SELinux mode, etc.
-		return nodeStatus != "", nil
-	}
-
-	return false, nil
-}

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +50,6 @@ func testReconciler(objects ...client.Object) (*csicontroller.Reconciler, client
 	s := k8sruntime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = crdv2.AddToScheme(s)
-	_ = storagev1.AddToScheme(s) // Add storage v1 scheme for CSINode
 
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(s).
@@ -189,226 +187,7 @@ func createTestS3PodAttachment(name string, workloadUID string, mpPodName string
 	}
 }
 
-// TestReconciler_CSINodeDetection tests CSI daemon detection functionality
-func TestReconciler_CSINodeDetection(t *testing.T) {
-	tests := []struct {
-		name              string
-		objects           []client.Object
-		expectMPPod       bool
-		expectEvent       bool
-		expectedEventType string
-	}{
-		{
-			name: "Node with CSI daemon registered - should create Mountpoint Pod",
-			objects: []client.Object{
-				createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
-					{
-						Name: "test-volume",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: testPVCName,
-							},
-						},
-					},
-				}),
-				createTestPVC(testPVCName, testNamespace, testPVName),
-				createTestPV(testPVName, testPVCName, testNamespace),
-				// CSINode with our driver registered
-				&storagev1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: testNodeName,
-					},
-					Spec: storagev1.CSINodeSpec{
-						Drivers: []storagev1.CSINodeDriver{
-							{
-								Name:   constants.DriverName,
-								NodeID: testNodeName,
-							},
-						},
-					},
-				},
-			},
-			expectMPPod: true,
-			expectEvent: false,
-		},
-		{
-			name: "Node without CSINode object - should not create Mountpoint Pod",
-			objects: []client.Object{
-				createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
-					{
-						Name: "test-volume",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: testPVCName,
-							},
-						},
-					},
-				}),
-				createTestPVC(testPVCName, testNamespace, testPVName),
-				createTestPV(testPVName, testPVCName, testNamespace),
-				// No CSINode object
-			},
-			expectMPPod:       false,
-			expectEvent:       true,
-			expectedEventType: corev1.EventTypeWarning,
-		},
-		{
-			name: "Node with different CSI driver - should not create Mountpoint Pod",
-			objects: []client.Object{
-				createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
-					{
-						Name: "test-volume",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: testPVCName,
-							},
-						},
-					},
-				}),
-				createTestPVC(testPVCName, testNamespace, testPVName),
-				createTestPV(testPVName, testPVCName, testNamespace),
-				// CSINode with different driver
-				&storagev1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: testNodeName,
-					},
-					Spec: storagev1.CSINodeSpec{
-						Drivers: []storagev1.CSINodeDriver{
-							{
-								Name:   "other.csi.driver",
-								NodeID: testNodeName,
-							},
-						},
-					},
-				},
-			},
-			expectMPPod:       false,
-			expectEvent:       true,
-			expectedEventType: corev1.EventTypeWarning,
-		},
-		{
-			name: "Node with CSI driver but empty NodeID - should not create Mountpoint Pod",
-			objects: []client.Object{
-				createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
-					{
-						Name: "test-volume",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: testPVCName,
-							},
-						},
-					},
-				}),
-				createTestPVC(testPVCName, testNamespace, testPVName),
-				createTestPV(testPVName, testPVCName, testNamespace),
-				// CSINode with empty NodeID (driver not fully initialized)
-				&storagev1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: testNodeName,
-					},
-					Spec: storagev1.CSINodeSpec{
-						Drivers: []storagev1.CSINodeDriver{
-							{
-								Name:   constants.DriverName,
-								NodeID: "", // Empty NodeID
-							},
-						},
-					},
-				},
-			},
-			expectMPPod:       false,
-			expectEvent:       true,
-			expectedEventType: corev1.EventTypeWarning,
-		},
-		{
-			name: "Node with ConfigMap fallback indicating CSI present - should create Mountpoint Pod",
-			objects: []client.Object{
-				createTestPod(testPodName, testNamespace, testNodeName, []corev1.Volume{
-					{
-						Name: "test-volume",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: testPVCName,
-							},
-						},
-					},
-				}),
-				createTestPVC(testPVCName, testNamespace, testPVName),
-				createTestPV(testPVName, testPVCName, testNamespace),
-				// ConfigMap indicating CSI is present
-				&corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "csi-node-status",
-						Namespace: mountpointNamespace,
-					},
-					Data: map[string]string{
-						testNodeName: `{"ready": true, "selinux": "enforcing"}`,
-					},
-				},
-			},
-			expectMPPod: true, // ConfigMap indicates CSI is present
-			expectEvent: false,
-		},
-	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			reconciler, fakeClient, fakeRecorder := testReconciler(tt.objects...)
-
-			// Reconcile the pod
-			req := reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      testPodName,
-					Namespace: testNamespace,
-				},
-			}
-
-			_, err := reconciler.Reconcile(context.Background(), req)
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
-			}
-
-			// Check if Mountpoint Pod was created
-			mpPodList := &corev1.PodList{}
-			err = fakeClient.List(context.Background(), mpPodList, client.InNamespace(mountpointNamespace))
-			if err != nil {
-				t.Fatalf("Failed to list pods: %v", err)
-			}
-
-			if tt.expectMPPod && len(mpPodList.Items) == 0 {
-				t.Error("Expected Mountpoint Pod to be created, but it wasn't")
-			} else if !tt.expectMPPod && len(mpPodList.Items) > 0 {
-				t.Errorf("Expected no Mountpoint Pod, but found %d", len(mpPodList.Items))
-			}
-
-			// Check if event was emitted
-			if tt.expectEvent {
-				select {
-				case event := <-fakeRecorder.Events:
-					if !contains(event, "CSIDaemonMissing") {
-						t.Errorf("Expected CSIDaemonMissing event, got: %s", event)
-					}
-				case <-time.After(100 * time.Millisecond):
-					t.Error("Expected event to be emitted, but none was")
-				}
-			}
-		})
-	}
-}
-
-// Helper function to check if string contains substring
-func contains(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && (s == substr || containsSubstring(s, substr))
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
 
 func TestReconciler_Reconcile(t *testing.T) {
 	tests := []struct {
@@ -514,20 +293,6 @@ func TestReconciler_Reconcile(t *testing.T) {
 				}),
 				createTestPVC(testPVCName, testNamespace, testPVName),
 				createTestPV(testPVName, testPVCName, testNamespace),
-				// Add CSINode so that CSI daemon detection passes
-				&storagev1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: testNodeName,
-					},
-					Spec: storagev1.CSINodeSpec{
-						Drivers: []storagev1.CSINodeDriver{
-							{
-								Name:   constants.DriverName,
-								NodeID: testNodeName,
-							},
-						},
-					},
-				},
 			},
 			request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -579,20 +344,6 @@ func TestReconciler_Reconcile(t *testing.T) {
 				createTestPVC(testPVCName, testNamespace, testPVName),
 				createTestPV(testPVName, testPVCName, testNamespace),
 				createTestS3PodAttachment("test-s3pa", fmt.Sprintf("%s-uid", testPodName), "mp-test"),
-				// Add CSINode so that CSI daemon detection passes
-				&storagev1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: testNodeName,
-					},
-					Spec: storagev1.CSINodeSpec{
-						Drivers: []storagev1.CSINodeDriver{
-							{
-								Name:   constants.DriverName,
-								NodeID: testNodeName,
-							},
-						},
-					},
-				},
 			},
 			request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
