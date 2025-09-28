@@ -20,6 +20,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/grpc v1.74.2
 	k8s.io/api v0.33.2
+	k8s.io/apiextensions-apiserver v0.33.0
 	k8s.io/client-go v0.33.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/mount-utils v0.33.2
@@ -95,7 +96,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apiextensions-apiserver v0.33.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect

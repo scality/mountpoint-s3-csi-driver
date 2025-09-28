@@ -291,12 +291,10 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		// Register event handler for immediate cleanup when pods are updated
 		// This enables immediate response to pod state changes
 		_, err = podWatcher.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				unmounter.HandleMountpointPodUpdate(oldObj, newObj)
-			},
+			UpdateFunc: unmounter.HandleMountpointPodUpdate,
 		})
 		if err != nil {
-			klog.Errorf("Failed to add event handler for unmounter: %v", err)
+			klog.Fatalf("Failed to add event handler for unmounter: %v", err)
 		}
 
 		// Start periodic cleanup to handle missed events and dangling mounts
