@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/targetpath"
@@ -204,7 +205,7 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 
 			// Use the host plugin directory for systemd credential path
 			// This matches where systemd mounter would have stored credentials
-			hostPluginDir := filepath.Join(pm.kubeletPath, "plugins", "s3.csi.scality.com")
+			hostPluginDir := filepath.Join(pm.kubeletPath, "plugins", constants.DriverName)
 			credentialCtx.SetWriteAndEnvPath(hostPluginDir, hostPluginDir)
 
 			// Only refresh credentials, don't attempt to remount
