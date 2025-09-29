@@ -119,10 +119,8 @@ s3CredentialSecret:
   secretAccessKey: secret_access_key
   sessionToken: session_token
 
-# Controller configuration (used for dynamic provisioning)
+# Controller configuration
 controller:
-  # Enable controller deployment for dynamic provisioning
-  enable: true
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
