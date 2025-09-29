@@ -214,6 +214,12 @@ func InstallCSI() error {
 	fmt.Printf("  Image tag: %s\n", imageTag)
 	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
 
+	// Apply CRDs first (Helm 3 doesn't update CRDs on upgrade)
+	fmt.Println("Applying CRDs...")
+	if err := sh.RunV("kubectl", "apply", "-f", "./charts/scality-mountpoint-s3-csi-driver/crds/"); err != nil {
+		return fmt.Errorf("failed to apply CRDs: %v", err)
+	}
+
 	// Helm upgrade --install command
 	args := []string{
 		"upgrade", "--install", "scality-s3-csi",

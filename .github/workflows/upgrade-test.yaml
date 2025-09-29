@@ -88,12 +88,6 @@ jobs:
       - name: Setup Upgrade Tests (Static + Dynamic Provisioning)
         run: mage setupUpgradeTests
 
-      - name: Apply CRDs Before Upgrade
-        run: |
-          # Apply CRDs first (Helm 3 doesn't update CRDs on upgrade)
-          echo "Applying CRDs..."
-          kubectl apply -f ./charts/scality-mountpoint-s3-csi-driver/crds/
-
       - name: Upgrade to Local Development Version
         run: VERBOSE=1 mage up
 
