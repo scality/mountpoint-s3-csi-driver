@@ -126,11 +126,6 @@ controller:
     create: true
     name: s3-csi-driver-controller-sa
 
-# Legacy systemd mount support for seamless upgrades from v1.x
-# When enabled, existing systemd mounts will be preserved during upgrade
-# and only credentials will be refreshed. New mounts will use pod mounter.
-supportLegacySystemDMounts: true
-
 # Mountpoint pod configuration
 mountpointPod:
   namespace: mount-s3
