@@ -59,7 +59,15 @@ func (w *Watcher) Start(stopCh <-chan struct{}) error {
 
 // Get retrieves a Mountpoint Pod by name from the cache
 func (w *Watcher) Get(name string) (*corev1.Pod, error) {
-	return w.lister.Get(name)
+	pod, err := w.lister.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	// Check if pod is on the correct node
+	if !w.isNodeMatch(pod) {
+		return nil, fmt.Errorf("pod %s exists but is on different node %s, expected %s", name, pod.Spec.NodeName, w.nodeID)
+	}
+	return pod, nil
 }
 
 // Wait blocks until the specified Mountpoint Pod is found and ready, or until the context is cancelled.
@@ -98,7 +106,7 @@ func (w *Watcher) Wait(ctx context.Context, name string) (*corev1.Pod, error) {
 
 	// Check if the Pod already exists
 	pod, err := w.lister.Get(name)
-	if err == nil {
+	if err == nil && w.isNodeMatch(pod) {
 		podFound.Store(true)
 		if w.isPodReady(pod) {
 			// Pod already exists and ready

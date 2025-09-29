@@ -6,6 +6,7 @@ package mounter
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
@@ -63,12 +64,24 @@ func CheckMountpoint(mounter mount.Interface, target string) (bool, error) {
 		return false, err
 	}
 
+	// Resolve symlinks to handle macOS /var -> /private/var and similar cases
+	// This is needed for tests to pass on macOS where temp directories created in /var/folders
+	// actually resolve to /private/var/folders. Without this, mount point  detection fails
+	// because mount.List() returns resolved paths while we're checking with unresolved paths.
+	// This doesn't affect Linux systems but ensures tests work correctly on developer machines.
+	resolvedTarget, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		klog.V(5).Infof("Failed to resolve symlinks for %s: %v, using original path", target, err)
+		resolvedTarget = target
+	}
+
 	mountPoints, err := mounter.List()
 	if err != nil {
 		return false, fmt.Errorf("failed to list mounts: %w", err)
 	}
 	for _, mp := range mountPoints {
-		if mp.Path == target {
+		// Check both original and resolved paths
+		if mp.Path == target || mp.Path == resolvedTarget {
 			if mp.Device != MountpointDeviceName {
 				klog.V(4).Infof("CheckMountpoint: %s is not a `mount-s3` mount. Expected device type to be %s but got %s, skipping unmount", target, MountpointDeviceName, mp.Device)
 				continue
