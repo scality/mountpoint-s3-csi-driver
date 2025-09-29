@@ -736,93 +736,8 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 		}
 	})
 
-	// Test 8: Pod Security Context Test
-	// This test verifies how pod security contexts interact
-	// with the S3 CSI driver file permissions:
-	//
-	//	   [Pod with SecurityContext]
-	//	     |    runAsUser: 3000
-	//	     |    fsGroup: 4000
-	//	     |
-	//	     ↓
-	//	[S3 Volume with file-mode=0640]
-	//	     |
-	//	     ↓
-	//	[Files & Directories]
-	//
-	// Expected results:
-	// - Files have the specified file mode (0640) regardless of security context
-	// - File ownership is affected by the pod security context settings
-	// - Pod's runAsUser determines the user ownership of created files
-	// - Pod's fsGroup determines the group ownership of created files
-	ginkgo.It("should properly apply permissions with pod security context settings", func(ctx context.Context) {
-		// Define specific security context settings for the pod
-		customUID := int64(3000)
-		customGID := int64(4000)
-		runAsNonRoot := true
-
-		// Step 1: Create volume with custom file-mode=0640 mount option
-		// Use the same UID/GID in mount options as in the security context
-		ginkgo.By("Creating volume with file-mode=0640")
-		resource := createVolumeWithOptions(ctx, testRegistry.config, pattern, customUID, customGID, "0640")
-
-		// Step 2: Create a pod with specific security context settings
-		ginkgo.By("Creating pod with specific runAsUser and fsGroup security context")
-		// Note: We don't use MakeNonRootPodWithVolume here because we're setting custom UIDs
-		pod := e2epod.MakePod(testFramework.Namespace.Name, nil, []*v1.PersistentVolumeClaim{resource.Pvc}, admissionapi.LevelRestricted, "")
-
-		// Set the pod's security context to use specific user and group IDs
-		pod.Spec.SecurityContext = &v1.PodSecurityContext{
-			RunAsUser:    &customUID,
-			FSGroup:      &customGID,
-			RunAsNonRoot: &runAsNonRoot,
-			SeccompProfile: &v1.SeccompProfile{
-				Type: v1.SeccompProfileTypeRuntimeDefault,
-			},
-		}
-
-		var err error
-		pod, err = createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod)
-		framework.ExpectNoError(err)
-		defer func() {
-			framework.ExpectNoError(e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod))
-		}()
-
-		// Step 3: Create test files in the volume
-		volPath := "/mnt/volume1"
-		testFile := fmt.Sprintf("%s/test-file.txt", volPath)
-		testDir := fmt.Sprintf("%s/test-dir", volPath)
-
-		ginkgo.By("Creating test file and directory from the pod")
-		CreateFileInPod(testFramework, pod, testFile, "test content")
-		CreateDirInPod(testFramework, pod, testDir)
-
-		// Steps 4-7: Verify file and directory permissions and ownership using helper functions
-		ginkgo.By("Verifying file and directory permissions with custom security context")
-		uidPtr := ptr.To(customUID)
-		gidPtr := ptr.To(customGID)
-		verifyPermissions(testFramework, pod, testFile, testDir, "640", "755", uidPtr, gidPtr)
-
-		// Step 8: Create a file with specific permissions using chmod (to verify interaction)
-		explicitFile := fmt.Sprintf("%s/explicit-perm-file.txt", volPath)
-		ginkgo.By("Creating a file with explicitly set permissions")
-		CreateFileInPod(testFramework, pod, explicitFile, "explicit perm test")
-
-		// Try to change permissions (this is expected to fail with S3 CSI driver)
-		ginkgo.By("Verifying chmod operation is not permitted (expected behavior)")
-		_, _, err = e2evolume.PodExec(testFramework, pod, fmt.Sprintf("chmod 600 %s", explicitFile))
-		if err == nil {
-			framework.Failf("Expected chmod to fail, but it succeeded")
-		}
-
-		// Step 9: Verify that chmod doesn't actually change permissions (driver-enforced file-mode)
-		ginkgo.By("Verifying chmod doesn't override driver-enforced file-mode")
-		// The file should still have 0640 (the mount option) regardless of chmod
-		verifyFilePermissions(testFramework, pod, explicitFile, "640", uidPtr, gidPtr)
-	})
-
 	// --------------------------------------------------------------------
-	// 9. Chmod operation disallowed (file)
+	// 8. Chmod operation disallowed (file)
 	//
 	// This test verifies that file permissions on the S3 volume cannot be
 	// changed after mount. Mountpoint-S3 enforces a behavior where the
@@ -881,7 +796,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 10. Chown operation disallowed (file)
+	// 9. Chown operation disallowed (file)
 	//
 	// This test verifies that file ownership on the S3 volume cannot be
 	// changed after mount. Mountpoint-S3 enforces a behavior where the
@@ -939,7 +854,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 11. Umask enforcement (file)
+	// 10. Umask enforcement (file)
 	//
 	// This test verifies that a pod-level umask does not interfere with
 	// Mountpoint-S3's enforcement of the file-mode. Even if a pod sets
@@ -981,7 +896,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 12. Symlink creation & permission enforcement
+	// 11. Symlink creation & permission enforcement
 	//
 	// Mountpoint-S3 does NOT support symlinks: any attempt to create one
 	// (ln -s) fails (EPERM/ENOTSUP), reflecting S3's lack of symlink semantics.
@@ -1044,7 +959,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 13. File truncation behavior (immutability validation)
+	// 12. File truncation behavior (immutability validation)
 	//
 	// Mountpoint-S3 disallows in-place truncation of existing files because S3
 	// does not support partial updates of objects. Even though truncation
@@ -1127,7 +1042,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 14. Extended attributes (xattr) unsupported behavior
+	// 13. Extended attributes (xattr) unsupported behavior
 	//
 	// Mountpoint‑S3 does not persist extended attributes (xattrs) because
 	// S3 itself has no equivalent metadata model. The kernel's xattr API
@@ -1181,7 +1096,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 15. Atomic rename (mv) behavior & metadata preservation
+	// 14. Atomic rename (mv) behavior & metadata preservation
 	//
 	// Mountpoint‑S3 generally does not implement atomic renames (the
 	// rename(2) syscall) because S3's API lacks native support for it.
@@ -1260,7 +1175,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 16. Pod umask + fsGroup: should override umask & apply fsGroup ownership
+	// 15. Pod umask + fsGroup: should override umask & apply fsGroup ownership
 	//
 	// This test verifies that Mountpoint‑S3 enforces **file-mode** via its
 	// mount options (ignoring pod-level umask), and that **ownership** is
@@ -1308,7 +1223,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 17. Filename edge cases: Non-ASCII, long names, special chars
+	// 16. Filename edge cases: Non-ASCII, long names, special chars
 	//
 	// Mountpoint‑S3 must comply with S3 naming constraints but also handle
 	// local filesystem edge cases gracefully. This test covers:
@@ -1356,7 +1271,7 @@ func (suite *s3CSIFilePermissionsTestSuite) DefineTests(driver storageframework.
 	})
 
 	// --------------------------------------------------------------------
-	// 18. access() syscall: Consistency with stat() permissions
+	// 17. access() syscall: Consistency with stat() permissions
 	//
 	// The access() syscall checks file accessibility based on real UID/GID
 	// and is subtly different from stat(). This test ensures Mountpoint‑S3

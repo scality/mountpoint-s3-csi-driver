@@ -34,11 +34,9 @@ node:
   # 1-2: Basic operational info (recommended for production)
   # 3: Credential authentication info
   # 4: All CSI operations and mount details (default)
-  # 5: Very detailed debug info (systemd signals, mount-s3 output)
+  # 5: Very detailed debug info (mount-s3 output)
   logLevel: 4
 
-  # SystemD mounter configuration (default mounter)
-  mountpointInstallPath: /opt/mountpoint-s3-csi/bin/ # should end with "/"
 
   # Security context for the CSI driver containers
   seLinuxOptions:
@@ -130,11 +128,28 @@ controller:
     create: true
     name: s3-csi-driver-controller-sa
 
-# Experimental features. To be used only in development environments.
-experimental:
-  podMounter: false
+# Pod mounter configuration
+podMounter:
+  # Enable pod-based mounting (recommended for SELinux support and Red Hat OpenShift)
+  enabled: true
 
-# Mountpoint pod configuration (only used with experimental pod mounter)
+# Legacy systemd mount support for seamless upgrades from v1.x
+# When enabled, existing systemd mounts will be preserved during upgrade
+# and only credentials will be refreshed. New mounts will use pod mounter.
+supportLegacySystemDMounts: true
+
+# Mountpoint pod configuration
 mountpointPod:
   namespace: mount-s3
   priorityClassName: mount-s3-critical
+  # Priority class for pods that can preempt headroom pods
+  preemptingPriorityClassName: mount-s3-preempting
+  # Priority class for headroom pods (typically low priority)
+  headroomPriorityClassName: mount-s3-headroom
+  # Image to use for headroom pods (typically a pause container)
+  headroomImage: registry.k8s.io/pause:3.10
+
+# CRD Cleanup Configuration
+# Enable automatic cleanup of MountpointS3PodAttachment CRDs and Mountpoint Pods during helm uninstall
+# Warning: This will forcefully terminate all active S3 mounts
+cleanupCRDOnUninstall: false

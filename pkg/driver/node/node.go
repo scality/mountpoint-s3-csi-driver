@@ -126,20 +126,24 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 	args := mountpoint.ParseArgs(mountpointArgs)
 
 	fsGroup := ""
-	if capMount := volCap.GetMount(); capMount != nil && util.UsePodMounter() {
+	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
 			fsGroup = volumeMountGroup
 			// We need to add the following flags to support fsGroup
-			// If these flags were already set by customer in PV mountOptions then we won't override them
-			args.SetIfAbsent(mountpoint.ArgGid, volumeMountGroup)
-			args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
-			args.SetIfAbsent(mountpoint.ArgDirMode, filePerm770)
-			args.SetIfAbsent(mountpoint.ArgFileMode, filePerm660)
+			// Only apply FSGroup defaults if gid is not already set in mount options
+			// This prevents conflicts when user has explicitly set gid in PV mountOptions
+			if !args.Has(mountpoint.ArgGid) {
+				args.SetIfAbsent(mountpoint.ArgGid, volumeMountGroup)
+				args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
+				args.SetIfAbsent(mountpoint.ArgDirMode, filePerm770)
+				args.SetIfAbsent(mountpoint.ArgFileMode, filePerm660)
+			}
 		}
 	}
 
-	if util.UsePodMounter() && !args.Has(mountpoint.ArgAllowOther) {
+	if !args.Has(mountpoint.ArgAllowOther) {
 		// If customer container is running as root we need to add --allow-root as Mountpoint Pod is not run as root
+		// This is needed for both systemd and pod mounter for consistency
 		args.SetIfAbsent(mountpoint.ArgAllowRoot, mountpoint.ArgNoValue)
 	}
 

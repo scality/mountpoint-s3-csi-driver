@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/targetpath"
@@ -24,6 +25,7 @@ import (
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mountoptions"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/podmounter/mppod/watcher"
+	"github.com/scality/mountpoint-s3-csi-driver/pkg/util"
 )
 
 // targetDirPerm is the permission to use while creating target directory if its not exists.
@@ -194,6 +196,46 @@ func (pm *PodMounter) helpMessageForGettingControllerLogs() string {
 // The source mount is only created once and reused for subsequent bind mounts.
 // Credentials are always updated to ensure they remain current.
 func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target string, credentialCtx credentialprovider.ProvideContext, args mountpoint.Args, fsGroup string) error {
+	// Check if target is an existing systemd mountpoint (for seamless upgrade)
+	// Only preserve systemd mounts if the mount is still active and accessible
+	if pm.IsSystemDMountpoint(target) {
+		// Check if the mount is still accessible
+		if _, err := os.Stat(target); err == nil {
+			klog.Infof("Target %q is an active SystemD mountpoint. Will only refresh credentials for seamless upgrade.", target)
+
+			// Use the host plugin directory for systemd credential path
+			// This matches where systemd mounter would have stored credentials
+			hostPluginDir := filepath.Join(pm.kubeletPath, "plugins", constants.DriverName)
+			credentialCtx.SetWriteAndEnvPath(hostPluginDir, hostPluginDir)
+
+			// Only refresh credentials, don't attempt to remount
+			_, _, err := pm.credProvider.Provide(ctx, credentialCtx)
+			if err != nil {
+				klog.Errorf("Failed to provide SystemD credentials for %q: %v", target, err)
+				return fmt.Errorf("failed to provide SystemD credentials: %w", err)
+			}
+
+			klog.Infof("Successfully refreshed credentials for existing SystemD mount at %q", target)
+			return nil // Early return - preserve existing systemd mount
+		}
+		// If the mount is not accessible (e.g., pod restarted with new UID),
+		// fall through to create a new pod-based mount
+		klog.Infof("SystemD mount at %q is no longer accessible, transitioning to pod mounter", target)
+	}
+
+	// For new mounts after upgrade, ensure the target directory has proper permissions
+	// This fixes permission issues when transitioning from systemd to pod mounter
+	if util.SupportLegacySystemdMounts() {
+		// Ensure target directory exists and has proper permissions
+		if err := os.MkdirAll(target, 0o755); err != nil && !os.IsExist(err) {
+			klog.V(4).Infof("Failed to create target directory %s: %v", target, err)
+		}
+		// Try to fix permissions if they're wrong (best effort)
+		if err := os.Chmod(target, 0o755); err != nil {
+			klog.V(4).Infof("Failed to chmod target directory %s: %v (continuing anyway)", target, err)
+		}
+	}
+
 	volumeName, err := pm.volumeNameFromTargetPath(target)
 	if err != nil {
 		return fmt.Errorf("failed to extract volume name from %q: %w", target, err)
@@ -546,4 +588,31 @@ func (pm *PodMounter) GetPodWatcher() *watcher.Watcher {
 // GetCredentialProvider returns the credential provider instance
 func (pm *PodMounter) GetCredentialProvider() *credentialprovider.Provider {
 	return pm.credProvider
+}
+
+// IsSystemDMountpoint checks if the target is a systemd mount by looking at mount references.
+// Systemd mounts are directly mounted without bind mounts, so they have no references.
+// This is used to detect existing systemd mounts during upgrade from v1.x to v2.x.
+func (pm *PodMounter) IsSystemDMountpoint(target string) bool {
+	if !util.SupportLegacySystemdMounts() {
+		return false
+	}
+
+	// Check if target is a mount point
+	isMountPoint, err := pm.mount.IsMountPoint(target)
+	if err != nil || !isMountPoint {
+		return false
+	}
+
+	// Systemd mounts are direct mounts (no bind mount references)
+	// Pod mounter uses bind mounts, so if we find references, it's not a systemd mount
+	references, err := pm.mount.GetMountRefs(target)
+	if err != nil {
+		klog.Warningf("Failed to find references to mountpoint %s to detect systemd mounts. Assuming it is not systemd mountpoint: %v", target, err)
+		return false
+	}
+
+	// If there are no other references, it's likely a direct systemd mount
+	// Pod mounter would have at least one reference (the bind mount)
+	return len(references) == 1 // Only the mount itself, no bind references
 }

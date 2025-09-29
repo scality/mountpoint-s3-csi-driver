@@ -1,9 +1,9 @@
-{{- if .Values.experimental.podMounter -}}
+{{- if .Values.podMounter.enabled -}}
 
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
-  name: mount-s3-critical
+  name: {{ .Values.mountpointPod.priorityClassName }}
 value: 1000000000
 preemptionPolicy: Never
 globalDefault: false
@@ -11,5 +11,30 @@ description: >-
     Default priority class for Mountpoint Pods.
     It has the highest possible value for non-builtin PriorityClasses to ensure Mountpoint Pods get scheduled quickly and not evicted first in case of a resource pressure.
     It will not cause other Pods to be preempted.
+
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ .Values.mountpointPod.preemptingPriorityClassName }}
+value: 999999999
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: >-
+    Priority class for Mountpoint Pods that need to preempt headroom pods.
+    It has a slightly lower value than the default priority but can preempt lower priority pods.
+
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ .Values.mountpointPod.headroomPriorityClassName }}
+value: -10
+preemptionPolicy: Never
+globalDefault: false
+description: >-
+    Priority class for headroom pods.
+    These pods have low priority and are designed to be preempted by Mountpoint Pods when needed.
+    They serve as placeholder capacity for Mountpoint Pods.
 
 {{- end -}}
