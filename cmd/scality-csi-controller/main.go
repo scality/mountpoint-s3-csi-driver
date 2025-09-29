@@ -1,9 +1,6 @@
-// WIP: Part of https://github.com/awslabs/mountpoint-s3-csi-driver/issues/279.
-//
 // `scality-csi-controller` is the entrypoint binary for the CSI Driver's controller component.
 // It is responsible for acting on cluster events and spawning Mountpoint Pods when necessary.
-// It is also responsible for managing Mountpoint Pods, for example it ensures that completed Mountpoint Pods gets deleted.
-// It doesn't implement CSI's controller service as of today.
+// It manages Mountpoint Pods lifecycle and cleans up stale attachments.
 package main
 
 import (
@@ -85,13 +82,25 @@ func main() {
 	}
 
 	// Setup the pod reconciler that will create MountpointS3PodAttachments
-	err = csicontroller.NewReconciler(mgr.GetClient(), podConfig).SetupWithManager(mgr)
+	reconciler := csicontroller.NewReconciler(mgr.GetClient(), podConfig)
+	err = reconciler.SetupWithManager(mgr)
 	if err != nil {
 		log.Error(err, "failed to create pod reconciler")
 		os.Exit(1)
 	}
 
-	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+	// Setup signal handler once and share context
+	ctx := signals.SetupSignalHandler()
+
+	// Start stale attachment cleaner in background
+	cleaner := csicontroller.NewStaleAttachmentCleaner(reconciler)
+	go func() {
+		if err := cleaner.Start(ctx); err != nil {
+			log.Error(err, "stale attachment cleaner failed")
+		}
+	}()
+
+	if err := mgr.Start(ctx); err != nil {
 		log.Error(err, "failed to start manager")
 		os.Exit(1)
 	}
