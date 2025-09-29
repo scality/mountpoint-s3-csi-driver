@@ -155,7 +155,7 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		mounterImpl = nil
 	} else {
 		// Always use pod mounter (v2 only supports pod mounter)
-		podWatcher := watcher.New(clientset, mountpointPodNamespace, podWatcherResyncPeriod)
+		podWatcher := watcher.New(clientset, mountpointPodNamespace, nodeID, podWatcherResyncPeriod)
 		err = podWatcher.Start(stopCh)
 		if err != nil {
 			klog.Fatalf("failed to start Pod watcher: %v\n", err)

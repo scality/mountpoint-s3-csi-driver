@@ -16,10 +16,15 @@ import (
 	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/mount-utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	crdv2 "github.com/scality/mountpoint-s3-csi-driver/pkg/api/v2"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/envprovider"
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/mounter"
@@ -40,6 +45,32 @@ const (
 // so they remain safe when "go test" runs packages in parallel (-p flag).
 var testCwdMu sync.Mutex
 
+// createFakeK8sClient creates a fake Kubernetes client for testing with CRD operations
+func createFakeK8sClient() client.Client {
+	s := k8sruntime.NewScheme()
+	_ = scheme.AddToScheme(s)
+	_ = crdv2.AddToScheme(s)
+	return fakeclient.NewClientBuilder().
+		WithScheme(s).
+		WithIndex(&crdv2.MountpointS3PodAttachment{}, crdv2.FieldNodeName, func(o client.Object) []string {
+			s3pa := o.(*crdv2.MountpointS3PodAttachment)
+			return []string{s3pa.Spec.NodeName}
+		}).
+		WithIndex(&crdv2.MountpointS3PodAttachment{}, crdv2.FieldPersistentVolumeName, func(o client.Object) []string {
+			s3pa := o.(*crdv2.MountpointS3PodAttachment)
+			return []string{s3pa.Spec.PersistentVolumeName}
+		}).
+		WithIndex(&crdv2.MountpointS3PodAttachment{}, crdv2.FieldVolumeID, func(o client.Object) []string {
+			s3pa := o.(*crdv2.MountpointS3PodAttachment)
+			return []string{s3pa.Spec.VolumeID}
+		}).
+		WithIndex(&crdv2.MountpointS3PodAttachment{}, crdv2.FieldWorkloadFSGroup, func(o client.Object) []string {
+			s3pa := o.(*crdv2.MountpointS3PodAttachment)
+			return []string{s3pa.Spec.WorkloadFSGroup}
+		}).
+		Build()
+}
+
 type testCtx struct {
 	t   *testing.T
 	ctx context.Context
@@ -47,6 +78,7 @@ type testCtx struct {
 	podMounter *mounter.PodMounter
 
 	client           *fake.Clientset
+	k8sClient        client.Client
 	mount            *mount.FakeMounter
 	mountSyscall     func(target string, args mountpoint.Args) (fd int, err error)
 	bindMountSyscall func(source, target string) error
@@ -70,6 +102,7 @@ func setup(t *testing.T) *testCtx {
 
 	kubeletPath := t.TempDir()
 	t.Setenv("KUBELET_PATH", kubeletPath)
+	t.Setenv("NODE_NAME", "test-node")
 
 	testCwdMu.Lock()
 	oldwd, err := os.Getwd()
@@ -139,7 +172,7 @@ func setup(t *testing.T) *testCtx {
 
 	credProvider := credentialprovider.New(client.CoreV1())
 
-	podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+	podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 	stopCh := make(chan struct{})
 	t.Cleanup(func() {
 		close(stopCh)
@@ -147,14 +180,14 @@ func setup(t *testing.T) *testCtx {
 	err = podWatcher.Start(stopCh)
 	assert.NoError(t, err)
 
-	// Pass nil for k8sClient to test backward compatibility mode
-	// This simulates the behavior during CSI upgrade where existing workload pods
-	// continue using direct pod creation until they're restarted, at which point
-	// they'll switch to the new CRD-based coordination with source/bind mounts
-	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, bindMountSyscall, testK8sVersion, nil)
+	// Create a fake k8s client for CRD operations
+	k8sClient := createFakeK8sClient()
+
+	podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mount, mountSyscall, bindMountSyscall, testK8sVersion, k8sClient)
 	assert.NoError(t, err)
 
 	testCtx.podMounter = podMounter
+	testCtx.k8sClient = k8sClient
 
 	return testCtx
 }
@@ -204,9 +237,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -237,9 +270,9 @@ func TestPodMounter(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 				mpPod := createMountpointPod(testCtx)
 				time.Sleep(100 * time.Millisecond)
-				mpPod.run()
+				mpPod.runWithCRD()
 				time.Sleep(100 * time.Millisecond)
-				mpPod.receiveMountOptions(testCtx.ctx)
+				mpPod.receiveAndMount(testCtx.ctx)
 			}()
 
 			err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
@@ -267,8 +300,8 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
-			mpPod.receiveMountOptions(testCtx.ctx)
+			mpPod.runWithCRD()
+			mpPod.receiveAndMount(testCtx.ctx)
 			err := <-mountRes
 
 			assert.NoError(t, err)
@@ -311,9 +344,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -364,9 +397,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -427,9 +460,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -493,9 +526,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -540,9 +573,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -621,9 +654,9 @@ func TestPodMounter(t *testing.T) {
 					}()
 
 					mpPod := createMountpointPod(testCtx)
-					mpPod.run()
+					mpPod.runWithCRD()
 
-					got := mpPod.receiveMountOptions(testCtx.ctx)
+					got := mpPod.receiveAndMount(testCtx.ctx)
 
 					err := <-mountRes
 					assert.NoError(t, err)
@@ -678,9 +711,9 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
+			mpPod.runWithCRD()
 
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -713,8 +746,8 @@ func TestPodMounter(t *testing.T) {
 			}()
 
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
-			got := mpPod.receiveMountOptions(testCtx.ctx)
+			mpPod.runWithCRD()
+			got := mpPod.receiveAndMount(testCtx.ctx)
 
 			err := <-mountRes
 			assert.NoError(t, err)
@@ -742,8 +775,8 @@ func TestPodMounter(t *testing.T) {
 			go func() {
 				defer close(done)
 				mpPod := createMountpointPod(testCtx)
-				mpPod.run()
-				mpPod.receiveMountOptions(testCtx.ctx)
+				mpPod.runWithCRD()
+				mpPod.receiveAndMount(testCtx.ctx)
 			}()
 
 			for range 5 {
@@ -763,7 +796,7 @@ func TestPodMounter(t *testing.T) {
 
 			go func() {
 				mpPod := createMountpointPod(testCtx)
-				mpPod.run()
+				mpPod.runWithCRD()
 
 				// Create the `mount.sock` but does not receive anything from it
 				mountSock := mppod.PathOnHost(mpPod.podPath, mppod.KnownPathMountSock)
@@ -796,7 +829,7 @@ func TestPodMounter(t *testing.T) {
 
 			go func() {
 				mpPod := createMountpointPod(testCtx)
-				mpPod.run()
+				mpPod.runWithCRD()
 				mpPod.receiveMountOptions(testCtx.ctx)
 
 				// Emulate that Mountpoint failed to mount
@@ -831,7 +864,7 @@ func TestPodMounter(t *testing.T) {
 			mpPod := createMountpointPod(testCtx)
 
 			go func() {
-				mpPod.run()
+				mpPod.runWithCRD()
 				mpPod.receiveMountOptions(testCtx.ctx)
 
 				// Emulate that Mountpoint failed to mount
@@ -869,8 +902,8 @@ func TestPodMounter(t *testing.T) {
 
 		go func() {
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
-			mpPod.receiveMountOptions(testCtx.ctx)
+			mpPod.runWithCRD()
+			mpPod.receiveAndMount(testCtx.ctx)
 		}()
 
 		err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
@@ -889,8 +922,8 @@ func TestPodMounter(t *testing.T) {
 
 		go func() {
 			mpPod := createMountpointPod(testCtx)
-			mpPod.run()
-			mpPod.receiveMountOptions(testCtx.ctx)
+			mpPod.runWithCRD()
+			mpPod.receiveAndMount(testCtx.ctx)
 		}()
 
 		err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
@@ -925,10 +958,15 @@ func createMountpointPod(testCtx *testCtx) *mountpointPod {
 	t := testCtx.t
 	t.Helper()
 
+	podName := mppod.MountpointPodNameFor(testCtx.podUID, testCtx.pvName)
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  types.UID(uuid.New().String()),
-			Name: mppod.MountpointPodNameFor(testCtx.podUID, testCtx.pvName),
+			Name: podName,
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
 		},
 	}
 	pod, err := testCtx.client.CoreV1().Pods(mountpointPodNamespace).Create(context.TODO(), pod, metav1.CreateOptions{})
@@ -942,11 +980,44 @@ func createMountpointPod(testCtx *testCtx) *mountpointPod {
 	return &mountpointPod{testCtx: testCtx, pod: pod, podPath: podPath}
 }
 
+// createMountpointS3PodAttachment creates a MountpointS3PodAttachment CRD for testing
+func createMountpointS3PodAttachment(ctx context.Context, testCtx *testCtx, mpPodName string) error {
+	s3pa := &crdv2.MountpointS3PodAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", testCtx.pvName, testCtx.podUID[:8]),
+			Namespace: mountpointPodNamespace,
+		},
+		Spec: crdv2.MountpointS3PodAttachmentSpec{
+			NodeName:             "test-node",
+			PersistentVolumeName: testCtx.pvName,
+			VolumeID:             testCtx.volumeID,
+			WorkloadFSGroup:      "",
+			MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
+				mpPodName: {
+					{
+						WorkloadPodUID: testCtx.podUID,
+					},
+				},
+			},
+		},
+	}
+	return testCtx.k8sClient.Create(ctx, s3pa)
+}
+
 func (mp *mountpointPod) run() {
 	mp.testCtx.t.Helper()
 	mp.pod.Status.Phase = corev1.PodRunning
 	var err error
 	mp.pod, err = mp.testCtx.client.CoreV1().Pods(mountpointPodNamespace).UpdateStatus(context.Background(), mp.pod, metav1.UpdateOptions{})
+	assert.NoError(mp.testCtx.t, err)
+}
+
+// runWithCRD runs the pod and creates the MountpointS3PodAttachment CRD for testing
+func (mp *mountpointPod) runWithCRD() {
+	mp.testCtx.t.Helper()
+	mp.run()
+	// Create MountpointS3PodAttachment CRD so pod mounter can find it
+	err := createMountpointS3PodAttachment(context.Background(), mp.testCtx, mp.pod.Name)
 	assert.NoError(mp.testCtx.t, err)
 }
 
@@ -957,6 +1028,19 @@ func (mp *mountpointPod) receiveMountOptions(ctx context.Context) mountoptions.O
 	mountSock := mppod.PathOnHost(mp.podPath, mppod.KnownPathMountSock)
 	options, err := mountoptions.Recv(ctx, mountSock)
 	assert.NoError(mp.testCtx.t, err)
+	return options
+}
+
+// receiveAndMount simulates a successful Mountpoint Pod that receives options and mounts.
+func (mp *mountpointPod) receiveAndMount(ctx context.Context) mountoptions.Options {
+	mp.testCtx.t.Helper()
+	options := mp.receiveMountOptions(ctx)
+
+	// Simulate the pod actually performing the mount at the source path
+	// This is what a real Mountpoint Pod would do after receiving mount options
+	err := mp.testCtx.mount.Mount("mountpoint-s3", mp.testCtx.sourcePath, "fuse", nil)
+	assert.NoError(mp.testCtx.t, err)
+
 	return options
 }
 
@@ -998,14 +1082,17 @@ func assertMountOptionsEqual(t *testing.T, expected, actual mountoptions.Options
 }
 
 func TestPodMounterComponents(t *testing.T) {
+	t.Setenv("NODE_NAME", "test-node")
+
 	t.Run("Accessor methods return correct instances", func(t *testing.T) {
 		client := fake.NewClientset()
 		originalCredProvider := credentialprovider.New(client.CoreV1())
-		originalPodWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		originalPodWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 
 		mountImpl := mount.NewFakeMounter(nil)
 
-		podMounter, err := mounter.NewPodMounter(originalPodWatcher, originalCredProvider, mountImpl, nil, nil, testK8sVersion, nil)
+		k8sClient := createFakeK8sClient()
+		podMounter, err := mounter.NewPodMounter(originalPodWatcher, originalCredProvider, mountImpl, nil, nil, testK8sVersion, k8sClient)
 		assert.NoError(t, err)
 
 		// Test GetPodWatcher returns the same instance
@@ -1063,7 +1150,7 @@ func TestPodMounterComponents(t *testing.T) {
 	t.Run("Custom mount and bind mount syscalls are accepted", func(t *testing.T) {
 		client := fake.NewClientset()
 		credProvider := credentialprovider.New(client.CoreV1())
-		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 		mountImpl := mount.NewFakeMounter(nil)
 
 		mountSyscallWouldBeCalled := false
@@ -1080,7 +1167,8 @@ func TestPodMounterComponents(t *testing.T) {
 			return nil
 		}
 
-		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, mountSyscall, bindMountSyscall, testK8sVersion, nil)
+		k8sClient := createFakeK8sClient()
+		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, mountSyscall, bindMountSyscall, testK8sVersion, k8sClient)
 		assert.NoError(t, err)
 
 		// Verify mounter was created
@@ -1113,9 +1201,10 @@ func TestPodMounterComponents(t *testing.T) {
 		})
 
 		credProvider := credentialprovider.New(client.CoreV1())
-		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 
-		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, nil)
+		k8sClient := createFakeK8sClient()
+		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, k8sClient)
 		assert.NoError(t, err)
 
 		// Test various paths
@@ -1152,10 +1241,11 @@ func TestPodMounterComponents(t *testing.T) {
 		client := fake.NewClientset()
 		mountImpl := mount.NewFakeMounter(nil)
 		credProvider := credentialprovider.New(client.CoreV1())
-		podWatcher := watcher.New(client, mountpointPodNamespace, 10*time.Second)
+		podWatcher := watcher.New(client, mountpointPodNamespace, "test-node", 10*time.Second)
 
 		// Create with all nil syscalls - should use defaults
-		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, nil)
+		k8sClient := createFakeK8sClient()
+		podMounter, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, nil, testK8sVersion, k8sClient)
 		assert.NoError(t, err)
 
 		if podMounter == nil {
@@ -1167,7 +1257,7 @@ func TestPodMounterComponents(t *testing.T) {
 			return nil // Custom implementation
 		}
 
-		podMounter2, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, customBindMount, testK8sVersion, nil)
+		podMounter2, err := mounter.NewPodMounter(podWatcher, credProvider, mountImpl, nil, customBindMount, testK8sVersion, k8sClient)
 		assert.NoError(t, err)
 
 		if podMounter2 == nil {

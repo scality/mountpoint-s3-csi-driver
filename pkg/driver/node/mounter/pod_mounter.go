@@ -58,8 +58,7 @@ type bindMountSyscall func(source, target string) error
 // - S3 buckets are mounted to a "source" directory first (shared mount point)
 // - Individual containers get bind mounts from the source to their target paths
 // - This enables multiple containers to share the same S3 mount efficiently
-// - During CSI upgrade, existing workloads continue with direct mounts (backward compatibility)
-// - New/restarted workloads use CRD-based coordination for mount sharing
+// - All workloads use CRD-based coordination for mount sharing
 type PodMounter struct {
 	podWatcher        *watcher.Watcher
 	mount             mount.Interface
@@ -80,11 +79,7 @@ type PodMounter struct {
 // - mountSyscall: Custom mount syscall function (nil uses default)
 // - bindMountSyscall: Custom bind mount function (nil uses default)
 // - kubernetesVersion: K8s version for compatibility checks
-// - k8sClient: Client for CRD operations (nil enables backward compatibility mode)
-//
-// When k8sClient is nil, the mounter operates in backward compatibility mode,
-// creating Mountpoint Pods directly without CRD coordination. This supports
-// existing workloads during CSI driver upgrades.
+// - k8sClient: Client for CRD operations (required)
 func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
 	kubeletPath := os.Getenv("KUBELET_PATH")
 	if kubeletPath == "" {
@@ -115,16 +110,9 @@ func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider
 // - Controller to determine optimal Mountpoint Pod placement
 // - Sharing of Mountpoint Pods across multiple workload pods
 // - Better resource utilization and scheduling decisions
-//
-// In backward compatibility mode (k8sClient == nil), it returns a deterministic
-// pod name without waiting for CRD, maintaining existing behavior for workloads
-// that haven't been restarted after the CSI upgrade.
 func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID, volumeName, volumeID string, credentialCtx credentialprovider.ProvideContext, fsGroup string) (string, error) {
 	if pm.k8sClient == nil {
-		// Backward compatibility mode: Direct pod creation without CRD coordination
-		// Used for existing workloads during CSI upgrade until they restart
-		klog.Warningf("k8sClient is nil, operating in backward compatibility mode")
-		return mppod.MountpointPodNameFor(podID, volumeName), nil
+		return "", fmt.Errorf("k8sClient is required for pod mounter operations")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -182,7 +170,7 @@ func (pm *PodMounter) helpMessageForGettingControllerLogs() string {
 // Mount mounts the given `bucketName` at the `target` path using provided credential context and Mountpoint arguments.
 //
 // Source/Bind Mount Architecture:
-//  1. Wait for controller to assign a Mountpoint Pod via CRD (or use direct creation in backward compatibility mode)
+//  1. Wait for controller to assign a Mountpoint Pod via CRD
 //  2. Mount S3 bucket to a "source" directory: /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<pod-name>
 //  3. Create bind mount from source to target path requested by the container
 //  4. Multiple containers can share the same source mount via different bind mounts
@@ -244,14 +232,15 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	podID := credentialCtx.PodID
 	volumeID := credentialCtx.VolumeID
 
-	// Step 1: Determine which Mountpoint Pod to use
-	// In CRD mode: Controller assigns optimal pod via MountpointS3PodAttachment
-	// In backward compatibility: Use deterministic pod name
+	// Step 1: Determine which Mountpoint Pod to use via MountpointS3PodAttachment CRD
+	// Controller assigns optimal pod based on scheduling and resource constraints
+	klog.V(4).Infof("Looking for pod with podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)
 	mpPodName, err := pm.waitForMountpointPodAttachment(ctx, podID, volumeName, volumeID, credentialCtx, fsGroup)
 	if err != nil {
 		klog.Errorf("failed to wait for MountpointS3PodAttachment for %q: %v. %s", target, err, pm.helpMessageForGettingControllerLogs())
 		return fmt.Errorf("failed to wait for MountpointS3PodAttachment for %q: %w. %s", target, err, pm.helpMessageForGettingControllerLogs())
 	}
+	klog.V(4).Infof("Using Mountpoint Pod name: %s", mpPodName)
 
 	// Step 2: Setup source mount directory
 	// Source path: /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<mp-pod-name>
@@ -425,10 +414,29 @@ func (pm *PodMounter) Unmount(ctx context.Context, target string, credentialCtx 
 	return nil
 }
 
-// IsMountPoint returns whether given `target` is a `mount-s3` mount.
+// IsMountPoint returns whether given `target` is a mount point.
+// It checks for both mountpoint-s3 mounts and bind mounts.
 func (pm *PodMounter) IsMountPoint(target string) (bool, error) {
-	// TODO: Can we just use regular `IsMountPoint` check from `mounter` with containerization?
-	return mpmounter.CheckMountpoint(pm.mount, target)
+	// First check if it's a mountpoint-s3 mount
+	isMpMount, err := mpmounter.CheckMountpoint(pm.mount, target)
+	if err != nil {
+		return false, err
+	}
+	if isMpMount {
+		return true, nil
+	}
+
+	// Also check if it's any other kind of mount (e.g., bind mount)
+	// This is important because targets are typically bind mounts from source
+	notMnt, err := pm.mount.IsLikelyNotMountPoint(target)
+	if err != nil {
+		// If the path doesn't exist, return false without error
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return !notMnt, nil
 }
 
 // waitForMountpointPod waints until Mountpoint Pod for given `podID` and `volumeName` is in `Running` state.
@@ -471,7 +479,9 @@ func (pm *PodMounter) waitForMount(parentCtx context.Context, target, podName, p
 	// Poll for `IsMountPoint` check
 	go func() {
 		err := wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (done bool, err error) {
-			return pm.IsMountPoint(target)
+			isMounted, err := pm.IsMountPoint(target)
+			klog.V(5).Infof("Checking if %s is mount point: isMounted=%v, err=%v", target, isMounted, err)
+			return isMounted, err
 		})
 
 		if err != nil {
