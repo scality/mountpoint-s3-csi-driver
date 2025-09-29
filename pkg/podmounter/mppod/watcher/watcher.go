@@ -146,3 +146,10 @@ func (w *Watcher) isPodReady(pod *corev1.Pod) bool {
 func (w *Watcher) isNodeMatch(pod *corev1.Pod) bool {
 	return pod.Spec.NodeName == w.nodeID
 }
+
+// AddEventHandler adds an event handler to the underlying informer.
+// This allows external components to register callbacks for pod events.
+// Returns the registration handle and any error that occurred.
+func (w *Watcher) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	return w.informer.AddEventHandler(handler)
+}
