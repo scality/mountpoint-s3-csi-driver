@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/magefile/mage/sh"
 )
@@ -240,16 +241,29 @@ func InstallCSI() error {
 	// Wait for pods to be ready
 	fmt.Println("Waiting for CSI driver pods to become ready...")
 
+	// Wait for pods using improved resource checker
+	checker := NewResourceChecker(namespace)
+
 	// Wait for controller pods
-	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
-		"-l", "app=s3-csi-controller", "-n", namespace, "--timeout=120s"); err != nil {
+	fmt.Println("Waiting for controller pods to be ready...")
+	if err := checker.WaitForPodsWithLabel("app=s3-csi-controller", 120*time.Second); err != nil {
 		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
+		if status := checker.GetPodsStatus("app=s3-csi-controller"); status != "" {
+			fmt.Printf("Controller pod status:\n%s\n", status)
+		}
+	} else {
+		fmt.Println("✓ Controller pods are ready")
 	}
 
 	// Wait for node pods
-	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
-		"-l", "app=s3-csi-node", "-n", namespace, "--timeout=120s"); err != nil {
+	fmt.Println("Waiting for node pods to be ready...")
+	if err := checker.WaitForPodsWithLabel("app=s3-csi-node", 120*time.Second); err != nil {
 		fmt.Printf("Warning: Node pods not ready: %v\n", err)
+		if status := checker.GetPodsStatus("app=s3-csi-node"); status != "" {
+			fmt.Printf("Node pod status:\n%s\n", status)
+		}
+	} else {
+		fmt.Println("✓ Node pods are ready")
 	}
 
 	// Verify pods are actually running
@@ -372,14 +386,34 @@ func Status() error {
 		}
 	}
 
-	// Check pods
+	// Check pods using improved resource checker
 	fmt.Println("\nPod Status:")
-	_ = sh.RunV("kubectl", "get", "pods", "-n", namespace, "-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver")
+	checker := NewResourceChecker(namespace)
 
-	// Check secret
+	// Check for CSI driver pods using the label selector
+	if status := checker.GetPodsStatus("app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); status != "" {
+		fmt.Println(status)
+
+		// Check pod readiness
+		if ready, err := checker.ArePodsReady("app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); err == nil {
+			if ready {
+				fmt.Println("✓ All CSI driver pods are ready")
+			} else {
+				fmt.Println("⚠ Some CSI driver pods are not ready")
+			}
+		}
+	} else {
+		fmt.Println("No CSI driver pods found")
+	}
+
+	// Check secret with improved error handling
 	fmt.Println("\nSecret Status:")
-	if err := sh.RunV("kubectl", "get", "secret", "s3-secret", "-n", namespace); err != nil {
+	if exists, err := checker.ResourceExists("secret", "s3-secret"); err != nil {
+		fmt.Printf("Error checking secret: %v\n", err)
+	} else if !exists {
 		fmt.Println("S3 credentials secret not found")
+	} else {
+		_ = sh.RunV("kubectl", "get", "secret", "s3-secret", "-n", namespace)
 	}
 
 	return nil
@@ -500,16 +534,29 @@ func InstallCSIWithVersion() error {
 	// Wait for pods to be ready
 	fmt.Println("Waiting for CSI driver pods to become ready...")
 
+	// Wait for pods using improved resource checker
+	checker := NewResourceChecker(namespace)
+
 	// Wait for controller pods
-	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
-		"-l", "app=s3-csi-controller", "-n", namespace, "--timeout=120s"); err != nil {
+	fmt.Println("Waiting for controller pods to be ready...")
+	if err := checker.WaitForPodsWithLabel("app=s3-csi-controller", 120*time.Second); err != nil {
 		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
+		if status := checker.GetPodsStatus("app=s3-csi-controller"); status != "" {
+			fmt.Printf("Controller pod status:\n%s\n", status)
+		}
+	} else {
+		fmt.Println("✓ Controller pods are ready")
 	}
 
 	// Wait for node pods
-	if err := sh.RunV("kubectl", "wait", "--for=condition=ready", "pod",
-		"-l", "app=s3-csi-node", "-n", namespace, "--timeout=120s"); err != nil {
+	fmt.Println("Waiting for node pods to be ready...")
+	if err := checker.WaitForPodsWithLabel("app=s3-csi-node", 120*time.Second); err != nil {
 		fmt.Printf("Warning: Node pods not ready: %v\n", err)
+		if status := checker.GetPodsStatus("app=s3-csi-node"); status != "" {
+			fmt.Printf("Node pod status:\n%s\n", status)
+		}
+	} else {
+		fmt.Println("✓ Node pods are ready")
 	}
 
 	// Verify pods are running
