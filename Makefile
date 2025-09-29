@@ -15,7 +15,7 @@
 SHELL = /bin/bash
 
 # MP CSI Driver version
-VERSION=1.2.0
+VERSION=2.0.0
 
 # List of allowed licenses in the CSI Driver's dependencies.
 # See https://github.com/google/licenseclassifier/blob/e6a9bb99b5a6f71d5a34336b8245e305f5430f99/license_type.go#L28 for list of canonical names for licenses.
