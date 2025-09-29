@@ -67,7 +67,7 @@ type PodMounter struct {
 	bindMountSyscall  bindMountSyscall
 	kubernetesVersion string
 	credProvider      *credentialprovider.Provider
-	k8sClient         client.Client
+	k8sClient         client.Reader // Changed to Reader to support both client.Client and cache.Cache
 	nodeName          string
 }
 
@@ -79,8 +79,8 @@ type PodMounter struct {
 // - mountSyscall: Custom mount syscall function (nil uses default)
 // - bindMountSyscall: Custom bind mount function (nil uses default)
 // - kubernetesVersion: K8s version for compatibility checks
-// - k8sClient: Client for CRD operations (required)
-func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Client) (*PodMounter, error) {
+// - k8sClient: Reader for CRD operations (can be client.Client or cache.Cache, required)
+func NewPodMounter(podWatcher *watcher.Watcher, credProvider *credentialprovider.Provider, mount mount.Interface, mountSyscall mountSyscall, bindMountSyscall bindMountSyscall, kubernetesVersion string, k8sClient client.Reader) (*PodMounter, error) {
 	kubeletPath := os.Getenv("KUBELET_PATH")
 	if kubeletPath == "" {
 		kubeletPath = "/var/lib/kubelet"
