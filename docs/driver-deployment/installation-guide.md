@@ -118,6 +118,7 @@ Deploy the driver with minimal configuration.
 ```bash
 helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
+  --version 2.0.0 \
   --set node.s3EndpointUrl="${S3_ENDPOINT_URL}" \
   --set s3CredentialSecret.name="${SECRET_NAME}" \
   --namespace ${NAMESPACE}
@@ -191,6 +192,7 @@ Deploy the driver using the custom values file.
 ```bash
 helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
+  --version 2.0.0 \
   --values values-production.yaml \
   --namespace ${NAMESPACE}
 ```
@@ -213,6 +215,20 @@ Expected output: One `s3-csi-node-*` pod per eligible worker node, all in `Runni
 kubectl get csidriver s3.csi.scality.com
 ```
 
+### Check CRDs Installation
+
+Verify that the MountpointS3PodAttachment CRD was installed:
+
+```bash
+kubectl get crd mountpoints3podattachments.s3.csi.scality.com
+```
+
+Expected output: The CRD should be present with status `Ready`.
+
+!!! info "CRD Installation"
+    For fresh installs, Helm v3 automatically installs CRDs from the chart's `crds/` directory.
+    For upgrades from v1.x to v2.0.0, CRDs must be installed manually before upgrading. See the [Upgrade Guide](upgrade-guide.md) for details.
+
 ### Check Driver Logs (Optional)
 
 To troubleshoot or check driver operation:
@@ -222,13 +238,16 @@ To troubleshoot or check driver operation:
 kubectl logs -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3-csi-driver -c s3-plugin
 ```
 
-You should see the following output:
+You should see output similar to:
 
 ```bash
-Using systemd mounter
+Using pod mounter
 Listening for connections on address: &net.UnixAddr{Name:"/csi/csi.sock", Net:"unix"}
 NodeGetInfo: called with args {}
 ```
+
+!!! note "Mounter Strategy"
+    Version 2.0.0 uses pod-based mounter by default. The mounter pods will be created in the `mount-s3` namespace when volumes are first mounted.
 
 ## Uninstallation
 

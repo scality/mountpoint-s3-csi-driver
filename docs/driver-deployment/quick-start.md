@@ -47,6 +47,7 @@ kubectl create secret generic s3-secret \
 helm install \
   scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
+  --version 2.0.0 \
   --set node.s3EndpointUrl="${S3_ENDPOINT_URL}"
 ```
 
@@ -71,6 +72,15 @@ Check CSI driver registration:
 ```bash
 kubectl get csidriver s3.csi.scality.com
 ```
+
+Verify CRD installation:
+
+```bash
+kubectl get crd mountpoints3podattachments.s3.csi.scality.com
+```
+
+!!! info "v2.0.0 Features"
+    Version 2.0.0 introduces the MountpointS3PodAttachment CRD and pod-based mounter. The `mount-s3` namespace will be automatically created when volumes are first mounted.
 
 ## Uninstallation
 
