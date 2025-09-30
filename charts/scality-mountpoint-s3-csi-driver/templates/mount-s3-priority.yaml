@@ -1,5 +1,3 @@
-{{- if .Values.podMounter.enabled -}}
-
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
@@ -36,5 +34,3 @@ description: >-
     Priority class for headroom pods.
     These pods have low priority and are designed to be preempted by Mountpoint Pods when needed.
     They serve as placeholder capacity for Mountpoint Pods.
-
-{{- end -}}

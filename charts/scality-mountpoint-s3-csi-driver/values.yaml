@@ -119,19 +119,12 @@ s3CredentialSecret:
   secretAccessKey: secret_access_key
   sessionToken: session_token
 
-# Controller configuration (used for dynamic provisioning)
+# Controller configuration
 controller:
-  # Enable controller deployment for dynamic provisioning
-  enable: true
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
     name: s3-csi-driver-controller-sa
-
-# Pod mounter configuration
-podMounter:
-  # Enable pod-based mounting (recommended for SELinux support and Red Hat OpenShift)
-  enabled: true
 
 # Legacy systemd mount support for seamless upgrades from v1.x
 # When enabled, existing systemd mounts will be preserved during upgrade
