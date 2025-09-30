@@ -188,7 +188,7 @@ func setupTest(config TestConfig) error {
 	}
 
 	if err := waitForPodReady(config); err != nil {
-		return fmt.Errorf("Pod failed to be ready: %v", err)
+		return fmt.Errorf("pod failed to be ready: %v", err)
 	}
 
 	// Write initial test data
@@ -200,7 +200,7 @@ func setupTest(config TestConfig) error {
 		return fmt.Errorf("failed to write test data: %v", err)
 	}
 
-	fmt.Printf("✓ %s provisioning test setup complete\n", strings.Title(config.Type))
+	fmt.Printf("✓ %s provisioning test setup complete\n", strings.ToUpper(string(config.Type[0]))+config.Type[1:])
 	return nil
 }
 
@@ -227,7 +227,7 @@ func verifyTest(config TestConfig, beforeContent, afterContent string) error {
 		return fmt.Errorf("✗ New data verification failed: %v", err)
 	}
 
-	fmt.Printf("✓ %s provisioning upgrade verification successful!\n", strings.Title(config.Type))
+	fmt.Printf("✓ %s provisioning upgrade verification successful!\n", strings.ToUpper(string(config.Type[0]))+config.Type[1:])
 	return nil
 }
 
@@ -256,7 +256,7 @@ func cleanupTest(config TestConfig) error {
 		_ = sh.Run("kubectl", "delete", "storageclass", config.SCName, "--ignore-not-found=true")
 	}
 
-	fmt.Printf("✓ %s provisioning test cleanup complete\n", strings.Title(config.Type))
+	fmt.Printf("✓ %s provisioning test cleanup complete\n", strings.ToUpper(string(config.Type[0]))+config.Type[1:])
 	return nil
 }
 
@@ -286,13 +286,13 @@ func applyManifest(config TestConfig, resourceType string) error {
 	manifestFile := fmt.Sprintf("%s-%s.yaml", config.ManifestPath, resourceType)
 
 	resourceName := getResourceName(config, resourceType)
-	fmt.Printf("Creating %s: %s\n", strings.Title(resourceType), resourceName)
+	fmt.Printf("Creating %s: %s\n", strings.ToUpper(string(resourceType[0]))+resourceType[1:], resourceName)
 
 	if err := sh.Run("kubectl", "apply", "-f", manifestFile); err != nil {
 		return fmt.Errorf("failed to create %s: %v", resourceType, err)
 	}
 
-	fmt.Printf("✓ %s %s created\n", strings.Title(resourceType), resourceName)
+	fmt.Printf("✓ %s %s created\n", strings.ToUpper(string(resourceType[0]))+resourceType[1:], resourceName)
 	return nil
 }
 
@@ -314,34 +314,33 @@ func getResourceName(config TestConfig, resourceType string) string {
 func waitForPVCBound(config TestConfig) error {
 	fmt.Printf("Waiting for PVC to be bound (%s provisioning)...\n", config.Type)
 
-	for i := 0; i < config.PVCTimeout; i++ {
-		output, err := sh.Output("kubectl", "get", "pvc", config.PVCName, "-n", config.Namespace,
-			"-o", "jsonpath={.status.phase}")
-		if err != nil {
-			return fmt.Errorf("failed to get PVC status: %v", err)
-		}
+	checker := NewResourceChecker(config.Namespace)
+	timeout := time.Duration(config.PVCTimeout) * time.Second
 
-		if output == "Bound" {
-			fmt.Println("✓ PVC bound successfully")
-			return nil
+	if err := checker.WaitForResource("pvc", config.PVCName, "bound", timeout); err != nil {
+		// Provide additional debugging information
+		if status, statusErr := checker.SafeGetResource("pvc", config.PVCName, "jsonpath={.status}"); statusErr == nil && status != "" {
+			return fmt.Errorf("PVC binding failed: %v. Current status: %s", err, status)
 		}
-
-		fmt.Printf("PVC status: %s, waiting...\n", output)
-		time.Sleep(1 * time.Second)
+		return fmt.Errorf("PVC binding failed: %v", err)
 	}
 
-	return fmt.Errorf("PVC did not bind within timeout")
+	fmt.Println("✓ PVC bound successfully")
+	return nil
 }
 
 func waitForPodReady(config TestConfig) error {
 	fmt.Println("Waiting for ReplicaSet pod to be ready...")
 
-	timeoutStr := fmt.Sprintf("%ds", config.PodTimeout)
-	if err := sh.Run("kubectl", "wait", "--for=condition=Ready",
-		"pod", "-l", config.LabelSelector,
-		"-n", config.Namespace,
-		fmt.Sprintf("--timeout=%s", timeoutStr)); err != nil {
-		return fmt.Errorf("ReplicaSet pod did not become ready within timeout: %v", err)
+	checker := NewResourceChecker(config.Namespace)
+	timeout := time.Duration(config.PodTimeout) * time.Second
+
+	if err := checker.WaitForPodsWithLabel(config.LabelSelector, timeout); err != nil {
+		// Provide additional debugging information
+		if status := checker.GetPodsStatus(config.LabelSelector); status != "" {
+			fmt.Printf("Pod readiness failed. Current status:\n%s\n", status)
+		}
+		return fmt.Errorf("ReplicaSet pod readiness failed: %v", err)
 	}
 
 	fmt.Println("✓ ReplicaSet pod ready")
@@ -392,21 +391,36 @@ func verifyTestDataExists(config TestConfig, filename, expectedContent string) e
 func verifyPodRunning(config TestConfig) error {
 	fmt.Println("Checking ReplicaSet pod status...")
 
-	// Get the pod name from ReplicaSet
-	podName, err := getPodNameFromReplicaSet(config)
-	if err != nil {
-		return fmt.Errorf("failed to get pod name: %v", err)
-	}
+	checker := NewResourceChecker(config.Namespace)
 
-	output, err := sh.Output("kubectl", "get", "pod", podName,
-		"-n", config.Namespace,
-		"-o", "jsonpath={.status.phase}")
-	if err != nil {
-		return fmt.Errorf("failed to get pod status: %v", err)
-	}
+	// Check if pods with the label are running
+	if ready, err := checker.ArePodsReady(config.LabelSelector); err != nil {
+		// If label selector fails, try getting specific pod name
+		podName, podErr := getPodNameFromReplicaSet(config)
+		if podErr != nil {
+			return fmt.Errorf("failed to get pod status: %v (also failed to get pod name: %v)", err, podErr)
+		}
 
-	if strings.TrimSpace(output) != "Running" {
-		return fmt.Errorf("pod not running, status: %s", output)
+		// Check specific pod status
+		if exists, existsErr := checker.ResourceExists("pod", podName); existsErr != nil {
+			return fmt.Errorf("failed to check pod existence: %v", existsErr)
+		} else if !exists {
+			return fmt.Errorf("pod %s does not exist", podName)
+		}
+
+		if running, runErr := checker.CheckCondition("pod", podName, "running"); runErr != nil {
+			return fmt.Errorf("failed to check pod running status: %v", runErr)
+		} else if !running {
+			if status, statusErr := checker.GetResourceStatus("pod", podName); statusErr == nil {
+				return fmt.Errorf("pod not running, status: %s", status)
+			}
+			return fmt.Errorf("pod not running")
+		}
+	} else if !ready {
+		if status := checker.GetPodsStatus(config.LabelSelector); status != "" {
+			return fmt.Errorf("pods not ready:\n%s", status)
+		}
+		return fmt.Errorf("pods not ready")
 	}
 
 	fmt.Println("✓ ReplicaSet pod is running")
@@ -598,38 +612,67 @@ func deletePodsByReplicaSet(config TestConfig) error {
 func waitForMountpointPods(expectedCount int) error {
 	fmt.Printf("Waiting for at least %d mountpoint pod(s)...\n", expectedCount)
 
-	for i := 0; i < 60; i++ {
-		count, err := verifyMountpointPodsExist()
-		if err != nil {
-			// Namespace might not exist yet, keep waiting
-			time.Sleep(2 * time.Second)
-			continue
-		}
+	checker := NewResourceChecker("mount-s3")
+	timeout := 120 * time.Second
 
-		if count >= expectedCount {
-			fmt.Printf("✓ Found %d mountpoint pod(s) in mount-s3 namespace\n", count)
-			return nil
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-		if i%10 == 0 && i > 0 {
-			fmt.Printf("Still waiting... current count: %d\n", count)
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Final check and provide debugging information
+			count, _ := checker.CountPodsInNamespace("mount-s3")
+			if count > 0 {
+				fmt.Printf("Warning: Found %d mountpoint pod(s), expected at least %d\n", count, expectedCount)
+				if status := checker.GetPodsStatus(""); status != "" {
+					fmt.Printf("Current pod status:\n%s\n", status)
+				}
+				return nil // Not a hard failure, mount sharing might optimize pod count
+			}
+			return fmt.Errorf("no mountpoint pods appeared within timeout (expected %d)", expectedCount)
+
+		case <-ticker.C:
+			// Check if namespace exists first
+			exists, err := checker.NamespaceExists("mount-s3")
+			if err != nil {
+				if checker.VerboseMode {
+					fmt.Printf("Error checking mount-s3 namespace: %v\n", err)
+				}
+				continue
+			}
+			if !exists {
+				if checker.VerboseMode {
+					fmt.Println("mount-s3 namespace does not exist yet, will be created on first mount")
+				}
+				continue
+			}
+
+			count, err := checker.CountPodsInNamespace("mount-s3")
+			if err != nil {
+				if checker.VerboseMode {
+					fmt.Printf("Error counting pods in mount-s3 namespace: %v\n", err)
+				}
+				continue
+			}
+
+			if count >= expectedCount {
+				fmt.Printf("✓ Found %d mountpoint pod(s) in mount-s3 namespace\n", count)
+				return nil
+			}
+
+			if checker.VerboseMode {
+				fmt.Printf("Current mountpoint pod count: %d (waiting for %d)\n", count, expectedCount)
+			}
 		}
-		time.Sleep(2 * time.Second)
 	}
-
-	// Final check
-	count, _ := verifyMountpointPodsExist()
-	if count > 0 {
-		fmt.Printf("Warning: Found %d mountpoint pod(s), expected at least %d\n", count, expectedCount)
-		return nil // Not a hard failure, mount sharing might optimize pod count
-	}
-
-	return fmt.Errorf("no mountpoint pods appeared within timeout (expected %d)", expectedCount)
 }
 
 // verifyCSIDriverReady checks if the CSI driver components are ready after upgrade
 func verifyCSIDriverReady() error {
-	// First check in the default namespace where CSI driver might be installed
 	fmt.Println("Checking for CSI driver pods...")
 
 	// Try multiple possible locations and label combinations
@@ -641,28 +684,34 @@ func verifyCSIDriverReady() error {
 	}
 
 	foundPods := false
-	for _, ns := range namespaces {
-		for _, label := range labels {
-			output, err := sh.Output("kubectl", "get", "pods", "-n", ns,
-				"-l", label,
-				"--no-headers", "2>/dev/null")
-			if err == nil && strings.TrimSpace(output) != "" {
-				lines := strings.Split(strings.TrimSpace(output), "\n")
-				fmt.Printf("✓ Found %d CSI pod(s) in namespace %s\n", len(lines), ns)
+	var workingNamespace string
 
-				// Check if they're running
-				for _, line := range lines {
-					fields := strings.Fields(line)
-					if len(fields) > 2 {
-						podName := fields[0]
-						status := fields[2]
-						if status != "Running" {
-							fmt.Printf("Warning: CSI pod %s is %s\n", podName, status)
-						}
-					}
+	for _, ns := range namespaces {
+		checker := NewResourceChecker(ns)
+
+		for _, label := range labels {
+			ready, err := checker.ArePodsReady(label)
+			if err != nil {
+				// Label selector might not find any pods, continue
+				continue
+			}
+
+			if ready {
+				// Get pod count for logging
+				if output, err := checker.SafeGetResource("pods", "", "name"); err == nil && output != "" {
+					lines := strings.Split(strings.TrimSpace(output), "\n")
+					fmt.Printf("✓ Found %d ready CSI pod(s) in namespace %s\n", len(lines), ns)
+				} else {
+					fmt.Printf("✓ Found ready CSI pods in namespace %s\n", ns)
 				}
 				foundPods = true
+				workingNamespace = ns
 				break
+			} else {
+				// Pods found but not ready - provide status
+				if status := checker.GetPodsStatus(label); status != "" {
+					fmt.Printf("Warning: Found CSI pods in namespace %s but not all are ready:\n%s\n", ns, status)
+				}
 			}
 		}
 		if foundPods {
@@ -671,17 +720,33 @@ func verifyCSIDriverReady() error {
 	}
 
 	if !foundPods {
-		// Show what we have for debugging
-		fmt.Println("Could not find CSI driver pods with expected labels.")
-		fmt.Println("Listing all pods that might be CSI-related:")
-		if output, err := sh.Output("kubectl", "get", "pods", "--all-namespaces"); err == nil {
-			lines := strings.Split(output, "\n")
-			for _, line := range lines {
-				if strings.Contains(strings.ToLower(line), "csi") || strings.Contains(strings.ToLower(line), "s3") {
-					fmt.Println(line)
+		fmt.Println("Could not find ready CSI driver pods with expected labels.")
+		fmt.Println("Searching for any CSI-related pods for debugging...")
+
+		// Search across all namespaces for potential CSI pods
+		for _, ns := range namespaces {
+			checker := NewResourceChecker(ns)
+			if output, err := checker.SafeGetResource("pods", "", "wide"); err == nil && output != "" {
+				lines := strings.Split(output, "\n")
+				for _, line := range lines {
+					if strings.Contains(strings.ToLower(line), "csi") || strings.Contains(strings.ToLower(line), "s3") || strings.Contains(strings.ToLower(line), "scality") {
+						fmt.Printf("Found in namespace %s: %s\n", ns, line)
+					}
 				}
 			}
 		}
+		return fmt.Errorf("no ready CSI driver pods found")
+	}
+
+	// Additional verification: check if CSI driver is actually functional
+	fmt.Printf("Verifying CSI driver functionality in namespace %s...\n", workingNamespace)
+	checker := NewResourceChecker(workingNamespace)
+
+	// Check if CSI driver is registered properly
+	if output, err := checker.SafeGetResource("csinodes", "", "name"); err == nil && strings.TrimSpace(output) != "" {
+		fmt.Println("✓ CSI nodes are registered")
+	} else {
+		fmt.Println("Warning: No CSI nodes found - this might indicate driver registration issues")
 	}
 
 	// Check if mount-s3 namespace exists (for pod mounter)
@@ -708,7 +773,7 @@ func waitForPodReadyWithDetails(config TestConfig) error {
 		fmt.Sprintf("--timeout=%s", timeoutStr))
 
 	if err == nil {
-		fmt.Printf("✓ %s pod is ready\n", strings.Title(config.Type))
+		fmt.Printf("✓ %s pod is ready\n", strings.ToUpper(string(config.Type[0]))+config.Type[1:])
 		return nil
 	}
 
@@ -724,7 +789,7 @@ func waitForPodReadyWithDetails(config TestConfig) error {
 		"-n", config.Namespace,
 		"-o", "jsonpath={.status.phase}")
 	if err == nil && strings.TrimSpace(output) == "Running" {
-		fmt.Printf("✓ %s pod is running (may not be fully ready yet)\n", strings.Title(config.Type))
+		fmt.Printf("✓ %s pod is running (may not be fully ready yet)\n", strings.ToUpper(string(config.Type[0]))+config.Type[1:])
 		// Give it a bit more time to become fully ready
 		time.Sleep(10 * time.Second)
 		return nil
@@ -740,25 +805,21 @@ func waitForPodReadyWithDetails(config TestConfig) error {
 
 // verifyMountpointPodsExist checks if mountpoint pods exist in the mount-s3 namespace
 func verifyMountpointPodsExist() (int, error) {
-	// First check if namespace exists
-	if err := sh.Run("kubectl", "get", "namespace", "mount-s3"); err != nil {
-		// Namespace doesn't exist
+	checker := NewResourceChecker("mount-s3")
+
+	// Check if namespace exists first
+	exists, err := checker.NamespaceExists("mount-s3")
+	if err != nil {
+		return 0, fmt.Errorf("failed to check mount-s3 namespace: %v", err)
+	}
+	if !exists {
 		return 0, fmt.Errorf("mount-s3 namespace does not exist")
 	}
 
-	// Get pods in mount-s3 namespace
-	output, err := sh.Output("kubectl", "get", "pods", "-n", "mount-s3", "--no-headers")
+	// Count pods in mount-s3 namespace
+	count, err := checker.CountPodsInNamespace("mount-s3")
 	if err != nil {
-		return 0, fmt.Errorf("failed to get pods: %v", err)
-	}
-
-	// Count non-empty lines
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	count := 0
-	for _, line := range lines {
-		if strings.TrimSpace(line) != "" {
-			count++
-		}
+		return 0, fmt.Errorf("failed to count pods in mount-s3 namespace: %v", err)
 	}
 
 	return count, nil
@@ -832,7 +893,7 @@ func deleteS3Bucket(bucketName string) error {
 	})
 	if err != nil {
 		fmt.Printf("✗ Warning: Failed to list objects in bucket %s: %v\n", bucketName, err)
-	} else if listResp.Contents != nil && len(listResp.Contents) > 0 {
+	} else if len(listResp.Contents) > 0 {
 		for _, obj := range listResp.Contents {
 			_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 				Bucket: aws.String(bucketName),

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/magefile/mage/sh"
 )
@@ -294,4 +296,329 @@ func UpdateCoreDNSHosts(s3Host string, remove bool) error {
 	// Patch the ConfigMap
 	patchData := fmt.Sprintf(`{"data":{"Corefile":%q}}`, newConfig)
 	return sh.RunV("kubectl", "patch", "configmap", "coredns", "-n", "kube-system", "--type=merge", "-p", patchData)
+}
+
+// ResourceChecker provides robust resource checking with proper error handling
+type ResourceChecker struct {
+	Namespace   string
+	VerboseMode bool
+}
+
+// NewResourceChecker creates a new ResourceChecker instance
+func NewResourceChecker(namespace string) *ResourceChecker {
+	return &ResourceChecker{
+		Namespace:   namespace,
+		VerboseMode: IsVerbose(),
+	}
+}
+
+// WaitForResource waits for a Kubernetes resource to meet a specific condition
+func (rc *ResourceChecker) WaitForResource(resourceType, name, condition string, timeout time.Duration) error {
+	if rc.VerboseMode {
+		fmt.Printf("Waiting for %s/%s to meet condition '%s' (timeout: %v)...\n", resourceType, name, condition, timeout)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Check if resource exists first
+	exists, err := rc.ResourceExists(resourceType, name)
+	if err != nil {
+		return fmt.Errorf("failed to check if %s/%s exists: %v", resourceType, name, err)
+	}
+	if !exists {
+		return fmt.Errorf("%s/%s does not exist", resourceType, name)
+	}
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Get current status for debugging
+			if status, err := rc.GetResourceStatus(resourceType, name); err == nil {
+				return fmt.Errorf("timeout waiting for %s/%s to meet condition '%s'. Current status: %s", resourceType, name, condition, status)
+			}
+			return fmt.Errorf("timeout waiting for %s/%s to meet condition '%s'", resourceType, name, condition)
+
+		case <-ticker.C:
+			// Check if condition is met
+			if met, err := rc.CheckCondition(resourceType, name, condition); err != nil {
+				if rc.VerboseMode {
+					fmt.Printf("Error checking condition for %s/%s: %v\n", resourceType, name, err)
+				}
+				continue
+			} else if met {
+				if rc.VerboseMode {
+					fmt.Printf("✓ %s/%s condition '%s' met\n", resourceType, name, condition)
+				}
+				return nil
+			}
+		}
+	}
+}
+
+// ResourceExists checks if a resource exists
+func (rc *ResourceChecker) ResourceExists(resourceType, name string) (bool, error) {
+	args := []string{"get", resourceType, name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "--ignore-not-found=true", "-o", "name")
+
+	output, err := sh.Output("kubectl", args...)
+	if err != nil {
+		// If kubectl command fails for other reasons, return error
+		return false, err
+	}
+
+	// If resource exists, output will contain the resource name
+	return strings.TrimSpace(output) != "", nil
+}
+
+// GetResourceStatus gets the current status of a resource for debugging
+func (rc *ResourceChecker) GetResourceStatus(resourceType, name string) (string, error) {
+	args := []string{"get", resourceType, name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "-o", "jsonpath={.status.phase}")
+
+	output, err := sh.Output("kubectl", args...)
+	if err != nil {
+		// Try alternative status fields
+		alternatives := []string{
+			"{.status.conditions[?(@.type=='Ready')].status}",
+			"{.status.readyReplicas}",
+			"{.status}",
+		}
+
+		for _, alt := range alternatives {
+			args[len(args)-1] = fmt.Sprintf("-o=jsonpath=%s", alt)
+			if output, err = sh.Output("kubectl", args...); err == nil && strings.TrimSpace(output) != "" {
+				break
+			}
+		}
+	}
+
+	return strings.TrimSpace(output), err
+}
+
+// CheckCondition checks if a resource meets a specific condition
+func (rc *ResourceChecker) CheckCondition(resourceType, name, condition string) (bool, error) {
+	switch condition {
+	case "ready":
+		return rc.checkReadyCondition(resourceType, name)
+	case "bound":
+		return rc.checkBoundCondition(resourceType, name)
+	case "running":
+		return rc.checkRunningCondition(resourceType, name)
+	default:
+		return rc.checkCustomCondition(resourceType, name, condition)
+	}
+}
+
+// checkReadyCondition checks if a resource is ready
+func (rc *ResourceChecker) checkReadyCondition(resourceType, name string) (bool, error) {
+	args := []string{"get", resourceType, name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+
+	switch resourceType {
+	case "pod", "pods":
+		args = append(args, "-o", "jsonpath={.status.phase}")
+		output, err := sh.Output("kubectl", args...)
+		return strings.TrimSpace(output) == "Running", err
+
+	case "deployment", "deployments":
+		args = append(args, "-o", "jsonpath={.status.readyReplicas}")
+		output, err := sh.Output("kubectl", args...)
+		if err != nil {
+			return false, err
+		}
+		// Also check desired replicas
+		args[len(args)-1] = "-o=jsonpath={.status.replicas}"
+		desired, err := sh.Output("kubectl", args...)
+		if err != nil {
+			return false, err
+		}
+		return strings.TrimSpace(output) == strings.TrimSpace(desired) && strings.TrimSpace(output) != "0", nil
+
+	default:
+		// Generic ready condition check
+		args = append(args, "-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}")
+		output, err := sh.Output("kubectl", args...)
+		return strings.TrimSpace(output) == "True", err
+	}
+}
+
+// checkBoundCondition checks if a PVC is bound
+func (rc *ResourceChecker) checkBoundCondition(resourceType, name string) (bool, error) {
+	if resourceType != "pvc" && resourceType != "persistentvolumeclaim" {
+		return false, fmt.Errorf("bound condition only applies to PVCs")
+	}
+
+	args := []string{"get", "pvc", name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "-o", "jsonpath={.status.phase}")
+
+	output, err := sh.Output("kubectl", args...)
+	return strings.TrimSpace(output) == "Bound", err
+}
+
+// checkRunningCondition checks if pods are running
+func (rc *ResourceChecker) checkRunningCondition(resourceType, name string) (bool, error) {
+	if resourceType != "pod" && resourceType != "pods" {
+		return false, fmt.Errorf("running condition only applies to pods")
+	}
+
+	args := []string{"get", "pod", name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "-o", "jsonpath={.status.phase}")
+
+	output, err := sh.Output("kubectl", args...)
+	return strings.TrimSpace(output) == "Running", err
+}
+
+// checkCustomCondition checks custom conditions using kubectl wait
+func (rc *ResourceChecker) checkCustomCondition(resourceType, name, condition string) (bool, error) {
+	args := []string{"wait", "--for=" + condition, resourceType + "/" + name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "--timeout=1s")
+
+	err := sh.Run("kubectl", args...)
+	return err == nil, nil
+}
+
+// WaitForPodsWithLabel waits for pods matching a label selector to be ready
+func (rc *ResourceChecker) WaitForPodsWithLabel(labelSelector string, timeout time.Duration) error {
+	if rc.VerboseMode {
+		fmt.Printf("Waiting for pods with label '%s' to be ready (timeout: %v)...\n", labelSelector, timeout)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Get current pod status for debugging
+			if status := rc.GetPodsStatus(labelSelector); status != "" {
+				return fmt.Errorf("timeout waiting for pods with label '%s' to be ready. Current status:\n%s", labelSelector, status)
+			}
+			return fmt.Errorf("timeout waiting for pods with label '%s' to be ready", labelSelector)
+
+		case <-ticker.C:
+			if ready, err := rc.ArePodsReady(labelSelector); err != nil {
+				if rc.VerboseMode {
+					fmt.Printf("Error checking pod readiness: %v\n", err)
+				}
+				continue
+			} else if ready {
+				if rc.VerboseMode {
+					fmt.Printf("✓ All pods with label '%s' are ready\n", labelSelector)
+				}
+				return nil
+			}
+		}
+	}
+}
+
+// ArePodsReady checks if all pods matching a label selector are ready
+func (rc *ResourceChecker) ArePodsReady(labelSelector string) (bool, error) {
+	args := []string{"get", "pods", "-l", labelSelector}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "-o", "jsonpath={.items[*].status.phase}")
+
+	output, err := sh.Output("kubectl", args...)
+	if err != nil {
+		return false, err
+	}
+
+	phases := strings.Fields(strings.TrimSpace(output))
+	if len(phases) == 0 {
+		return false, fmt.Errorf("no pods found matching label selector '%s'", labelSelector)
+	}
+
+	for _, phase := range phases {
+		if phase != "Running" {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// GetPodsStatus gets detailed status of pods for debugging
+func (rc *ResourceChecker) GetPodsStatus(labelSelector string) string {
+	args := []string{"get", "pods", "-l", labelSelector}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "-o", "wide")
+
+	output, _ := sh.Output("kubectl", args...)
+	return output
+}
+
+// CountPodsInNamespace counts pods in a specific namespace
+func (rc *ResourceChecker) CountPodsInNamespace(namespace string) (int, error) {
+	args := []string{"get", "pods", "-n", namespace, "--no-headers"}
+
+	output, err := sh.Output("kubectl", args...)
+	if err != nil {
+		// If namespace doesn't exist, return 0
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "No resources found") {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) == 1 && lines[0] == "" {
+		return 0, nil
+	}
+
+	return len(lines), nil
+}
+
+// NamespaceExists checks if a namespace exists
+func (rc *ResourceChecker) NamespaceExists(namespace string) (bool, error) {
+	output, err := sh.Output("kubectl", "get", "namespace", namespace, "--ignore-not-found=true", "-o", "name")
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(output) != "", nil
+}
+
+// SafeGetResource safely gets resource information without throwing errors
+func (rc *ResourceChecker) SafeGetResource(resourceType, name string, outputFormat string) (string, error) {
+	args := []string{"get", resourceType, name}
+	if rc.Namespace != "" {
+		args = append(args, "-n", rc.Namespace)
+	}
+	args = append(args, "--ignore-not-found=true")
+	if outputFormat != "" {
+		args = append(args, "-o", outputFormat)
+	}
+
+	output, err := sh.Output("kubectl", args...)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(output), nil
 }
