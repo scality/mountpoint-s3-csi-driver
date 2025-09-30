@@ -18,24 +18,20 @@ These parameters configure the overall behavior of the CSI driver components.
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
 | `image.repository`                                   | The container image repository for the CSI driver.                                                                                                 | `ghcr.io/scality/mountpoint-s3-csi-driver`             | No                          |
 | `image.pullPolicy`                                   | The image pull policy.                                                                                                                             | `IfNotPresent`                                         | No                          |
-| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `1.2.0`                                                | No                          |
+| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `2.0.0`                                                | No                          |
 
 ## S3 Global Configuration
 
 <!-- markdownlint-disable MD046 -->
-!!! important "Required Configuration & Backward Compatibility"
-    The S3 endpoint URL must be configured for the CSI driver to function. Starting with version 1.2.0, use the global `s3.endpointUrl` and `s3.region` settings,
+!!! important "Required Configuration"
+    The S3 endpoint URL must be configured for the CSI driver to function. Use the global `s3.endpointUrl` and `s3.region` settings,
     which are used by both node and controller components for dynamic provisioning.
-
-    **Backward Compatibility:** The legacy `node.s3EndpointUrl` and `node.s3Region` parameters (used in versions prior to 1.2.0) are still supported.
-    If both global and legacy values are specified, the legacy `node.s3*` values take precedence to maintain backward compatibility with existing deployments.
-    The legacy values will be removed in the next major version (2.0.0).
 <!-- markdownlint-enable MD046 -->
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
-| `s3.endpointUrl`                                     | The RING S3 endpoint URL used by both node and controller components for all S3 operations. <br/>**Recommended for new deployments** (replaces legacy `node.s3EndpointUrl`).                                                        | `"http://s3.example.com:8000"`                        | **Yes** (unless using legacy)                     |
-| `s3.region`                                          | The default AWS region to use for S3 requests. Can be overridden per-volume via PV `mountOptions`. <br/>**Recommended for new deployments** (replaces legacy `node.s3Region`).                                               | `us-east-1`                                            | **Yes** (unless using legacy)                          |
+| `s3.endpointUrl`                                     | The RING S3 endpoint URL used by both node and controller components for all S3 operations.                                                        | `"http://s3.example.com:8000"`                        | **Yes**                     |
+| `s3.region`                                          | The default AWS region to use for S3 requests. Can be overridden per-volume via PV `mountOptions`.                                                 | `us-east-1`                                            | **Yes**                     |
 
 ## S3 Credentials Secret Configuration
 
@@ -73,9 +69,6 @@ These parameters configure the overall behavior of the CSI driver components.
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
 | `node.kubeletPath`                                   | The path to the kubelet directory on the host node. Used by the node plugin to register itself and manage mount points.                               | `/var/lib/kubelet`                                     | No                          |
 | `node.logLevel`                                      | Log verbosity level for the CSI driver (higher numbers = more verbose). 1-2: Basic operational info (recommended for production), 3: Credential authentication info, 4: All CSI operations and mount details (default), 5: Very detailed debug info. | `4`                                                    | No                          |
-| `node.s3EndpointUrl`                                 | **DEPRECATED after v1.2.0:** Legacy S3 endpoint URL setting. For backward compatibility only. Use global `s3.endpointUrl` instead. If both are specified, this legacy setting takes precedence. | `"http://s3.example.com:8000"`                        | No (use `s3.endpointUrl`)   |
-| `node.s3Region`                                      | **DEPRECATED after v1.2.0:** Legacy S3 region setting. For backward compatibility only. Use global `s3.region` instead. If both are specified, this legacy setting takes precedence. | `us-east-1`                                            | No (use `s3.region`)        |
-| `node.mountpointInstallPath`                         | Path on the host where the `mount-s3` binary will be installed by the initContainer. Should end with a `/`. *Only used with SystemD mounter (default).* | `/opt/mountpoint-s3-csi/bin/`                          | No                          |
 | `node.seLinuxOptions.user`                           | SELinux user for the CSI driver container security context.                                                                                        | `system_u`                                             | No                          |
 | `node.seLinuxOptions.type`                           | SELinux type for the CSI driver container security context.                                                                                        | `super_t`                                              | No                          |
 | `node.seLinuxOptions.role`                           | SELinux role for the CSI driver container security context.                                                                                        | `system_r`                                             | No                          |
@@ -103,7 +96,11 @@ These parameters configure the overall behavior of the CSI driver components.
 | `sidecars.livenessProbe.image.tag`                   | Image tag for the `livenessprobe` sidecar.                                                                                                         | `v2.16.0`                                              | No                          |
 | `sidecars.livenessProbe.image.pullPolicy`            | Image pull policy for the `livenessprobe` sidecar.                                                                                                 | `IfNotPresent`                                         | No                          |
 | `sidecars.livenessProbe.resources`                   | Resource requests and limits for the `livenessprobe` sidecar.                                                                                      | `{}` (inherits from `node.resources` if not set)       | No                          |
-| `initContainer.installMountpoint.resources`          | Resource requests and limits for the `install-mountpoint` initContainer. *Only used with SystemD mounter (default).*                              | `{}` (inherits from `node.resources` if not set)       | No                          |
+| `sidecars.csiProvisioner.image.repository`           | Image repository for the `csi-provisioner` sidecar (controller only).                                                                              | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner` | No                          |
+| `sidecars.csiProvisioner.image.tag`                  | Image tag for the `csi-provisioner` sidecar.                                                                                                       | `v5.3.0`                                               | No                          |
+| `sidecars.csiProvisioner.image.pullPolicy`           | Image pull policy for the `csi-provisioner` sidecar.                                                                                               | `IfNotPresent`                                         | No                          |
+| `sidecars.csiProvisioner.resources`                  | Resource requests and limits for the `csi-provisioner` sidecar.                                                                                    | `{}`                                                   | No                          |
+| `initContainer.installMountpoint.resources`          | Resource requests and limits for the `install-mountpoint` initContainer.                                                                           | `{}` (inherits from `node.resources` if not set)       | No                          |
 
 ## Controller Plugin Configuration (Dynamic Provisioning)
 
@@ -119,12 +116,25 @@ These parameters configure the overall behavior of the CSI driver components.
 | `controller.serviceAccount.create`                   | Specifies whether a ServiceAccount should be created for the controller.                                                                          | `true`                                                 | No                          |
 | `controller.serviceAccount.name`                     | Name of the ServiceAccount to use for the controller.                                                                                             | `s3-csi-driver-controller-sa`                          | No                          |
 
-## Experimental Features (Unsupported)
+## Mountpoint Pod Configuration (v2.0.0+)
 
-**Important:** The Pod Mounter feature is experimental and **not supported for production use**. It should only be used in development environments. The default SystemD mounter is the only supported configuration.
+<!-- markdownlint-disable MD046 -->
+!!! info "Pod Mounter Strategy"
+    Version 2.0.0 uses pod-based mounter as the default strategy. Mounter pods are created in the `mount-s3` namespace to handle S3 mount operations with improved isolation and resource management.
+<!-- markdownlint-enable MD046 -->
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
-| `experimental.podMounter`                            | **EXPERIMENTAL, DO NOT USE:** Enables the Pod Mounter feature instead of the default SystemD mounter. Should be `false` for standard configurations.          | `false`                                                | No                          |
-| `mountpointPod.namespace`                            | Namespace for Mountpoint pods spawned by the controller. *Only used if `experimental.podMounter` is true.*                                        | `mount-s3`                                             | No                          |
-| `mountpointPod.priorityClassName`                    | Priority class name for Mountpoint pods. *Only used if `experimental.podMounter` is true.*                                                        | `mount-s3-critical`                                    | No                          |
+| `mountpointPod.namespace`                            | Namespace where mounter pods are created.                                                                                                          | `mount-s3`                                             | No                          |
+| `mountpointPod.priorityClassName`                    | Priority class name for mounter pods.                                                                                                              | `mount-s3-critical`                                    | No                          |
+| `mountpointPod.preemptingPriorityClassName`         | Priority class for pods that can preempt headroom pods.                                                                                            | `mount-s3-preempting`                                  | No                          |
+| `mountpointPod.headroomPriorityClassName`           | Priority class for headroom pods (typically low priority).                                                                                         | `mount-s3-headroom`                                    | No                          |
+| `mountpointPod.headroomImage.repository`            | Image repository for headroom pods (pause container).                                                                                              | `ghcr.io/scality/mountpoint-s3-csi-driver/pause`      | No                          |
+| `mountpointPod.headroomImage.tag`                   | Image tag for headroom pods.                                                                                                                       | `3.10`                                                 | No                          |
+| `mountpointPod.headroomImage.pullPolicy`            | Image pull policy for headroom pods.                                                                                                               | `IfNotPresent`                                         | No                          |
+
+## CRD Cleanup Configuration (v2.0.0+)
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `cleanupCRDOnUninstall`                              | Enable automatic cleanup of MountpointS3PodAttachment CRD instances and mounter pods during Helm uninstall. **Note:** This does not remove the CRD definition itself. | `false`                                                | No                          |
