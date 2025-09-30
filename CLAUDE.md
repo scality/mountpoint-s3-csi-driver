@@ -2,157 +2,264 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Overview
 
-This repository contains the Scality CSI Driver for S3 (version 1.2.0), a Container Storage Interface (CSI) driver that enables Kubernetes applications to
-mount Scality S3 buckets as file system volumes. It's forked from the AWS Mountpoint for Amazon S3 CSI Driver and optimized for Scality S3 storage.
-
-The driver implements the CSI specification and uses the Mountpoint for Amazon S3 binary underneath for actual S3 mounting operations.
-
-## Key Commands
-
-### Building and Testing
-
-- `make bin` - Build all binaries (scality-s3-csi-driver, scality-csi-controller, scality-s3-csi-mounter, install-mp)
-- `make container` - Build container image with default tag "local"
-- `make test` - Run unit tests with race detection and CSI compliance tests
-- `make unit-test` - Run only unit tests with coverage report
-- `make csi-compliance-test` - Run CSI sanity tests (skips ValidateVolumeCapabilities, Node Service, SingleNodeWriter)
-- `make controller-integration-test` - Run controller integration tests using envtest
-- `make lint` - Check Go formatting (strict validation)
-- `make fmt` - Format Go code
-- `make precommit` - Run all pre-commit hooks (formatting, linting, docs, helm)
-
-### License Management
-
-- `make check-licenses` - Verify dependency licenses against allowed list
-- `make generate-licenses` - Generate license files for all dependencies
-- `make download-tools` - Download Go tools and dependencies
-
-### CSI Driver Operations
-
-- `make csi-install S3_ENDPOINT_URL=<url>` - Install CSI driver to Kubernetes cluster
-- `make csi-uninstall` - Uninstall CSI driver interactively
-- `make csi-uninstall-clean` - Uninstall driver and delete custom namespace
-- `make csi-uninstall-force` - Force uninstall CSI driver
-- `make e2e S3_ENDPOINT_URL=<url>` - Run end-to-end tests on installed driver
-- `make e2e-go S3_ENDPOINT_URL=<url>` - Run only Go-based e2e tests
-- `make e2e-verify` - Run verification tests only
-- `make e2e-all S3_ENDPOINT_URL=<url>` - Install driver and run all tests
-
-### Documentation
-
-- `make docs` - Build and serve documentation with MkDocs (strict mode)
-- `make docs-clean` - Clean documentation build artifacts
-- `make validate-helm` - Validate Helm charts for correctness
+The Scality CSI Driver for S3 is a Kubernetes CSI driver that enables mounting Scality RING S3 buckets as persistent volumes.
+It uses mount-s3 (a FUSE-based filesystem) to provide POSIX-like access to S3 objects. The driver supports both static provisioning (pre-existing buckets) and dynamic provisioning (automatic bucket creation).
 
 ## Architecture
 
-### Core Components
+### Key Components
 
-The Scality CSI Driver follows the CSI specification with three main components:
+1. **CSI Driver Node Service** (`cmd/scality-csi-driver`): Main CSI driver implementing NodePublishVolume/NodeUnpublishVolume RPCs. Runs as a DaemonSet on each node and handles volume mount/unmount operations.
 
-1. **Controller Component** (`scality-csi-controller`):
-   - Manages volume lifecycle and dynamic provisioning operations
-   - Uses controller-runtime for Kubernetes controller pattern
-   - Handles credential validation and storage class parameters
-   - Coordinates with S3 storage for bucket operations
+2. **CSI Controller Service** (`cmd/scality-csi-controller`): Implements CSI Controller Service for dynamic provisioning. Handles CreateVolume/DeleteVolume RPCs and manages S3 bucket lifecycle.
+Includes a separate controller process that reconciles MountpointS3PodAttachment CRDs.
 
-2. **Node Component** (`scality-s3-csi-driver`):
-   - Handles volume mounting/unmounting on each Kubernetes node
-   - Implements CSI Node Service RPC
-   - Coordinates with mounter component for actual S3 mounting
-   - Manages credential providers (AWS profiles, Kubernetes secrets)
+3. **CSI Mounter** (`cmd/scality-csi-mounter`): Helper binary that runs mount-s3 processes inside dedicated "mounter pods" for improved isolation and resource management.
 
-3. **Mounter Component** (`scality-s3-csi-mounter`):
-   - Spawns and monitors mountpoint-s3 processes
-   - Supports both pod-based and systemd mounting strategies
-   - Handles mount argument construction and process lifecycle
+4. **Install MP** (`cmd/install-mp`): Installation helper for mount-s3 binary.
 
-4. **Install Component** (`install-mp`):
-   - Utility for installing mountpoint-s3 binary (temporary solution)
+### Package Structure
 
-### Key Package Structure
+- `pkg/driver`: Core CSI driver implementation (controller, node, identity services)
+- `pkg/driver/node/mounter`: Mounting logic with two strategies:
+  - **systemd mounter**: Runs mount-s3 via systemd transient services (legacy)
+  - **pod mounter**: Runs mount-s3 in dedicated Kubernetes pods (default)
+- `pkg/driver/node/credentialprovider`: Credential resolution from secrets, driver defaults, or AWS profiles
+- `pkg/driver/controller/credentialprovider`: Controller-side credential provider for dynamic provisioning
+- `pkg/podmounter/mppod`: Mounter pod creation, management, and resource calculations
+- `pkg/mountpoint`: mount-s3 argument construction and process execution
+- `pkg/api/v2`: CRD definitions for MountpointS3PodAttachment (tracks volume attachments)
+- `pkg/s3client`: S3 client wrapper for bucket operations
+- `pkg/system`: Low-level system interactions (systemd, pts, namespaces)
 
-- `pkg/driver/` - Main CSI driver implementation
-  - `node/` - Node service with mounting logic
-    - `mounter/` - Different mounting strategies (pod-based, systemd)
-    - `credentialprovider/` - AWS credential management and providers
-    - `envprovider/` - Environment variable credential provider
-    - `targetpath/` - Target path validation and utilities
-    - `volumecontext/` - Volume context parsing and validation
-  - `controller/credentialprovider/` - Controller credential provider
-  - `storageclass/` - StorageClass parameter parsing and validation
-  - `controller.go` - Controller service implementation
-  - `identity.go` - CSI identity service
-  - `server.go` - gRPC server setup and management
-- `pkg/podmounter/` - Mountpoint Pod management and coordination
-  - `mountoptions/` - Mount options parsing and validation
-  - `mppod/` - Mountpoint Pod creation and lifecycle management
-- `pkg/cluster/` - Kubernetes cluster utilities and client management
-- `pkg/mountpoint/` - Mountpoint-s3 argument handling and runner
-  - `runner/` - Process execution and foreground/background runners
-  - `mounter/` - Platform-specific mounting implementations
-- `pkg/s3client/` - S3 client utilities and operations
-- `pkg/system/` - System utilities (pts, systemd integration)
-- `pkg/constants/` - Driver constants and field definitions
-- `pkg/util/` - Common utilities (environment, file operations, kubelet)
-- `cmd/` - Binary entry points for all components
-- `tests/` - Test suites (unit, integration, e2e, helm validation)
+### Critical Design Patterns
 
-### Technology Stack
+- **Dual Mounter Strategy**: The driver supports two mounting approaches. Pod mounter is enabled by default and recommended. Systemd mounter is legacy but still supported.
+- **Credential Resolution Chain**: Credentials are resolved in order: secret-based → driver-level → AWS profile → IAM roles.
+- **Volume Sharing**: Multiple pods can share the same S3 volume. MountpointS3PodAttachment CRD tracks these shared mounts.
+- **Resource Management**: Mounter pods have resource requests/limits calculated based on cache size and mount options.
 
-- **Go**: 1.24.5
-- **Kubernetes API**: v0.33.2  
-- **CSI Specification**: v1.11.0
-- **AWS SDK v2**: For S3 compatibility (even with non-AWS S3 storage)
-- **Controller-runtime**: v0.21.0 for Kubernetes controller pattern
-- **systemd integration**: via godbus v5.1.0 for systemd mounting strategy
-- **Testing**: Ginkgo/Gomega for behavior-driven testing
-- **Documentation**: MkDocs for documentation site generation
-- **Pre-commit hooks**: For code quality and formatting validation
+## Development Commands
 
-### Key Features
+### Building
 
-- **Dual Mounting Strategies**: Pod-based and systemd mounting approaches
-- **Credential Flexibility**: AWS profiles, Kubernetes secrets, environment variables
-- **Dynamic Provisioning**: Controller-based volume lifecycle management
-- **S3 Compatibility**: Works with any S3-compatible storage (optimized for Scality)
-- **Comprehensive Testing**: Unit, integration, e2e, and CSI compliance tests
-- **Documentation Site**: MkDocs-based documentation with examples and guides
-- **CI/CD Integration**: GitHub Actions workflows for testing and releases
+```bash
+# Build all binaries (cross-compiles to Linux)
+make bin
 
-## Testing Strategy
+# Build container image (default tag: local)
+make container
 
-### Test Structure
+# Build with custom tag
+make container CONTAINER_TAG=v2.0.0
+```
 
-- `tests/sanity/` - CSI specification compliance tests
-- `tests/controller/` - Controller integration tests using envtest
-- `tests/e2e/` - End-to-end tests against real S3 storage
-- Unit tests co-located with source files
+### Testing
 
-### E2E Testing Prerequisites
+```bash
+# Run unit tests
+make unit-test
 
-1. Load credentials: `source tests/e2e/scripts/load-credentials.sh`
-2. Provide S3_ENDPOINT_URL parameter
-3. Ensure Kubernetes cluster access
+# Run unit tests with race detection and coverage
+make test
 
-## License Management
+# Generate coverage report
+make cover
 
-Uses go-licenses tool to manage dependency licenses:
+# Run CSI compliance tests (sanity tests)
+make csi-compliance-test
 
-- Allowed licenses: Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT
-- `make check-licenses` - Verify compliance
-- `make generate-licenses` - Generate license files
+# Run controller integration tests (uses envtest)
+make controller-integration-test
+```
 
-## Development Notes
+### Code Quality
 
-- Static provisioning only (no dynamic bucket creation)
-- Mount operations use the mountpoint-s3 binary for actual S3 mounting
-- Credential management supports AWS profiles and Kubernetes secrets
-- CSI sanity tests skip controller capabilities due to static provisioning limitation
+```bash
+# Format code
+make fmt
 
-## Best Practices
+# Run linters
+make lint
 
-- Always give a commit message in the end and ask user to commit
-- When giving a commit message, also provide a PR description
+# Run all pre-commit hooks
+make precommit
+```
+
+### Documentation
+
+```bash
+# Build and serve documentation (MkDocs)
+make docs
+
+# Clean documentation artifacts
+make docs-clean
+```
+
+### Code Generation
+
+```bash
+# Generate CRD manifests and deepcopy functions
+make generate
+```
+
+This regenerates:
+
+- CRD YAML in `charts/scality-mountpoint-s3-csi-driver/crds/`
+- `zz_generated.deepcopy.go` for API types
+
+### CRD Installation
+
+```bash
+# Install CRDs directly from repository using kustomize
+kubectl apply -k github.com/scality/mountpoint-s3-csi-driver
+
+# Or install from local directory
+kubectl apply -k .
+```
+
+### License Management
+
+```bash
+# Check dependency licenses
+make check-licenses
+
+# Generate license files for dependencies
+make generate-licenses
+```
+
+### E2E Testing Workflow
+
+E2E tests require a Scality RING S3 endpoint and credentials.
+
+```bash
+# Load credentials from integration_config.json
+source tests/e2e/scripts/load-credentials.sh
+
+# Install driver, run all tests
+make e2e-all S3_ENDPOINT_URL=https://s3.example.com
+
+# Or use separate commands:
+make csi-install S3_ENDPOINT_URL=https://s3.example.com
+make e2e S3_ENDPOINT_URL=https://s3.example.com
+make csi-uninstall
+
+# Run only Go-based e2e tests
+make e2e-go
+
+# Run only verification tests
+make e2e-verify
+
+# Uninstall options
+make csi-uninstall              # Interactive
+make csi-uninstall-clean        # Delete custom namespace
+make csi-uninstall-force        # Force uninstall
+```
+
+### Mage Targets (Alternative Development Workflow)
+
+Mage provides higher-level tasks for local development with minikube/kind:
+
+```bash
+# Install mage
+go install github.com/magefile/mage@latest
+
+# Build and install CSI driver from local source
+mage up
+
+# Remove CSI driver and resources
+mage down
+
+# Install specific version from OCI registry
+SCALITY_CSI_VERSION=v2.0.0 mage install
+
+# Configure/remove DNS mapping for s3.example.com
+mage configureS3DNS
+mage removeS3DNS
+mage showS3DNSStatus
+```
+
+## Testing Guidelines
+
+### Unit Tests
+
+- Unit tests should use fakes/mocks defined in `*test.go` files or dedicated `*/mocks/` directories
+- Controller tests use `envtest` (real Kubernetes API server) for integration testing
+- Mock generation uses `github.com/golang/mock`
+
+### E2E Tests
+
+- Located in `tests/e2e/`
+- Use Ginkgo/Gomega testing framework
+- Require real S3 infrastructure
+- Test both static and dynamic provisioning scenarios
+- Separate `go.mod` to isolate e2e dependencies
+
+### Running Single Test
+
+```bash
+# Run specific test by name
+go test -v ./pkg/driver/node/mounter -run TestPodMounter
+
+# Run tests in specific package
+go test -v ./pkg/driver/...
+```
+
+## Important Conventions
+
+### Version Management
+
+Version is set in Makefile (`VERSION=2.0.0`) and injected at build time via ldflags into `pkg/driver/version`.
+
+### Commit Messages
+
+Follow conventional commit style based on repository history:
+
+- Use prefixes: `S3CSI-XXX:` for Jira ticket references
+- Format: `S3CSI-XXX: Brief description of change`
+- Focus on what changed and why
+
+### Branch Strategy
+
+- Main branch: `main`
+- Feature branches: `feature/S3CSI-XXX-description`
+- Improvement branches: `improvement/S3CSI-XXX-description`
+
+### Platform-Specific Code
+
+- Platform-specific files use build tags: `//go:build linux` or `//go:build darwin`
+- Always provide Darwin stubs for Linux-only functionality to support local development on macOS
+- CI runs with `GOOS=linux` to ensure Linux-specific code is analyzed
+
+### Helm Chart
+
+- Chart location: `charts/scality-mountpoint-s3-csi-driver/`
+- Values can be customized for image repository, tag, resources, etc.
+- CRDs are included in `crds/` subdirectory
+
+## Key Environment Variables
+
+- `CSI_NODE_NAME`: Node name for CSI driver
+- `MOUNTPOINT_VERSION`: Mount-s3 version to report
+- `MOUNTPOINT_NAMESPACE`: Namespace for mounter pods
+- `S3_ENDPOINT_URL`: S3 endpoint URL (required for e2e tests)
+- `ACCOUNT1_ACCESS_KEY` / `ACCOUNT1_SECRET_KEY`: S3 credentials (loaded via `load-credentials.sh`)
+
+## Troubleshooting
+
+- Check pod logs: `kubectl logs -n kube-system <pod-name>`
+- Check systemd services (legacy mounter): `systemctl status mount-s3-*`
+- Check mounter pods: `kubectl get pods -n kube-system -l app=mountpoint-s3-csi-mounter`
+- Check CRDs: `kubectl get mountpoints3podattachments` or `kubectl get s3pa`
+- Enable debug logging via mount option: `--log-level debug`
+
+## Important Files
+
+- `Makefile`: Primary build and test commands
+- `magefiles/`: Mage-based development workflow
+- `.pre-commit-config.yaml`: Pre-commit hooks configuration
+- `.golangci.yaml`: Linter configuration
+- `mkdocs.yml`: Documentation site configuration
+- `integration_config.json`: E2E test credentials (not in repo, user-provided)
