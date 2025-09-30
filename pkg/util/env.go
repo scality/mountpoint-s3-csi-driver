@@ -8,8 +8,13 @@ func UsePodMounter() bool {
 
 // SupportLegacySystemdMounts returns true if the driver should support
 // existing systemd mounts during upgrade from v1.x to v2.x.
-// When enabled, existing systemd mounts will be preserved and only
-// credentials will be refreshed. New mounts will use pod mounter.
+//
+// NOTE: This is hardcoded to true for backward compatibility.
+// Disabling this is not supported and will cause upgrade failures.
+// This function and related systemd mount handling will be removed in a future version.
 func SupportLegacySystemdMounts() bool {
-	return os.Getenv("SUPPORT_LEGACY_SYSTEMD_MOUNTS") == "true"
+	// Always enabled to ensure smooth upgrades from v1.x
+	// TODO: S3C-10414 - Remove this method and all legacy systemd mount handling in a future major version
+	// We are keeping this method as it will be needed for transition, first deprecation and then removal.
+	return true
 }

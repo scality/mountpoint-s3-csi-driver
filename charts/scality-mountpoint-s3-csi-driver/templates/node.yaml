@@ -79,8 +79,6 @@ spec:
               value: {{ trimSuffix "/" .Values.node.kubeletPath }}/plugins/s3.csi.scality.com/
             - name: MOUNTPOINT_NAMESPACE
               value: {{ .Values.mountpointPod.namespace }}
-            - name: SUPPORT_LEGACY_SYSTEMD_MOUNTS
-              value: "{{ .Values.supportLegacySystemDMounts }}"
             - name: AWS_ENDPOINT_URL
               value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl }}
             - name: AWS_REGION
