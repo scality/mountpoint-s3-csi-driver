@@ -110,6 +110,16 @@ This regenerates:
 - CRD YAML in `charts/scality-mountpoint-s3-csi-driver/crds/`
 - `zz_generated.deepcopy.go` for API types
 
+### CRD Installation
+
+```bash
+# Install CRDs directly from repository using kustomize
+kubectl apply -k github.com/scality/mountpoint-s3-csi-driver
+
+# Or install from local directory
+kubectl apply -k .
+```
+
 ### License Management
 
 ```bash
