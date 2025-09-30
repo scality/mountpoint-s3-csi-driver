@@ -1,5 +1,30 @@
 # Release Notes
 
+## [2.0.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.0)
+
+September 30, 2025
+
+### What's New
+
+- **Pod Mounter Strategy**: New default mounting approach using dedicated mounter pods for improved isolation and resource management.
+- **MountpointS3PodAttachment CRD**: Introduced Custom Resource Definition to track volume attachments and enable volume sharing across multiple pods.
+- **Scality RING 9.5.1+ Support**: Tested and validated compatibility with Scality RING version 9.5.1 and newer.
+- **Enhanced Resource Management**: Automatic resource request/limit calculation for mounter pods based on cache size and mount options.
+- **Controller Improvements**: Enhanced controller service with CRD reconciliation for managing pod attachments.
+
+### Breaking Changes
+
+- Default mounter strategy changed from systemd to pod-based mounter. Legacy systemd mounter is still available and will use pod-based mounter once the mount is requested again(pod restarts).
+- Requires installation of MountpointS3PodAttachment CRD via kustomize or manual application. Helm v3 does not support automatic installation of CRDs on upgrades.
+
+### Upgrade Notes
+
+- **Required Upgrade Path**: Must upgrade to v1.2.0 before upgrading to v2.0.0. Direct upgrades from versions earlier than v1.2.0 are not supported.
+- **CRD Installation Required**: The MountpointS3PodAttachment CRD must be installed manually before upgrading. See the [Upgrade Guide](driver-deployment/upgrade-guide.md) for detailed instructions.
+- **Version Specification**: Explicitly specify `--version 1.2.0` or `--version 2.0.0` in Helm commands to control the upgrade path.
+
+For complete upgrade instructions, see the [Upgrade Guide](driver-deployment/upgrade-guide.md).
+
 ## [1.2.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.2.0)
 
 August 21, 2025
