@@ -135,7 +135,10 @@ mountpointPod:
   # Priority class for headroom pods (typically low priority)
   headroomPriorityClassName: mount-s3-headroom
   # Image to use for headroom pods (typically a pause container)
-  headroomImage: ghcr.io/scality/mountpoint-s3-csi-driver/pause:3.10
+  headroomImage:
+    repository: ghcr.io/scality/mountpoint-s3-csi-driver/pause
+    tag: "3.10"
+    pullPolicy: IfNotPresent
 
 # CRD Cleanup Configuration
 # Enable automatic cleanup of MountpointS3PodAttachment CRDs and Mountpoint Pods during helm uninstall

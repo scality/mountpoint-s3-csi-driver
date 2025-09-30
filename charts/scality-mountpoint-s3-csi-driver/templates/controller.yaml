@@ -112,7 +112,7 @@ spec:
             - name: MOUNTPOINT_IMAGE
               value: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
             - name: MOUNTPOINT_HEADROOM_IMAGE
-              value: {{ .Values.mountpointPod.headroomImage | quote }}
+              value: {{ printf "%s:%s" .Values.mountpointPod.headroomImage.repository .Values.mountpointPod.headroomImage.tag | quote }}
             - name: MOUNTPOINT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | quote }}
         - name: csi-provisioner
