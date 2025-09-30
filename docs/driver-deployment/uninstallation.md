@@ -48,7 +48,30 @@ kubectl get pv -o json | jq -r '.items[] | select(.spec.csi.driver == "s3.csi.sc
 # Delete PVs as needed
 ```
 
-### Step 3: Uninstall the S3 CSI Driver Helm Release
+### Step 3: Remove MountpointS3PodAttachment CRDs and Mounter Pods (v2.0.0+)
+
+!!! info "v2.0.0 Cleanup"
+    Version 2.0.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.
+
+Delete all MountpointS3PodAttachment CRD instances:
+
+```bash
+kubectl delete mountpoints3podattachments.s3.csi.scality.com --all-namespaces --all
+```
+
+Delete mounter pods in the mount-s3 namespace (if exists):
+
+```bash
+kubectl delete pods -n mount-s3 --all
+```
+
+Wait for resources to be fully deleted:
+
+```bash
+kubectl wait --for=delete mountpoints3podattachments.s3.csi.scality.com --all --all-namespaces --timeout=60s
+```
+
+### Step 4: Uninstall the S3 CSI Driver Helm Release
 
 Detect the namespace where the driver is installed and export it as an environment variable:
 
@@ -76,28 +99,58 @@ helm uninstall scality-mountpoint-s3-csi-driver -n ${NAMESPACE}
 kubectl delete secret ${SECRET_NAME} -n ${NAMESPACE}
 ```
 
-### Step 4: Remove Namespace (Optional)
+### Step 4: Remove Namespaces (Optional)
 
-If a dedicated namespace was created and is no longer needed:
+If a dedicated namespace was created for the driver and is no longer needed:
 
 ```bash
-# Check namespace is empty first
+# Check driver namespace is empty first
 kubectl get all -n ${NAMESPACE}
 
-# Delete namespace
+# Delete driver namespace
 kubectl delete namespace ${NAMESPACE}
 ```
 
-### Step 5: Check Complete Removal
+Remove the mount-s3 namespace (if it exists):
+
+```bash
+# Check mount-s3 namespace
+kubectl get namespace mount-s3
+
+# Delete mount-s3 namespace
+kubectl delete namespace mount-s3
+```
+
+### Step 5: Remove CRD Definitions (v2.0.0+)
+
+!!! warning "CRD Removal"
+    Helm v3 does **not** automatically delete CRDs on uninstall. CRDs must be manually removed if they are no longer needed.
+
+Remove the MountpointS3PodAttachment CRD definition:
+
+```bash
+kubectl delete crd mountpoints3podattachments.s3.csi.scality.com
+```
+
+### Step 6: Check Complete Removal
 
 Ensure all CSI driver components are removed:
 
 ```bash
-# Check for remaining pods
+# Check for remaining driver pods
 kubectl get pods --all-namespaces | grep s3-csi
+
+# Check for remaining mounter pods
+kubectl get pods -n mount-s3
 
 # Check CSI driver registration
 kubectl get csidriver s3.csi.scality.com
+
+# Check CRD removal
+kubectl get crd mountpoints3podattachments.s3.csi.scality.com
+
+# Check for remaining CRD instances
+kubectl get mountpoints3podattachments --all-namespaces
 
 # Check for remaining service accounts
 kubectl get sa --all-namespaces | grep s3-csi
@@ -105,4 +158,7 @@ kubectl get sa --all-namespaces | grep s3-csi
 # Check for remaining cluster roles
 kubectl get clusterrole | grep s3-csi
 kubectl get clusterrolebinding | grep s3-csi
+
+# Check namespaces
+kubectl get namespace mount-s3
 ```
