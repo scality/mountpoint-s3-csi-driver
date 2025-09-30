@@ -7,3 +7,4 @@ Refer to the [official documentation site](https://scality.github.io/mountpoint-
 [![Linting and Formatting](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/linting-and-formatting.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/linting-and-formatting.yaml)
 [![Code Quality Tests](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/code-quality-tests.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/code-quality-tests.yaml)
 [![E2E Integration Tests with RING S3](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/e2e-tests.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/e2e-tests.yaml)
+[![Upgrade Tests](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/upgrade-test.yaml/badge.svg)](https://github.com/scality/mountpoint-s3-csi-driver/actions/workflows/upgrade-test.yaml)
