@@ -167,12 +167,20 @@ Dynamic provisioning supports all [mount options](../mount-options.md) through t
 
 ## Authentication
 
-Dynamic provisioning requires two sets of credentials. If either or both credential types are missing from the StorageClass configuration, the CSI driver will fall back to the default driver-level credentials.
+Dynamic provisioning supports two authentication modes:
 
-1. **Provisioner Secrets**: Used by CSI controller for bucket creation and deletion
-2. **Node Secrets**: Used by nodes for mounting operations
+1. **Secret-based Authentication (Recommended)**: Configure **both** `provisioner-secret` and `node-publish-secret` in StorageClass
+   - **Provisioner Secret**: Used by CSI controller for bucket creation/deletion
+   - **Node-Publish Secret**: Used by nodes for mounting operations
+   - Both secrets can point to the same Secret or different Secrets (for least privilege)
 
-See the [Credential Management Guide](../../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md) for detailed configuration.
+2. **Driver-level Authentication**: Omit both secret parameters to use driver-level credentials for all operations
+
+!!! important "Both secrets must be configured together when using secret-based authentication"
+    The controller cannot detect if only `node-publish-secret` is configured (CSI specification limitation),
+    so configuring only one secret will result in driver-level credentials being used.
+
+See the [Credential Management Guide](../../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md) for detailed configuration and examples.
 
 ## Limitations
 

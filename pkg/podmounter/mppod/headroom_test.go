@@ -29,6 +29,7 @@ func TestHeadroomPod(t *testing.T) {
 			verifyPod: func(t *testing.T, pod *corev1.Pod) {
 				if pod == nil {
 					t.Fatal("Expected pod to not be nil")
+					return
 				}
 				assert.Equals(t, "mount-s3", pod.Namespace)
 				assert.Equals(t, "headroom-priority", pod.Spec.PriorityClassName)
@@ -46,6 +47,7 @@ func TestHeadroomPod(t *testing.T) {
 			verifyPod: func(t *testing.T, pod *corev1.Pod) {
 				if pod == nil {
 					t.Fatal("Expected pod to not be nil")
+					return
 				}
 				container := &pod.Spec.Containers[0]
 				if container.Resources.Requests == nil {
@@ -64,6 +66,7 @@ func TestHeadroomPod(t *testing.T) {
 			verifyPod: func(t *testing.T, pod *corev1.Pod) {
 				if pod == nil {
 					t.Fatal("Expected pod to not be nil")
+					return
 				}
 				container := &pod.Spec.Containers[0]
 				if container.Resources.Limits == nil {

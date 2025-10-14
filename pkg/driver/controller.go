@@ -104,28 +104,39 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	// Authentication Source Configuration for Dynamic Provisioning
 	//
-	// CSI Credential Resolution:
-	// The CSI provisioner resolves StorageClass secret parameters and passes credential values
-	// in the 'secrets' field of CreateVolumeRequest. The authentication source is determined
-	// by whether the CSI provisioner provided secrets or not.
+	// CSI Secret Resolution:
+	// The CSI external-provisioner resolves StorageClass secret parameters separately:
+	// - csi.storage.k8s.io/provisioner-secret-*: Resolved and VALUES passed in req.GetSecrets()
+	// - csi.storage.k8s.io/node-publish-secret-*: Stored in PV.Spec.CSI.NodePublishSecretRef
+	//
+	// IMPORTANT: The external-provisioner STRIPS both secret parameter types from req.GetParameters(),
+	// regardless of the --extra-create-metadata flag. Therefore, we cannot directly detect if
+	// node-publish-secret is configured during CreateVolume.
 	//
 	// Authentication Source Logic:
-	// 1. If CSI secrets provided: authenticationSource = "secret" (node should use secrets)
-	// 2. If no CSI secrets: authenticationSource = "driver" (node should use driver credentials)
+	// We use provisioner-secret presence as a proxy for secret-based authentication.
+	// In typical multi-tenant deployments, both provisioner and node-publish secrets are
+	// configured together.
 	//
-	// Note: With CSI secret resolution, we don't get the original StorageClass parameter names,
-	// so we can't distinguish between provisioner-secret vs node-publish-secret in the controller.
-	// The node will need to determine the appropriate credential source during NodePublishVolume.
+	// 1. If req.GetSecrets() not empty: authenticationSource = "secret" (secrets configured)
+	// 2. If req.GetSecrets() empty: authenticationSource = "driver" (no secrets / driver-only)
+	//
+	// Supported scenarios:
+	// - Both secrets: Controller uses provisioner-secret, node uses node-publish-secret ✓
+	// - No secrets: Both use driver credentials ✓
+	//
+	// Limitation:
+	// - Only node-publish-secret (no provisioner-secret): Cannot be detected, falls back to "driver"
+	//   For this scenario, also configure provisioner-secret (can be same as node-publish-secret)
 
-	csiSecrets := req.GetSecrets()
-	if len(csiSecrets) > 0 {
-		// CSI provisioner resolved secrets from StorageClass, node should use secret authentication
+	if len(req.GetSecrets()) > 0 {
+		// Provisioner-secret provided, assume node-publish-secret also configured
 		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceSecret
-		klog.V(4).Infof("Set authenticationSource=secret for volume %s (CSI secrets provided)", volumeID)
+		klog.V(4).Infof("Set authenticationSource=secret for volume %s (provisioner-secret provided)", volumeID)
 	} else {
-		// No CSI secrets provided, node should use driver credentials
+		// No provisioner-secret, use driver credentials
 		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceDriver
-		klog.V(4).Infof("Set authenticationSource=driver for volume %s (no CSI secrets)", volumeID)
+		klog.V(4).Infof("Set authenticationSource=driver for volume %s (no provisioner-secret)", volumeID)
 	}
 
 	capacity := req.GetCapacityRange().GetRequiredBytes()

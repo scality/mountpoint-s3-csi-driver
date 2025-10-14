@@ -241,12 +241,15 @@ func TestCreateVolume(t *testing.T) {
 				// Validate response
 				if resp == nil {
 					t.Fatal("Response is nil")
+					return
 				}
 				if resp.Volume == nil {
 					t.Fatal("Volume is nil")
+					return
 				}
 				if resp.Volume.VolumeId == "" {
 					t.Fatal("Volume ID is empty")
+					return
 				}
 				if !strings.HasPrefix(resp.Volume.VolumeId, "csi-s3-") {
 					t.Fatalf("Volume ID %q doesn't have expected prefix", resp.Volume.VolumeId)
@@ -264,8 +267,9 @@ func TestCreateVolume(t *testing.T) {
 						resp.Volume.VolumeContext["bucketName"], resp.Volume.VolumeId)
 				}
 
-				// Check authentication source is set correctly based on CSI secrets
+				// Check authentication source is set correctly based on provisioner-secret presence
 				expectedAuthSource := "driver"
+				// Check if provisioner-secret is provided (via req.Secrets)
 				if len(tc.req.Secrets) > 0 {
 					expectedAuthSource = "secret"
 				}
@@ -304,30 +308,56 @@ func TestGenerateVolumeID(t *testing.T) {
 func TestCreateVolumeAuthenticationSource(t *testing.T) {
 	tests := []struct {
 		name               string
+		parameters         map[string]string
 		csiSecrets         map[string]string
 		expectedAuthSource string
 	}{
 		{
-			name:               "no CSI secrets - use driver credentials",
+			name:               "no secrets - use driver credentials",
+			parameters:         map[string]string{},
 			csiSecrets:         nil,
 			expectedAuthSource: "driver",
 		},
 		{
-			name: "CSI secrets provided - use secret credentials",
+			name: "provisioner-secret provided - use secret credentials",
+			parameters: map[string]string{
+				// Only provisioner secret configured in StorageClass
+				constants.ProvisionerSecretNameKey:      "my-provisioner-secret",
+				constants.ProvisionerSecretNamespaceKey: "default",
+			},
 			csiSecrets: map[string]string{
+				// CSI provisioner resolves provisioner-secret and passes values here
 				constants.AccessKeyIDField:     "AKIATEST",
 				constants.SecretAccessKeyField: "test-secret-key",
 			},
-			expectedAuthSource: "secret",
+			expectedAuthSource: "secret", // Provisioner-secret presence indicates secret-based auth
 		},
 		{
-			name: "CSI secrets with session token - use secret credentials",
+			name: "node-publish-secret only (no provisioner-secret) - falls back to driver",
+			parameters: map[string]string{
+				// Only node-publish secret configured (external-provisioner strips this)
+				constants.NodePublishSecretNameKey:      "my-node-secret",
+				constants.NodePublishSecretNamespaceKey: "kube-system",
+			},
+			csiSecrets:         nil,      // No provisioner-secret, so no CSI secrets passed
+			expectedAuthSource: "driver", // Cannot detect node-publish-only, falls back to driver
+		},
+		{
+			name: "both provisioner and node-publish secrets - use secret credentials",
+			parameters: map[string]string{
+				// Both secrets configured (external-provisioner strips both parameter names)
+				constants.ProvisionerSecretNameKey:      "my-provisioner-secret",
+				constants.ProvisionerSecretNamespaceKey: "default",
+				constants.NodePublishSecretNameKey:      "my-node-secret",
+				constants.NodePublishSecretNamespaceKey: "kube-system",
+			},
 			csiSecrets: map[string]string{
+				// Provisioner secret values passed by external-provisioner
 				constants.AccessKeyIDField:     "AKIATEST",
 				constants.SecretAccessKeyField: "test-secret-key",
 				constants.SessionTokenField:    "session-token-123",
 			},
-			expectedAuthSource: "secret",
+			expectedAuthSource: "secret", // Provisioner-secret indicates both secrets configured
 		},
 	}
 
@@ -358,8 +388,8 @@ func TestCreateVolumeAuthenticationSource(t *testing.T) {
 			// Create request with CSI secrets
 			req := &csi.CreateVolumeRequest{
 				Name:       "test-volume",
-				Parameters: map[string]string{}, // Empty - CSI provisioner doesn't pass secret names
-				Secrets:    tc.csiSecrets,       // CSI provisioner provides credential values
+				Parameters: tc.parameters, // Include node-publish-secret configuration
+				Secrets:    tc.csiSecrets, // CSI provisioner provides credential values
 				VolumeCapabilities: []*csi.VolumeCapability{
 					{
 						AccessMode: &csi.VolumeCapability_AccessMode{

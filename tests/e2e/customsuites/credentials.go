@@ -10,6 +10,7 @@ import (
 	"github.com/onsi/gomega"
 
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -345,5 +346,109 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 				CustomPodName:   "test-invalid-key-" + uuid.NewString()[:8],
 			},
 		)
+	})
+
+	ginkgo.It("dynamically provisions with different provisioner and node-publish secrets and fails with Access Denied", func(ctx context.Context) {
+		// This test validates cross-account access control:
+		// 1. Controller uses provisioner-secret (Account1/Bart) to create the S3 bucket
+		// 2. Node uses node-publish-secret (Account2/Lisa) to mount
+		// 3. Mount fails with Access Denied because Account2 has no permissions on Account1's bucket
+		// This proves that node-publish-secret credentials are actually being used for mounting
+
+		account1AK, account1SK, _, account2AK, account2SK, _ := getCredentialsFromEnv()
+
+		// Create provisioner-secret with Account1 (Bart) credentials
+		provisionerSecretName, err := CreateCredentialSecret(ctx, f, "provisioner-account1", account1AK, account1SK)
+		framework.ExpectNoError(err, "failed to create provisioner secret")
+		framework.Logf("Created provisioner secret %s with Account1 credentials", provisionerSecretName)
+
+		// Create node-publish-secret with Account2 (Lisa) credentials
+		nodePublishSecretName, err := CreateCredentialSecret(ctx, f, "node-publish-account2", account2AK, account2SK)
+		framework.ExpectNoError(err, "failed to create node-publish secret")
+		framework.Logf("Created node-publish secret %s with Account2 credentials", nodePublishSecretName)
+
+		// Create StorageClass with both secrets
+		scName := "test-dynamic-dual-secrets-" + uuid.NewString()[:8]
+		sc := &storagev1.StorageClass{
+			ObjectMeta:  metav1.ObjectMeta{Name: scName},
+			Provisioner: "s3.csi.scality.com",
+			Parameters: map[string]string{
+				"csi.storage.k8s.io/provisioner-secret-name":       provisionerSecretName,
+				"csi.storage.k8s.io/provisioner-secret-namespace":  f.Namespace.Name,
+				"csi.storage.k8s.io/node-publish-secret-name":      nodePublishSecretName,
+				"csi.storage.k8s.io/node-publish-secret-namespace": f.Namespace.Name,
+			},
+			ReclaimPolicy:     ptr.To(v1.PersistentVolumeReclaimDelete),
+			VolumeBindingMode: ptr.To(storagev1.VolumeBindingImmediate),
+		}
+		_, err = f.ClientSet.StorageV1().StorageClasses().Create(ctx, sc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "failed to create StorageClass")
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			err := f.ClientSet.StorageV1().StorageClasses().Delete(ctx, scName, metav1.DeleteOptions{})
+			if err != nil {
+				framework.Logf("Warning: failed to delete StorageClass %s: %v", scName, err)
+			}
+		})
+		framework.Logf("Created StorageClass %s", scName)
+
+		// Create PVC using the StorageClass
+		pvcName := "test-pvc-" + uuid.NewString()[:8]
+		pvc := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{Name: pvcName, Namespace: f.Namespace.Name},
+			Spec: v1.PersistentVolumeClaimSpec{
+				StorageClassName: &scName,
+				AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{v1.ResourceStorage: resource.MustParse("1Gi")},
+				},
+			},
+		}
+		_, err = f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Create(ctx, pvc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "failed to create PVC")
+		framework.Logf("Created PVC %s", pvcName)
+
+		// Wait for PVC to be bound (bucket created by controller using Account1)
+		ginkgo.By("Waiting for PVC to be bound and bucket to be dynamically provisioned")
+		WaitForPVCToBeBound(ctx, f, pvcName, f.Namespace.Name)
+		framework.Logf("PVC %s is now bound", pvcName)
+
+		// Get PV to extract bucket name and verify authenticationSource
+		boundPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
+		framework.ExpectNoError(err)
+		pv, err := f.ClientSet.CoreV1().PersistentVolumes().Get(ctx, boundPVC.Spec.VolumeName, metav1.GetOptions{})
+		framework.ExpectNoError(err)
+		bucketName := pv.Spec.CSI.VolumeAttributes["bucketName"]
+		framework.Logf("Bucket name: %s (created by Account1)", bucketName)
+
+		// Verify authenticationSource is set correctly to "secret"
+		authSource := pv.Spec.CSI.VolumeAttributes["authenticationSource"]
+		gomega.Expect(authSource).To(gomega.Equal("secret"),
+			"authenticationSource should be 'secret' when node-publish-secret is configured")
+
+		// Create pod with PVC - expect it to fail with Access Denied
+		ginkgo.By("Creating pod that will fail to mount due to cross-account permissions")
+		podName := "test-cross-account-" + uuid.NewString()[:8]
+		pod := e2epod.MakePod(f.Namespace.Name, nil, []*v1.PersistentVolumeClaim{boundPVC}, admissionapi.LevelRestricted, "")
+		pod.Name = podName
+		podModifierNonRoot(pod)
+
+		pod, err = f.ClientSet.CoreV1().Pods(f.Namespace.Name).Create(ctx, pod, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "failed to create pod")
+		framework.Logf("Pod %s created, waiting for Access Denied error", pod.Name)
+
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			framework.Logf("Cleaning up pod %s", pod.Name)
+			err := CleanupPodInErrorState(ctx, f, pod.Name)
+			if err != nil {
+				framework.Logf("Warning: failed to cleanup pod %s: %v", pod.Name, err)
+			}
+		})
+
+		// Wait for expected Access Denied error from S3
+		ginkgo.By("Waiting for Access Denied error due to Account2 lacking permissions on Account1's bucket")
+		err = WaitForPodError(ctx, f, pod.Name, "Access Denied", 2*time.Minute)
+		framework.ExpectNoError(err, "Expected to find Access Denied error in pod events")
+
+		framework.Logf("Test passed: Mount correctly failed with Access Denied, proving node-publish-secret (Account2) was used to access Account1's bucket")
 	})
 }
