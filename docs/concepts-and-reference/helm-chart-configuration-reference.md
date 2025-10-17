@@ -18,7 +18,7 @@ These parameters configure the overall behavior of the CSI driver components.
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
 | `image.repository`                                   | The container image repository for the CSI driver.                                                                                                 | `ghcr.io/scality/mountpoint-s3-csi-driver`             | No                          |
 | `image.pullPolicy`                                   | The image pull policy.                                                                                                                             | `IfNotPresent`                                         | No                          |
-| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `2.0.0`                                                | No                          |
+| `image.tag`                                          | The image tag for the CSI driver. Overrides the chart's `appVersion` if set.                                                                       | `2.0.1`                                                | No                          |
 
 ## S3 Global Configuration
 
@@ -116,11 +116,11 @@ These parameters configure the overall behavior of the CSI driver components.
 | `controller.serviceAccount.create`                   | Specifies whether a ServiceAccount should be created for the controller.                                                                          | `true`                                                 | No                          |
 | `controller.serviceAccount.name`                     | Name of the ServiceAccount to use for the controller.                                                                                             | `s3-csi-driver-controller-sa`                          | No                          |
 
-## Mountpoint Pod Configuration (v2.0.0+)
+## Mountpoint Pod Configuration (v2.0)
 
 <!-- markdownlint-disable MD046 -->
 !!! info "Pod Mounter Strategy"
-    Version 2.0.0 uses pod-based mounter as the default strategy. Mounter pods are created in the `mount-s3` namespace to handle S3 mount operations with improved isolation and resource management.
+    Version 2.0 uses pod-based mounter as the default strategy. Mounter pods are created in the `mount-s3` namespace to handle S3 mount operations with improved isolation and resource management.
 <!-- markdownlint-enable MD046 -->
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
@@ -133,7 +133,7 @@ These parameters configure the overall behavior of the CSI driver components.
 | `mountpointPod.headroomImage.tag`                   | Image tag for headroom pods.                                                                                                                       | `3.10`                                                 | No                          |
 | `mountpointPod.headroomImage.pullPolicy`            | Image pull policy for headroom pods.                                                                                                               | `IfNotPresent`                                         | No                          |
 
-## CRD Cleanup Configuration (v2.0.0+)
+## CRD Cleanup Configuration (v2.0)
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|

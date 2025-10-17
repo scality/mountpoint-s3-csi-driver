@@ -25,7 +25,7 @@ The deployment of the Scality CSI Driver for S3 requires access to several conta
 
 | Component | Image | Registry | Purpose |
 |-----------|-------|----------|---------|
-| **Scality CSI Driver for S3** | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.0` | GitHub Container Registry (GHCR) | Main CSI driver functionality |
+| **Scality CSI Driver for S3** | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.1` | GitHub Container Registry (GHCR) | Main CSI driver functionality |
 | **CSI Node Driver Registrar** | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-node-driver-registrar:v2.14.0` | GitHub Container Registry (GHCR) | Registers CSI driver with kubelet |
 | **Liveness Probe** | `ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0` | GitHub Container Registry (GHCR) | Health monitoring for CSI driver pods |
 | **CSI Provisioner** | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0` | GitHub Container Registry (GHCR) | External provisioner for CSI driver (Dynamic provisioning feature) |

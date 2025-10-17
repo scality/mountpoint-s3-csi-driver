@@ -118,7 +118,7 @@ Deploy the driver with minimal configuration.
 ```bash
 helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.0.0 \
+  --version 2.0.1 \
   --set node.s3EndpointUrl="${S3_ENDPOINT_URL}" \
   --set s3CredentialSecret.name="${SECRET_NAME}" \
   --namespace ${NAMESPACE}
@@ -192,7 +192,7 @@ Deploy the driver using the custom values file.
 ```bash
 helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.0.0 \
+  --version 2.0.1 \
   --values values-production.yaml \
   --namespace ${NAMESPACE}
 ```
@@ -227,7 +227,7 @@ Expected output: The CRD should be present with status `Ready`.
 
 !!! info "CRD Installation"
     For fresh installs, Helm v3 automatically installs CRDs from the chart's `crds/` directory.
-    For upgrades from v1.x to v2.0.0, CRDs must be installed manually before upgrading. See the [Upgrade Guide](upgrade-guide.md) for details.
+    For upgrades from v1.x to v2.0, CRDs must be installed manually before upgrading. See the [Upgrade Guide](upgrade-guide.md) for details.
 
 ### Check Driver Logs (Optional)
 
@@ -247,7 +247,7 @@ NodeGetInfo: called with args {}
 ```
 
 !!! note "Mounter Strategy"
-    Version 2.0.0 uses pod-based mounter by default. The mounter pods will be created in the `mount-s3` namespace when volumes are first mounted.
+    Version 2.0 uses pod-based mounter by default. The mounter pods will be created in the `mount-s3` namespace when volumes are first mounted.
 
 ## Uninstallation
 

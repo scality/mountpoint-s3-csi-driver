@@ -1,5 +1,15 @@
 # Release Notes
 
+## [2.0.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.1)
+
+October 17, 2025
+
+### Bug Fixes
+
+- **Credential Validation**: Fixed validation logic that was incorrectly rejecting IAM standard 20-character access keys when using node-publish-secret in dynamic provisioning.
+  The validation was limiting access_key_id to 16 characters, preventing use of standard AWS IAM credentials and certain S3 provider credentials.
+- **Enhanced Documentation**: Updated documentation to reflect correct usage for node pubblish creds for dynamic provisioning.
+
 ## [2.0.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.0)
 
 September 30, 2025
@@ -19,7 +29,7 @@ September 30, 2025
 
 ### Upgrade Notes
 
-- **Required Upgrade Path**: Must upgrade to v1.2.0 before upgrading to v2.0.0. Direct upgrades from versions earlier than v1.2.0 are not supported.
+- **Required Upgrade Path**: Must upgrade to v1.2.0 before upgrading to v2.0. Direct upgrades from versions earlier than v1.2.0 are not supported.
 - **CRD Installation Required**: The MountpointS3PodAttachment CRD must be installed manually before upgrading. See the [Upgrade Guide](driver-deployment/upgrade-guide.md) for detailed instructions.
 - **Version Specification**: Explicitly specify `--version 1.2.0` or `--version 2.0.0` in Helm commands to control the upgrade path.
 
