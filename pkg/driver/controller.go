@@ -133,6 +133,16 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		// Provisioner-secret provided, assume node-publish-secret also configured
 		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceSecret
 		klog.V(4).Infof("Set authenticationSource=secret for volume %s (provisioner-secret provided)", volumeID)
+
+		// Store provisioner secret reference in volume context for DeleteVolume operations
+		// This is critical because DeleteVolumeRequest doesn't include secrets, so we need
+		// to retrieve the secret reference from the PV's volume context during deletion
+		if params.HasProvisionerSecret() {
+			secretName, secretNamespace := params.GetProvisionerSecretRef()
+			volumeContext[constants.VolumeContextProvisionerSecretNameKey] = secretName
+			volumeContext[constants.VolumeContextProvisionerSecretNamespaceKey] = secretNamespace
+			klog.V(4).Infof("Stored provisioner secret reference in volume context: %s/%s", secretNamespace, secretName)
+		}
 	} else {
 		// No provisioner-secret, use driver credentials
 		volumeContext[volumecontext.AuthenticationSource] = credentialprovider.AuthenticationSourceDriver
@@ -165,11 +175,16 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	volumeID := req.GetVolumeId()
 	klog.V(4).Infof("DeleteVolume: processing volume %s", volumeID)
 
-	// For dynamic provisioning, we need to resolve credentials to delete the bucket
-	// Since we don't have volume context in DeleteVolumeRequest, we'll try both credential strategies
+	// Get volume context from PersistentVolume to retrieve provisioner secret reference
+	// This is necessary because DeleteVolumeRequest doesn't include secrets or volume context
+	volumeContext, err := d.getVolumeContextFromPV(ctx, volumeID)
+	if err != nil {
+		klog.Warningf("DeleteVolume: failed to retrieve volume context from PV for volume %s: %v (falling back to driver credentials)", volumeID, err)
+		volumeContext = map[string]string{}
+	}
 
-	// Try to get credentials - first attempt with driver credentials
-	awsConfig, err := d.controllerCredProvider.ProvideForDeleteVolume(ctx, map[string]string{})
+	// Resolve credentials using volume context (which may contain provisioner secret reference)
+	awsConfig, err := d.controllerCredProvider.ProvideForDeleteVolume(ctx, volumeContext)
 	if err != nil {
 		klog.Errorf("DeleteVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
 		// Don't fail - CSI DeleteVolume should be idempotent
@@ -395,4 +410,9 @@ func (d *Driver) createAWSConfigFromCSISecrets(ctx context.Context, secrets map[
 
 func generateVolumeID() string {
 	return fmt.Sprintf("csi-s3-%s", uuid.NewString())
+}
+
+// getVolumeContextFromPV retrieves volume context from PersistentVolume for DeleteVolume operations
+func (d *Driver) getVolumeContextFromPV(ctx context.Context, volumeID string) (map[string]string, error) {
+	return d.controllerCredProvider.GetVolumeContextFromPV(ctx, volumeID)
 }

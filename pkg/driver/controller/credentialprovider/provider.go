@@ -267,3 +267,23 @@ func (p *Provider) CreateAWSConfigFromSecret(ctx context.Context, secret *corev1
 
 	return cfg, nil
 }
+
+// GetVolumeContextFromPV retrieves the volume context from a PersistentVolume by volume ID.
+// This is used during DeleteVolume to retrieve the provisioner secret reference that was
+// stored in the volume context during CreateVolume.
+func (p *Provider) GetVolumeContextFromPV(ctx context.Context, volumeID string) (map[string]string, error) {
+	// List all PersistentVolumes and find the one with matching volumeHandle
+	pvList, err := p.client.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list PersistentVolumes: %w", err)
+	}
+
+	for _, pv := range pvList.Items {
+		if pv.Spec.CSI != nil && pv.Spec.CSI.VolumeHandle == volumeID {
+			klog.V(4).InfoS("Found PersistentVolume for volume", "pvName", pv.Name, "volumeID", volumeID)
+			return pv.Spec.CSI.VolumeAttributes, nil
+		}
+	}
+
+	return nil, fmt.Errorf("PersistentVolume not found for volumeID: %s", volumeID)
+}
