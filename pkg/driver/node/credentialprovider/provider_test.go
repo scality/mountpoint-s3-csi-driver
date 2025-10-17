@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/scality/mountpoint-s3-csi-driver/pkg/driver/node/credentialprovider"
@@ -471,4 +472,200 @@ func TestCredentialFallbackEmptySecretData(t *testing.T) {
 
 	// Verify credential files were created
 	assertLongTermCredentials(t, writePath)
+}
+
+func TestSecretCredentialValidation(t *testing.T) {
+	// This test validates the credential validation logic in provider_secret.go
+	// to ensure it properly handles various key lengths and formats.
+
+	tests := []struct {
+		name        string
+		accessKeyID string
+		secretKey   string
+		expectError bool
+		description string
+	}{
+		// Valid short test credentials
+		{
+			name:        "valid short test credentials",
+			accessKeyID: "TESTKEY123",
+			secretKey:   "TESTSECRET456",
+			expectError: false,
+			description: "Short test credentials should be accepted",
+		},
+
+		// AWS IAM standard credentials (20 characters for access key)
+		{
+			name:        "valid AWS IAM 20-character access key",
+			accessKeyID: "AKIAIOSFODNN7EXAMPLE", // Standard AWS format: 20 chars starting with AKIA
+			secretKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+			expectError: false,
+			description: "AWS IAM 20-character access keys should be accepted (bug S3CSI-195)",
+		},
+		{
+			name:        "valid AWS IAM 20-character access key (alternate format)",
+			accessKeyID: "14RAIKRQ3288T9H0YO6X", // 20 chars (from bug report)
+			secretKey:   "mr8LiennC2aGvMxCB/TxaXT0I1Vj9NxxSo97FY6p",
+			expectError: false,
+			description: "Real AWS IAM key from bug report should be accepted",
+		},
+
+		// Lower-case keys (for test credentials)
+		{
+			name:        "valid lower-case access key",
+			accessKeyID: "accessKey2",
+			secretKey:   "secretKey2",
+			expectError: false,
+			description: "Lower-case keys should be accepted for test credentials",
+		},
+		{
+			name:        "valid mixed-case access key",
+			accessKeyID: "AcCeSsKeY123",
+			secretKey:   "SeCrEtKeY456",
+			expectError: false,
+			description: "Mixed-case keys should be accepted",
+		},
+
+		// Secret key with base64 characters
+		{
+			name:        "valid secret key with base64 characters",
+			accessKeyID: "AKIAIOSFODNN7EXAMPLE",
+			secretKey:   "wJalrXUtnFEMI/K7MDENG+bPxRfiCY/EXAMPLEKEY==",
+			expectError: false,
+			description: "Secret keys with base64 characters (/, +, =) should be accepted",
+		},
+
+		// Maximum length (128 characters)
+		{
+			name:        "valid 128-character access key (maximum allowed)",
+			accessKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQR", // 128 chars
+			secretKey:   "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQR",
+			expectError: false,
+			description: "128-character keys should be accepted (maximum limit)",
+		},
+
+		// Invalid: exceeds maximum length
+		{
+			name:        "invalid access key exceeds 128 characters",
+			accessKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTU", // 129 chars
+			secretKey:   "TESTSECRET456",
+			expectError: true,
+			description: "Access keys exceeding 128 characters should be rejected",
+		},
+		{
+			name:        "invalid secret key exceeds 128 characters",
+			accessKeyID: "AKIAIOSFODNN7EXAMPLE",
+			secretKey:   "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTU", // 129 chars
+			expectError: true,
+			description: "Secret keys exceeding 128 characters should be rejected",
+		},
+
+		// Invalid: special characters (not alphanumeric or base64)
+		{
+			name:        "invalid access key with special characters",
+			accessKeyID: "INVALID@KEY!",
+			secretKey:   "TESTSECRET456",
+			expectError: true,
+			description: "Access keys with special characters should be rejected",
+		},
+		{
+			name:        "invalid access key with spaces",
+			accessKeyID: "INVALID KEY",
+			secretKey:   "TESTSECRET456",
+			expectError: true,
+			description: "Access keys with spaces should be rejected",
+		},
+		{
+			name:        "invalid secret key with invalid special characters",
+			accessKeyID: "AKIAIOSFODNN7EXAMPLE",
+			secretKey:   "INVALID@SECRET!",
+			expectError: true,
+			description: "Secret keys with invalid special characters should be rejected",
+		},
+
+		// Edge cases: empty strings
+		{
+			name:        "invalid empty access key",
+			accessKeyID: "",
+			secretKey:   "TESTSECRET456",
+			expectError: true,
+			description: "Empty access key should be rejected",
+		},
+		{
+			name:        "invalid empty secret key",
+			accessKeyID: "AKIAIOSFODNN7EXAMPLE",
+			secretKey:   "",
+			expectError: true,
+			description: "Empty secret key should be rejected",
+		},
+
+		// Edge cases: whitespace handling
+		{
+			name:        "valid access key with leading/trailing spaces (trimmed)",
+			accessKeyID: "  AKIAIOSFODNN7EXAMPLE  ",
+			secretKey:   "  wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY  ",
+			expectError: false,
+			description: "Keys with leading/trailing spaces should be trimmed and accepted",
+		},
+
+		// Single character keys (minimum valid length)
+		{
+			name:        "valid single character keys",
+			accessKeyID: "A",
+			secretKey:   "S",
+			expectError: false,
+			description: "Single character keys should be accepted (minimum length)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := credentialprovider.New(nil)
+
+			provideCtx := credentialprovider.ProvideContext{
+				VolumeID:             "test-volume-id",
+				AuthenticationSource: credentialprovider.AuthenticationSourceSecret,
+				SecretData: map[string]string{
+					"access_key_id":     tt.accessKeyID,
+					"secret_access_key": tt.secretKey,
+				},
+			}
+
+			env, authSource, err := provider.Provide(context.Background(), provideCtx)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("%s: Expected error but got nil", tt.description)
+					return
+				}
+				// Verify error returns nil environment and still returns AuthenticationSourceSecret
+				// (Provider.Provide returns AuthenticationSourceSecret even on validation failure)
+				if env != nil {
+					t.Errorf("%s: Expected nil environment on error, got %v", tt.description, env)
+				}
+				if authSource != credentialprovider.AuthenticationSourceSecret {
+					t.Errorf("%s: Expected secret auth source on validation error, got %s", tt.description, authSource)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("%s: Expected success but got error: %v", tt.description, err)
+					return
+				}
+				assert.NoError(t, err)
+				assert.Equals(t, credentialprovider.AuthenticationSourceSecret, authSource)
+				if env == nil {
+					t.Errorf("%s: Expected environment to be not nil", tt.description)
+				}
+				// Verify environment contains the credentials
+				if env[envprovider.EnvAccessKeyID] != strings.TrimSpace(tt.accessKeyID) {
+					t.Errorf("%s: Expected access_key_id %q in environment, got %q",
+						tt.description, strings.TrimSpace(tt.accessKeyID), env[envprovider.EnvAccessKeyID])
+				}
+				if env[envprovider.EnvSecretAccessKey] != strings.TrimSpace(tt.secretKey) {
+					t.Errorf("%s: Expected secret_access_key in environment",
+						tt.description)
+				}
+			}
+		})
+	}
 }
