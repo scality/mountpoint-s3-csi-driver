@@ -24,7 +24,7 @@ const (
 )
 
 /*
-Validation rules supports IAM credentials, test credentials, and other S3 providers:
+Validation rules support IAM credentials, test credentials, and other S3 providers:
 
 	access_key_id     – 1 … 128 chars, alphanumeric (A-Z, a-z, 0-9)
 	secret_access_key – 1 … 128 chars, alphanumeric + base64 chars (/, +, =)
