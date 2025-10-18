@@ -1,5 +1,18 @@
 # Release Notes
 
+## [2.0.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.1)
+
+October 17, 2025
+
+### Bug Fixes
+
+- **Credential Validation**: Fixed validation logic that was incorrectly rejecting IAM standard 20-character access keys when using node-publish-secret in dynamic provisioning.
+- **Enhanced Documentation**: Updated documentation to reflect correct usage for node pubblish creds for dynamic provisioning.
+  Documentation updates for are available in
+      - [Dynamic provisioning overview](./volume-provisioning/dynamic-provisioning/overview.md)
+      - [Dynamic provisioning storage class reference and usage examples](./volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples.md)
+      - [Dynamic provisioning credentials management](architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md)
+
 ## [2.0.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.0)
 
 September 30, 2025
@@ -19,7 +32,7 @@ September 30, 2025
 
 ### Upgrade Notes
 
-- **Required Upgrade Path**: Must upgrade to v1.2.0 before upgrading to v2.0.0. Direct upgrades from versions earlier than v1.2.0 are not supported.
+- **Required Upgrade Path**: Must upgrade to v1.2.0 before upgrading to v2.0. Direct upgrades from versions earlier than v1.2.0 are not supported.
 - **CRD Installation Required**: The MountpointS3PodAttachment CRD must be installed manually before upgrading. See the [Upgrade Guide](driver-deployment/upgrade-guide.md) for detailed instructions.
 - **Version Specification**: Explicitly specify `--version 1.2.0` or `--version 2.0.0` in Helm commands to control the upgrade path.
 
@@ -34,10 +47,10 @@ August 21, 2025
 - **Dynamic Provisioning**: Added support for automatic S3 bucket creation during PersistentVolumeClaim provisioning referencing a storage class.
 - **Controller Service**: Controller service is now deployed by default (previously experimental) to support dynamic provisioning.
 - **Helm Chart Updates**:
-  - Added global `s3.region` and `s3.endpointUrl` values that apply to both node and controller services.
-  - Legacy `node.s3EndpointUrl` and `node.s3Region` values are still supported and take precedence for backward compatibility.
-  - Added new `controller` section in Helm chart `values.yaml` with improved credential provider and RBAC permissions.
-  - Added configurable `images.provisioner` section in `values.yaml` for controller sidecar image configuration.
+      - Added global `s3.region` and `s3.endpointUrl` values that apply to both node and controller services.
+      - Legacy `node.s3EndpointUrl` and `node.s3Region` values are still supported and take precedence for backward compatibility.
+      - Added new `controller` section in Helm chart `values.yaml` with improved credential provider and RBAC permissions.
+      - Added configurable `images.provisioner` section in `values.yaml` for controller sidecar image configuration.
 
 ## [1.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.1.1)
 

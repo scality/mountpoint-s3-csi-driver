@@ -18,18 +18,18 @@ const (
 	accessKeyID     = "access_key_id"
 	secretAccessKey = "secret_access_key"
 
-	// Upper limits (not exact) — suits Vault & test creds.
-	maxAccessKeyIDLen     = 16
-	maxSecretAccessKeyLen = 40
+	// Upper limits support IAM credentials and other providers.
+	maxAccessKeyIDLen     = 128
+	maxSecretAccessKeyLen = 128
 )
 
 /*
-Validation rules (loosened for cloudserver test credentials):
+Validation rules support IAM credentials, test credentials, and other S3 providers:
 
-	access_key_id     – 1 … 16 chars, uppercase A–Z or 0–9
-	secret_access_key – 1 … 40 chars, [A-Za-z0-9 / + =]
+	access_key_id     – 1 … 128 chars, alphanumeric (A-Z, a-z, 0-9)
+	secret_access_key – 1 … 128 chars, alphanumeric + base64 chars (/, +, =)
 
-The patterns are supersets of AWS IAM and permit shorter dummy keys.
+The patterns accommodate IAM (20-char access keys), shorter test keys, and other providers.
 */
 var (
 	// accept upper‑ or lower‑case letters so test keys like "accessKey2" pass

@@ -18,6 +18,7 @@ func TestControllerGetCapabilities(t *testing.T) {
 
 	if resp == nil {
 		t.Fatal("ControllerGetCapabilities returned nil response")
+		return
 	}
 
 	if len(resp.Capabilities) != 1 {
@@ -45,6 +46,7 @@ func TestGetPluginCapabilities(t *testing.T) {
 
 	if resp == nil {
 		t.Fatal("GetPluginCapabilities returned nil response")
+		return
 	}
 
 	if len(resp.Capabilities) != 1 {

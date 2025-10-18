@@ -186,6 +186,7 @@ func TestNewPodUnmounter(t *testing.T) {
 
 			if unmounter == nil {
 				t.Fatal("NewPodUnmounter() returned nil")
+				return
 			}
 			if unmounter.nodeID != nodeID {
 				t.Errorf("Expected nodeID %s, got %s", nodeID, unmounter.nodeID)

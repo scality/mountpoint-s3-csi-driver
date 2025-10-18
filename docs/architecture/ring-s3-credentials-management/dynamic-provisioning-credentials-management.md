@@ -126,6 +126,25 @@ For dynamic provisioning, credentials are used at two different stages:
 !!! tip "Security Best Practice"
     Use different credentials for provisioner (admin) and node-publish (user) operations to implement principle of least privilege.
 
+!!! important "Secret Configuration Requirement"
+    **Both `provisioner-secret` and `node-publish-secret` must be configured together** when using secret-based authentication for dynamic provisioning.
+    The controller uses `provisioner-secret` presence to determine if secret-based authentication is enabled
+    (it cannot directly detect `node-publish-secret` due to CSI specification limitations).
+
+**Technical Background:**
+
+The CSI external-provisioner strips all `csi.storage.k8s.io/*` prefixed parameters from `CreateVolumeRequest`:
+
+- `provisioner-secret-*` parameters → Resolved and VALUES passed in `req.GetSecrets()`
+- `node-publish-secret-*` parameters → Stored in `PV.Spec.CSI.NodePublishSecretRef` (not visible during CreateVolume)
+
+The controller cannot directly detect if only `node-publish-secret` is configured, so it uses `provisioner-secret` presence as a proxy indicator for secret-based authentication.
+
+**Workaround for Node-Only Use Case:**
+
+If you only need credentials for mounting (not bucket creation), configure both secrets pointing to the same Secret.
+Example: set both `provisioner-secret-name` and `node-publish-secret-name` to "shared-credentials" in the same namespace.
+
 ### Example 1: Same Credentials for Both Operations
 
 ```yaml title="StorageClass with fixed secret names for both provisioner and node-publish"
@@ -145,7 +164,9 @@ parameters:
   region: "us-west-2"
 ```
 
-### Example 2: Separate Admin and User Credentials
+### Example 2: Separate Admin and User Credentials (Recommended)
+
+This is the **recommended approach** for production environments, implementing the principle of least privilege with different credentials for controller and node operations.
 
 ```yaml title="StorageClass with separate admin (provisioner) and user (node-publish) secret names"
 apiVersion: storage.k8s.io/v1

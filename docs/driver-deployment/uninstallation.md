@@ -48,10 +48,10 @@ kubectl get pv -o json | jq -r '.items[] | select(.spec.csi.driver == "s3.csi.sc
 # Delete PVs as needed
 ```
 
-### Step 3: Remove MountpointS3PodAttachment CRDs and Mounter Pods (v2.0.0+)
+### Step 3: Remove MountpointS3PodAttachment CRDs and Mounter Pods (v2.0+)
 
-!!! info "v2.0.0 Cleanup"
-    Version 2.0.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.
+!!! info "v2.0 Cleanup"
+    Version 2.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.
 
 Delete all MountpointS3PodAttachment CRD instances:
 
@@ -121,7 +121,7 @@ kubectl get namespace mount-s3
 kubectl delete namespace mount-s3
 ```
 
-### Step 5: Remove CRD Definitions (v2.0.0+)
+### Step 5: Remove CRD Definitions (v2.0)
 
 !!! warning "CRD Removal"
     Helm v3 does **not** automatically delete CRDs on uninstall. CRDs must be manually removed if they are no longer needed.
