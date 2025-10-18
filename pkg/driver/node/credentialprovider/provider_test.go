@@ -538,8 +538,8 @@ func TestSecretCredentialValidation(t *testing.T) {
 		// Maximum length (128 characters)
 		{
 			name:        "valid 128-character access key (maximum allowed)",
-			accessKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQR", // 128 chars
-			secretKey:   "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQR",
+			accessKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRST", // 128 chars
+			secretKey:   "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRST",
 			expectError: false,
 			description: "128-character keys should be accepted (maximum limit)",
 		},
@@ -606,6 +606,13 @@ func TestSecretCredentialValidation(t *testing.T) {
 			secretKey:   "  wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY  ",
 			expectError: false,
 			description: "Keys with leading/trailing spaces should be trimmed and accepted",
+		},
+		{
+			name:        "valid 128-character access key with leading/trailing spaces (trimmed to 128)",
+			accessKeyID: "  ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRST  ", // 128 chars after trim
+			secretKey:   "  ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRST  ",
+			expectError: false,
+			description: "Maximum length keys with spaces should be trimmed first, then validated (length checked after trim)",
 		},
 
 		// Single character keys (minimum valid length)

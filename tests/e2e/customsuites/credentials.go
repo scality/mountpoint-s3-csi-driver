@@ -21,6 +21,7 @@ import (
 	admissionapi "k8s.io/pod-security-admission/api"
 	"k8s.io/utils/ptr"
 
+	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/constants"
 	"github.com/scality/mountpoint-s3-csi-driver/tests/e2e/pkg/s3client"
 )
 
@@ -371,7 +372,7 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 		scName := "test-dynamic-dual-secrets-" + uuid.NewString()[:8]
 		sc := &storagev1.StorageClass{
 			ObjectMeta:  metav1.ObjectMeta{Name: scName},
-			Provisioner: "s3.csi.scality.com",
+			Provisioner: constants.DriverName,
 			Parameters: map[string]string{
 				"csi.storage.k8s.io/provisioner-secret-name":       provisionerSecretName,
 				"csi.storage.k8s.io/provisioner-secret-namespace":  f.Namespace.Name,
