@@ -37,7 +37,7 @@ Container images for the Scality CSI Driver for S3 are hosted on GHCR:
 |---------------|----------------------------------------------------------------------------|
 | 2.0.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.1`                           |
 
-Review [release notes](release-notes.md) for breaking changes and the [releases page](https://github.com/scality/mountpoint-s3-csi-driver/releases) for complete changelog details.
+Review [release notes](release-notes.md) for overview of changes and the [releases page](https://github.com/scality/mountpoint-s3-csi-driver/releases) for complete changelog details.
 
 ??? note "Previous Images"
     | Driver Version | Image URL                                                                 |
