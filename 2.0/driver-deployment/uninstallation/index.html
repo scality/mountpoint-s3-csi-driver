@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1739,10 +1739,10 @@
 </span><span id="__span-2-3">
 </span><span id="__span-2-4"><span class="c1"># Delete PVs as needed</span>
 </span></code></pre></div></td></tr></table></div>
-<h3 id="step-3-remove-mountpoints3podattachment-crds-and-mounter-pods-v200">Step 3: Remove MountpointS3PodAttachment CRDs and Mounter Pods (v2.0.0+)</h3>
+<h3 id="step-3-remove-mountpoints3podattachment-crds-and-mounter-pods-v20">Step 3: Remove MountpointS3PodAttachment CRDs and Mounter Pods (v2.0+)</h3>
 <div class="admonition info">
-<p class="admonition-title">v2.0.0 Cleanup</p>
-<p>Version 2.0.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.</p>
+<p class="admonition-title">v2.0 Cleanup</p>
+<p>Version 2.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.</p>
 </div>
 <p>Delete all MountpointS3PodAttachment CRD instances:</p>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1">kubectl<span class="w"> </span>delete<span class="w"> </span>mountpoints3podattachments.s3.csi.scality.com<span class="w"> </span>--all-namespaces<span class="w"> </span>--all
@@ -1793,7 +1793,7 @@
 </span><span id="__span-11-4"><span class="c1"># Delete mount-s3 namespace</span>
 </span><span id="__span-11-5">kubectl<span class="w"> </span>delete<span class="w"> </span>namespace<span class="w"> </span>mount-s3
 </span></code></pre></div></td></tr></table></div>
-<h3 id="step-5-remove-crd-definitions-v200">Step 5: Remove CRD Definitions (v2.0.0+)</h3>
+<h3 id="step-5-remove-crd-definitions-v20">Step 5: Remove CRD Definitions (v2.0)</h3>
 <div class="admonition warning">
 <p class="admonition-title">CRD Removal</p>
 <p>Helm v3 does <strong>not</strong> automatically delete CRDs on uninstall. CRDs must be manually removed if they are no longer needed.</p>

@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -727,9 +727,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-to-v200" class="md-nav__link">
+  <a href="#upgrading-to-v20" class="md-nav__link">
     <span class="md-ellipsis">
-      Upgrading to v2.0.0
+      Upgrading to v2.0
     </span>
   </a>
   
@@ -1726,9 +1726,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-to-v200" class="md-nav__link">
+  <a href="#upgrading-to-v20" class="md-nav__link">
     <span class="md-ellipsis">
-      Upgrading to v2.0.0
+      Upgrading to v2.0
     </span>
   </a>
   
@@ -1781,12 +1781,12 @@
 
 
 <h1 id="upgrade-guide">Upgrade Guide</h1>
-<p>This guide provides instructions for upgrading the Scality CSI Driver for S3 from version 1.2.0 to 2.0.0.</p>
+<p>This guide provides instructions for upgrading the Scality CSI Driver for S3 from version 1.2.0 to 2.0.</p>
 <div class="admonition info">
 <p class="admonition-title">Version Compatibility</p>
-<p>This upgrade guide is specifically for upgrading from <strong>v1.2.0 to v2.0.0</strong>.
+<p>This upgrade guide is specifically for upgrading from <strong>v1.2.0 to v2.0</strong>.
 <strong>Upgrading from earlier versions</strong>: Versions earlier than v1.2.0 must first be upgraded to v1.2.0 before proceeding with this guide.
-Follow the standard upgrade procedure to reach v1.2.0, then use this guide to upgrade to v2.0.0.</p>
+Follow the standard upgrade procedure to reach v1.2.0, then use this guide to upgrade to v2.0.</p>
 </div>
 <h2 id="prerequisites">Prerequisites</h2>
 <p>Before upgrading, ensure all requirements outlined in the <strong><a href="../prerequisites/">Prerequisites</a></strong> guide are met for the target version.</p>
@@ -1808,10 +1808,10 @@ Follow the standard upgrade procedure to reach v1.2.0, then use this guide to up
 </span></code></pre></div></td></tr></table></div>
 <p><strong>Step 3. Review changes:</strong></p>
 <p>Check the <a href="../../release-notes/">Release Notes</a> for version-specific changes and breaking changes.</p>
-<p><strong>Step 4. Install/Update CRDs (Required for v2.0.0):</strong></p>
+<p><strong>Step 4. Install/Update CRDs (Required for v2.0):</strong></p>
 <div class="admonition warning">
 <p class="admonition-title">CRD Installation Required</p>
-<p>Version 2.0.0 introduces the <code>MountpointS3PodAttachment</code> CRD for tracking volume attachments.
+<p>Version 2.0 introduces the <code>MountpointS3PodAttachment</code> CRD for tracking volume attachments.
 Helm v3 does not automatically update CRDs on upgrades, so you <strong>must</strong> install/update CRDs manually before upgrading.</p>
 </div>
 <p>Install CRDs using kustomize (recommended):</p>
@@ -1831,12 +1831,12 @@ Helm v3 does not automatically update CRDs on upgrades, so you <strong>must</str
 <h3 id="step-1-ensure-running-v120">Step 1: Ensure Running v1.2.0</h3>
 <div class="admonition warning">
 <p class="admonition-title">Prerequisite Version Required</p>
-<p>Before upgrading to v2.0.0, the driver must be running version 1.2.0. If already on v1.2.0, skip to <a href="#upgrading-to-v200">Upgrading to v2.0.0</a>.</p>
+<p>Before upgrading to v2.0, the driver must be running version 1.2.0. If already on v1.2.0, skip to <a href="#upgrading-to-v20">Upgrading to v2.0</a>.</p>
 </div>
 <p>If running a version earlier than v1.2.0, upgrade to v1.2.0 first:</p>
 <div class="admonition important">
 <p class="admonition-title">Version Specification Required</p>
-<p>Once v2.0.0 is released, the Helm chart repository will default to v2.0.0. Version 1.2.0 must be explicitly specified in the upgrade command.</p>
+<p>The Helm chart repository will default to the latest released version. Version 1.2.0 must be explicitly specified in the upgrade command.</p>
 </div>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
@@ -1853,28 +1853,28 @@ Helm v3 does not automatically update CRDs on upgrades, so you <strong>must</str
 <span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><span class="c1"># Check that version 1.2.0 is running</span>
 </span><span id="__span-6-2">kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>scality-mountpoint-s3-csi-driver<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].spec.containers[0].image}&#39;</span>
 </span></code></pre></div></td></tr></table></div>
-<h3 id="step-2-dry-run-upgrade-to-v200-recommended">Step 2: Dry Run Upgrade to v2.0.0 (Recommended)</h3>
+<h3 id="step-2-dry-run-upgrade-to-v20-recommended">Step 2: Dry Run Upgrade to v2.0 (Recommended)</h3>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>
 <span class="normal">4</span>
 <span class="normal">5</span>
 <span class="normal">6</span>
-<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><span class="c1"># Test upgrade to v2.0.0 without applying changes</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><span class="c1"># Test upgrade to v2.0 without applying changes</span>
 </span><span id="__span-7-2">helm<span class="w"> </span>upgrade<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-3"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-4"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.0.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.0.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-5"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-6"><span class="w">  </span>--reuse-values<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-7"><span class="w">  </span>--dry-run
 </span></code></pre></div></td></tr></table></div>
-<h2 id="upgrading-to-v200">Upgrading to v2.0.0</h2>
+<h2 id="upgrading-to-v20">Upgrading to v2.0</h2>
 <div class="admonition warning">
-<p class="admonition-title">Important Notes for v2.0.0 Upgrade</p>
+<p class="admonition-title">Important Notes for v2.0 Upgrade</p>
 <ul>
 <li><strong>Pod Restart Impact</strong>: If any application pods using the S3 buckets as filesystems are restarted during the upgrade, they will lose access to the buckets.
 Once the upgrade is complete, the application pods will automatically regain access.</li>
-<li><strong>Mounter Strategy Change</strong>: Version 2.0.0 changes the default mounter from systemd to pod-based mounter. Existing systemd mounts will continue working until pods restart.</li>
+<li><strong>Mounter Strategy Change</strong>: Version 2.0 changes the default mounter from systemd to pod-based mounter. Existing systemd mounts will continue working until pods restart.</li>
 <li><strong>Automatic Transition</strong>: When application pods restart after the upgrade, mounts will automatically transition to the new pod-based mounter with zero downtime.</li>
 <li><strong>Mount-s3 Namespace</strong>: The new pod mounter creates pods in the <code>mount-s3</code> namespace. This namespace is automatically created on first mount.</li>
 </ul>
@@ -1888,7 +1888,7 @@ Once the upgrade is complete, the application pods will automatically regain acc
 <span class="normal">4</span>
 <span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1">helm<span class="w"> </span>upgrade<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-2"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.0.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.0.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-4"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-5"><span class="w">  </span>--reuse-values
 </span></code></pre></div></td></tr></table></div>
@@ -1900,7 +1900,7 @@ Once the upgrade is complete, the application pods will automatically regain acc
 <span class="normal">4</span>
 <span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1">helm<span class="w"> </span>upgrade<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-2"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.0.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.0.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-4"><span class="w">  </span>--values<span class="w"> </span>values-production.yaml<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-5"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
 </span></code></pre></div></td></tr></table></div>
@@ -1914,7 +1914,7 @@ Once the upgrade is complete, the application pods will automatically regain acc
 <p><strong>Step 3. Check driver version:</strong></p>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1">kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>scality-mountpoint-s3-csi-driver<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].spec.containers[0].image}&#39;</span>
 </span></code></pre></div></td></tr></table></div>
-<p><strong>Step 4. Verify v2.0.0 specific components:</strong></p>
+<p><strong>Step 4. Verify v2.0 specific components:</strong></p>
 <p>Check CRD installation:</p>
 <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1">kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>mountpoints3podattachments.s3.csi.scality.com
 </span></code></pre></div></td></tr></table></div>

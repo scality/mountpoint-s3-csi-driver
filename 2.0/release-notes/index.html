@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1576,6 +1576,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#201" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.0.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#200" class="md-nav__link">
     <span class="md-ellipsis">
       2.0.0
@@ -1688,6 +1697,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#201" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.0.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#200" class="md-nav__link">
     <span class="md-ellipsis">
       2.0.0
@@ -1761,6 +1779,19 @@
 
 
 <h1 id="release-notes">Release Notes</h1>
+<h2 id="201"><a href="https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.1">2.0.1</a></h2>
+<p>October 17, 2025</p>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li><strong>Credential Validation</strong>: Fixed validation logic that was incorrectly rejecting IAM standard 20-character access keys when using node-publish-secret in dynamic provisioning.</li>
+<li><strong>Enhanced Documentation</strong>: Updated documentation to reflect correct usage for node pubblish creds for dynamic provisioning.
+  Documentation updates for are available in<ul>
+<li><a href="../volume-provisioning/dynamic-provisioning/overview/">Dynamic provisioning overview</a></li>
+<li><a href="../volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples/">Dynamic provisioning storage class reference and usage examples</a></li>
+<li><a href="../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management/">Dynamic provisioning credentials management</a></li>
+</ul>
+</li>
+</ul>
 <h2 id="200"><a href="https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.0">2.0.0</a></h2>
 <p>September 30, 2025</p>
 <h3 id="whats-new">What's New</h3>
@@ -1778,7 +1809,7 @@
 </ul>
 <h3 id="upgrade-notes">Upgrade Notes</h3>
 <ul>
-<li><strong>Required Upgrade Path</strong>: Must upgrade to v1.2.0 before upgrading to v2.0.0. Direct upgrades from versions earlier than v1.2.0 are not supported.</li>
+<li><strong>Required Upgrade Path</strong>: Must upgrade to v1.2.0 before upgrading to v2.0. Direct upgrades from versions earlier than v1.2.0 are not supported.</li>
 <li><strong>CRD Installation Required</strong>: The MountpointS3PodAttachment CRD must be installed manually before upgrading. See the <a href="../driver-deployment/upgrade-guide/">Upgrade Guide</a> for detailed instructions.</li>
 <li><strong>Version Specification</strong>: Explicitly specify <code>--version 1.2.0</code> or <code>--version 2.0.0</code> in Helm commands to control the upgrade path.</li>
 </ul>
@@ -1789,11 +1820,13 @@
 <ul>
 <li><strong>Dynamic Provisioning</strong>: Added support for automatic S3 bucket creation during PersistentVolumeClaim provisioning referencing a storage class.</li>
 <li><strong>Controller Service</strong>: Controller service is now deployed by default (previously experimental) to support dynamic provisioning.</li>
-<li><strong>Helm Chart Updates</strong>:</li>
+<li><strong>Helm Chart Updates</strong>:<ul>
 <li>Added global <code>s3.region</code> and <code>s3.endpointUrl</code> values that apply to both node and controller services.</li>
 <li>Legacy <code>node.s3EndpointUrl</code> and <code>node.s3Region</code> values are still supported and take precedence for backward compatibility.</li>
 <li>Added new <code>controller</code> section in Helm chart <code>values.yaml</code> with improved credential provider and RBAC permissions.</li>
 <li>Added configurable <code>images.provisioner</code> section in <code>values.yaml</code> for controller sidecar image configuration.</li>
+</ul>
+</li>
 </ul>
 <h2 id="111"><a href="https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/1.1.1">1.1.1</a></h2>
 <p>August 5, 2025</p>
@@ -1805,7 +1838,7 @@
 <li>Static provisioning flow documentation with detailed workflows</li>
 <li>S3 credentials management architecture and best practices</li>
 </ul>
-<h3 id="bug-fixes">Bug Fixes</h3>
+<h3 id="bug-fixes_1">Bug Fixes</h3>
 <ul>
 <li><strong>SystemD D-Bus Reliability</strong>: Fixed D-Bus connection recreation for improved SystemD mount reliability and error handling.</li>
 <li><strong>Documentation Improvements</strong>: Remove base64 mention from credentials in kubernetes secrets as the CSI driver does not use it.</li>

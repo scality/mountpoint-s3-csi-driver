@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1474,18 +1474,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mountpoint-pod-configuration-v200" class="md-nav__link">
+  <a href="#mountpoint-pod-configuration-v20" class="md-nav__link">
     <span class="md-ellipsis">
-      Mountpoint Pod Configuration (v2.0.0+)
+      Mountpoint Pod Configuration (v2.0)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#crd-cleanup-configuration-v200" class="md-nav__link">
+  <a href="#crd-cleanup-configuration-v20" class="md-nav__link">
     <span class="md-ellipsis">
-      CRD Cleanup Configuration (v2.0.0+)
+      CRD Cleanup Configuration (v2.0)
     </span>
   </a>
   
@@ -1780,18 +1780,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mountpoint-pod-configuration-v200" class="md-nav__link">
+  <a href="#mountpoint-pod-configuration-v20" class="md-nav__link">
     <span class="md-ellipsis">
-      Mountpoint Pod Configuration (v2.0.0+)
+      Mountpoint Pod Configuration (v2.0)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#crd-cleanup-configuration-v200" class="md-nav__link">
+  <a href="#crd-cleanup-configuration-v20" class="md-nav__link">
     <span class="md-ellipsis">
-      CRD Cleanup Configuration (v2.0.0+)
+      CRD Cleanup Configuration (v2.0)
     </span>
   </a>
   
@@ -1877,7 +1877,7 @@ These parameters configure the overall behavior of the CSI driver components.</p
 <tr>
 <td><code>image.tag</code></td>
 <td>The image tag for the CSI driver. Overrides the chart's <code>appVersion</code> if set.</td>
-<td><code>2.0.0</code></td>
+<td><code>2.0.1</code></td>
 <td>No</td>
 </tr>
 </tbody>
@@ -2218,11 +2218,11 @@ When enabled, it automatically creates and deletes S3 buckets based on Persisten
 </tr>
 </tbody>
 </table>
-<h2 id="mountpoint-pod-configuration-v200">Mountpoint Pod Configuration (v2.0.0+)</h2>
+<h2 id="mountpoint-pod-configuration-v20">Mountpoint Pod Configuration (v2.0)</h2>
 <!-- markdownlint-disable MD046 -->
 <div class="admonition info">
 <p class="admonition-title">Pod Mounter Strategy</p>
-<p>Version 2.0.0 uses pod-based mounter as the default strategy. Mounter pods are created in the <code>mount-s3</code> namespace to handle S3 mount operations with improved isolation and resource management.</p>
+<p>Version 2.0 uses pod-based mounter as the default strategy. Mounter pods are created in the <code>mount-s3</code> namespace to handle S3 mount operations with improved isolation and resource management.</p>
 </div>
 <!-- markdownlint-enable MD046 -->
 
@@ -2280,7 +2280,7 @@ When enabled, it automatically creates and deletes S3 buckets based on Persisten
 </tr>
 </tbody>
 </table>
-<h2 id="crd-cleanup-configuration-v200">CRD Cleanup Configuration (v2.0.0+)</h2>
+<h2 id="crd-cleanup-configuration-v20">CRD Cleanup Configuration (v2.0)</h2>
 <table>
 <thead>
 <tr>

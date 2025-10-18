@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1780,7 +1780,7 @@
 </span><span id="__span-1-14"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
 </span><span id="__span-1-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
 </span></code></pre></div></td></tr></table></div>
-<div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Only node publish secrets - Driver level secrets will be used for CreateBucket and DeleteBucket operations</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Same secret for both provisioner and node operations</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
 <span class="normal"> 4</span>
@@ -1792,46 +1792,32 @@
 <span class="normal">10</span>
 <span class="normal">11</span>
 <span class="normal">12</span>
-<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
 </span><span id="__span-2-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
 </span><span id="__span-2-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-basic</span>
+</span><span id="__span-2-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-shared-secret</span>
 </span><span id="__span-2-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
 </span><span id="__span-2-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
 </span><span id="__span-2-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Immediate</span>
 </span><span id="__span-2-8"><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-2-9"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-node-secret</span>
-</span><span id="__span-2-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-</span><span id="__span-2-11"><span class="nt">mountOptions</span><span class="p">:</span>
-</span><span id="__span-2-12"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
-</span><span id="__span-2-13"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
+</span><span id="__span-2-9"><span class="w">  </span><span class="c1"># Both secrets point to the same Secret</span>
+</span><span id="__span-2-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-shared-credentials</span>
+</span><span id="__span-2-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-2-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-shared-credentials</span>
+</span><span id="__span-2-13"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-2-14"><span class="nt">mountOptions</span><span class="p">:</span>
+</span><span id="__span-2-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
+</span><span id="__span-2-16"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
 </span></code></pre></div></td></tr></table></div>
-<div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Only provisioner secrets - Driver level secrets will be used for mount operations</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
-</span><span id="__span-3-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
-</span><span id="__span-3-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-basic</span>
-</span><span id="__span-3-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
-</span><span id="__span-3-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
-</span><span id="__span-3-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Immediate</span>
-</span><span id="__span-3-8"><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-3-9"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-provisioner-secret</span>
-</span><span id="__span-3-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-</span><span id="__span-3-11"><span class="nt">mountOptions</span><span class="p">:</span>
-</span><span id="__span-3-12"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
-</span><span id="__span-3-13"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
-</span></code></pre></div></td></tr></table></div>
+<div class="admonition warning">
+<p class="admonition-title">Single Secret Configuration Not Supported</p>
+<p>Configuring only <code>provisioner-secret</code> OR only <code>node-publish-secret</code> is <strong>not recommended</strong> and may not work as expected.
+The controller uses <code>provisioner-secret</code> presence to determine if secret-based authentication is enabled (CSI spec limitation).
+Always configure both secrets together, pointing to the same Secret if you don't need separate admin/user credentials.</p>
+</div>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">No secrets - Driver level secrets will be used for CreateBucket, DeleteBucket and mount operations</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -1842,17 +1828,17 @@
 <span class="normal"> 8</span>
 <span class="normal"> 9</span>
 <span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
-</span><span id="__span-4-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
-</span><span id="__span-4-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-4-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-basic</span>
-</span><span id="__span-4-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
-</span><span id="__span-4-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
-</span><span id="__span-4-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Immediate</span>
-</span><span id="__span-4-8"><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-4-9"><span class="nt">mountOptions</span><span class="p">:</span>
-</span><span id="__span-4-10"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
-</span><span id="__span-4-11"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+</span><span id="__span-3-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+</span><span id="__span-3-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-3-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-basic</span>
+</span><span id="__span-3-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
+</span><span id="__span-3-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
+</span><span id="__span-3-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Immediate</span>
+</span><span id="__span-3-8"><span class="nt">parameters</span><span class="p">:</span>
+</span><span id="__span-3-9"><span class="nt">mountOptions</span><span class="p">:</span>
+</span><span id="__span-3-10"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
+</span><span id="__span-3-11"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="volume-binding-mode-examples">Volume Binding Mode Examples</h3>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Immediate binding (Default) - Bucket created immediately when PVC is created</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
@@ -1869,21 +1855,21 @@
 <span class="normal">12</span>
 <span class="normal">13</span>
 <span class="normal">14</span>
-<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
-</span><span id="__span-5-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
-</span><span id="__span-5-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-5-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-immediate</span>
-</span><span id="__span-5-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
-</span><span id="__span-5-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
-</span><span id="__span-5-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Immediate</span><span class="w">  </span><span class="c1"># Default behavior</span>
-</span><span id="__span-5-8"><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-5-9"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-provisioner-secret</span>
-</span><span id="__span-5-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-</span><span id="__span-5-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-node-secret</span>
-</span><span id="__span-5-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-</span><span id="__span-5-13"><span class="nt">mountOptions</span><span class="p">:</span>
-</span><span id="__span-5-14"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
-</span><span id="__span-5-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
+<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+</span><span id="__span-4-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+</span><span id="__span-4-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-4-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-immediate</span>
+</span><span id="__span-4-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
+</span><span id="__span-4-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
+</span><span id="__span-4-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Immediate</span><span class="w">  </span><span class="c1"># Default behavior</span>
+</span><span id="__span-4-8"><span class="nt">parameters</span><span class="p">:</span>
+</span><span id="__span-4-9"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-provisioner-secret</span>
+</span><span id="__span-4-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-4-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-node-secret</span>
+</span><span id="__span-4-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-4-13"><span class="nt">mountOptions</span><span class="p">:</span>
+</span><span id="__span-4-14"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
+</span><span id="__span-4-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
 </span></code></pre></div></td></tr></table></div>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">WaitForFirstConsumer - Bucket creation delayed until pod is scheduled</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -1899,21 +1885,21 @@
 <span class="normal">12</span>
 <span class="normal">13</span>
 <span class="normal">14</span>
-<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
-</span><span id="__span-6-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
-</span><span id="__span-6-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-6-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-wait-for-consumer</span>
-</span><span id="__span-6-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
-</span><span id="__span-6-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
-</span><span id="__span-6-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WaitForFirstConsumer</span><span class="w">  </span><span class="c1"># Wait for pod scheduling</span>
-</span><span id="__span-6-8"><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-6-9"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-provisioner-secret</span>
-</span><span id="__span-6-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-</span><span id="__span-6-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-node-secret</span>
-</span><span id="__span-6-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-</span><span id="__span-6-13"><span class="nt">mountOptions</span><span class="p">:</span>
-</span><span id="__span-6-14"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
-</span><span id="__span-6-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
+<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+</span><span id="__span-5-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+</span><span id="__span-5-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-5-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-wait-for-consumer</span>
+</span><span id="__span-5-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
+</span><span id="__span-5-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
+</span><span id="__span-5-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WaitForFirstConsumer</span><span class="w">  </span><span class="c1"># Wait for pod scheduling</span>
+</span><span id="__span-5-8"><span class="nt">parameters</span><span class="p">:</span>
+</span><span id="__span-5-9"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-provisioner-secret</span>
+</span><span id="__span-5-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-5-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-node-secret</span>
+</span><span id="__span-5-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-5-13"><span class="nt">mountOptions</span><span class="p">:</span>
+</span><span id="__span-5-14"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
+</span><span id="__span-5-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
 </span></code></pre></div></td></tr></table></div>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">WaitForFirstConsumer with ${pv.name} templating - Requires delayed binding</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -1930,22 +1916,22 @@
 <span class="normal">13</span>
 <span class="normal">14</span>
 <span class="normal">15</span>
-<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
-</span><span id="__span-7-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
-</span><span id="__span-7-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-7-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-pv-name-templating</span>
-</span><span id="__span-7-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
-</span><span id="__span-7-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
-</span><span id="__span-7-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WaitForFirstConsumer</span><span class="w">  </span><span class="c1"># Required for ${pv.name} templating</span>
-</span><span id="__span-7-8"><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-7-9"><span class="w">  </span><span class="c1"># Using ${pv.name} templating requires WaitForFirstConsumer</span>
-</span><span id="__span-7-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pv.name}-secret&quot;</span>
-</span><span id="__span-7-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pvc.namespace}&quot;</span>
-</span><span id="__span-7-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pv.name}-secret&quot;</span>
-</span><span id="__span-7-13"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pvc.namespace}&quot;</span>
-</span><span id="__span-7-14"><span class="nt">mountOptions</span><span class="p">:</span>
-</span><span id="__span-7-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
-</span><span id="__span-7-16"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+</span><span id="__span-6-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+</span><span id="__span-6-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-pv-name-templating</span>
+</span><span id="__span-6-5"><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.csi.scality.com</span>
+</span><span id="__span-6-6"><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete</span>
+</span><span id="__span-6-7"><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WaitForFirstConsumer</span><span class="w">  </span><span class="c1"># Required for ${pv.name} templating</span>
+</span><span id="__span-6-8"><span class="nt">parameters</span><span class="p">:</span>
+</span><span id="__span-6-9"><span class="w">  </span><span class="c1"># Using ${pv.name} templating requires WaitForFirstConsumer</span>
+</span><span id="__span-6-10"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pv.name}-secret&quot;</span>
+</span><span id="__span-6-11"><span class="w">  </span><span class="nt">csi.storage.k8s.io/provisioner-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pvc.namespace}&quot;</span>
+</span><span id="__span-6-12"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pv.name}-secret&quot;</span>
+</span><span id="__span-6-13"><span class="w">  </span><span class="nt">csi.storage.k8s.io/node-publish-secret-namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${pvc.namespace}&quot;</span>
+</span><span id="__span-6-14"><span class="nt">mountOptions</span><span class="p">:</span>
+</span><span id="__span-6-15"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-delete</span>
+</span><span id="__span-6-16"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-other</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="usage-examples">Usage Examples</h3>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">PVC using StorageClass for dynamic provisioning</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
@@ -1959,18 +1945,18 @@
 <span class="normal"> 9</span>
 <span class="normal">10</span>
 <span class="normal">11</span>
-<span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-8-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
-</span><span id="__span-8-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-8-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-storage</span>
-</span><span id="__span-8-5"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</span><span id="__span-8-6"><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-8-7"><span class="w">  </span><span class="nt">accessModes</span><span class="p">:</span>
-</span><span id="__span-8-8"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReadWriteMany</span>
-</span><span id="__span-8-9"><span class="w">  </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-immediate</span><span class="w">  </span><span class="c1"># References the StorageClass</span>
-</span><span id="__span-8-10"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-8-11"><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-8-12"><span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100Gi</span><span class="w">  </span><span class="c1"># Arbitrary value for S3 - actual size is unlimited</span>
+<span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-7-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
+</span><span id="__span-7-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-7-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-storage</span>
+</span><span id="__span-7-5"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+</span><span id="__span-7-6"><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-7-7"><span class="w">  </span><span class="nt">accessModes</span><span class="p">:</span>
+</span><span id="__span-7-8"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReadWriteMany</span>
+</span><span id="__span-7-9"><span class="w">  </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-immediate</span><span class="w">  </span><span class="c1"># References the StorageClass</span>
+</span><span id="__span-7-10"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-7-11"><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+</span><span id="__span-7-12"><span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100Gi</span><span class="w">  </span><span class="c1"># Arbitrary value for S3 - actual size is unlimited</span>
 </span></code></pre></div></td></tr></table></div>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Pod using the above PVC</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -1988,23 +1974,23 @@
 <span class="normal">14</span>
 <span class="normal">15</span>
 <span class="normal">16</span>
-<span class="normal">17</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-9-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
-</span><span id="__span-9-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-9-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-app</span>
-</span><span id="__span-9-5"><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-9-6"><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
-</span><span id="__span-9-7"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
-</span><span id="__span-9-8"><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
-</span><span id="__span-9-9"><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-9-10"><span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">container!&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/data/$(date</span><span class="nv"> </span><span class="s">-u).txt;</span><span class="nv"> </span><span class="s">tail</span><span class="nv"> </span><span class="s">-f</span><span class="nv"> </span><span class="s">/dev/null&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-9-11"><span class="w">      </span><span class="nt">volumeMounts</span><span class="p">:</span>
-</span><span id="__span-9-12"><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
-</span><span id="__span-9-13"><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data</span>
-</span><span id="__span-9-14"><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
-</span><span id="__span-9-15"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
-</span><span id="__span-9-16"><span class="w">      </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
-</span><span id="__span-9-17"><span class="w">        </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-storage</span><span class="w">  </span><span class="c1"># References the PVC created above</span>
+<span class="normal">17</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-8-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+</span><span id="__span-8-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-8-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-app</span>
+</span><span id="__span-8-5"><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-8-6"><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-8-7"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+</span><span id="__span-8-8"><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
+</span><span id="__span-8-9"><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-10"><span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">container!&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/data/$(date</span><span class="nv"> </span><span class="s">-u).txt;</span><span class="nv"> </span><span class="s">tail</span><span class="nv"> </span><span class="s">-f</span><span class="nv"> </span><span class="s">/dev/null&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-11"><span class="w">      </span><span class="nt">volumeMounts</span><span class="p">:</span>
+</span><span id="__span-8-12"><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
+</span><span id="__span-8-13"><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data</span>
+</span><span id="__span-8-14"><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+</span><span id="__span-8-15"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
+</span><span id="__span-8-16"><span class="w">      </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
+</span><span id="__span-8-17"><span class="w">        </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-storage</span><span class="w">  </span><span class="c1"># References the PVC created above</span>
 </span></code></pre></div></td></tr></table></div>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Pod with inline PVC using StorageClass</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -2035,36 +2021,36 @@
 <span class="normal">27</span>
 <span class="normal">28</span>
 <span class="normal">29</span>
-<span class="normal">30</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-10-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
-</span><span id="__span-10-3"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-10-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-inline-app</span>
-</span><span id="__span-10-5"><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-10-6"><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
-</span><span id="__span-10-7"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
-</span><span id="__span-10-8"><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
-</span><span id="__span-10-9"><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-10-10"><span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">inline</span><span class="nv"> </span><span class="s">PVC!&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/data/$(date</span><span class="nv"> </span><span class="s">-u).txt;</span><span class="nv"> </span><span class="s">tail</span><span class="nv"> </span><span class="s">-f</span><span class="nv"> </span><span class="s">/dev/null&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-10-11"><span class="w">      </span><span class="nt">volumeMounts</span><span class="p">:</span>
-</span><span id="__span-10-12"><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
-</span><span id="__span-10-13"><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data</span>
-</span><span id="__span-10-14"><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
-</span><span id="__span-10-15"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
-</span><span id="__span-10-16"><span class="w">      </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
-</span><span id="__span-10-17"><span class="w">        </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-storage</span><span class="w">  </span><span class="c1"># Inline PVC defined below</span>
-</span><span id="__span-10-18"><span class="nn">---</span>
-</span><span id="__span-10-19"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-10-20"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
-</span><span id="__span-10-21"><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-10-22"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-storage</span>
-</span><span id="__span-10-23"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</span><span id="__span-10-24"><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-10-25"><span class="w">  </span><span class="nt">accessModes</span><span class="p">:</span>
-</span><span id="__span-10-26"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReadWriteMany</span>
-</span><span id="__span-10-27"><span class="w">  </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-immediate</span><span class="w">  </span><span class="c1"># References StorageClass for dynamic provisioning</span>
-</span><span id="__span-10-28"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-10-29"><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-10-30"><span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50Gi</span>
+<span class="normal">30</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-9-2"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+</span><span id="__span-9-3"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-9-4"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-inline-app</span>
+</span><span id="__span-9-5"><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-9-6"><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-9-7"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+</span><span id="__span-9-8"><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
+</span><span id="__span-9-9"><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-9-10"><span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">inline</span><span class="nv"> </span><span class="s">PVC!&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/data/$(date</span><span class="nv"> </span><span class="s">-u).txt;</span><span class="nv"> </span><span class="s">tail</span><span class="nv"> </span><span class="s">-f</span><span class="nv"> </span><span class="s">/dev/null&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-9-11"><span class="w">      </span><span class="nt">volumeMounts</span><span class="p">:</span>
+</span><span id="__span-9-12"><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
+</span><span id="__span-9-13"><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data</span>
+</span><span id="__span-9-14"><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+</span><span id="__span-9-15"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistent-storage</span>
+</span><span id="__span-9-16"><span class="w">      </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
+</span><span id="__span-9-17"><span class="w">        </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-storage</span><span class="w">  </span><span class="c1"># Inline PVC defined below</span>
+</span><span id="__span-9-18"><span class="nn">---</span>
+</span><span id="__span-9-19"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-9-20"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
+</span><span id="__span-9-21"><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-9-22"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-storage</span>
+</span><span id="__span-9-23"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+</span><span id="__span-9-24"><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-9-25"><span class="w">  </span><span class="nt">accessModes</span><span class="p">:</span>
+</span><span id="__span-9-26"><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReadWriteMany</span>
+</span><span id="__span-9-27"><span class="w">  </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-immediate</span><span class="w">  </span><span class="c1"># References StorageClass for dynamic provisioning</span>
+</span><span id="__span-9-28"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-9-29"><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+</span><span id="__span-9-30"><span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50Gi</span>
 </span></code></pre></div></td></tr></table></div>
 
 

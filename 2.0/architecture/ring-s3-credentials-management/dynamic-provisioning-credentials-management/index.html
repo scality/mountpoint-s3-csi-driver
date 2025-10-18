@@ -22,7 +22,7 @@
 <link href="../../../assets/stylesheets/panzoom.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
 <body data-md-color-accent="teal" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
 <input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
@@ -854,6 +854,22 @@ StorageClasses to use different S3 accounts or permission sets.</p>
 <p class="admonition-title">Security Best Practice</p>
 <p>Use different credentials for provisioner (admin) and node-publish (user) operations to implement principle of least privilege.</p>
 </div>
+<div class="admonition important">
+<p class="admonition-title">Secret Configuration Requirement</p>
+<p><strong>Both <code>provisioner-secret</code> and <code>node-publish-secret</code> must be configured together</strong> when using secret-based authentication for dynamic provisioning.
+The controller uses <code>provisioner-secret</code> presence to determine if secret-based authentication is enabled
+(it cannot directly detect <code>node-publish-secret</code> due to CSI specification limitations).</p>
+</div>
+<p><strong>Technical Background:</strong></p>
+<p>The CSI external-provisioner strips all <code>csi.storage.k8s.io/*</code> prefixed parameters from <code>CreateVolumeRequest</code>:</p>
+<ul>
+<li><code>provisioner-secret-*</code> parameters → Resolved and VALUES passed in <code>req.GetSecrets()</code></li>
+<li><code>node-publish-secret-*</code> parameters → Stored in <code>PV.Spec.CSI.NodePublishSecretRef</code> (not visible during CreateVolume)</li>
+</ul>
+<p>The controller cannot directly detect if only <code>node-publish-secret</code> is configured, so it uses <code>provisioner-secret</code> presence as a proxy indicator for secret-based authentication.</p>
+<p><strong>Workaround for Node-Only Use Case:</strong></p>
+<p>If you only need credentials for mounting (not bucket creation), configure both secrets pointing to the same Secret.
+Example: set both <code>provisioner-secret-name</code> and <code>node-publish-secret-name</code> to "shared-credentials" in the same namespace.</p>
 <h3 id="example-1-same-credentials-for-both-operations">Example 1: Same Credentials for Both Operations</h3>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th class="filename" colspan="2"><span class="filename">StorageClass with fixed secret names for both provisioner and node-publish</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -883,7 +899,8 @@ StorageClasses to use different S3 accounts or permission sets.</p>
 </span><span id="__span-4-13"><span class="w">  </span><span class="nt">bucketNamePrefix</span><span class="p">:</span><span class="w"> </span><span class="s">"team-a-buckets-"</span>
 </span><span id="__span-4-14"><span class="w">  </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="s">"us-west-2"</span>
 </span></code></pre></div></td></tr></table></div>
-<h3 id="example-2-separate-admin-and-user-credentials">Example 2: Separate Admin and User Credentials</h3>
+<h3 id="example-2-separate-admin-and-user-credentials-recommended">Example 2: Separate Admin and User Credentials (Recommended)</h3>
+<p>This is the <strong>recommended approach</strong> for production environments, implementing the principle of least privilege with different credentials for controller and node operations.</p>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><th class="filename" colspan="2"><span class="filename">StorageClass with separate admin (provisioner) and user (node-publish) secret names</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>

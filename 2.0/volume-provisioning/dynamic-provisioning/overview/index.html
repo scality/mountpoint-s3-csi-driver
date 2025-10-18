@@ -22,7 +22,7 @@
 <link href="../../../assets/stylesheets/panzoom.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
 <body data-md-color-accent="teal" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
 <input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
@@ -1005,12 +1005,24 @@ Kubernetes resources (PVC, PV) will be successfully deleted, but the actual buck
 <h2 id="mount-options">Mount Options</h2>
 <p>Dynamic provisioning supports all <a href="../../mount-options/">mount options</a> through the StorageClass specification:</p>
 <h2 id="authentication">Authentication</h2>
-<p>Dynamic provisioning requires two sets of credentials. If either or both credential types are missing from the StorageClass configuration, the CSI driver will fall back to the default driver-level credentials.</p>
+<p>Dynamic provisioning supports two authentication modes:</p>
 <ol>
-<li><strong>Provisioner Secrets</strong>: Used by CSI controller for bucket creation and deletion</li>
-<li><strong>Node Secrets</strong>: Used by nodes for mounting operations</li>
+<li><strong>Secret-based Authentication (Recommended)</strong>: Configure <strong>both</strong> <code>provisioner-secret</code> and <code>node-publish-secret</code> in StorageClass</li>
+<li><strong>Provisioner Secret</strong>: Used by CSI controller for bucket creation/deletion</li>
+<li><strong>Node-Publish Secret</strong>: Used by nodes for mounting operations</li>
+<li>
+<p>Both secrets can point to the same Secret or different Secrets (for least privilege)</p>
+</li>
+<li>
+<p><strong>Driver-level Authentication</strong>: Omit both secret parameters to use driver-level credentials for all operations</p>
+</li>
 </ol>
-<p>See the <a href="../../../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management/">Credential Management Guide</a> for detailed configuration.</p>
+<div class="admonition important">
+<p class="admonition-title">Both secrets must be configured together when using secret-based authentication</p>
+<p>The controller cannot detect if only <code>node-publish-secret</code> is configured (CSI specification limitation),
+so configuring only one secret will result in driver-level credentials being used.</p>
+</div>
+<p>See the <a href="../../../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management/">Credential Management Guide</a> for detailed configuration and examples.</p>
 <h2 id="limitations">Limitations</h2>
 <ul>
 <li><strong>Single Access Mode</strong>: Only <code>ReadWriteMany</code> is supported</li>
