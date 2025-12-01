@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.10
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.3
 	github.com/container-storage-interface/spec v1.11.0
-	github.com/godbus/dbus/v5 v5.1.0
+	github.com/godbus/dbus/v5 v5.2.0
 	github.com/golang/mock v1.6.0
 	github.com/google/renameio v1.0.1
 	github.com/kubernetes-csi/csi-lib-utils v0.22.0
@@ -19,6 +19,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	google.golang.org/grpc v1.74.2
 	k8s.io/api v0.33.2
+	k8s.io/apiextensions-apiserver v0.33.0
 	k8s.io/client-go v0.33.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/mount-utils v0.33.2
@@ -93,7 +94,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apiextensions-apiserver v0.33.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
