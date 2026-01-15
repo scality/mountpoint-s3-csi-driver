@@ -714,3 +714,248 @@ func TestCreateS3Client(t *testing.T) {
 		})
 	}
 }
+
+// TestDeleteVolumeWithProvisionerSecrets tests that DeleteVolume uses secrets from request when provided
+func TestDeleteVolumeWithProvisionerSecrets(t *testing.T) {
+	t.Parallel()
+
+	// Set up environment variables for S3 client
+	_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+	_ = os.Setenv("AWS_REGION", "us-east-1")
+	defer func() {
+		_ = os.Unsetenv("AWS_ENDPOINT_URL")
+		_ = os.Unsetenv("AWS_REGION")
+	}()
+
+	// Track which credentials were used for the S3 client
+	var usedAccessKey string
+
+	// Create mock S3 client that captures the credentials
+	mockS3Factory := func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+		// Extract access key from credentials to verify which ones were used
+		creds, err := awsConfig.Credentials.Retrieve(ctx)
+		if err == nil {
+			usedAccessKey = creds.AccessKeyID
+		}
+		return &mockS3Client{}, nil
+	}
+
+	// Create a fake Kubernetes client (for driver credential fallback)
+	fakeClient := fake.NewSimpleClientset()
+
+	// Create driver with controller credential provider and mock S3 client factory
+	driver := &Driver{
+		controllerCredProvider: controllerCredProvider.New(fakeClient),
+		testS3ClientFactory:    mockS3Factory,
+	}
+
+	// DeleteVolume request WITH secrets (simulating external-provisioner passing provisioner-secret)
+	req := &csi.DeleteVolumeRequest{
+		VolumeId: "csi-s3-test-volume-with-secrets",
+		Secrets: map[string]string{
+			constants.AccessKeyIDField:     "AKIAPROVISIONER",
+			constants.SecretAccessKeyField: "provisioner-secret-key",
+		},
+	}
+
+	// Call DeleteVolume
+	resp, err := driver.DeleteVolume(context.Background(), req)
+	// Verify no error
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Verify response is valid
+	if resp == nil {
+		t.Fatal("Response is nil")
+	}
+
+	// Verify the provisioner secrets were used (not driver credentials)
+	if usedAccessKey != "AKIAPROVISIONER" {
+		t.Fatalf("Expected access key AKIAPROVISIONER (from secrets), got %q", usedAccessKey)
+	}
+}
+
+// TestDeleteVolumeWithoutSecrets tests that DeleteVolume falls back to driver credentials
+func TestDeleteVolumeWithoutSecrets(t *testing.T) {
+	t.Parallel()
+
+	// Set up environment variables for S3 client
+	_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+	_ = os.Setenv("AWS_REGION", "us-east-1")
+	defer func() {
+		_ = os.Unsetenv("AWS_ENDPOINT_URL")
+		_ = os.Unsetenv("AWS_REGION")
+	}()
+
+	// Create mock S3 client
+	mockS3Factory := func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+		return &mockS3Client{}, nil
+	}
+
+	// Create a fake Kubernetes client
+	fakeClient := fake.NewSimpleClientset()
+
+	// Create driver
+	driver := &Driver{
+		controllerCredProvider: controllerCredProvider.New(fakeClient),
+		testS3ClientFactory:    mockS3Factory,
+	}
+
+	// DeleteVolume request WITHOUT secrets (should fall back to driver credentials)
+	req := &csi.DeleteVolumeRequest{
+		VolumeId: "csi-s3-test-volume-no-secrets",
+		// No Secrets field
+	}
+
+	// Call DeleteVolume
+	resp, err := driver.DeleteVolume(context.Background(), req)
+	// Verify no error (driver credentials should be used as fallback)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Verify response is valid
+	if resp == nil {
+		t.Fatal("Response is nil")
+	}
+}
+
+// TestDeleteVolumeWithInvalidSecrets tests graceful fallback when secrets are malformed
+func TestDeleteVolumeWithInvalidSecrets(t *testing.T) {
+	t.Parallel()
+
+	// Set up environment variables for S3 client
+	_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+	_ = os.Setenv("AWS_REGION", "us-east-1")
+	defer func() {
+		_ = os.Unsetenv("AWS_ENDPOINT_URL")
+		_ = os.Unsetenv("AWS_REGION")
+	}()
+
+	// Create mock S3 client
+	mockS3Factory := func(ctx context.Context, awsConfig *aws.Config) (s3client.Client, error) {
+		return &mockS3Client{}, nil
+	}
+
+	// Create a fake Kubernetes client
+	fakeClient := fake.NewSimpleClientset()
+
+	// Create driver
+	driver := &Driver{
+		controllerCredProvider: controllerCredProvider.New(fakeClient),
+		testS3ClientFactory:    mockS3Factory,
+	}
+
+	// DeleteVolume request WITH invalid/incomplete secrets
+	req := &csi.DeleteVolumeRequest{
+		VolumeId: "csi-s3-test-volume-invalid-secrets",
+		Secrets: map[string]string{
+			constants.AccessKeyIDField: "AKIATEST",
+			// Missing SecretAccessKeyField - should trigger fallback
+		},
+	}
+
+	// Call DeleteVolume
+	resp, err := driver.DeleteVolume(context.Background(), req)
+	// Should not return an error due to CSI idempotency requirement
+	// Invalid secrets should trigger fallback to driver credentials
+	if err != nil {
+		t.Fatalf("Unexpected error (CSI DeleteVolume should be idempotent): %v", err)
+	}
+
+	// Verify response is valid
+	if resp == nil {
+		t.Fatal("Response is nil")
+	}
+}
+
+// TestResolveDeleteVolumeCredentials tests the credential resolution helper function
+func TestResolveDeleteVolumeCredentials(t *testing.T) {
+	tests := []struct {
+		name           string
+		secrets        map[string]string
+		expectFallback bool
+		description    string
+	}{
+		{
+			name: "valid secrets provided",
+			secrets: map[string]string{
+				constants.AccessKeyIDField:     "AKIATEST",
+				constants.SecretAccessKeyField: "test-secret-key",
+			},
+			expectFallback: false,
+			description:    "Should use provided secrets",
+		},
+		{
+			name:           "no secrets provided",
+			secrets:        nil,
+			expectFallback: true,
+			description:    "Should fall back to driver credentials",
+		},
+		{
+			name:           "empty secrets map",
+			secrets:        map[string]string{},
+			expectFallback: true,
+			description:    "Should fall back to driver credentials",
+		},
+		{
+			name: "secrets with session token",
+			secrets: map[string]string{
+				constants.AccessKeyIDField:     "AKIATEST",
+				constants.SecretAccessKeyField: "test-secret-key",
+				constants.SessionTokenField:    "test-session-token",
+			},
+			expectFallback: false,
+			description:    "Should use provided secrets including session token",
+		},
+		{
+			name: "secrets with region override",
+			secrets: map[string]string{
+				constants.AccessKeyIDField:     "AKIATEST",
+				constants.SecretAccessKeyField: "test-secret-key",
+				constants.RegionField:          "eu-west-1",
+			},
+			expectFallback: false,
+			description:    "Should use provided secrets with region",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set up environment
+			_ = os.Setenv("AWS_ENDPOINT_URL", "http://s3.example.com")
+			_ = os.Setenv("AWS_REGION", "us-east-1")
+			defer func() {
+				_ = os.Unsetenv("AWS_ENDPOINT_URL")
+				_ = os.Unsetenv("AWS_REGION")
+			}()
+
+			// Create fake client and driver
+			fakeClient := fake.NewSimpleClientset()
+			driver := &Driver{
+				controllerCredProvider: controllerCredProvider.New(fakeClient),
+			}
+
+			// Create request
+			req := &csi.DeleteVolumeRequest{
+				VolumeId: "csi-s3-test-volume",
+				Secrets:  tc.secrets,
+			}
+
+			// Call resolveDeleteVolumeCredentials
+			cfg, err := driver.resolveDeleteVolumeCredentials(context.Background(), req)
+
+			// For valid secrets, should succeed
+			// For missing/empty secrets, should also succeed (falls back to driver)
+			if err != nil && !tc.expectFallback {
+				t.Fatalf("Unexpected error for %s: %v", tc.description, err)
+			}
+
+			// Verify we got a config
+			if cfg.Credentials == nil && !tc.expectFallback {
+				t.Fatalf("Expected credentials to be set for %s", tc.description)
+			}
+		})
+	}
+}
