@@ -535,6 +535,15 @@ func TestSecretCredentialValidation(t *testing.T) {
 			description: "Secret keys with base64 characters (/, +, =) should be accepted",
 		},
 
+		// Secret key with UUID format (e.g., Scaleway)
+		{
+			name:        "valid secret key with UUID format",
+			accessKeyID: "SCWXXXXXXXXXXXXXXXXXX",
+			secretKey:   "1a111a11-1a1a-1a11-11a1-a111a1111a1a",
+			expectError: false,
+			description: "Secret keys with UUID format (hyphens) should be accepted",
+		},
+
 		// Maximum length (128 characters)
 		{
 			name:        "valid 128-character access key (maximum allowed)",
