@@ -33,6 +33,27 @@ These parameters configure the overall behavior of the CSI driver components.
 | `s3.endpointUrl`                                     | The RING S3 endpoint URL used by both node and controller components for all S3 operations.                                                        | `"http://s3.example.com:8000"`                        | **Yes**                     |
 | `s3.region`                                          | The default AWS region to use for S3 requests. Can be overridden per-volume via PV `mountOptions`.                                                 | `us-east-1`                                            | **Yes**                     |
 
+### Legacy Values (Backward Compatibility)
+
+<!-- markdownlint-disable MD046 -->
+!!! warning "Deprecated Configuration"
+    The following legacy Helm values are supported for backward compatibility with earlier versions. **Use the new `s3.*` values for new installations.** Legacy values may be removed in a future release.
+<!-- markdownlint-enable MD046 -->
+
+| Legacy Value | New Value | Behavior |
+|--------------|-----------|----------|
+| `node.s3EndpointUrl` | `s3.endpointUrl` | Legacy takes precedence if both are set |
+| `node.s3Region` | `s3.region` | Legacy takes precedence if both are set |
+
+The Helm templates use `coalesce` to check legacy values first:
+
+```yaml
+# Example from controller.yaml
+value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
+```
+
+**Upgrade recommendation:** When upgrading from earlier versions, migrate your configuration from `node.s3EndpointUrl` and `node.s3Region` to `s3.endpointUrl` and `s3.region` respectively.
+
 ## S3 Credentials Secret Configuration
 
 <!-- markdownlint-disable MD046 -->
@@ -106,13 +127,12 @@ These parameters configure the overall behavior of the CSI driver components.
 
 <!-- markdownlint-disable MD046 -->
 !!! note "Dynamic Provisioning"
-    The controller component is enabled by default (`controller.enable: true`) and provides dynamic provisioning capabilities.
-    When enabled, it automatically creates and deletes S3 buckets based on PersistentVolumeClaim requests that reference a StorageClass with the CSI driver.
+    The controller component is always deployed and provides dynamic provisioning capabilities.
+    It automatically creates and deletes S3 buckets based on PersistentVolumeClaim requests that reference a StorageClass with the CSI driver.
 <!-- markdownlint-enable MD046 -->
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
-| `controller.enable`                                  | Enable controller deployment for dynamic provisioning. When enabled, allows automatic S3 bucket creation and deletion.                           | `true`                                                 | No                          |
 | `controller.serviceAccount.create`                   | Specifies whether a ServiceAccount should be created for the controller.                                                                          | `true`                                                 | No                          |
 | `controller.serviceAccount.name`                     | Name of the ServiceAccount to use for the controller.                                                                                             | `s3-csi-driver-controller-sa`                          | No                          |
 

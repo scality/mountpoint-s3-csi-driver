@@ -25,7 +25,7 @@ graph TB
     end
 
     S3Bucket["S3 Bucket (Creation/Deletion)"]
-    MP["mount-s3 Process"]
+    MP["Mountpoint Pod (ns: mount-s3)"]
     S3Storage["RING S3 Storage"]
 
     %% Credential flow to operations

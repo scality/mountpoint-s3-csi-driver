@@ -18,7 +18,7 @@ graph LR
     end
 
     CSI["Scality CSI Driver for S3 Node Service"]
-    MP["mount-s3 process per volume"]
+    MP["Mountpoint Pod (ns: mount-s3)"]
     S3["S3 Storage"]
 
     HelmChart --> DriverSecret
