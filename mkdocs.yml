@@ -133,10 +133,10 @@ nav:
           - StorageClass Reference and Usage Examples: volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
-      - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
       - Filesystem Semantics: concepts-and-reference/filesystem-semantics.md
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Administrator and User Guide: admin-user-guide.md
+  - Compatibility Matrix: concepts-and-reference/compatibility-matrix.md
   - Release Notes: release-notes.md
   - Glossary: glossary.md
