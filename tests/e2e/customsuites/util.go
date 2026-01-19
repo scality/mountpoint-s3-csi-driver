@@ -538,6 +538,33 @@ func WaitForPVCToBeBoundWithTimeout(ctx context.Context, f *framework.Framework,
 	}, timeout, interval).WithContext(ctx).Should(gomega.Equal(v1.ClaimBound))
 }
 
+// WaitForPVToBeDeleted waits for a PersistentVolume to be deleted
+func WaitForPVToBeDeleted(ctx context.Context, f *framework.Framework, pvName string, timeout time.Duration) error {
+	return WaitForPVToBeDeletedWithInterval(ctx, f, pvName, timeout, 5*time.Second)
+}
+
+// WaitForPVToBeDeletedWithInterval waits for a PersistentVolume to be deleted with custom interval
+func WaitForPVToBeDeletedWithInterval(ctx context.Context, f *framework.Framework, pvName string, timeout, interval time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for PV %s to be deleted", pvName)
+		case <-ticker.C:
+			_, err := f.ClientSet.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
+			if err != nil {
+				// PV is deleted (NotFound error)
+				return nil
+			}
+		}
+	}
+}
+
 // BuildSecretVolume creates a volume using a secret reference for authentication.
 func BuildSecretVolume(
 	ctx context.Context,

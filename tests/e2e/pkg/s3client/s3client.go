@@ -2,6 +2,7 @@ package s3client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -296,4 +297,28 @@ func (c *Client) VerifyObjectsExistInS3(ctx context.Context, bucket string, pref
 		}
 	}
 	return nil
+}
+
+// BucketExists checks if a bucket exists using HeadBucket
+func (c *Client) BucketExists(ctx context.Context, bucketName string) (bool, error) {
+	_, err := c.client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+	if err != nil {
+		// Check if it's a "not found" error
+		var nsk *types.NotFound
+		var nsb *types.NoSuchBucket
+		if ok := errors.As(err, &nsk); ok {
+			return false, nil
+		}
+		if ok := errors.As(err, &nsb); ok {
+			return false, nil
+		}
+		// Could also be a 404 response from different S3 implementations
+		if strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "NoSuchBucket") || strings.Contains(err.Error(), "NotFound") {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }

@@ -452,4 +452,103 @@ func (s *s3CSICredentialsSuite) DefineTests(driver storageframework.TestDriver, 
 
 		framework.Logf("Test passed: Mount correctly failed with Access Denied, proving node-publish-secret (Account2) was used to access Account1's bucket")
 	})
+
+	ginkgo.It("deletes dynamically provisioned bucket using provisioner-secret credentials", func(ctx context.Context) {
+		// This test validates that DeleteVolume uses the correct credentials:
+		// 1. Controller uses provisioner-secret (Account2) to create the S3 bucket
+		// 2. When PVC is deleted, controller uses the same provisioner-secret to delete the bucket
+		// 3. Verify the bucket is actually deleted
+		_, _, _, account2AK, account2SK, _ := getCredentialsFromEnv()
+
+		// Create provisioner-secret with Account2 credentials
+		// This is the key: bucket will be created AND deleted with Account2 credentials
+		provisionerSecretName, err := CreateCredentialSecret(ctx, f, "provisioner-account2-delete-test", account2AK, account2SK)
+		framework.ExpectNoError(err, "failed to create provisioner secret")
+		framework.Logf("Created provisioner secret %s with Account2 credentials", provisionerSecretName)
+
+		// Create StorageClass with provisioner-secret only (no node-publish-secret for simplicity)
+		// Using the same secret for both to allow mounting
+		scName := "test-delete-bucket-creds-" + uuid.NewString()[:8]
+		sc := &storagev1.StorageClass{
+			ObjectMeta:  metav1.ObjectMeta{Name: scName},
+			Provisioner: constants.DriverName,
+			Parameters: map[string]string{
+				"csi.storage.k8s.io/provisioner-secret-name":       provisionerSecretName,
+				"csi.storage.k8s.io/provisioner-secret-namespace":  f.Namespace.Name,
+				"csi.storage.k8s.io/node-publish-secret-name":      provisionerSecretName,
+				"csi.storage.k8s.io/node-publish-secret-namespace": f.Namespace.Name,
+			},
+			ReclaimPolicy:     ptr.To(v1.PersistentVolumeReclaimDelete),
+			VolumeBindingMode: ptr.To(storagev1.VolumeBindingImmediate),
+		}
+		_, err = f.ClientSet.StorageV1().StorageClasses().Create(ctx, sc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "failed to create StorageClass")
+		ginkgo.DeferCleanup(func(ctx context.Context) {
+			err := f.ClientSet.StorageV1().StorageClasses().Delete(ctx, scName, metav1.DeleteOptions{})
+			if err != nil {
+				framework.Logf("Warning: failed to delete StorageClass %s: %v", scName, err)
+			}
+		})
+		framework.Logf("Created StorageClass %s with Account2 provisioner-secret", scName)
+
+		// Create PVC using the StorageClass
+		pvcName := "test-pvc-delete-" + uuid.NewString()[:8]
+		pvc := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{Name: pvcName, Namespace: f.Namespace.Name},
+			Spec: v1.PersistentVolumeClaimSpec{
+				StorageClassName: &scName,
+				AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{v1.ResourceStorage: resource.MustParse("1Gi")},
+				},
+			},
+		}
+		_, err = f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Create(ctx, pvc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "failed to create PVC")
+		framework.Logf("Created PVC %s", pvcName)
+
+		// Wait for PVC to be bound (bucket created by controller using Account2)
+		ginkgo.By("Waiting for PVC to be bound and bucket to be dynamically provisioned with Account2 credentials")
+		WaitForPVCToBeBound(ctx, f, pvcName, f.Namespace.Name)
+		framework.Logf("PVC %s is now bound", pvcName)
+
+		// Get PV to extract bucket name
+		boundPVC, err := f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Get(ctx, pvcName, metav1.GetOptions{})
+		framework.ExpectNoError(err)
+		pvName := boundPVC.Spec.VolumeName
+		pv, err := f.ClientSet.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
+		framework.ExpectNoError(err)
+		bucketName := pv.Spec.CSI.VolumeAttributes["bucketName"]
+		framework.Logf("Bucket name: %s (created by Account2)", bucketName)
+
+		// Verify bucket exists using Account2 credentials
+		ginkgo.By("Verifying bucket exists before deletion")
+		account2S3Client := s3client.New("", account2AK, account2SK)
+		exists, err := account2S3Client.BucketExists(ctx, bucketName)
+		framework.ExpectNoError(err, "failed to check if bucket exists")
+		gomega.Expect(exists).To(gomega.BeTrue(), "Bucket should exist after PVC creation")
+		framework.Logf("Verified bucket %s exists", bucketName)
+
+		// Delete the PVC - this should trigger DeleteVolume with provisioner-secret credentials
+		ginkgo.By("Deleting PVC to trigger bucket deletion with Account2 credentials")
+		err = f.ClientSet.CoreV1().PersistentVolumeClaims(f.Namespace.Name).Delete(ctx, pvcName, metav1.DeleteOptions{})
+		framework.ExpectNoError(err, "failed to delete PVC")
+		framework.Logf("Deleted PVC %s", pvcName)
+
+		// Wait for PV to be deleted (indicates successful bucket deletion)
+		ginkgo.By("Waiting for PV to be deleted")
+		err = WaitForPVToBeDeleted(ctx, f, pvName, 2*time.Minute)
+		framework.ExpectNoError(err, "PV should be deleted after PVC deletion")
+		framework.Logf("PV %s was deleted", pvName)
+
+		// Verify bucket no longer exists
+		// If DeleteVolume used wrong credentials (driver instead of provisioner-secret),
+		// the bucket would still exist because the delete would fail silently
+		ginkgo.By("Verifying bucket was deleted (proves provisioner-secret credentials were used)")
+		exists, err = account2S3Client.BucketExists(ctx, bucketName)
+		framework.ExpectNoError(err, "failed to check if bucket exists after deletion")
+		gomega.Expect(exists).To(gomega.BeFalse(),
+			"Bucket should be deleted - if it still exists, DeleteVolume may have used wrong credentials")
+		framework.Logf("Test passed: Bucket %s was successfully deleted using Account2 credentials", bucketName)
+	})
 }

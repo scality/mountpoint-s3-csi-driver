@@ -165,11 +165,11 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	volumeID := req.GetVolumeId()
 	klog.V(4).Infof("DeleteVolume: processing volume %s", volumeID)
 
-	// For dynamic provisioning, we need to resolve credentials to delete the bucket
-	// Since we don't have volume context in DeleteVolumeRequest, we'll try both credential strategies
-
-	// Try to get credentials - first attempt with driver credentials
-	awsConfig, err := d.controllerCredProvider.ProvideForDeleteVolume(ctx, map[string]string{})
+	// Resolve credentials for bucket deletion
+	// The CSI external-provisioner passes provisioner secrets in req.GetSecrets() when
+	// StorageClass has csi.storage.k8s.io/provisioner-secret-* parameters configured.
+	// This is automatic behavior in external-provisioner v5.x via PV annotations.
+	awsConfig, err := d.resolveDeleteVolumeCredentials(ctx, req)
 	if err != nil {
 		klog.Errorf("DeleteVolume: failed to resolve credentials for volume %s: %v", volumeID, err)
 		// Don't fail - CSI DeleteVolume should be idempotent
@@ -391,6 +391,30 @@ func (d *Driver) createAWSConfigFromCSISecrets(ctx context.Context, secrets map[
 
 	klog.V(4).Infof("Created AWS config from CSI secrets: region=%s, hasSessionToken=%v", cfg.Region, sessionToken != "")
 	return cfg, nil
+}
+
+// resolveDeleteVolumeCredentials resolves AWS credentials for DeleteVolume operations.
+// It checks for secrets passed by the CSI external-provisioner first (standard CSI flow),
+// then falls back to driver-level credentials if no secrets are provided.
+func (d *Driver) resolveDeleteVolumeCredentials(ctx context.Context, req *csi.DeleteVolumeRequest) (aws.Config, error) {
+	secrets := req.GetSecrets()
+
+	// If CSI external-provisioner provided secrets (from provisioner-secret), use those
+	// The external-provisioner automatically passes provisioner secrets to DeleteVolume
+	// when StorageClass has csi.storage.k8s.io/provisioner-secret-* parameters
+	if len(secrets) > 0 {
+		klog.V(4).Infof("DeleteVolume: using provisioner secrets from request (secret count: %d)", len(secrets))
+		cfg, err := d.createAWSConfigFromCSISecrets(ctx, secrets)
+		if err != nil {
+			klog.Warningf("DeleteVolume: failed to create config from secrets: %v, falling back to driver credentials", err)
+			return d.controllerCredProvider.ProvideForDeleteVolume(ctx, map[string]string{})
+		}
+		return cfg, nil
+	}
+
+	// No secrets provided, fall back to driver credentials
+	klog.V(4).Infof("DeleteVolume: no secrets in request, using driver credentials")
+	return d.controllerCredProvider.ProvideForDeleteVolume(ctx, map[string]string{})
 }
 
 func generateVolumeID() string {
