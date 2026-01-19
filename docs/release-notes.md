@@ -1,5 +1,25 @@
 # Release Notes
 
+## [2.1.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.0)
+
+January 20, 2026
+
+### What's New
+
+- **UUID Secret Key Support** ([#280](https://github.com/scality/mountpoint-s3-csi-driver/issues/280)): Added support for UUID format
+  in secret key validation, enabling compatibility with S3 providers that use UUID-formatted secret keys.
+- **Documentation Updates**: Updated architecture documentation to reflect v2 pod mounter strategy, including new Pod Mounter
+  Architecture and CRD Reference pages, updated provisioning flows, and improved reference documentation.
+
+### Bug Fixes
+
+- **DeleteVolume Credentials**: Fixed DeleteVolume to use provisioner secrets from the request instead of always using
+  driver-level credentials. This resolves bucket deletion failures when volumes were created with different account credentials.
+
+### Breaking Changes
+
+None.
+
 ## [2.0.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.1)
 
 October 17, 2025
