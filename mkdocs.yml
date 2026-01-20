@@ -98,7 +98,6 @@ nav:
       - Pod Mounter Architecture: architecture/pod-mounter-architecture.md
       - Static Provisioning Flow: architecture/static-provisioning-flow.md
       - Dynamic Provisioning Flow: architecture/dynamic-provisioning-flow.md
-      - CRD Reference: architecture/crd-reference.md
       - RING S3 Credential management:
           - Static Provisioning: architecture/ring-s3-credentials-management/static-provisioning-credentials-management.md
           - Dynamic Provisioning: architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md
@@ -133,6 +132,7 @@ nav:
           - StorageClass Reference and Usage Examples: volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
+      - CRD Reference: architecture/crd-reference.md
       - Filesystem Semantics: concepts-and-reference/filesystem-semantics.md
   - Operations:
       - Troubleshooting: troubleshooting.md
