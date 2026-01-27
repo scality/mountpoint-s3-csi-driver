@@ -71,19 +71,22 @@ EOF
 
 ## Key Mount Options
 
-- `debug` - Enables Mountpoint debug logging to systemd journal
+- `debug` - Enables Mountpoint debug logging to Mountpoint Pod container logs
 - `debug-crt` - Enables verbose AWS Common Runtime (CRT) S3 client logging
 
 ## Viewing Debug Logs
 
-Debug logs are written to the systemd journal on the node where the pod is running:
+Debug logs are written to the Mountpoint Pod container logs. Use `kubectl logs` to view them:
 
 ```bash
-# Find the node where the pod is running
-kubectl get pod s3-app -o wide
+# Find the Mountpoint Pod serving your volume
+kubectl get pods -n kube-system -l app=mountpoint-s3-csi-mounter
 
-# SSH to the node and view logs
-sudo journalctl -u kubelet -f | grep mountpoint
+# View logs from the Mountpoint Pod
+kubectl logs -n kube-system <mountpoint-pod-name>
+
+# Stream logs in real-time
+kubectl logs -n kube-system <mountpoint-pod-name> -f
 ```
 
 ## Use Cases
