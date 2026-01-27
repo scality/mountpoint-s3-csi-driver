@@ -27,14 +27,14 @@ const (
 Validation rules support IAM credentials, test credentials, and other S3 providers:
 
 	access_key_id     – 1 … 128 chars, alphanumeric (A-Z, a-z, 0-9)
-	secret_access_key – 1 … 128 chars, alphanumeric + base64 chars (/, +, =)
+	secret_access_key – 1 … 128 chars, alphanumeric + base64 chars (/, +, =) + hyphens (-) for UUID support
 
-The patterns accommodate IAM (20-char access keys), shorter test keys, and other providers.
+The patterns accommodate IAM (20-char access keys), shorter test keys, UUID-formatted keys (e.g., Scaleway), and other providers.
 */
 var (
 	// accept upper‑ or lower‑case letters so test keys like "accessKey2" pass
 	accessKeyIDRe     = regexp.MustCompile(`^[A-Za-z0-9]{1,` + strconv.Itoa(maxAccessKeyIDLen) + `}$`)
-	secretAccessKeyRe = regexp.MustCompile(`^[A-Za-z0-9/+=]{1,` + strconv.Itoa(maxSecretAccessKeyLen) + `}$`)
+	secretAccessKeyRe = regexp.MustCompile(`^[A-Za-z0-9/+\-=]{1,` + strconv.Itoa(maxSecretAccessKeyLen) + `}$`)
 )
 
 // provideFromSecret validates credentials from a Kubernetes Secret.
