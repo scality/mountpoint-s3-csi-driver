@@ -92,7 +92,7 @@ copyright: |
 
 nav:
   - Home: README.md
-  - Architecture CSI Driver v1.2:
+  - Architecture:
       - System Overview: architecture/system-overview.md
       - Deployment Architecture: architecture/deployment-architecture.md
       - Pod Mounter Architecture: architecture/pod-mounter-architecture.md
