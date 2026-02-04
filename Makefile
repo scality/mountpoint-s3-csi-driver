@@ -435,10 +435,10 @@ e2e-all:
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
 	fi; \
-	if [ ! -z "$(ADDITIONAL_HELM_ARGS)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args '$(ADDITIONAL_HELM_ARGS)'"; \
-	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
+	fi; \
+	if [ ! -z "$(ADDITIONAL_HELM_ARGS)" ]; then \
+		export E2E_ADDITIONAL_HELM_ARGS="$(ADDITIONAL_HELM_ARGS)"; \
 	fi; \
 	./tests/e2e/scripts/run.sh all $$INSTALL_ARGS

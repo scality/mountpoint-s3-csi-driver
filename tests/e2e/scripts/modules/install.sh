@@ -134,6 +134,11 @@ install_csi_driver() {
     SECRET_ACCESS_KEY="${ACCOUNT1_SECRET_KEY:-}"
   fi
 
+  # Get additional Helm args from environment variable if not provided as parameter
+  if [ -z "$ADDITIONAL_HELM_ARGS" ] && [ -n "${E2E_ADDITIONAL_HELM_ARGS:-}" ]; then
+    ADDITIONAL_HELM_ARGS="$E2E_ADDITIONAL_HELM_ARGS"
+  fi
+
   # Validate required parameters
   if [ -z "$ENDPOINT_URL" ]; then
     error "Missing required parameter: --endpoint-url"
