@@ -248,29 +248,36 @@ jobs:
           echo "Applying CRDs..."
           kubectl apply -f ./charts/scality-mountpoint-s3-csi-driver/crds/
 
-      - name: Create CA Certificate Secret
+      - name: Create CA Certificate Secret in kube-system
         run: |
           # Create the CA certificate secret in kube-system namespace
+          # The mount-s3 namespace secret will be created after Helm install
           kubectl create secret generic s3-custom-ca-cert \
             --from-file=ca-bundle.crt=.github/scality-storage-deployment/certs/ca.crt \
             --namespace kube-system
-
-          # Also create it in mount-s3 namespace (for mounter pods)
-          kubectl create namespace mount-s3 || true
-          kubectl create secret generic s3-custom-ca-cert \
-            --from-file=ca-bundle.crt=.github/scality-storage-deployment/certs/ca.crt \
-            --namespace mount-s3
 
       - name: Run E2E Tests with TLS
         run: |
           mkdir -p test-results
           source tests/e2e/scripts/load-credentials.sh
-          # Install and test with HTTPS endpoint and custom CA
-          make e2e-all \
+          # Delete mount-s3 namespace so Helm can create it with proper annotations
+          kubectl delete namespace mount-s3 --ignore-not-found=true
+
+          # Install CSI driver (Helm will create mount-s3 namespace)
+          make csi-install \
             S3_ENDPOINT_URL=https://s3.scality.com:8443 \
             CSI_IMAGE_TAG=${{ github.sha }} \
             CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
-            ADDITIONAL_HELM_ARGS="--set tls.caCertSecret=s3-custom-ca-cert" \
+            ADDITIONAL_HELM_ARGS="--set tls.caCertSecret=s3-custom-ca-cert"
+
+          # Now create the CA cert secret in the Helm-managed namespace
+          kubectl create secret generic s3-custom-ca-cert \
+            --from-file=ca-bundle.crt=.github/scality-storage-deployment/certs/ca.crt \
+            --namespace mount-s3
+
+          # Run E2E tests
+          make e2e \
+            S3_ENDPOINT_URL=https://s3.scality.com:8443 \
             ADDITIONAL_ARGS="--junit-report=./test-results/e2e-tests-tls-results.xml"
 
       - name: Stop K8s Event Capture and Generate Debug Report
