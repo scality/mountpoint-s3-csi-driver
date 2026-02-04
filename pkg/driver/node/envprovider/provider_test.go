@@ -255,3 +255,121 @@ func TestEnvironmentMerge(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTLSConfig(t *testing.T) {
+	testCases := []struct {
+		name string
+		env  map[string]string
+		want *envprovider.TLSConfig
+	}{
+		{
+			name: "returns nil when TLS_CA_CERT_SECRET not set",
+			env:  map[string]string{},
+			want: nil,
+		},
+		{
+			name: "returns nil when TLS_CA_CERT_SECRET is empty string",
+			env: map[string]string{
+				"TLS_CA_CERT_SECRET": "",
+			},
+			want: nil,
+		},
+		{
+			name: "returns config with only required field when TLS_CA_CERT_SECRET is set",
+			env: map[string]string{
+				"TLS_CA_CERT_SECRET": "my-ca-cert-secret",
+			},
+			want: &envprovider.TLSConfig{
+				CACertSecretName:       "my-ca-cert-secret",
+				InitImage:              "",
+				InitImagePullPolicy:    "",
+				InitResourcesReqCPU:    "",
+				InitResourcesReqMemory: "",
+				InitResourcesLimMemory: "",
+			},
+		},
+		{
+			name: "returns populated config when all variables are set",
+			env: map[string]string{
+				"TLS_CA_CERT_SECRET":                 "my-ca-cert-secret",
+				"TLS_INIT_IMAGE":                     "busybox:latest",
+				"TLS_INIT_IMAGE_PULL_POLICY":         "IfNotPresent",
+				"TLS_INIT_RESOURCES_REQUESTS_CPU":    "100m",
+				"TLS_INIT_RESOURCES_REQUESTS_MEMORY": "64Mi",
+				"TLS_INIT_RESOURCES_LIMITS_MEMORY":   "128Mi",
+			},
+			want: &envprovider.TLSConfig{
+				CACertSecretName:       "my-ca-cert-secret",
+				InitImage:              "busybox:latest",
+				InitImagePullPolicy:    "IfNotPresent",
+				InitResourcesReqCPU:    "100m",
+				InitResourcesReqMemory: "64Mi",
+				InitResourcesLimMemory: "128Mi",
+			},
+		},
+		{
+			name: "returns partial config with some optional vars set",
+			env: map[string]string{
+				"TLS_CA_CERT_SECRET":                 "custom-ca",
+				"TLS_INIT_IMAGE":                     "alpine:3.18",
+				"TLS_INIT_RESOURCES_REQUESTS_MEMORY": "32Mi",
+			},
+			want: &envprovider.TLSConfig{
+				CACertSecretName:       "custom-ca",
+				InitImage:              "alpine:3.18",
+				InitImagePullPolicy:    "",
+				InitResourcesReqCPU:    "",
+				InitResourcesReqMemory: "32Mi",
+				InitResourcesLimMemory: "",
+			},
+		},
+		{
+			name: "handles all optional vars set but TLS_CA_CERT_SECRET empty",
+			env: map[string]string{
+				"TLS_CA_CERT_SECRET":                 "",
+				"TLS_INIT_IMAGE":                     "busybox:latest",
+				"TLS_INIT_IMAGE_PULL_POLICY":         "Always",
+				"TLS_INIT_RESOURCES_REQUESTS_CPU":    "200m",
+				"TLS_INIT_RESOURCES_REQUESTS_MEMORY": "128Mi",
+				"TLS_INIT_RESOURCES_LIMITS_MEMORY":   "256Mi",
+			},
+			want: nil,
+		},
+		{
+			name: "returns config with resource limits only",
+			env: map[string]string{
+				"TLS_CA_CERT_SECRET":               "prod-ca-bundle",
+				"TLS_INIT_RESOURCES_LIMITS_MEMORY": "512Mi",
+			},
+			want: &envprovider.TLSConfig{
+				CACertSecretName:       "prod-ca-bundle",
+				InitImage:              "",
+				InitImagePullPolicy:    "",
+				InitResourcesReqCPU:    "",
+				InitResourcesReqMemory: "",
+				InitResourcesLimMemory: "512Mi",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			// Clear all TLS environment variables before setting test values
+			t.Setenv("TLS_CA_CERT_SECRET", "")
+			t.Setenv("TLS_INIT_IMAGE", "")
+			t.Setenv("TLS_INIT_IMAGE_PULL_POLICY", "")
+			t.Setenv("TLS_INIT_RESOURCES_REQUESTS_CPU", "")
+			t.Setenv("TLS_INIT_RESOURCES_REQUESTS_MEMORY", "")
+			t.Setenv("TLS_INIT_RESOURCES_LIMITS_MEMORY", "")
+
+			// Set environment variables for this test case
+			for k, v := range testCase.env {
+				t.Setenv(k, v)
+			}
+
+			// Test GetTLSConfig() method directly
+			got := envprovider.GetTLSConfig()
+			assert.Equals(t, testCase.want, got)
+		})
+	}
+}
