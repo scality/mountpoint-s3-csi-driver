@@ -110,6 +110,7 @@ nav:
   - Volume Provisioning:
       - Overview: volume-provisioning/index.md
       - Mount Options Reference: volume-provisioning/mount-options.md
+      - TLS Configuration: volume-provisioning/tls-configuration.md
       - Static Provisioning:
           - Overview: volume-provisioning/static-provisioning/overview.md
           - Examples:

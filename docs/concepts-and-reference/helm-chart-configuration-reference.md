@@ -153,6 +153,47 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 | `mountpointPod.headroomImage.tag`                   | Image tag for headroom pods.                                                                                                                       | `3.10`                                                 | No                          |
 | `mountpointPod.headroomImage.pullPolicy`            | Image pull policy for headroom pods.                                                                                                               | `IfNotPresent`                                         | No                          |
 
+## TLS Configuration (Custom CA Certificates)
+
+<!-- markdownlint-disable MD046 -->
+!!! info "HTTPS S3 Endpoints with Custom CA"
+    If your S3 endpoint uses HTTPS with certificates signed by an internal or custom Certificate Authority (CA), you must configure the CSI driver to trust that CA.
+    This is common in enterprise environments where S3 services are secured with internally-signed TLS certificates.
+
+    For detailed setup instructions, see the [TLS Configuration Guide](../volume-provisioning/tls-configuration.md).
+<!-- markdownlint-enable MD046 -->
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `tls.caCertSecret`                                   | Name of the Kubernetes Secret containing custom CA certificate(s). The secret must exist in both the driver namespace (`kube-system`) and the mounter pod namespace (`mount-s3`). The secret should have a key named `ca-bundle.crt` with PEM-encoded certificates. | `""`                                                   | No                          |
+| `tls.initImage.repository`                           | Image repository for the CA certificate installation initContainer. Must have `update-ca-certificates` command (Alpine, Debian, Ubuntu).           | `alpine`                                               | No                          |
+| `tls.initImage.tag`                                  | Image tag for the CA certificate installation initContainer.                                                                                        | `3.21`                                                 | No                          |
+| `tls.initImage.pullPolicy`                           | Image pull policy for the CA certificate installation initContainer.                                                                                | `IfNotPresent`                                         | No                          |
+| `tls.initResources.requests.cpu`                     | CPU resource requests for the CA installation initContainer.                                                                                        | `10m`                                                  | No                          |
+| `tls.initResources.requests.memory`                  | Memory resource requests for the CA installation initContainer.                                                                                     | `16Mi`                                                 | No                          |
+| `tls.initResources.limits.memory`                    | Memory resource limits for the CA installation initContainer.                                                                                       | `64Mi`                                                 | No                          |
+
+<!-- markdownlint-disable MD046 -->
+!!! note "Secret Requirements"
+    The CA certificate Secret must:
+
+    1. Be created **before** installing the Helm chart
+    2. Exist in **both** the driver namespace (`kube-system` by default) and the mounter pod namespace (`mount-s3` by default)
+    3. Contain a key named `ca-bundle.crt` with PEM-encoded CA certificate(s)
+
+    Example:
+    ```bash
+    # Create the secret in both namespaces
+    kubectl create secret generic custom-ca-cert \
+      --from-file=ca-bundle.crt=/path/to/your/ca-bundle.pem \
+      --namespace kube-system
+
+    kubectl create secret generic custom-ca-cert \
+      --from-file=ca-bundle.crt=/path/to/your/ca-bundle.pem \
+      --namespace mount-s3
+    ```
+<!-- markdownlint-enable MD046 -->
+
 ## CRD Cleanup Configuration (v2.0)
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
