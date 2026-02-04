@@ -202,38 +202,27 @@ jobs:
           kubectl rollout status deployment coredns -n kube-system --timeout=60s
           kubectl run dns-test --image=busybox:1.28 --rm -it --restart=Never -- nslookup s3.scality.com
 
-      - name: Create certificates directory
+      - name: Generate TLS certificates
         run: |
           mkdir -p .github/scality-storage-deployment/certs
           mkdir -p .github/scality-storage-deployment/logs/s3
+          # Generate self-signed certificates for TLS testing
+          ./tests/e2e/scripts/generate-test-certs.sh \
+            .github/scality-storage-deployment/certs \
+            s3.scality.com
+          echo "Generated certificates:"
+          ls -lh .github/scality-storage-deployment/certs/
+          echo "CA certificate contents:"
+          cat .github/scality-storage-deployment/certs/ca.crt
 
       - name: Start Cloudserver with TLS
         working-directory: .github/scality-storage-deployment
         run: |
           set -e -o pipefail
           chown -R runner:docker logs certs
-          docker compose --profile s3-tls up -d --quiet-pull
-          # Wait for cloudserver to start and generate certificates
+          ENDPOINT=s3.scality.com docker compose --profile s3-tls up -d --quiet-pull
+          # Wait for cloudserver to start
           bash ../scripts/wait_for_local_port.bash 8000 60
-
-      - name: Wait for CA certificate and copy
-        working-directory: .github/scality-storage-deployment
-        run: |
-          set -e
-          # Wait for CA certificate to be generated (max 30 seconds)
-          for i in {1..30}; do
-            if docker compose --profile s3-tls exec -T s3-tls test -f /usr/src/app/ca.crt 2>/dev/null; then
-              echo "CA certificate found"
-              break
-            fi
-            echo "Waiting for CA certificate... ($i/30)"
-            sleep 1
-          done
-
-          # Copy the CA certificate from the container
-          docker compose --profile s3-tls cp s3-tls:/usr/src/app/ca.crt ./certs/ca.crt
-          echo "CA certificate contents:"
-          cat ./certs/ca.crt
 
       - name: Verify HTTPS endpoint
         run: |
