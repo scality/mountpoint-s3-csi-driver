@@ -221,6 +221,13 @@ jobs:
           set -e -o pipefail
           chown -R runner:docker logs certs
           ENDPOINT=s3.scality.com docker compose --profile s3-tls up -d --quiet-pull
+          # Give container a moment to start
+          sleep 5
+          # Check container status and logs
+          echo "Container status:"
+          docker compose --profile s3-tls ps
+          echo "Container logs (last 50 lines):"
+          docker compose --profile s3-tls logs --tail=50 s3-tls || true
           # Wait for cloudserver to start
           bash ../scripts/wait_for_local_port.bash 8000 60
 
