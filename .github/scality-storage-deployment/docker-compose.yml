@@ -31,7 +31,12 @@ services:
       SSL_CERT: /certs/server.crt
       SSL_CA: /certs/ca.crt
       ENDPOINT: "${ENDPOINT:-s3.scality.local}"
-    command: /bin/sh -c "apt-get update -qq && apt-get install -y -qq openssl > /dev/null 2>&1 && yarn start > /logs/s3/s3.log 2>&1"
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        apt-get update -qq && apt-get install -y -qq openssl > /dev/null 2>&1
+        exec /usr/src/app/docker-entrypoint.sh yarn start > /logs/s3/s3.log 2>&1
     volumes:
       - ./cloudserver-config.json:/conf/config.json:ro
       - ./logs/s3:/logs/s3
