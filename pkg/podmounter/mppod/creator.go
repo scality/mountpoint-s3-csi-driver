@@ -32,6 +32,22 @@ type ContainerConfig struct {
 	ImagePullPolicy corev1.PullPolicy
 }
 
+// TLSConfig holds TLS configuration for custom CA certificates in mounter pods.
+type TLSConfig struct {
+	// CACertSecretName is the name of the Kubernetes Secret containing custom CA certificate(s)
+	CACertSecretName string
+	// InitImage is the container image for the CA certificate installation initContainer
+	InitImage string
+	// InitImagePullPolicy is the pull policy for the init container image
+	InitImagePullPolicy corev1.PullPolicy
+	// InitResourcesReqCPU is the CPU request for the init container
+	InitResourcesReqCPU resource.Quantity
+	// InitResourcesReqMemory is the memory request for the init container
+	InitResourcesReqMemory resource.Quantity
+	// InitResourcesLimMemory is the memory limit for the init container
+	InitResourcesLimMemory resource.Quantity
+}
+
 // A Config represents configuration for spawned Mountpoint Pods.
 type Config struct {
 	Namespace                   string
@@ -42,6 +58,7 @@ type Config struct {
 	Container                   ContainerConfig
 	CSIDriverVersion            string
 	ClusterVariant              cluster.Variant
+	TLS                         *TLSConfig // TLS configuration for custom CA certificates
 }
 
 // A Creator allows creating specification for Mountpoint Pods to schedule.
@@ -54,6 +71,13 @@ func NewCreator(config Config) *Creator {
 	return &Creator{config: config}
 }
 
+// Volume and container names for TLS certificate installation
+const (
+	tlsCustomCACertVolumeName = "custom-ca-cert"
+	tlsEtcSSLCertsVolumeName  = "etc-ssl-certs"
+	tlsInitContainerName      = "install-ca-cert"
+)
+
 // Create returns a new Mountpoint Pod spec to schedule for given `pod` and `pv`.
 //
 // It automatically assigns Mountpoint Pod to `pod`'s node.
@@ -61,6 +85,33 @@ func NewCreator(config Config) *Creator {
 func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.Pod {
 	node := pod.Spec.NodeName
 	name := MountpointPodNameFor(string(pod.UID), pv.Name)
+
+	volumeMounts := []corev1.VolumeMount{
+		{
+			Name:      CommunicationDirName,
+			MountPath: filepath.Join("/", CommunicationDirName),
+		},
+	}
+
+	volumes := []corev1.Volume{
+		// This emptyDir volume is used for communication between Mountpoint Pod and the CSI Driver Node Pod
+		{
+			Name: CommunicationDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{
+					Medium:    corev1.StorageMediumMemory,
+					SizeLimit: resource.NewQuantity(EmptyDirSizeLimit, resource.BinarySI),
+				},
+			},
+		},
+	}
+
+	var initContainers []corev1.Container
+
+	// Add TLS volumes and init container if custom CA certificate is configured
+	if c.config.TLS != nil && c.config.TLS.CACertSecretName != "" {
+		volumes, volumeMounts, initContainers = c.configureTLS(volumes, volumeMounts)
+	}
 
 	mpPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -78,7 +129,8 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 			// and in turn `/bin/scality-s3-csi-mounter` also exits with Mountpoint process' exit code,
 			// here `restartPolicy: OnFailure` allows Pod to only restart on non-zero exit codes (i.e. some failures)
 			// and not successful exists (i.e. zero exit code).
-			RestartPolicy: corev1.RestartPolicyOnFailure,
+			RestartPolicy:  corev1.RestartPolicyOnFailure,
+			InitContainers: initContainers,
 			Containers: []corev1.Container{{
 				Name:            "mountpoint",
 				Image:           c.config.Container.Image,
@@ -95,12 +147,7 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
 				},
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      CommunicationDirName,
-						MountPath: filepath.Join("/", CommunicationDirName),
-					},
-				},
+				VolumeMounts: volumeMounts,
 			}},
 			PriorityClassName: c.config.PriorityClassName,
 			Affinity: &corev1.Affinity{
@@ -129,18 +176,7 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 				//   would also get descheduled naturally due to CSI volume lifecycle.
 				{Operator: corev1.TolerationOpExists},
 			},
-			Volumes: []corev1.Volume{
-				// This emptyDir volume is used for communication between Mountpoint Pod and the CSI Driver Node Pod
-				{
-					Name: CommunicationDirName,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{
-							Medium:    corev1.StorageMediumMemory,
-							SizeLimit: resource.NewQuantity(EmptyDirSizeLimit, resource.BinarySI),
-						},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 
@@ -151,6 +187,108 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 	}
 
 	return mpPod
+}
+
+// configureTLS adds TLS-related volumes, volume mounts, and init container for custom CA certificate installation.
+// It uses an Alpine-based init container to install the custom CA certificate into the system trust store,
+// then shares the certificate store with the main container via an emptyDir volume.
+//
+// This approach is necessary because mount-s3's s2n-tls library only reads from /etc/ssl/certs/ and does not
+// support AWS_CA_BUNDLE or other environment variables for custom CA configuration.
+func (c *Creator) configureTLS(volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount, []corev1.Container) {
+	tls := c.config.TLS
+
+	// Add volume for the custom CA certificate Secret
+	volumes = append(volumes, corev1.Volume{
+		Name: tlsCustomCACertVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: tls.CACertSecretName,
+				Items: []corev1.KeyToPath{
+					{
+						Key:  "ca-bundle.crt",
+						Path: "ca-bundle.crt",
+					},
+				},
+			},
+		},
+	})
+
+	// Add emptyDir volume to share certificate store between init container and main container
+	volumes = append(volumes, corev1.Volume{
+		Name: tlsEtcSSLCertsVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+
+	// Add volume mount for the certificate store in the main container
+	// This replaces /etc/ssl/certs with the certificate store prepared by the init container
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
+		Name:      tlsEtcSSLCertsVolumeName,
+		MountPath: "/etc/ssl/certs",
+		ReadOnly:  true,
+	})
+
+	// Create the init container that installs the custom CA certificate
+	// Uses Alpine because it has update-ca-certificates and ca-certificates package
+	initContainer := corev1.Container{
+		Name:            tlsInitContainerName,
+		Image:           tls.InitImage,
+		ImagePullPolicy: tls.InitImagePullPolicy,
+		Command:         []string{"/bin/sh", "-c"},
+		Args: []string{
+			// Script to install custom CA certificate into Alpine's CA store
+			// 1. Install ca-certificates package (provides update-ca-certificates and creates required directories)
+			// 2. Copy custom CA to Alpine's certificate directory
+			// 3. Run update-ca-certificates to install and create hash symlinks
+			// 4. Copy the entire certificate store to the shared volume
+			`set -e
+echo "Installing ca-certificates package..."
+apk add --no-cache ca-certificates
+echo "Installing custom CA certificate..."
+cp /custom-ca/ca-bundle.crt /usr/local/share/ca-certificates/custom-ca.crt
+update-ca-certificates
+cp -r /etc/ssl/certs/* /shared-certs/
+echo "Custom CA certificate installed successfully"`,
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      tlsCustomCACertVolumeName,
+				MountPath: "/custom-ca",
+				ReadOnly:  true,
+			},
+			{
+				Name:      tlsEtcSSLCertsVolumeName,
+				MountPath: "/shared-certs",
+			},
+		},
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    tls.InitResourcesReqCPU,
+				corev1.ResourceMemory: tls.InitResourcesReqMemory,
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceMemory: tls.InitResourcesLimMemory,
+			},
+		},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: ptr.To(false),
+			// Need to write to /etc/ssl/certs and /usr/local/share/ca-certificates
+			ReadOnlyRootFilesystem: ptr.To(false),
+			// update-ca-certificates needs root to write to system directories
+			RunAsNonRoot: ptr.To(false),
+			RunAsUser:    ptr.To(int64(0)),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+		},
+	}
+
+	return volumes, volumeMounts, []corev1.Container{initContainer}
 }
 
 // extractVolumeAttributes extracts volume attributes from given `pv`.

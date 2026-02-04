@@ -149,3 +149,166 @@ jobs:
           file: ./tests/e2e/test-results/e2e-tests-results.xml
           flags: e2e_tests,cloudserver_${{ matrix.ring_version }}
           slug: scality/mountpoint-s3-csi-driver
+
+  # E2E tests with HTTPS and custom CA certificates
+  e2e-tests-tls:
+    name: TLS (Custom CA)
+    runs-on: ubuntu-22.04-8core
+    needs: dev-image
+    env:
+      CLOUDSERVER_TAG: ${{ vars.CLOUDSERVER_RING_9_5 }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run Common Setup
+        uses: ./.github/actions/e2e-setup-common
+        with:
+          ref: ${{ github.sha }}
+          skip_container_pulls: "true"
+
+      - name: Pull Container Images
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:${{ github.sha }} &
+          DRIVER_PID=$!
+          docker pull ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG} &
+          CLOUDSERVER_PID=$!
+          wait $DRIVER_PID || { echo "❌ Driver image pull failed"; exit 1; }
+          wait $CLOUDSERVER_PID || { echo "❌ CloudServer image pull failed"; exit 1; }
+
+      - name: Load CSI Driver into KIND
+        run: |
+          kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name helm-test-cluster
+
+      - name: Get Host IP Address
+        id: get_ip
+        run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Configure hosts file for S3 FQDN
+        run: |
+          echo "${{ steps.get_ip.outputs.host_ip }} s3.scality.com" | sudo tee -a /etc/hosts
+          cat /etc/hosts | grep s3.scality.com
+
+      - name: Configure CoreDNS for S3 FQDN
+        run: |
+          set -e -o pipefail
+          kubectl get configmap coredns -n kube-system -o json | \
+          jq --arg ip "${{ steps.get_ip.outputs.host_ip }}" \
+          '.data.Corefile |= sub("ready"; "ready\n        hosts {\n            " + $ip + " s3.scality.com\n            fallthrough\n        }")' | \
+          kubectl apply -f -
+          kubectl rollout restart deployment coredns -n kube-system
+          kubectl rollout status deployment coredns -n kube-system --timeout=60s
+          kubectl run dns-test --image=busybox:1.28 --rm -it --restart=Never -- nslookup s3.scality.com
+
+      - name: Generate TLS certificates
+        run: |
+          mkdir -p .github/scality-storage-deployment/certs
+          mkdir -p .github/scality-storage-deployment/logs/s3
+          # Generate self-signed certificates for TLS testing
+          ./tests/e2e/scripts/generate-test-certs.sh \
+            .github/scality-storage-deployment/certs \
+            s3.scality.com
+          echo "Generated certificates:"
+          ls -lh .github/scality-storage-deployment/certs/
+          echo "CA certificate contents:"
+          cat .github/scality-storage-deployment/certs/ca.crt
+
+      - name: Start Cloudserver with TLS
+        working-directory: .github/scality-storage-deployment
+        run: |
+          set -e -o pipefail
+          chown -R runner:docker logs certs
+          ENDPOINT=s3.scality.com docker compose --profile s3-tls up -d --quiet-pull
+          # Give container a moment to start
+          sleep 5
+          # Check container status and logs
+          echo "Container status:"
+          docker compose --profile s3-tls ps
+          echo "Container logs (last 50 lines):"
+          docker compose --profile s3-tls logs --tail=50 s3-tls || true
+          # Wait for cloudserver to start on HTTPS port (8443 when SSL is enabled)
+          bash ../scripts/wait_for_local_port.bash 8443 60
+
+      - name: Verify HTTPS endpoint
+        run: |
+          # Test that HTTPS endpoint is accessible with the CA certificate
+          curl --cacert .github/scality-storage-deployment/certs/ca.crt \
+            -v https://s3.scality.com:8443/ || echo "Expected 403 - endpoint is working"
+
+      - name: Start Kubernetes Event and Log Capture
+        run: |
+          mkdir -p artifacts/k8s-debug
+          ./tests/e2e/scripts/capture-events-and-logs.sh artifacts/k8s-debug start &
+          echo $! > capture.pid
+
+      - name: Apply CRDs
+        run: |
+          echo "Applying CRDs..."
+          kubectl apply -f ./charts/scality-mountpoint-s3-csi-driver/crds/
+
+      - name: Create CA Certificate Secret in kube-system
+        run: |
+          # Create the CA certificate secret in kube-system namespace
+          # The mount-s3 namespace secret will be created after Helm install
+          kubectl create secret generic s3-custom-ca-cert \
+            --from-file=ca-bundle.crt=.github/scality-storage-deployment/certs/ca.crt \
+            --namespace kube-system
+
+      - name: Run E2E Tests with TLS
+        run: |
+          mkdir -p test-results
+          source tests/e2e/scripts/load-credentials.sh
+          # Delete mount-s3 namespace so Helm can create it with proper annotations
+          kubectl delete namespace mount-s3 --ignore-not-found=true
+
+          # Install CSI driver (Helm will create mount-s3 namespace)
+          make csi-install \
+            S3_ENDPOINT_URL=https://s3.scality.com:8443 \
+            CSI_IMAGE_TAG=${{ github.sha }} \
+            CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
+            ADDITIONAL_HELM_ARGS="--set tls.caCertSecret=s3-custom-ca-cert"
+
+          # Now create the CA cert secret in the Helm-managed namespace
+          kubectl create secret generic s3-custom-ca-cert \
+            --from-file=ca-bundle.crt=.github/scality-storage-deployment/certs/ca.crt \
+            --namespace mount-s3
+
+          # Run E2E tests
+          make e2e \
+            S3_ENDPOINT_URL=https://s3.scality.com:8443 \
+            ADDITIONAL_ARGS="--junit-report=./test-results/e2e-tests-tls-results.xml"
+
+      - name: Stop K8s Event Capture and Generate Debug Report
+        if: always()
+        run: |
+          if [ -f capture.pid ]; then
+            ./tests/e2e/scripts/capture-events-and-logs.sh artifacts/k8s-debug stop || true
+            rm -f capture.pid
+          fi
+          tar -czf artifacts/k8s-debug-capture.tar.gz -C artifacts k8s-debug/ || true
+
+      - name: Copy S3 logs and certificates to artifacts
+        if: always()
+        run: |
+          mkdir -p artifacts/logs/s3
+          mkdir -p artifacts/certs
+          cp -r .github/scality-storage-deployment/logs/s3/* artifacts/logs/s3/ 2>/dev/null || true
+          cp -r .github/scality-storage-deployment/certs/* artifacts/certs/ 2>/dev/null || true
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-artifacts-tls
+          path: artifacts
+
+      - name: Upload test results to Codecov
+        if: ${{ always() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./tests/e2e/test-results/e2e-tests-tls-results.xml
+          flags: e2e_tests,tls
+          slug: scality/mountpoint-s3-csi-driver

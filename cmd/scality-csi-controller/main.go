@@ -7,7 +7,9 @@ import (
 	"flag"
 	"os"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -34,6 +36,14 @@ var (
 	headroomImage                         = flag.String("headroom-image", os.Getenv("MOUNTPOINT_HEADROOM_IMAGE"), "Image of a pause container to use in spawned Headroom Pods.")
 	mountpointImagePullPolicy             = flag.String("mountpoint-image-pull-policy", os.Getenv("MOUNTPOINT_IMAGE_PULL_POLICY"), "Pull policy of Mountpoint images.")
 	mountpointContainerCommand            = flag.String("mountpoint-container-command", "/bin/scality-s3-csi-mounter", "Entrypoint command of the Mountpoint Pods.")
+
+	// TLS configuration for custom CA certificates in mounter pods
+	tlsCACertSecret           = flag.String("tls-ca-cert-secret", os.Getenv("TLS_CA_CERT_SECRET"), "Name of Kubernetes Secret containing custom CA certificate(s).")
+	tlsInitImage              = flag.String("tls-init-image", os.Getenv("TLS_INIT_IMAGE"), "Image for CA certificate installation initContainer.")
+	tlsInitImagePullPolicy    = flag.String("tls-init-image-pull-policy", os.Getenv("TLS_INIT_IMAGE_PULL_POLICY"), "Pull policy for TLS init image.")
+	tlsInitResourcesReqCPU    = flag.String("tls-init-resources-req-cpu", os.Getenv("TLS_INIT_RESOURCES_REQUESTS_CPU"), "CPU request for TLS init container.")
+	tlsInitResourcesReqMemory = flag.String("tls-init-resources-req-memory", os.Getenv("TLS_INIT_RESOURCES_REQUESTS_MEMORY"), "Memory request for TLS init container.")
+	tlsInitResourcesLimMemory = flag.String("tls-init-resources-lim-memory", os.Getenv("TLS_INIT_RESOURCES_LIMITS_MEMORY"), "Memory limit for TLS init container.")
 )
 
 var scheme = runtime.NewScheme()
@@ -41,6 +51,70 @@ var scheme = runtime.NewScheme()
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(crdv2.AddToScheme(scheme))
+}
+
+// buildTLSConfig creates a TLSConfig from environment variables/flags.
+// Returns nil if TLS is not configured (no CA cert secret specified).
+func buildTLSConfig(log logr.Logger) *mppod.TLSConfig {
+	if *tlsCACertSecret == "" {
+		return nil
+	}
+
+	// Parse resource quantities with defaults
+	reqCPU := resource.MustParse("10m")
+	if *tlsInitResourcesReqCPU != "" {
+		var err error
+		reqCPU, err = resource.ParseQuantity(*tlsInitResourcesReqCPU)
+		if err != nil {
+			log.Error(err, "failed to parse TLS init CPU request, using default", "value", *tlsInitResourcesReqCPU)
+			reqCPU = resource.MustParse("10m")
+		}
+	}
+
+	reqMemory := resource.MustParse("16Mi")
+	if *tlsInitResourcesReqMemory != "" {
+		var err error
+		reqMemory, err = resource.ParseQuantity(*tlsInitResourcesReqMemory)
+		if err != nil {
+			log.Error(err, "failed to parse TLS init memory request, using default", "value", *tlsInitResourcesReqMemory)
+			reqMemory = resource.MustParse("16Mi")
+		}
+	}
+
+	limMemory := resource.MustParse("64Mi")
+	if *tlsInitResourcesLimMemory != "" {
+		var err error
+		limMemory, err = resource.ParseQuantity(*tlsInitResourcesLimMemory)
+		if err != nil {
+			log.Error(err, "failed to parse TLS init memory limit, using default", "value", *tlsInitResourcesLimMemory)
+			limMemory = resource.MustParse("64Mi")
+		}
+	}
+
+	// Default init image if not specified
+	initImage := *tlsInitImage
+	if initImage == "" {
+		initImage = "alpine:3.21"
+	}
+
+	// Default pull policy if not specified
+	initImagePullPolicy := corev1.PullPolicy(*tlsInitImagePullPolicy)
+	if initImagePullPolicy == "" {
+		initImagePullPolicy = corev1.PullIfNotPresent
+	}
+
+	log.Info("TLS configuration enabled for mounter pods",
+		"caCertSecret", *tlsCACertSecret,
+		"initImage", initImage)
+
+	return &mppod.TLSConfig{
+		CACertSecretName:       *tlsCACertSecret,
+		InitImage:              initImage,
+		InitImagePullPolicy:    initImagePullPolicy,
+		InitResourcesReqCPU:    reqCPU,
+		InitResourcesReqMemory: reqMemory,
+		InitResourcesLimMemory: limMemory,
+	}
 }
 
 func main() {
@@ -79,6 +153,7 @@ func main() {
 		},
 		CSIDriverVersion: version.GetVersion().DriverVersion,
 		ClusterVariant:   cluster.DetectVariant(conf, log),
+		TLS:              buildTLSConfig(log),
 	}
 
 	// Setup the pod reconciler that will create MountpointS3PodAttachments

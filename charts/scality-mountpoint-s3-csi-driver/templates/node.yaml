@@ -103,6 +103,21 @@ spec:
                   key: {{ .sessionToken }}
                   optional: true
             {{- end }}
+            {{- if .Values.tls.caCertSecret }}
+            # TLS configuration for custom CA certificates in mounter pods
+            - name: TLS_CA_CERT_SECRET
+              value: {{ .Values.tls.caCertSecret | quote }}
+            - name: TLS_INIT_IMAGE
+              value: {{ printf "%s:%s" .Values.tls.initImage.repository .Values.tls.initImage.tag | quote }}
+            - name: TLS_INIT_IMAGE_PULL_POLICY
+              value: {{ .Values.tls.initImage.pullPolicy | quote }}
+            - name: TLS_INIT_RESOURCES_REQUESTS_CPU
+              value: {{ .Values.tls.initResources.requests.cpu | quote }}
+            - name: TLS_INIT_RESOURCES_REQUESTS_MEMORY
+              value: {{ .Values.tls.initResources.requests.memory | quote }}
+            - name: TLS_INIT_RESOURCES_LIMITS_MEMORY
+              value: {{ .Values.tls.initResources.limits.memory | quote }}
+            {{- end }}
           volumeMounts:
             - name: kubelet-dir
               mountPath: {{ .Values.node.kubeletPath }}

@@ -19,6 +19,14 @@ const (
 	EnvSecretAccessKey       = "AWS_SECRET_ACCESS_KEY"
 	EnvSessionToken          = "AWS_SESSION_TOKEN"
 	EnvMountpointCacheKey    = "UNSTABLE_MOUNTPOINT_CACHE_KEY"
+
+	// TLS configuration environment variables for custom CA certificates
+	EnvTLSCACertSecret           = "TLS_CA_CERT_SECRET"
+	EnvTLSInitImage              = "TLS_INIT_IMAGE"
+	EnvTLSInitImagePullPolicy    = "TLS_INIT_IMAGE_PULL_POLICY"
+	EnvTLSInitResourcesReqCPU    = "TLS_INIT_RESOURCES_REQUESTS_CPU"
+	EnvTLSInitResourcesReqMemory = "TLS_INIT_RESOURCES_REQUESTS_MEMORY"
+	EnvTLSInitResourcesLimMemory = "TLS_INIT_RESOURCES_LIMITS_MEMORY"
 )
 
 // Key represents an environment variable name.
@@ -78,4 +86,38 @@ func (env Environment) Merge(other Environment) {
 // format formats given key and value to be used as an environment variable.
 func format(key Key, value Value) string {
 	return fmt.Sprintf("%s=%s", key, value)
+}
+
+// TLSConfig holds TLS configuration for custom CA certificates.
+type TLSConfig struct {
+	// CACertSecretName is the name of the Kubernetes Secret containing custom CA certificate(s)
+	CACertSecretName string
+	// InitImage is the container image for the CA certificate installation initContainer
+	InitImage string
+	// InitImagePullPolicy is the pull policy for the init container image
+	InitImagePullPolicy string
+	// InitResourcesReqCPU is the CPU request for the init container
+	InitResourcesReqCPU string
+	// InitResourcesReqMemory is the memory request for the init container
+	InitResourcesReqMemory string
+	// InitResourcesLimMemory is the memory limit for the init container
+	InitResourcesLimMemory string
+}
+
+// GetTLSConfig returns TLS configuration from environment variables.
+// Returns nil if no TLS configuration is set (i.e., TLS_CA_CERT_SECRET is empty).
+func GetTLSConfig() *TLSConfig {
+	caCertSecret := os.Getenv(EnvTLSCACertSecret)
+	if caCertSecret == "" {
+		return nil
+	}
+
+	return &TLSConfig{
+		CACertSecretName:       caCertSecret,
+		InitImage:              os.Getenv(EnvTLSInitImage),
+		InitImagePullPolicy:    os.Getenv(EnvTLSInitImagePullPolicy),
+		InitResourcesReqCPU:    os.Getenv(EnvTLSInitResourcesReqCPU),
+		InitResourcesReqMemory: os.Getenv(EnvTLSInitResourcesReqMemory),
+		InitResourcesLimMemory: os.Getenv(EnvTLSInitResourcesLimMemory),
+	}
 }

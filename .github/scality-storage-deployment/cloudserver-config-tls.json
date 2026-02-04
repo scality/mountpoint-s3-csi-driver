@@ -1,5 +1,5 @@
 {
-    "port": 8000,
+    "port": 8443,
     "listenOn": [],
     "certFilePaths": {
         "key": "/certs/server.key",

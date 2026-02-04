@@ -36,6 +36,7 @@ show_help() {
   echo "  --access-key-id VALUE     Specify S3 access key ID (or use ACCOUNT1_ACCESS_KEY env var)"
   echo "  --secret-access-key VALUE Specify S3 secret access key (or use ACCOUNT1_SECRET_KEY env var)"
   echo "  --validate-s3             Validate S3 endpoint and credentials before installation"
+  echo "  --additional-helm-args VALUE  Additional arguments to pass to Helm (e.g., '--set key=value')"
   echo
   echo "Options for test command:"
   echo "  --skip-go-tests           Skip executing Go-based end-to-end tests"
@@ -110,6 +111,10 @@ parse_install_parameters() {
       --validate-s3)
         params="$params --validate-s3"
         shift
+        ;;
+      --additional-helm-args)
+        params="$params --additional-helm-args \"$2\""
+        shift 2
         ;;
       *)
         echo "Error: Unknown option: $1"
@@ -329,6 +334,16 @@ main() {
               exit 1
             fi
             ;;
+          --additional-helm-args)
+            if [[ $# -gt 1 ]]; then
+              # Quote the value to preserve it as a single argument
+              install_args="$install_args $arg \"$2\""
+              shift 2
+            else
+              error "Missing value for $arg"
+              exit 1
+            fi
+            ;;
           *)
             install_args="$install_args $arg"
             shift
@@ -340,7 +355,8 @@ main() {
       set -- "${all_args[@]}"
 
       # Pass all command-line parameters to install module
-      exec_cmd do_install $namespace_param $install_args
+      # Use eval to properly expand quoted arguments (e.g., --additional-helm-args "...")
+      eval "exec_cmd do_install $namespace_param $install_args"
 
       source "${MODULES_DIR}/test.sh"
 
