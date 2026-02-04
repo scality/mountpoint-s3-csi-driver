@@ -17,6 +17,7 @@ services:
   #   2. Create certs directory with ca.crt, server.crt, server.key
   # Usage:
   #   ENDPOINT=${ENDPOINT:-s3.scality.local} docker compose --profile s3-tls up -d
+  # Note: openssl is installed at runtime as it's required by cloudserver's SSL entrypoint
   s3-tls:
     profiles: ['s3-tls']
     image: ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG:-7.70.65}
