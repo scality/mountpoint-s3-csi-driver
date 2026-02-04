@@ -228,14 +228,14 @@ jobs:
           docker compose --profile s3-tls ps
           echo "Container logs (last 50 lines):"
           docker compose --profile s3-tls logs --tail=50 s3-tls || true
-          # Wait for cloudserver to start
-          bash ../scripts/wait_for_local_port.bash 8000 60
+          # Wait for cloudserver to start on HTTPS port (8443 when SSL is enabled)
+          bash ../scripts/wait_for_local_port.bash 8443 60
 
       - name: Verify HTTPS endpoint
         run: |
           # Test that HTTPS endpoint is accessible with the CA certificate
           curl --cacert .github/scality-storage-deployment/certs/ca.crt \
-            -v https://s3.scality.com:8000/ || echo "Expected 403 - endpoint is working"
+            -v https://s3.scality.com:8443/ || echo "Expected 403 - endpoint is working"
 
       - name: Start Kubernetes Event and Log Capture
         run: |
@@ -267,7 +267,7 @@ jobs:
           source tests/e2e/scripts/load-credentials.sh
           # Install and test with HTTPS endpoint and custom CA
           make e2e-all \
-            S3_ENDPOINT_URL=https://s3.scality.com:8000 \
+            S3_ENDPOINT_URL=https://s3.scality.com:8443 \
             CSI_IMAGE_TAG=${{ github.sha }} \
             CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
             ADDITIONAL_HELM_ARGS="--set tls.caCertSecret=s3-custom-ca-cert" \
