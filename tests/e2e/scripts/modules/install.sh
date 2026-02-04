@@ -81,6 +81,7 @@ install_csi_driver() {
   local SECRET_ACCESS_KEY=""
   local VALIDATE_S3="false"
   local NAMESPACE="$DEFAULT_NAMESPACE"
+  local ADDITIONAL_HELM_ARGS=""
 
   # Parse parameters
   while [ "$#" -gt 0 ]; do
@@ -112,6 +113,10 @@ install_csi_driver() {
       --validate-s3)
         VALIDATE_S3="true"
         shift
+        ;;
+      --additional-helm-args)
+        ADDITIONAL_HELM_ARGS="$2"
+        shift 2
         ;;
       *)
         warn "Unknown parameter: $1"
@@ -197,7 +202,14 @@ install_csi_driver() {
   # Install/upgrade the Helm chart
   log "Running Helm upgrade with parameters: ${HELM_PARAMS[*]}"
 
-  exec_cmd helm upgrade --install scality-s3-csi "${HELM_PARAMS[@]}"
+  # Add additional helm args if specified (e.g., for TLS configuration)
+  if [ -n "$ADDITIONAL_HELM_ARGS" ]; then
+    log "Adding additional Helm args: $ADDITIONAL_HELM_ARGS"
+    # Use eval to properly handle the additional args (which may contain --set flags)
+    eval exec_cmd helm upgrade --install scality-s3-csi "${HELM_PARAMS[@]}" $ADDITIONAL_HELM_ARGS
+  else
+    exec_cmd helm upgrade --install scality-s3-csi "${HELM_PARAMS[@]}"
+  fi
 
   log "CSI driver installation complete in namespace: $NAMESPACE."
 

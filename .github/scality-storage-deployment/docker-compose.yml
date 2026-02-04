@@ -10,3 +10,30 @@ services:
     volumes:
       - ./cloudserver-config.json:/conf/config.json:ro
       - ./logs/s3:/logs/s3
+
+  # S3 service with TLS enabled for testing custom CA certificate support
+  # Prerequisites:
+  #   1. Generate certificates using: ../../tests/e2e/scripts/generate-test-certs.sh
+  #   2. Create certs directory with ca.crt, server.crt, server.key
+  # Usage:
+  #   ENDPOINT=${ENDPOINT:-s3.scality.local} docker compose --profile s3-tls up -d
+  s3-tls:
+    profiles: ['s3-tls']
+    image: ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG:-7.70.65}
+    network_mode: host
+    environment:
+      S3_CONFIG_FILE: /conf/config.json
+      S3VAULT: mem
+      # Enable SSL with externally generated certificates
+      SSL: "true"
+      SSL_KEY: /certs/server.key
+      SSL_CERT: /certs/server.crt
+      SSL_CA: /certs/ca.crt
+      ENDPOINT: "${ENDPOINT:-s3.scality.local}"
+    command: /bin/sh -c "yarn start > /logs/s3/s3.log 2>&1"
+    volumes:
+      - ./cloudserver-config.json:/conf/config.json:ro
+      - ./logs/s3:/logs/s3
+      # Mount externally generated certificates
+      # Generate using: ../../tests/e2e/scripts/generate-test-certs.sh
+      - ./certs:/certs:ro
