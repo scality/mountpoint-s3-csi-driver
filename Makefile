@@ -310,7 +310,7 @@ csi-install:
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_HELM_ARGS)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args \"$(ADDITIONAL_HELM_ARGS)\""; \
+		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args '$(ADDITIONAL_HELM_ARGS)'"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
@@ -436,7 +436,7 @@ e2e-all:
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_HELM_ARGS)" ]; then \
-		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args \"$(ADDITIONAL_HELM_ARGS)\""; \
+		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args '$(ADDITIONAL_HELM_ARGS)'"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
