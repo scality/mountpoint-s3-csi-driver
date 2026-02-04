@@ -224,6 +224,10 @@ VALIDATE_S3 ?= false
 # Additional arguments to pass to the script (optional)
 ADDITIONAL_ARGS ?=
 
+# Additional Helm arguments for CSI driver installation (optional)
+# Example: ADDITIONAL_HELM_ARGS="--set tls.caCertSecret=my-ca-secret"
+ADDITIONAL_HELM_ARGS ?=
+
 ################################################################
 # Scality CSI driver commands
 ################################################################
@@ -304,6 +308,9 @@ csi-install:
 	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
+	fi; \
+	if [ ! -z "$(ADDITIONAL_HELM_ARGS)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args '$(ADDITIONAL_HELM_ARGS)'"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \
@@ -427,6 +434,9 @@ e2e-all:
 	INSTALL_ARGS="$$INSTALL_ARGS --endpoint-url $(S3_ENDPOINT_URL)"; \
 	if [ "$(VALIDATE_S3)" = "true" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS --validate-s3"; \
+	fi; \
+	if [ ! -z "$(ADDITIONAL_HELM_ARGS)" ]; then \
+		INSTALL_ARGS="$$INSTALL_ARGS --additional-helm-args '$(ADDITIONAL_HELM_ARGS)'"; \
 	fi; \
 	if [ ! -z "$(ADDITIONAL_ARGS)" ]; then \
 		INSTALL_ARGS="$$INSTALL_ARGS $(ADDITIONAL_ARGS)"; \

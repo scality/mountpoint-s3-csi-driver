@@ -4,7 +4,9 @@ This guide explains how to configure the Scality CSI Driver for S3 to connect to
 
 ## Overview
 
-When your S3 endpoint uses HTTPS with certificates signed by an internal CA (rather than a public CA like Let's Encrypt), the CSI driver needs to be configured to trust that CA certificate. This is common in enterprise environments where S3 services are secured with internally-signed TLS certificates.
+When your S3 endpoint uses HTTPS with certificates signed by an internal CA (rather than a public CA like Let's Encrypt),
+the CSI driver needs to be configured to trust that CA certificate.
+This is common in enterprise environments where S3 services are secured with internally-signed TLS certificates.
 
 The CSI driver uses a two-pronged approach for custom CA support:
 
@@ -212,23 +214,26 @@ kubectl exec -n mount-s3 <mounter-pod-name> -- ls -la /etc/ssl/certs/ | grep cus
 
 If you see TLS certificate validation errors:
 
-```
+```text
 x509: certificate signed by unknown authority
 ```
 
 1. **Verify the CA certificate is correct:**
+
    ```bash
    # Check the certificate details
    openssl x509 -in /path/to/ca-bundle.pem -text -noout | head -20
    ```
 
 2. **Ensure the secret exists in both namespaces:**
+
    ```bash
    kubectl get secret custom-ca-cert -n kube-system
    kubectl get secret custom-ca-cert -n mount-s3
    ```
 
 3. **Check that the secret has the correct key:**
+
    ```bash
    kubectl get secret custom-ca-cert -n kube-system -o jsonpath='{.data}' | jq -r 'keys[]'
    # Should output: ca-bundle.crt
@@ -266,6 +271,7 @@ kubectl exec -n kube-system deployment/s3-csi-controller -c s3-csi-controller --
 To rotate the CA certificate:
 
 1. **Update the secrets in both namespaces:**
+
    ```bash
    kubectl create secret generic custom-ca-cert \
      --from-file=ca-bundle.crt=/path/to/new-ca-bundle.pem \
@@ -279,6 +285,7 @@ To rotate the CA certificate:
    ```
 
 2. **Restart the controller to pick up the new certificate:**
+
    ```bash
    kubectl rollout restart deployment/s3-csi-controller -n kube-system
    ```
@@ -299,6 +306,7 @@ To rotate the CA certificate:
 2. **Certificate Scope:** Only include the CA certificates needed for your S3 endpoint
 3. **Certificate Expiry:** Monitor CA certificate expiration dates and plan for rotation
 4. **Multiple CAs:** If you need to trust multiple CAs, concatenate them in a single PEM file:
+
    ```bash
    cat ca1.pem ca2.pem > ca-bundle.pem
    ```
