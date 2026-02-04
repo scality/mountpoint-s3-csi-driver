@@ -1,6 +1,11 @@
 {
     "port": 8000,
     "listenOn": [],
+    "certFilePaths": {
+        "key": "/certs/server.key",
+        "cert": "/certs/server.crt",
+        "ca": "/certs/ca.crt"
+    },
     "restEndpoints": {
         "localhost": "us-east-1",
         "127.0.0.1": "us-east-1",
