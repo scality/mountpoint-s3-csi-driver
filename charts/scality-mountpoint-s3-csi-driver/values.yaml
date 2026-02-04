@@ -140,6 +140,33 @@ mountpointPod:
     tag: "3.10"
     pullPolicy: IfNotPresent
 
+# TLS configuration for custom CA certificates
+# Use this to connect to S3 endpoints that use certificates signed by internal/custom CAs
+tls:
+  # Name of the Kubernetes Secret containing custom CA certificate(s)
+  # The secret must exist in the driver namespace (kube-system by default) AND
+  # the mountpoint pod namespace (mount-s3 by default)
+  # The secret should have a key named "ca-bundle.crt" with PEM-encoded certificates
+  # Example: kubectl create secret generic custom-ca-cert --from-file=ca-bundle.crt=./my-ca.pem
+  caCertSecret: ""
+
+  # Image to use for the CA certificate installation initContainer
+  # This container installs custom CA certificates into the system trust store
+  # Must have update-ca-certificates command (Alpine, Debian, Ubuntu)
+  # Only used for mounter pods when caCertSecret is configured
+  initImage:
+    repository: alpine
+    tag: "3.21"
+    pullPolicy: IfNotPresent
+
+  # Resource requests/limits for the CA installation initContainer
+  initResources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
+
 # CRD Cleanup Configuration
 # Enable automatic cleanup of MountpointS3PodAttachment CRDs and Mountpoint Pods during helm uninstall
 # Warning: This will forcefully terminate all active S3 mounts

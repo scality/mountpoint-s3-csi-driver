@@ -61,6 +61,11 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
+            {{- if .Values.tls.caCertSecret }}
+            - name: custom-ca-cert
+              mountPath: /etc/ssl/custom-ca
+              readOnly: true
+            {{- end }}
           {{- with .Values.controller.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -74,6 +79,11 @@ spec:
               value: "controller"
             - name: CSI_CONTROLLER_ONLY
               value: "true"
+            {{- if .Values.tls.caCertSecret }}
+            # AWS SDK Go v2 reads AWS_CA_BUNDLE to configure custom CA certificates
+            - name: AWS_CA_BUNDLE
+              value: /etc/ssl/custom-ca/ca-bundle.crt
+            {{- end }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -115,6 +125,21 @@ spec:
               value: {{ printf "%s:%s" .Values.mountpointPod.headroomImage.repository .Values.mountpointPod.headroomImage.tag | quote }}
             - name: MOUNTPOINT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | quote }}
+            {{- if .Values.tls.caCertSecret }}
+            # TLS configuration for custom CA certificates in mounter pods
+            - name: TLS_CA_CERT_SECRET
+              value: {{ .Values.tls.caCertSecret | quote }}
+            - name: TLS_INIT_IMAGE
+              value: {{ printf "%s:%s" .Values.tls.initImage.repository .Values.tls.initImage.tag | quote }}
+            - name: TLS_INIT_IMAGE_PULL_POLICY
+              value: {{ .Values.tls.initImage.pullPolicy | quote }}
+            - name: TLS_INIT_RESOURCES_REQUESTS_CPU
+              value: {{ .Values.tls.initResources.requests.cpu | quote }}
+            - name: TLS_INIT_RESOURCES_REQUESTS_MEMORY
+              value: {{ .Values.tls.initResources.requests.memory | quote }}
+            - name: TLS_INIT_RESOURCES_LIMITS_MEMORY
+              value: {{ .Values.tls.initResources.limits.memory | quote }}
+            {{- end }}
         - name: csi-provisioner
           image: {{ .Values.sidecars.csiProvisioner.image.repository }}:{{ .Values.sidecars.csiProvisioner.image.tag }}
           imagePullPolicy: {{ .Values.sidecars.csiProvisioner.image.pullPolicy }}
@@ -127,3 +152,11 @@ spec:
       volumes:
         - name: socket-dir
           emptyDir: {}
+        {{- if .Values.tls.caCertSecret }}
+        - name: custom-ca-cert
+          secret:
+            secretName: {{ .Values.tls.caCertSecret }}
+            items:
+              - key: ca-bundle.crt
+                path: ca-bundle.crt
+        {{- end }}
