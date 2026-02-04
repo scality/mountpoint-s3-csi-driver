@@ -207,3 +207,180 @@ func TestNewCreator(t *testing.T) {
 	assert.Equals(t, config.Container.ImagePullPolicy, mpPod.Spec.Containers[0].ImagePullPolicy)
 	assert.Equals(t, []string{config.Container.Command}, mpPod.Spec.Containers[0].Command)
 }
+
+func TestCreatingMountpointPodsWithTLS(t *testing.T) {
+	tlsConfig := &mppod.TLSConfig{
+		CACertSecretName:       "custom-ca-cert",
+		InitImage:              "alpine:3.21",
+		InitImagePullPolicy:    corev1.PullIfNotPresent,
+		InitResourcesReqCPU:    resource.MustParse("10m"),
+		InitResourcesReqMemory: resource.MustParse("16Mi"),
+		InitResourcesLimMemory: resource.MustParse("64Mi"),
+	}
+
+	config := mppod.Config{
+		Namespace:         namespace,
+		MountpointVersion: mountpointVersion,
+		PriorityClassName: priorityClassName,
+		Container: mppod.ContainerConfig{
+			Image:           image,
+			ImagePullPolicy: imagePullPolicy,
+			Command:         command,
+		},
+		CSIDriverVersion: csiDriverVersion,
+		ClusterVariant:   cluster.DefaultKubernetes,
+		TLS:              tlsConfig,
+	}
+
+	creator := mppod.NewCreator(config)
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID: types.UID(testPodUID),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: testNode,
+		},
+	}
+
+	pv := &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testVolName,
+		},
+	}
+
+	mpPod := creator.Create(pod, pv)
+
+	t.Run("has init container for CA cert installation", func(t *testing.T) {
+		assert.Equals(t, 1, len(mpPod.Spec.InitContainers))
+		initContainer := mpPod.Spec.InitContainers[0]
+		assert.Equals(t, "install-ca-cert", initContainer.Name)
+		assert.Equals(t, "alpine:3.21", initContainer.Image)
+		assert.Equals(t, corev1.PullIfNotPresent, initContainer.ImagePullPolicy)
+	})
+
+	t.Run("init container has correct volume mounts", func(t *testing.T) {
+		initContainer := mpPod.Spec.InitContainers[0]
+		assert.Equals(t, 2, len(initContainer.VolumeMounts))
+
+		// Check custom-ca-cert mount
+		caCertMount := initContainer.VolumeMounts[0]
+		assert.Equals(t, "custom-ca-cert", caCertMount.Name)
+		assert.Equals(t, "/custom-ca", caCertMount.MountPath)
+		assert.Equals(t, true, caCertMount.ReadOnly)
+
+		// Check etc-ssl-certs mount
+		sslCertsMount := initContainer.VolumeMounts[1]
+		assert.Equals(t, "etc-ssl-certs", sslCertsMount.Name)
+		assert.Equals(t, "/shared-certs", sslCertsMount.MountPath)
+	})
+
+	t.Run("init container has correct resources", func(t *testing.T) {
+		initContainer := mpPod.Spec.InitContainers[0]
+		assert.Equals(t, resource.MustParse("10m"), initContainer.Resources.Requests[corev1.ResourceCPU])
+		assert.Equals(t, resource.MustParse("16Mi"), initContainer.Resources.Requests[corev1.ResourceMemory])
+		assert.Equals(t, resource.MustParse("64Mi"), initContainer.Resources.Limits[corev1.ResourceMemory])
+	})
+
+	t.Run("init container runs as root for update-ca-certificates", func(t *testing.T) {
+		initContainer := mpPod.Spec.InitContainers[0]
+		assert.Equals(t, ptr.To(int64(0)), initContainer.SecurityContext.RunAsUser)
+		assert.Equals(t, ptr.To(false), initContainer.SecurityContext.RunAsNonRoot)
+	})
+
+	t.Run("has TLS volumes", func(t *testing.T) {
+		// Should have communication dir + custom-ca-cert + etc-ssl-certs = 3 volumes
+		assert.Equals(t, 3, len(mpPod.Spec.Volumes))
+
+		// Check custom-ca-cert secret volume
+		var caCertVolume *corev1.Volume
+		var sslCertsVolume *corev1.Volume
+		for i := range mpPod.Spec.Volumes {
+			if mpPod.Spec.Volumes[i].Name == "custom-ca-cert" {
+				caCertVolume = &mpPod.Spec.Volumes[i]
+			}
+			if mpPod.Spec.Volumes[i].Name == "etc-ssl-certs" {
+				sslCertsVolume = &mpPod.Spec.Volumes[i]
+			}
+		}
+
+		if caCertVolume == nil {
+			t.Fatal("custom-ca-cert volume not found")
+		}
+		assert.Equals(t, "custom-ca-cert", caCertVolume.Secret.SecretName)
+
+		if sslCertsVolume == nil {
+			t.Fatal("etc-ssl-certs volume not found")
+		}
+		if sslCertsVolume.EmptyDir == nil {
+			t.Fatal("etc-ssl-certs volume should be an emptyDir")
+		}
+	})
+
+	t.Run("main container has /etc/ssl/certs mount", func(t *testing.T) {
+		mainContainer := mpPod.Spec.Containers[0]
+		var sslCertsMount *corev1.VolumeMount
+		for i := range mainContainer.VolumeMounts {
+			if mainContainer.VolumeMounts[i].Name == "etc-ssl-certs" {
+				sslCertsMount = &mainContainer.VolumeMounts[i]
+				break
+			}
+		}
+
+		if sslCertsMount == nil {
+			t.Fatal("etc-ssl-certs volume mount not found in main container")
+		}
+		assert.Equals(t, "/etc/ssl/certs", sslCertsMount.MountPath)
+		assert.Equals(t, true, sslCertsMount.ReadOnly)
+	})
+}
+
+func TestCreatingMountpointPodsWithoutTLS(t *testing.T) {
+	config := mppod.Config{
+		Namespace:         namespace,
+		MountpointVersion: mountpointVersion,
+		PriorityClassName: priorityClassName,
+		Container: mppod.ContainerConfig{
+			Image:           image,
+			ImagePullPolicy: imagePullPolicy,
+			Command:         command,
+		},
+		CSIDriverVersion: csiDriverVersion,
+		ClusterVariant:   cluster.DefaultKubernetes,
+		TLS:              nil, // No TLS config
+	}
+
+	creator := mppod.NewCreator(config)
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID: types.UID(testPodUID),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: testNode,
+		},
+	}
+
+	pv := &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testVolName,
+		},
+	}
+
+	mpPod := creator.Create(pod, pv)
+
+	t.Run("no init container without TLS", func(t *testing.T) {
+		assert.Equals(t, 0, len(mpPod.Spec.InitContainers))
+	})
+
+	t.Run("only communication dir volume without TLS", func(t *testing.T) {
+		assert.Equals(t, 1, len(mpPod.Spec.Volumes))
+		assert.Equals(t, mppod.CommunicationDirName, mpPod.Spec.Volumes[0].Name)
+	})
+
+	t.Run("main container only has communication dir mount without TLS", func(t *testing.T) {
+		mainContainer := mpPod.Spec.Containers[0]
+		assert.Equals(t, 1, len(mainContainer.VolumeMounts))
+		assert.Equals(t, mppod.CommunicationDirName, mainContainer.VolumeMounts[0].Name)
+	})
+}
