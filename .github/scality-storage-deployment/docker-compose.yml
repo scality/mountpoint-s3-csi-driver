@@ -23,7 +23,7 @@ services:
     image: ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG:-7.70.65}
     network_mode: host
     environment:
-      S3_CONFIG_FILE: /conf/config.json
+      S3_CONFIG_FILE: /conf/config-tls.json
       S3VAULT: mem
       # Enable SSL with externally generated certificates
       SSL: "true"
@@ -38,7 +38,7 @@ services:
         apt-get update -qq && apt-get install -y -qq openssl > /dev/null 2>&1
         exec /usr/src/app/docker-entrypoint.sh yarn start > /logs/s3/s3.log 2>&1
     volumes:
-      - ./cloudserver-config.json:/conf/config.json:ro
+      - ./cloudserver-config-tls.json:/conf/config-tls.json:ro
       - ./logs/s3:/logs/s3
       # Mount externally generated certificates
       # Generate using: ../../tests/e2e/scripts/generate-test-certs.sh
