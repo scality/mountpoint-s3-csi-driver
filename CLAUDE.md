@@ -132,40 +132,44 @@ make generate-licenses
 
 ### E2E Testing Workflow
 
-E2E tests require a Scality RING S3 endpoint and credentials.
+E2E tests require a Scality RING S3 endpoint and credentials. The E2E workflow is orchestrated via Mage targets (Makefile targets delegate to Mage internally).
 
 ```bash
-# Load credentials from integration_config.json
-source tests/e2e/scripts/load-credentials.sh
+# Install mage (required)
+go install github.com/magefile/mage@latest
 
-# Install driver, run all tests
-make e2e-all S3_ENDPOINT_URL=https://s3.example.com
+# Full workflow: load credentials, install driver, run tests
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:all
 
 # Or use separate commands:
-make csi-install S3_ENDPOINT_URL=https://s3.example.com
-make e2e S3_ENDPOINT_URL=https://s3.example.com
-make csi-uninstall
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:install
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:test
+mage e2e:uninstall
 
-# Run only Go-based e2e tests
-make e2e-go
+# Run only Go-based e2e tests (skip verification)
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:goTest
 
-# Run only verification tests
-make e2e-verify
+# Run only verification (driver health check)
+mage e2e:verify
 
 # Uninstall options
-make csi-uninstall              # Interactive
-make csi-uninstall-clean        # Delete custom namespace
-make csi-uninstall-force        # Force uninstall
+mage e2e:uninstall              # Helm uninstall + delete secret
+mage e2e:uninstallClean         # Also delete custom namespace
+mage e2e:uninstallForce         # Force uninstall + delete CSI driver registration
+
+# With custom image (CI usage)
+S3_ENDPOINT_URL=https://s3.example.com CSI_IMAGE_TAG=v2.0.0 CSI_IMAGE_REPOSITORY=ghcr.io/scality/mountpoint-s3-csi-driver mage e2e:install
+
+# Makefile targets still work (they delegate to Mage):
+# make e2e-all S3_ENDPOINT_URL=https://s3.example.com
+# make csi-install S3_ENDPOINT_URL=https://s3.example.com
 ```
 
-### Mage Targets (Alternative Development Workflow)
+### Mage Targets (Local Development Workflow)
 
 Mage provides higher-level tasks for local development with minikube/kind:
 
 ```bash
-# Install mage
-go install github.com/magefile/mage@latest
-
 # Build and install CSI driver from local source
 mage up
 
