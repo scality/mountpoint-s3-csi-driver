@@ -224,3 +224,83 @@ func pipeToKubectlApply(yaml string) error {
 func (E2E) Install() error {
 	return installCSIForE2E()
 }
+
+// =============================================================================
+// Uninstall Targets
+// =============================================================================
+
+// uninstallCSIForE2E removes the CSI driver with configurable cleanup options.
+func uninstallCSIForE2E(deleteNamespace, force bool) error {
+	namespace := GetE2ENamespace()
+
+	fmt.Printf("Uninstalling CSI driver from namespace %s...\n", namespace)
+
+	// Uninstall Helm release
+	if err := sh.Run("helm", "status", "scality-s3-csi", "-n", namespace); err != nil {
+		fmt.Println("Helm release scality-s3-csi not found, skipping Helm uninstall")
+	} else {
+		if err := sh.RunV("helm", "uninstall", "scality-s3-csi", "-n", namespace); err != nil {
+			if force {
+				fmt.Printf("Warning: Helm uninstall failed: %v (continuing in force mode)\n", err)
+			} else {
+				return fmt.Errorf("helm uninstall failed: %v", err)
+			}
+		} else {
+			fmt.Println("Helm release uninstalled successfully")
+		}
+	}
+
+	// Delete secret
+	if err := sh.Run("kubectl", "get", "secret", "s3-secret", "-n", namespace); err == nil {
+		if err := sh.Run("kubectl", "delete", "secret", "s3-secret", "-n", namespace); err != nil {
+			fmt.Printf("Warning: Failed to delete secret: %v\n", err)
+		} else {
+			fmt.Println("S3 credentials secret deleted")
+		}
+	}
+
+	// Delete namespace if requested and it's not kube-system
+	if deleteNamespace && namespace != "kube-system" {
+		fmt.Printf("Deleting namespace %s...\n", namespace)
+		if err := sh.Run("kubectl", "delete", "namespace", namespace, "--timeout=60s"); err != nil {
+			if force {
+				fmt.Printf("Warning: Failed to delete namespace: %v (continuing in force mode)\n", err)
+			} else {
+				return fmt.Errorf("failed to delete namespace %s: %v", namespace, err)
+			}
+		} else {
+			fmt.Printf("Namespace %s deleted\n", namespace)
+		}
+	}
+
+	// Force: delete CSI driver registration
+	if force {
+		output, _ := sh.Output("kubectl", "get", "csidrivers", "-o", "name")
+		if strings.Contains(output, CSIDriverName) {
+			fmt.Printf("Deleting CSI driver registration %s...\n", CSIDriverName)
+			if err := sh.Run("kubectl", "delete", "csidriver", CSIDriverName); err != nil {
+				fmt.Printf("Warning: Failed to delete CSI driver registration: %v\n", err)
+			} else {
+				fmt.Println("CSI driver registration deleted")
+			}
+		}
+	}
+
+	fmt.Println("Uninstallation complete")
+	return nil
+}
+
+// Uninstall removes the CSI driver (Helm release + secret).
+func (E2E) Uninstall() error {
+	return uninstallCSIForE2E(false, false)
+}
+
+// UninstallClean removes the CSI driver and deletes custom namespace (not kube-system).
+func (E2E) UninstallClean() error {
+	return uninstallCSIForE2E(true, false)
+}
+
+// UninstallForce force-removes the CSI driver, including driver registration.
+func (E2E) UninstallForce() error {
+	return uninstallCSIForE2E(true, true)
+}
