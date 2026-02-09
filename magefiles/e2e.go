@@ -267,7 +267,7 @@ func deployS3TLS() error {
 	return WaitForPort("localhost", tlsPort, 30*time.Second)
 }
 
-// VerifyS3TLS verifies that the S3 TLS endpoint is reachable and returns HTTP 200.
+// VerifyS3TLS verifies the S3 TLS endpoint by creating and deleting a test bucket.
 func (E2E) VerifyS3TLS() error {
 	return verifyS3TLS()
 }
@@ -283,20 +283,139 @@ func verifyS3TLS() error {
 		return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCert)
 	}
 
-	healthURL := fmt.Sprintf("https://%s:%d/_/healthcheck", tlsHostname, tlsPort)
-	fmt.Printf("Verifying S3 TLS endpoint: %s\n", healthURL)
+	endpoint := fmt.Sprintf("https://%s:%d", tlsHostname, tlsPort)
+	bucket := "tls-verify-test"
+	fmt.Printf("Verifying S3 TLS endpoint: %s\n", endpoint)
 
-	output, err := sh.Output("curl", "--cacert", caCert,
-		"-s", "-o", "/dev/null", "-w", "%{http_code}", healthURL)
+	env := append(os.Environ(),
+		"AWS_ACCESS_KEY_ID=accessKey1",
+		"AWS_SECRET_ACCESS_KEY=verySecretKey1",
+		fmt.Sprintf("AWS_CA_BUNDLE=%s", caCert),
+		fmt.Sprintf("AWS_ENDPOINT_URL=%s", endpoint),
+		"AWS_DEFAULT_REGION=us-east-1",
+	)
+
+	// Create test bucket
+	fmt.Printf("Creating test bucket: %s\n", bucket)
+	cmd := exec.Command("aws", "s3", "mb", fmt.Sprintf("s3://%s", bucket))
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create bucket via TLS: %v", err)
+	}
+
+	// Delete test bucket
+	fmt.Printf("Deleting test bucket: %s\n", bucket)
+	cmd = exec.Command("aws", "s3", "rb", fmt.Sprintf("s3://%s", bucket))
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Warning: failed to delete test bucket: %v\n", err)
+	}
+
+	fmt.Println("S3 TLS verification passed")
+	return nil
+}
+
+// VerifyS3TLSInCluster verifies S3 TLS from within a Kubernetes pod.
+// Creates a ConfigMap with the CA cert, runs an AWS CLI pod that creates and deletes
+// a test bucket over HTTPS, then cleans up.
+func (E2E) VerifyS3TLSInCluster() error {
+	return verifyS3TLSInCluster()
+}
+
+func verifyS3TLSInCluster() error {
+	wd, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("curl to %s failed: %v", healthURL, err)
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	caCertPath := filepath.Join(wd, certsDir, "ca.crt")
+
+	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
+		return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCertPath)
 	}
 
-	if output != "200" {
-		return fmt.Errorf("expected HTTP 200 from %s, got %s", healthURL, output)
+	endpoint := fmt.Sprintf("https://%s:%d", tlsHostname, tlsPort)
+	podName := "s3-tls-cluster-verify"
+	configMapName := "s3-tls-ca-cert"
+
+	fmt.Printf("Verifying S3 TLS from within cluster: %s\n", endpoint)
+
+	// Create ConfigMap from CA cert (idempotent)
+	fmt.Println("Creating CA cert ConfigMap...")
+	cmYAML, err := sh.Output("kubectl", "create", "configmap", configMapName,
+		fmt.Sprintf("--from-file=ca.crt=%s", caCertPath),
+		"--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate ConfigMap YAML: %v", err)
+	}
+	if err := pipeToKubectlApply(cmYAML); err != nil {
+		return fmt.Errorf("failed to apply CA cert ConfigMap: %v", err)
 	}
 
-	fmt.Printf("S3 TLS verification passed (HTTP %s)\n", output)
+	// Delete any leftover pod from a previous run
+	_ = sh.Run("kubectl", "delete", "pod", podName, "--ignore-not-found")
+
+	// Apply verification pod
+	fmt.Println("Creating TLS verification pod...")
+	podYAML := fmt.Sprintf(`apiVersion: v1
+kind: Pod
+metadata:
+  name: %s
+spec:
+  restartPolicy: Never
+  containers:
+  - name: aws-cli
+    image: amazon/aws-cli:latest
+    command: ["sh", "-c", "aws s3 mb s3://tls-cluster-test && aws s3 rb s3://tls-cluster-test"]
+    env:
+    - name: AWS_ACCESS_KEY_ID
+      value: "accessKey1"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "verySecretKey1"
+    - name: AWS_CA_BUNDLE
+      value: "/certs/ca.crt"
+    - name: AWS_ENDPOINT_URL
+      value: "%s"
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
+    volumeMounts:
+    - name: ca-cert
+      mountPath: /certs
+      readOnly: true
+  volumes:
+  - name: ca-cert
+    configMap:
+      name: %s
+`, podName, endpoint, configMapName)
+
+	if err := pipeToKubectlApply(podYAML); err != nil {
+		return fmt.Errorf("failed to create verification pod: %v", err)
+	}
+
+	// Wait for pod to complete
+	fmt.Println("Waiting for verification pod to complete...")
+	waitErr := sh.Run("kubectl", "wait", "--for=jsonpath={.status.phase}=Succeeded",
+		fmt.Sprintf("pod/%s", podName), "--timeout=120s")
+
+	// Print logs regardless of outcome
+	fmt.Println("Pod logs:")
+	_ = sh.RunV("kubectl", "logs", podName)
+
+	// Clean up
+	fmt.Println("Cleaning up verification resources...")
+	_ = sh.Run("kubectl", "delete", "pod", podName, "--ignore-not-found")
+	_ = sh.Run("kubectl", "delete", "configmap", configMapName, "--ignore-not-found")
+
+	if waitErr != nil {
+		// Show pod status for debugging
+		_ = sh.RunV("kubectl", "get", "pod", podName, "-o", "yaml")
+		return fmt.Errorf("in-cluster S3 TLS verification failed: %v", waitErr)
+	}
+
+	fmt.Println("In-cluster S3 TLS verification passed")
 	return nil
 }
 
