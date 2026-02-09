@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -121,4 +122,105 @@ func verifyCSIInstallation() error {
 // Verify checks that the CSI driver is properly installed and healthy.
 func (E2E) Verify() error {
 	return verifyCSIInstallation()
+}
+
+// =============================================================================
+// Install Target
+// =============================================================================
+
+// installCSIForE2E installs the CSI driver for E2E/CI use.
+// Unlike InstallCSI() (local dev), this accepts image params via env vars,
+// defaults to kube-system, and skips DNS configuration.
+func installCSIForE2E() error {
+	namespace := GetE2ENamespace()
+	s3EndpointURL := os.Getenv("S3_ENDPOINT_URL")
+	if s3EndpointURL == "" {
+		return fmt.Errorf("S3_ENDPOINT_URL environment variable is required")
+	}
+
+	// Get credentials
+	accessKey := os.Getenv("ACCOUNT1_ACCESS_KEY")
+	secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
+	if accessKey == "" || secretKey == "" {
+		return fmt.Errorf("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY environment variables are required.\n" +
+			"Load credentials using: source tests/e2e/scripts/load-credentials.sh\n" +
+			"Or run mage e2e:all which loads them automatically from integration_config.json")
+	}
+
+	imageTag := GetCSIImageTag()
+	imageRepo := GetCSIImageRepository()
+
+	fmt.Printf("Installing CSI driver for E2E testing...\n")
+	fmt.Printf("  Namespace: %s\n", namespace)
+	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
+	if imageTag != "" {
+		fmt.Printf("  Image tag: %s\n", imageTag)
+	}
+	if imageRepo != "" {
+		fmt.Printf("  Image repository: %s\n", imageRepo)
+	}
+
+	// Create namespace idempotently
+	fmt.Printf("Creating namespace %s...\n", namespace)
+	nsYAML, err := sh.Output("kubectl", "create", "namespace", namespace, "--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate namespace YAML: %v", err)
+	}
+	if err := pipeToKubectlApply(nsYAML); err != nil {
+		return fmt.Errorf("failed to create namespace: %v", err)
+	}
+
+	// Create secret idempotently
+	fmt.Printf("Creating S3 credentials secret in namespace %s...\n", namespace)
+	secretYAML, err := sh.Output("kubectl", "create", "secret", "generic", "s3-secret",
+		fmt.Sprintf("--from-literal=access_key_id=%s", accessKey),
+		fmt.Sprintf("--from-literal=secret_access_key=%s", secretKey),
+		"-n", namespace,
+		"--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate secret YAML: %v", err)
+	}
+	if err := pipeToKubectlApply(secretYAML); err != nil {
+		return fmt.Errorf("failed to create secret: %v", err)
+	}
+
+	// Build Helm args
+	helmArgs := []string{
+		"upgrade", "--install", "scality-s3-csi",
+		"./charts/scality-mountpoint-s3-csi-driver",
+		"--namespace", namespace,
+		"--create-namespace",
+		"--set", fmt.Sprintf("node.s3EndpointUrl=%s", s3EndpointURL),
+		"--wait",
+		"--timeout", "300s",
+	}
+
+	if imageTag != "" {
+		helmArgs = append(helmArgs, "--set", fmt.Sprintf("image.tag=%s", imageTag))
+	}
+	if imageRepo != "" {
+		helmArgs = append(helmArgs, "--set", fmt.Sprintf("image.repository=%s", imageRepo))
+	}
+
+	fmt.Println("Running Helm install...")
+	if err := sh.RunV("helm", helmArgs...); err != nil {
+		return fmt.Errorf("helm install failed: %v", err)
+	}
+
+	fmt.Println("Helm installation completed. Verifying...")
+	return verifyCSIInstallation()
+}
+
+// pipeToKubectlApply pipes YAML content to kubectl apply.
+func pipeToKubectlApply(yaml string) error {
+	cmd := exec.Command("kubectl", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(yaml)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// Install installs the CSI driver for E2E testing.
+func (E2E) Install() error {
+	return installCSIForE2E()
 }
