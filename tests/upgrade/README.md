@@ -67,7 +67,6 @@ Tests dynamically provisioned volumes through upgrade:
 
 ```bash
 # Load credentials and set S3 endpoint
-source tests/e2e/scripts/load-credentials.sh
 export HOST_IP=<ip of the host>
 export S3_ENDPOINT_URL=http://${HOST_IP}:8000
 
@@ -94,7 +93,6 @@ mage cleanupStaticProvisioning
 
 ```bash
 # Load credentials and set S3 endpoint
-source tests/e2e/scripts/load-credentials.sh
 export HOST_IP=<ip of the host>
 export S3_ENDPOINT_URL=http://${HOST_IP}:8000
 
@@ -121,7 +119,6 @@ mage cleanupDynamicProvisioning
 
 ```bash
 # Load credentials and set S3 endpoint
-source tests/e2e/scripts/load-credentials.sh
 export HOST_IP=<ip of the host>
 export S3_ENDPOINT_URL=http://${HOST_IP}:8000
 

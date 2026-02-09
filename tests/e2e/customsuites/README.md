@@ -103,17 +103,18 @@ go test -v ./... \
 
 ### Credential Management
 
-Custom tests use the same credential loading system as the main E2E test suite. Load credentials before running tests:
+Custom tests use the same credential system as the main E2E test suite. Credentials are loaded automatically from `integration_config.json` when using `mage e2e:all`, or you can set them manually:
 
 ```bash
-# Load credentials from default config file
-source ../scripts/load-credentials.sh
+# Credentials are set automatically by mage e2e:all, or export manually:
+export ACCOUNT1_ACCESS_KEY=your_key
+export ACCOUNT1_SECRET_KEY=your_secret
 
 # Then run custom tests
 go test -v ./...
 ```
 
-The credential loading script exports environment variables that the tests automatically use:
+The following environment variables are used by tests:
 
 - `ACCOUNT1_ACCESS_KEY`, `ACCOUNT1_SECRET_KEY`, `ACCOUNT1_CANONICAL_ID`
 - `ACCOUNT2_ACCESS_KEY`, `ACCOUNT2_SECRET_KEY`, `ACCOUNT2_CANONICAL_ID`
@@ -192,12 +193,7 @@ pod := testEnv.CreatePodWithS3Volume(t, bucket, driver)
 Custom tests are integrated into the CI pipeline:
 
 ```yaml
-# Example CI configuration  
-- name: Load Test Credentials
-  run: |
-    cd tests/e2e/scripts
-    source ./load-credentials.sh
-
+# Example CI configuration
 - name: Run Custom Test Suites
   run: |
     cd tests/e2e/customsuites
