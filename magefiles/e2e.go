@@ -427,3 +427,38 @@ func findGinkgo() (string, error) {
 func (E2E) GoTest() error {
 	return runGinkgoTests("", "")
 }
+
+// =============================================================================
+// Orchestration Targets
+// =============================================================================
+
+// Test verifies the CSI driver installation then runs Ginkgo E2E tests.
+func (E2E) Test() error {
+	if err := verifyCSIInstallation(); err != nil {
+		return fmt.Errorf("verification failed, cannot proceed with tests: %v", err)
+	}
+	return runGinkgoTests("", "")
+}
+
+// All loads credentials, installs the CSI driver, and runs E2E tests.
+func (E2E) All() error {
+	fmt.Println("Starting full E2E workflow: load credentials -> install -> test")
+
+	// Load credentials from integration_config.json
+	if err := LoadCredentials(); err != nil {
+		return fmt.Errorf("failed to load credentials: %v", err)
+	}
+
+	// Install CSI driver
+	if err := installCSIForE2E(); err != nil {
+		return fmt.Errorf("CSI driver installation failed: %v", err)
+	}
+
+	// Run tests
+	if err := runGinkgoTests("", ""); err != nil {
+		return fmt.Errorf("E2E tests failed: %v", err)
+	}
+
+	fmt.Println("Full E2E workflow completed successfully")
+	return nil
+}
