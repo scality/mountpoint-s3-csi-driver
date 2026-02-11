@@ -1,16 +1,21 @@
 name: E2E Tests (on-demand)
 
 on:
-  # Manual trigger from Actions tab
-  workflow_dispatch:
-
-  # PR label trigger: add "test-openshift" label to run
+  # Temporary: auto-trigger to validate workflow on this PR.
+  # Drop this commit after review — commit 1 has the on-demand triggers.
   pull_request:
-    types: [labeled]
-
-  # PR comment trigger: comment "/test-openshift" to run
-  issue_comment:
-    types: [created]
+    branches:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'mkdocs.yml'
+      - 'requirements.txt'
+      - 'NOTICE'
+      - '.lychee.toml'
+      - '.markdownlint.yaml'
+      - "CLAUDE.md"
+  workflow_dispatch:
 
 env:
   CLUSTER_TYPE: openshift
@@ -19,42 +24,14 @@ jobs:
   openshift-e2e:
     name: OpenShift CRC
     runs-on: ubuntu-22.04-8core
-    # Run when:
-    # 1. Manual dispatch (workflow_dispatch)
-    # 2. PR labeled with "test-openshift"
-    # 3. PR comment contains "/test-openshift"
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-       contains(github.event.pull_request.labels.*.name, 'test-openshift')) ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request &&
-       contains(github.event.comment.body, '/test-openshift'))
     timeout-minutes: 60
     env:
       CLOUDSERVER_TAG: ${{ vars.CLOUDSERVER_RING_9_5 }}
     steps:
-      - name: Resolve PR ref
-        id: resolve_ref
-        # github.sha works for workflow_dispatch (selected branch HEAD) and
-        # pull_request/labeled (PR merge commit). Only issue_comment is different:
-        # GitHub sets github.sha to the default branch, not the PR, so we look
-        # up the PR head SHA via the API.
-        run: |
-          if [ "${{ github.event_name }}" = "issue_comment" ]; then
-            PR_NUMBER="${{ github.event.issue.number }}"
-            REF=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
-            echo "ref=$REF" >> $GITHUB_OUTPUT
-          else
-            echo "ref=${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Check out repository
         uses: actions/checkout@v5
         with:
-          ref: ${{ steps.resolve_ref.outputs.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: CRC Setup
