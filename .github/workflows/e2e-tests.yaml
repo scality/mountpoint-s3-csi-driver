@@ -128,3 +128,51 @@ jobs:
           file: ./tests/e2e/test-results/e2e-tests-results.xml
           flags: e2e_tests,cloudserver_${{ matrix.ring_version }}
           slug: scality/mountpoint-s3-csi-driver
+
+  s3-tls-verify:
+    name: S3 TLS Verification
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: CI Setup
+        uses: ./.github/actions/ci-setup
+        with:
+          cluster_name: tls-test-cluster
+
+      - name: Get Host IP Address
+        id: get_ip
+        run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Configure hosts file for S3 FQDN
+        run: |
+          echo "${{ steps.get_ip.outputs.host_ip }} s3.scality.com" | sudo tee -a /etc/hosts
+
+      - name: Deploy S3 with TLS
+        run: CLOUDSERVER_TAG=${{ vars.CLOUDSERVER_RING_9_5 }} mage e2e:deployS3TLS
+
+      - name: Start Kubernetes Event and Log Capture
+        run: mage e2e:startCapture
+
+      - name: Verify S3 TLS Endpoint Locally
+        run: mage e2e:verifyS3TLS
+
+      - name: Configure CoreDNS for S3 FQDN
+        run: S3_HOST_IP=${{ steps.get_ip.outputs.host_ip }} mage e2e:configureCIDNS
+
+      - name: Verify S3 TLS from Kubernetes Pod
+        run: mage e2e:verifyS3TLSInCluster
+
+      - name: Stop Capture and Collect Artifacts
+        if: always()
+        run: mage e2e:stopCapture
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-tls-verify-artifacts
+          path: artifacts

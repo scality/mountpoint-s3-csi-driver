@@ -133,6 +133,292 @@ func stopS3() error {
 	return nil
 }
 
+// =============================================================================
+// TLS Targets
+// =============================================================================
+
+const (
+	certsDir    = ".github/scality-storage-deployment/certs"
+	tlsPort     = 8443
+	tlsHostname = "s3.scality.com"
+)
+
+// GenerateTLSCerts generates a CA and server certificate for S3 TLS testing.
+func (E2E) GenerateTLSCerts() error {
+	return generateTLSCerts()
+}
+
+func generateTLSCerts() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	dir := filepath.Join(wd, certsDir)
+
+	// Idempotent: skip if certs already exist
+	if _, err := os.Stat(filepath.Join(dir, "ca.crt")); err == nil {
+		fmt.Println("TLS certificates already exist, skipping generation")
+		return nil
+	}
+
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create certs directory: %v", err)
+	}
+
+	fmt.Println("Generating TLS certificates...")
+
+	// Generate CA key
+	if err := runOpenSSL(dir, "genrsa", "-out", "ca.key", "2048"); err != nil {
+		return fmt.Errorf("failed to generate CA key: %v", err)
+	}
+
+	// Generate self-signed CA cert
+	if err := runOpenSSL(dir, "req", "-new", "-x509", "-key", "ca.key",
+		"-out", "ca.crt", "-days", "3650",
+		"-subj", "/CN=S3 Test CA"); err != nil {
+		return fmt.Errorf("failed to generate CA cert: %v", err)
+	}
+
+	// Generate server key
+	if err := runOpenSSL(dir, "genrsa", "-out", "server.key", "2048"); err != nil {
+		return fmt.Errorf("failed to generate server key: %v", err)
+	}
+
+	// Write SAN config file
+	sanConfig := fmt.Sprintf(`[req]
+distinguished_name = req_dn
+req_extensions = v3_req
+prompt = no
+
+[req_dn]
+CN = %s
+
+[v3_req]
+subjectAltName = DNS:%s,DNS:*.%s,DNS:localhost,IP:127.0.0.1
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+`, tlsHostname, tlsHostname, tlsHostname)
+
+	sanConfigPath := filepath.Join(dir, "san.cnf")
+	if err := os.WriteFile(sanConfigPath, []byte(sanConfig), 0o644); err != nil {
+		return fmt.Errorf("failed to write SAN config: %v", err)
+	}
+
+	// Generate CSR
+	if err := runOpenSSL(dir, "req", "-new", "-key", "server.key",
+		"-out", "server.csr", "-config", "san.cnf"); err != nil {
+		return fmt.Errorf("failed to generate CSR: %v", err)
+	}
+
+	// Sign server cert with CA
+	if err := runOpenSSL(dir, "x509", "-req",
+		"-in", "server.csr", "-CA", "ca.crt", "-CAkey", "ca.key",
+		"-CAcreateserial", "-out", "server.crt", "-days", "3650",
+		"-extensions", "v3_req", "-extfile", "san.cnf"); err != nil {
+		return fmt.Errorf("failed to sign server cert: %v", err)
+	}
+
+	fmt.Println("TLS certificates generated successfully")
+	return nil
+}
+
+// runOpenSSL executes an openssl command in the given directory.
+func runOpenSSL(dir string, args ...string) error {
+	cmd := exec.Command("openssl", args...)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// DeployS3TLS generates TLS certs and starts CloudServer with HTTPS on port 8443.
+func (E2E) DeployS3TLS() error {
+	return deployS3TLS()
+}
+
+func deployS3TLS() error {
+	if err := generateTLSCerts(); err != nil {
+		return err
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	composeDir := filepath.Join(wd, dockerComposeDir)
+
+	// Create logs directory
+	logsDir := filepath.Join(composeDir, "logs", "s3")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create logs directory: %v", err)
+	}
+
+	fmt.Println("Starting CloudServer with TLS via docker compose...")
+	cmd := exec.Command("docker", "compose", "--profile", "s3-tls", "up", "-d", "--quiet-pull")
+	cmd.Dir = composeDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker compose up (s3-tls) failed: %v", err)
+	}
+
+	fmt.Printf("Waiting for CloudServer TLS to be ready on port %d...\n", tlsPort)
+	return WaitForPort("localhost", tlsPort, 30*time.Second)
+}
+
+// VerifyS3TLS verifies the S3 TLS endpoint by creating and deleting a test bucket.
+func (E2E) VerifyS3TLS() error {
+	return verifyS3TLS()
+}
+
+func verifyS3TLS() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	caCert := filepath.Join(wd, certsDir, "ca.crt")
+
+	if _, err := os.Stat(caCert); os.IsNotExist(err) {
+		return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCert)
+	}
+
+	endpoint := fmt.Sprintf("https://%s:%d", tlsHostname, tlsPort)
+	bucket := "tls-verify-test"
+	fmt.Printf("Verifying S3 TLS endpoint: %s\n", endpoint)
+
+	env := append(os.Environ(),
+		"AWS_ACCESS_KEY_ID=accessKey1",
+		"AWS_SECRET_ACCESS_KEY=verySecretKey1",
+		fmt.Sprintf("AWS_CA_BUNDLE=%s", caCert),
+		fmt.Sprintf("AWS_ENDPOINT_URL=%s", endpoint),
+		"AWS_DEFAULT_REGION=us-east-1",
+	)
+
+	// Create test bucket
+	fmt.Printf("Creating test bucket: %s\n", bucket)
+	cmd := exec.Command("aws", "s3", "mb", fmt.Sprintf("s3://%s", bucket))
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create bucket via TLS: %v", err)
+	}
+
+	// Delete test bucket
+	fmt.Printf("Deleting test bucket: %s\n", bucket)
+	cmd = exec.Command("aws", "s3", "rb", fmt.Sprintf("s3://%s", bucket))
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Warning: failed to delete test bucket: %v\n", err)
+	}
+
+	fmt.Println("S3 TLS verification passed")
+	return nil
+}
+
+// VerifyS3TLSInCluster verifies S3 TLS from within a Kubernetes pod.
+// Creates a ConfigMap with the CA cert, runs an AWS CLI pod that creates and deletes
+// a test bucket over HTTPS, then cleans up.
+func (E2E) VerifyS3TLSInCluster() error {
+	return verifyS3TLSInCluster()
+}
+
+func verifyS3TLSInCluster() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	caCertPath := filepath.Join(wd, certsDir, "ca.crt")
+
+	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
+		return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCertPath)
+	}
+
+	endpoint := fmt.Sprintf("https://%s:%d", tlsHostname, tlsPort)
+	podName := "s3-tls-cluster-verify"
+	configMapName := "s3-tls-ca-cert"
+
+	fmt.Printf("Verifying S3 TLS from within cluster: %s\n", endpoint)
+
+	// Create ConfigMap from CA cert (idempotent)
+	fmt.Println("Creating CA cert ConfigMap...")
+	cmYAML, err := sh.Output("kubectl", "create", "configmap", configMapName,
+		fmt.Sprintf("--from-file=ca.crt=%s", caCertPath),
+		"--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate ConfigMap YAML: %v", err)
+	}
+	if err := pipeToKubectlApply(cmYAML); err != nil {
+		return fmt.Errorf("failed to apply CA cert ConfigMap: %v", err)
+	}
+
+	// Delete any leftover pod from a previous run
+	_ = sh.Run("kubectl", "delete", "pod", podName, "--ignore-not-found")
+
+	// Apply verification pod
+	fmt.Println("Creating TLS verification pod...")
+	podYAML := fmt.Sprintf(`apiVersion: v1
+kind: Pod
+metadata:
+  name: %s
+spec:
+  restartPolicy: Never
+  containers:
+  - name: aws-cli
+    image: amazon/aws-cli:latest
+    command: ["sh", "-c", "aws s3 mb s3://tls-cluster-test && aws s3 rb s3://tls-cluster-test"]
+    env:
+    - name: AWS_ACCESS_KEY_ID
+      value: "accessKey1"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "verySecretKey1"
+    - name: AWS_CA_BUNDLE
+      value: "/certs/ca.crt"
+    - name: AWS_ENDPOINT_URL
+      value: "%s"
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
+    volumeMounts:
+    - name: ca-cert
+      mountPath: /certs
+      readOnly: true
+  volumes:
+  - name: ca-cert
+    configMap:
+      name: %s
+`, podName, endpoint, configMapName)
+
+	if err := pipeToKubectlApply(podYAML); err != nil {
+		return fmt.Errorf("failed to create verification pod: %v", err)
+	}
+
+	// Wait for pod to complete
+	fmt.Println("Waiting for verification pod to complete...")
+	waitErr := sh.Run("kubectl", "wait", "--for=jsonpath={.status.phase}=Succeeded",
+		fmt.Sprintf("pod/%s", podName), "--timeout=120s")
+
+	// Print logs regardless of outcome
+	fmt.Println("Pod logs:")
+	_ = sh.RunV("kubectl", "logs", podName)
+
+	// Clean up
+	fmt.Println("Cleaning up verification resources...")
+	_ = sh.Run("kubectl", "delete", "pod", podName, "--ignore-not-found")
+	_ = sh.Run("kubectl", "delete", "configmap", configMapName, "--ignore-not-found")
+
+	if waitErr != nil {
+		// Show pod status for debugging
+		_ = sh.RunV("kubectl", "get", "pod", podName, "-o", "yaml")
+		return fmt.Errorf("in-cluster S3 TLS verification failed: %v", waitErr)
+	}
+
+	fmt.Println("In-cluster S3 TLS verification passed")
+	return nil
+}
+
 // PullImages pulls container images and downloads Go dependencies in parallel.
 // Reads CSI_IMAGE_REPOSITORY, CSI_IMAGE_TAG, and CLOUDSERVER_TAG env vars.
 // Skips individual pulls if the corresponding env var is empty.

@@ -10,3 +10,18 @@ services:
     volumes:
       - ./cloudserver-config.json:/conf/config.json:ro
       - ./logs/s3:/logs/s3
+
+  s3-tls:
+    profiles: ['s3-tls']
+    image: ghcr.io/scality/cloudserver:${CLOUDSERVER_TAG:-7.70.65}
+    network_mode: host
+    environment:
+      S3_CONFIG_FILE: /conf/config.json
+      S3VAULT: mem
+    command: /bin/sh -c "yarn start > /logs/s3/s3-tls.log 2>&1"
+    volumes:
+      - ./cloudserver-config-tls.json:/conf/config.json:ro
+      - ./certs/server.key:/certs/server.key:ro
+      - ./certs/server.crt:/certs/server.crt:ro
+      - ./certs/ca.crt:/certs/ca.crt:ro
+      - ./logs/s3:/logs/s3
