@@ -83,6 +83,8 @@ func LoadImageToCluster() error {
 	clusterType := DetectClusterType()
 	image := GetContainerImage()
 
+	fmt.Printf("Loading image %s to %s cluster...\n", image, clusterType)
+
 	// Check if image already exists in cluster
 	switch clusterType {
 	case "minikube":
@@ -95,8 +97,6 @@ func LoadImageToCluster() error {
 		// Kind doesn't have an easy way to list images, so we'll just proceed
 	}
 
-	fmt.Printf("Loading image %s to %s cluster...\n", image, clusterType)
-
 	var err error
 	switch clusterType {
 	case "kind":
@@ -108,6 +108,64 @@ func LoadImageToCluster() error {
 		}
 	case "minikube":
 		err = sh.RunV("minikube", "image", "load", image)
+	case "openshift":
+		// Push to OpenShift's internal image registry.
+		// This is the standard way to get locally-built images into an
+		// OpenShift cluster — avoids SSH/piping issues with CRI-O.
+
+		// 1. Enable the default external route for the internal registry
+		fmt.Println("Enabling internal registry default route...")
+		if err := sh.RunV("oc", "patch", "configs.imageregistry.operator.openshift.io/cluster",
+			"--type", "merge", "-p", `{"spec":{"defaultRoute":true}}`); err != nil {
+			return fmt.Errorf("failed to enable registry route: %v", err)
+		}
+
+		// 2. Wait for the route to appear and get the hostname
+		fmt.Println("Waiting for registry route...")
+		var registryHost string
+		for i := 0; i < 30; i++ {
+			host, routeErr := sh.Output("oc", "get", "route", "default-route",
+				"-n", "openshift-image-registry",
+				"-o", "jsonpath={.spec.host}")
+			if routeErr == nil && strings.TrimSpace(host) != "" {
+				registryHost = strings.TrimSpace(host)
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+		if registryHost == "" {
+			return fmt.Errorf("timed out waiting for internal registry route")
+		}
+		fmt.Printf("Registry route: %s\n", registryHost)
+
+		// 3. Login to the internal registry
+		token, tokenErr := sh.Output("oc", "whoami", "-t")
+		if tokenErr != nil {
+			return fmt.Errorf("failed to get OpenShift token: %v", tokenErr)
+		}
+		if err := sh.RunV("docker", "login", registryHost,
+			"-u", "kubeadmin", "-p", strings.TrimSpace(token)); err != nil {
+			return fmt.Errorf("docker login to internal registry failed: %v", err)
+		}
+
+		// 4. Ensure the target namespace (image stream) exists
+		namespace := GetE2ENamespace()
+		_ = sh.Run("oc", "new-project", namespace)
+
+		// 5. Tag for internal registry and push
+		internalImage := fmt.Sprintf("%s/%s/mountpoint-s3-csi-driver:%s",
+			registryHost, namespace, GetContainerTag())
+		fmt.Printf("Tagging %s -> %s\n", image, internalImage)
+		if err := sh.RunV("docker", "tag", image, internalImage); err != nil {
+			return fmt.Errorf("docker tag failed: %v", err)
+		}
+		fmt.Printf("Pushing to internal registry...\n")
+		if err := sh.RunV("docker", "push", internalImage); err != nil {
+			return fmt.Errorf("docker push to internal registry failed: %v", err)
+		}
+
+		fmt.Printf("Image pushed to internal registry: %s\n", internalImage)
+		err = nil
 	default:
 		return fmt.Errorf("unsupported cluster type: %s", clusterType)
 	}
@@ -140,6 +198,8 @@ func LoadImageToCluster() error {
 				return fmt.Errorf("image %s not found in minikube after loading (repo: %s, tag: %s)", image, imageRepo, imageTag)
 			}
 		}
+	case "openshift":
+		fmt.Printf("Image pushed to internal registry (verified by push)\n")
 	}
 
 	return nil
@@ -256,48 +316,8 @@ func InstallCSI() error {
 		return fmt.Errorf("helm install failed: %v", err)
 	}
 
-	fmt.Println("Helm installation completed. Verifying CSI driver deployment...")
-
-	// Wait for pods to be ready
-	fmt.Println("Waiting for CSI driver pods to become ready...")
-
-	// Wait for pods using improved resource checker
-	checker := NewResourceChecker(namespace)
-
-	// Wait for controller pods
-	fmt.Println("Waiting for controller pods to be ready...")
-	if err := checker.WaitForPodsWithLabel("app=s3-csi-controller", 120*time.Second); err != nil {
-		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
-		if status := checker.GetPodsStatus("app=s3-csi-controller"); status != "" {
-			fmt.Printf("Controller pod status:\n%s\n", status)
-		}
-	} else {
-		fmt.Println("✓ Controller pods are ready")
-	}
-
-	// Wait for node pods
-	fmt.Println("Waiting for node pods to be ready...")
-	if err := checker.WaitForPodsWithLabel("app=s3-csi-node", 120*time.Second); err != nil {
-		fmt.Printf("Warning: Node pods not ready: %v\n", err)
-		if status := checker.GetPodsStatus("app=s3-csi-node"); status != "" {
-			fmt.Printf("Node pod status:\n%s\n", status)
-		}
-	} else {
-		fmt.Println("✓ Node pods are ready")
-	}
-
-	// Verify pods are actually running
-	fmt.Println("\nVerifying CSI driver pods are running:")
-	if err := sh.RunV("kubectl", "get", "pods", "-n", namespace, "-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); err != nil {
-		return fmt.Errorf("failed to get CSI driver pods: %v", err)
-	}
-
-	// Check if any pods are in error state
-	if output, err := sh.Output("kubectl", "get", "pods", "-n", namespace,
-		"-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver",
-		"--field-selector=status.phase!=Running", "-o", "name"); err == nil && strings.TrimSpace(output) != "" {
-		fmt.Printf("Warning: Some CSI driver pods are not running:\n")
-		_ = sh.RunV("kubectl", "get", "pods", "-n", namespace, "-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver")
+	if err := verifyLocalCSIDeployment(namespace); err != nil {
+		return err
 	}
 
 	fmt.Println("CSI driver deployment verification completed!")
@@ -548,42 +568,8 @@ func InstallCSIWithVersion() error {
 		return fmt.Errorf("helm install failed: %v", err)
 	}
 
-	// Verification code (same as InstallCSI)
-	fmt.Println("Helm installation completed. Verifying CSI driver deployment...")
-
-	// Wait for pods to be ready
-	fmt.Println("Waiting for CSI driver pods to become ready...")
-
-	// Wait for pods using improved resource checker
-	checker := NewResourceChecker(namespace)
-
-	// Wait for controller pods
-	fmt.Println("Waiting for controller pods to be ready...")
-	if err := checker.WaitForPodsWithLabel("app=s3-csi-controller", 120*time.Second); err != nil {
-		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
-		if status := checker.GetPodsStatus("app=s3-csi-controller"); status != "" {
-			fmt.Printf("Controller pod status:\n%s\n", status)
-		}
-	} else {
-		fmt.Println("✓ Controller pods are ready")
-	}
-
-	// Wait for node pods
-	fmt.Println("Waiting for node pods to be ready...")
-	if err := checker.WaitForPodsWithLabel("app=s3-csi-node", 120*time.Second); err != nil {
-		fmt.Printf("Warning: Node pods not ready: %v\n", err)
-		if status := checker.GetPodsStatus("app=s3-csi-node"); status != "" {
-			fmt.Printf("Node pod status:\n%s\n", status)
-		}
-	} else {
-		fmt.Println("✓ Node pods are ready")
-	}
-
-	// Verify pods are running
-	fmt.Println("\nVerifying CSI driver pods are running:")
-	if err := sh.RunV("kubectl", "get", "pods", "-n", namespace,
-		"-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); err != nil {
-		return fmt.Errorf("failed to get CSI driver pods: %v", err)
+	if err := verifyLocalCSIDeployment(namespace); err != nil {
+		return err
 	}
 
 	fmt.Printf("CSI driver version %s installed successfully!\n", chartVersion)

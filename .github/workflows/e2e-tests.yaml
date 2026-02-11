@@ -36,6 +36,7 @@ jobs:
   e2e-tests:
     name: v${{ matrix.ring_version }}
     runs-on: ubuntu-22.04-8core
+    timeout-minutes: 45
     needs: dev-image
     strategy:
       fail-fast: false
@@ -132,6 +133,7 @@ jobs:
   s3-tls-verify:
     name: S3 TLS Verification
     runs-on: ubuntu-22.04
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v5

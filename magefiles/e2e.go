@@ -81,6 +81,11 @@ func (E2E) DeployS3() error {
 }
 
 func deployS3() error {
+	return deployS3WithProfile("s3", 8000)
+}
+
+// deployS3WithProfile starts CloudServer via docker compose with the given profile and waits for the given port.
+func deployS3WithProfile(profile string, port int) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %v", err)
@@ -93,19 +98,18 @@ func deployS3() error {
 		return fmt.Errorf("failed to create logs directory: %v", err)
 	}
 
-	fmt.Println("Starting CloudServer via docker compose...")
-	cmd := exec.Command("docker", "compose", "--profile", "s3", "up", "-d", "--quiet-pull")
+	fmt.Printf("Starting CloudServer via docker compose (profile: %s)...\n", profile)
+	cmd := exec.Command("docker", "compose", "--profile", profile, "up", "-d", "--quiet-pull")
 	cmd.Dir = composeDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	// Pass through environment (including CLOUDSERVER_TAG)
 	cmd.Env = os.Environ()
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("docker compose up failed: %v", err)
+		return fmt.Errorf("docker compose up (%s) failed: %v", profile, err)
 	}
 
-	fmt.Println("Waiting for CloudServer to be ready on port 8000...")
-	return WaitForPort("localhost", 8000, 30*time.Second)
+	fmt.Printf("Waiting for CloudServer to be ready on port %d...\n", port)
+	return WaitForPort("localhost", port, 30*time.Second)
 }
 
 // StopS3 stops CloudServer via docker compose.
@@ -240,31 +244,7 @@ func deployS3TLS() error {
 	if err := generateTLSCerts(); err != nil {
 		return err
 	}
-
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get working directory: %v", err)
-	}
-	composeDir := filepath.Join(wd, dockerComposeDir)
-
-	// Create logs directory
-	logsDir := filepath.Join(composeDir, "logs", "s3")
-	if err := os.MkdirAll(logsDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create logs directory: %v", err)
-	}
-
-	fmt.Println("Starting CloudServer with TLS via docker compose...")
-	cmd := exec.Command("docker", "compose", "--profile", "s3-tls", "up", "-d", "--quiet-pull")
-	cmd.Dir = composeDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Env = os.Environ()
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("docker compose up (s3-tls) failed: %v", err)
-	}
-
-	fmt.Printf("Waiting for CloudServer TLS to be ready on port %d...\n", tlsPort)
-	return WaitForPort("localhost", tlsPort, 30*time.Second)
+	return deployS3WithProfile("s3-tls", tlsPort)
 }
 
 // VerifyS3TLS verifies the S3 TLS endpoint by creating and deleting a test bucket.
@@ -520,10 +500,13 @@ func pullImages() error {
 // CI DNS Target
 // =============================================================================
 
-// ConfigureCIDNS configures CoreDNS to resolve s3.scality.com to the CI runner's IP.
-// Requires S3_HOST_IP environment variable. This is separate from local-dev ConfigureS3DNS
-// which maps s3.example.com.
+// ConfigureCIDNS configures in-cluster DNS to resolve s3.scality.com to the CI runner's IP.
+// Requires S3_HOST_IP environment variable. Dispatches to OpenShift DNS configuration
+// when CLUSTER_TYPE=openshift, otherwise configures CoreDNS (KIND/minikube).
 func (E2E) ConfigureCIDNS() error {
+	if os.Getenv("CLUSTER_TYPE") == "openshift" {
+		return configureOpenShiftDNS()
+	}
 	return configureCIDNS()
 }
 
@@ -572,12 +555,234 @@ func configureCIDNS() error {
 
 	// Verify DNS resolution from within a pod
 	fmt.Println("Verifying DNS resolution for s3.scality.com...")
-	if err := sh.RunV("kubectl", "run", "dns-test", "--image=busybox:1.36", "--rm", "-it", "--restart=Never", "--", "nslookup", "s3.scality.com"); err != nil {
+	if err := sh.RunV("kubectl", "run", "dns-test", "--image=busybox:1.36", "--rm", "-i", "--restart=Never", "--", "nslookup", "s3.scality.com"); err != nil {
 		return fmt.Errorf("DNS verification failed: %v", err)
 	}
 
 	fmt.Printf("CoreDNS configured: s3.scality.com -> %s\n", hostIP)
 	return nil
+}
+
+// configureOpenShiftDNS configures OpenShift DNS Operator to resolve s3.scality.com.
+//
+// OpenShift's DNS Operator owns the CoreDNS Corefile — patching the dns-default
+// configmap directly is overwritten by the operator.  The supported approach is to
+// patch the DNS Operator CR (dns.operator.openshift.io/default) with a server block
+// that forwards queries to an upstream DNS server.
+//
+// Since there is no upstream DNS server for s3.scality.com, we deploy a lightweight
+// CoreDNS helper pod that serves a single static A record, then point the DNS
+// Operator at it.
+func configureOpenShiftDNS() error {
+	hostIP := os.Getenv("S3_HOST_IP")
+	if hostIP == "" {
+		return fmt.Errorf("S3_HOST_IP environment variable is required")
+	}
+
+	const (
+		dnsNS         = "openshift-dns"
+		helperName    = "s3-dns-helper"
+		configMapName = "s3-dns-corefile"
+	)
+
+	fmt.Printf("Configuring OpenShift DNS: s3.scality.com -> %s\n", hostIP)
+
+	// 1. Create ConfigMap with Corefile for the helper CoreDNS
+	cmYAML := fmt.Sprintf(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: %s
+  namespace: %s
+data:
+  Corefile: |
+    scality.com:53 {
+        hosts {
+            %s s3.scality.com
+            fallthrough
+        }
+        log
+    }
+`, configMapName, dnsNS, hostIP)
+
+	fmt.Println("Creating DNS helper ConfigMap...")
+	if err := pipeToKubectlApply(cmYAML); err != nil {
+		return fmt.Errorf("failed to create DNS helper ConfigMap: %v", err)
+	}
+
+	// 2. Deploy helper CoreDNS pod + Service
+	helperYAML := fmt.Sprintf(`apiVersion: v1
+kind: Pod
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    app: %s
+spec:
+  containers:
+  - name: coredns
+    image: registry.k8s.io/coredns/coredns:v1.11.1
+    args: ["-conf", "/etc/coredns/Corefile"]
+    ports:
+    - containerPort: 53
+      protocol: UDP
+      name: dns
+    - containerPort: 53
+      protocol: TCP
+      name: dns-tcp
+    volumeMounts:
+    - name: corefile
+      mountPath: /etc/coredns
+      readOnly: true
+  volumes:
+  - name: corefile
+    configMap:
+      name: %s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  selector:
+    app: %s
+  ports:
+  - port: 53
+    targetPort: 53
+    protocol: UDP
+    name: dns
+  - port: 53
+    targetPort: 53
+    protocol: TCP
+    name: dns-tcp
+`, helperName, dnsNS, helperName, configMapName, helperName, dnsNS, helperName)
+
+	fmt.Println("Deploying DNS helper pod and service...")
+	if err := pipeToKubectlApply(helperYAML); err != nil {
+		return fmt.Errorf("failed to deploy DNS helper: %v", err)
+	}
+
+	// 3. Wait for helper pod to be running
+	fmt.Println("Waiting for DNS helper pod to be ready...")
+	checker := NewResourceChecker(dnsNS)
+	if err := checker.WaitForResource("pod", helperName, "ready", 60*time.Second); err != nil {
+		return fmt.Errorf("DNS helper pod not ready: %v", err)
+	}
+
+	// 4. Get the Service ClusterIP
+	clusterIP, err := sh.Output("kubectl", "get", "service", helperName, "-n", dnsNS,
+		"-o", "jsonpath={.spec.clusterIP}")
+	if err != nil {
+		return fmt.Errorf("failed to get DNS helper Service ClusterIP: %v", err)
+	}
+	clusterIP = strings.TrimSpace(clusterIP)
+	fmt.Printf("DNS helper Service ClusterIP: %s\n", clusterIP)
+
+	// 5. Patch the DNS Operator CR to forward scality.com to our helper
+	dnsOperatorPatch := fmt.Sprintf(
+		`{"spec":{"servers":[{"name":"s3-scality","zones":["scality.com"],"forwardPlugin":{"upstreams":["%s"]}}]}}`,
+		clusterIP)
+	fmt.Println("Patching DNS Operator CR...")
+	if err := sh.RunV("kubectl", "patch", "dns.operator/default", "--type=merge", "-p", dnsOperatorPatch); err != nil {
+		return fmt.Errorf("failed to patch DNS Operator: %v", err)
+	}
+
+	// 6. Wait for the DNS Operator to reconcile — the operator updates the
+	// dns-default configmap's Corefile to include the new server block.
+	fmt.Println("Waiting for DNS Operator to reconcile...")
+	time.Sleep(10 * time.Second)
+
+	// 7. Verify DNS resolution from within a pod
+	fmt.Println("Verifying DNS resolution for s3.scality.com...")
+	if err := sh.RunV("kubectl", "run", "dns-test", "--image=busybox:1.36", "--rm", "--restart=Never",
+		"--", "nslookup", "s3.scality.com"); err != nil {
+		fmt.Printf("Warning: DNS verification returned error: %v\n", err)
+		fmt.Println("DNS may still be propagating. Continuing...")
+	}
+
+	fmt.Printf("OpenShift DNS configured: s3.scality.com -> %s\n", hostIP)
+	return nil
+}
+
+// =============================================================================
+// Pull Secret Target
+// =============================================================================
+
+// CreatePullSecret creates a docker-registry pull secret for ghcr.io.
+// Reads GHCR_USER and GHCR_TOKEN from environment variables.
+// Creates the secret in both the E2E namespace and the mount-s3 mounter namespace.
+func (E2E) CreatePullSecret() error {
+	return createPullSecret()
+}
+
+func createPullSecret() error {
+	ghcrUser := os.Getenv("GHCR_USER")
+	ghcrToken := os.Getenv("GHCR_TOKEN")
+	if ghcrUser == "" || ghcrToken == "" {
+		return fmt.Errorf("GHCR_USER and GHCR_TOKEN environment variables are required")
+	}
+
+	secretName := "ghcr-pull-secret"
+	namespaces := []string{GetE2ENamespace(), "mount-s3"}
+
+	for _, ns := range namespaces {
+		fmt.Printf("Creating pull secret %s in namespace %s...\n", secretName, ns)
+
+		// Ensure namespace exists
+		if err := ensureNamespace(ns); err != nil {
+			return fmt.Errorf("failed to create namespace %s: %v", ns, err)
+		}
+
+		// Create docker-registry secret idempotently
+		secretYAML, err := sh.Output("kubectl", "create", "secret", "docker-registry", secretName,
+			"--docker-server=ghcr.io",
+			fmt.Sprintf("--docker-username=%s", ghcrUser),
+			fmt.Sprintf("--docker-password=%s", ghcrToken),
+			"-n", ns,
+			"--dry-run=client", "-o", "yaml")
+		if err != nil {
+			return fmt.Errorf("failed to generate pull secret YAML: %v", err)
+		}
+		if err := pipeToKubectlApply(secretYAML); err != nil {
+			return fmt.Errorf("failed to create pull secret in namespace %s: %v", ns, err)
+		}
+	}
+
+	fmt.Printf("Pull secret %s created in namespaces: %v\n", secretName, namespaces)
+	return nil
+}
+
+// =============================================================================
+// OpenShift E2E Targets
+// =============================================================================
+
+// OpenShiftAll runs the full OpenShift E2E workflow: load credentials,
+// install CSI driver, and run the complete E2E test suite.
+func (E2E) OpenShiftAll() error {
+	fmt.Println("Starting OpenShift E2E workflow...")
+
+	// Load credentials from integration_config.json
+	if err := LoadCredentials(); err != nil {
+		return fmt.Errorf("failed to load credentials: %v", err)
+	}
+
+	// Install CSI driver with OpenShift-specific configuration
+	if err := installCSIForOpenShift(); err != nil {
+		return fmt.Errorf("CSI driver installation failed: %v", err)
+	}
+
+	// Run full E2E tests (fewer procs for single-node CRC cluster)
+	if err := runGinkgoTests("", "", 4, "30m"); err != nil {
+		return fmt.Errorf("E2E tests failed: %v", err)
+	}
+
+	fmt.Println("OpenShift E2E workflow completed successfully")
+	return nil
+}
+
+// installCSIForOpenShift installs the CSI driver with OpenShift-specific Helm values.
+func installCSIForOpenShift() error {
+	return installCSIDriver(true)
 }
 
 // =============================================================================
@@ -701,24 +906,33 @@ func (E2E) Verify() error {
 // Unlike InstallCSI() (local dev), this accepts image params via env vars,
 // defaults to kube-system, and skips DNS configuration.
 func installCSIForE2E() error {
+	return installCSIDriver(false)
+}
+
+// installCSIDriver is the consolidated installer for both E2E and OpenShift workflows.
+// When openshift is true, grants image pull access to mount-s3 namespace after install.
+// Both paths use "upgrade --install" for idempotency.
+func installCSIDriver(openshift bool) error {
 	namespace := GetE2ENamespace()
 	s3EndpointURL := os.Getenv("S3_ENDPOINT_URL")
 	if s3EndpointURL == "" {
 		return fmt.Errorf("S3_ENDPOINT_URL environment variable is required")
 	}
 
-	// Get credentials
 	accessKey := os.Getenv("ACCOUNT1_ACCESS_KEY")
 	secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
 	if accessKey == "" || secretKey == "" {
-		return fmt.Errorf("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY environment variables are required.\n" +
-			"Run mage e2e:all which loads them automatically from integration_config.json")
+		return fmt.Errorf("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY environment variables are required")
 	}
 
 	imageTag := GetCSIImageTag()
 	imageRepo := GetCSIImageRepository()
 
-	fmt.Printf("Installing CSI driver for E2E testing...\n")
+	label := "E2E testing"
+	if openshift {
+		label = "OpenShift"
+	}
+	fmt.Printf("Installing CSI driver for %s...\n", label)
 	fmt.Printf("  Namespace: %s\n", namespace)
 	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
 	if imageTag != "" {
@@ -730,29 +944,17 @@ func installCSIForE2E() error {
 
 	// Create namespace idempotently
 	fmt.Printf("Creating namespace %s...\n", namespace)
-	nsYAML, err := sh.Output("kubectl", "create", "namespace", namespace, "--dry-run=client", "-o", "yaml")
-	if err != nil {
-		return fmt.Errorf("failed to generate namespace YAML: %v", err)
-	}
-	if err := pipeToKubectlApply(nsYAML); err != nil {
+	if err := ensureNamespace(namespace); err != nil {
 		return fmt.Errorf("failed to create namespace: %v", err)
 	}
 
-	// Create secret idempotently
+	// Create S3 credentials secret idempotently
 	fmt.Printf("Creating S3 credentials secret in namespace %s...\n", namespace)
-	secretYAML, err := sh.Output("kubectl", "create", "secret", "generic", "s3-secret",
-		fmt.Sprintf("--from-literal=access_key_id=%s", accessKey),
-		fmt.Sprintf("--from-literal=secret_access_key=%s", secretKey),
-		"-n", namespace,
-		"--dry-run=client", "-o", "yaml")
-	if err != nil {
-		return fmt.Errorf("failed to generate secret YAML: %v", err)
-	}
-	if err := pipeToKubectlApply(secretYAML); err != nil {
+	if err := ensureS3Secret(namespace, accessKey, secretKey); err != nil {
 		return fmt.Errorf("failed to create secret: %v", err)
 	}
 
-	// Build Helm args
+	// Build Helm args — always use "upgrade --install" for idempotency
 	helmArgs := []string{
 		"upgrade", "--install", "scality-s3-csi",
 		"./charts/scality-mountpoint-s3-csi-driver",
@@ -775,17 +977,18 @@ func installCSIForE2E() error {
 		return fmt.Errorf("helm install failed: %v", err)
 	}
 
+	// Grant mount-s3 namespace permission to pull images from the CSI namespace.
+	// This must happen after Helm install since Helm creates the mount-s3 namespace.
+	if openshift && os.Getenv("CLUSTER_TYPE") == "openshift" {
+		fmt.Println("Granting image pull access to mount-s3 namespace...")
+		if err := sh.RunV("oc", "policy", "add-role-to-group", "system:image-puller",
+			"system:serviceaccounts:mount-s3", "--namespace="+namespace); err != nil {
+			return fmt.Errorf("failed to grant image pull access: %v", err)
+		}
+	}
+
 	fmt.Println("Helm installation completed. Verifying...")
 	return verifyCSIInstallation()
-}
-
-// pipeToKubectlApply pipes YAML content to kubectl apply.
-func pipeToKubectlApply(yaml string) error {
-	cmd := exec.Command("kubectl", "apply", "-f", "-")
-	cmd.Stdin = strings.NewReader(yaml)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 // Install installs the CSI driver for E2E testing.
@@ -878,7 +1081,8 @@ func (E2E) UninstallForce() error {
 // =============================================================================
 
 // runGinkgoTests invokes Ginkgo to run E2E tests.
-func runGinkgoTests(s3EndpointURL, junitReportPath string) error {
+// procs and timeout control parallelism and test timeout. Pass 0/"" to use defaults (8 procs, 15m).
+func runGinkgoTests(s3EndpointURL, junitReportPath string, procs int, timeout string) error {
 	if s3EndpointURL == "" {
 		s3EndpointURL = os.Getenv("S3_ENDPOINT_URL")
 	}
@@ -902,10 +1106,18 @@ func runGinkgoTests(s3EndpointURL, junitReportPath string) error {
 		return err
 	}
 
+	// Apply defaults
+	if procs <= 0 {
+		procs = 8
+	}
+	if timeout == "" {
+		timeout = "15m"
+	}
+
 	// Build ginkgo command arguments
 	args := []string{
-		"--procs=8",
-		"-timeout=15m",
+		fmt.Sprintf("--procs=%d", procs),
+		fmt.Sprintf("-timeout=%s", timeout),
 		"-v",
 	}
 
@@ -992,7 +1204,7 @@ func findGinkgo() (string, error) {
 
 // GoTest runs Ginkgo E2E tests without verification checks.
 func (E2E) GoTest() error {
-	return runGinkgoTests("", "")
+	return runGinkgoTests("", "", 0, "")
 }
 
 // =============================================================================
@@ -1004,7 +1216,7 @@ func (E2E) Test() error {
 	if err := verifyCSIInstallation(); err != nil {
 		return fmt.Errorf("verification failed, cannot proceed with tests: %v", err)
 	}
-	return runGinkgoTests("", "")
+	return runGinkgoTests("", "", 0, "")
 }
 
 // All loads credentials, installs the CSI driver, and runs E2E tests.
@@ -1022,7 +1234,7 @@ func (E2E) All() error {
 	}
 
 	// Run tests
-	if err := runGinkgoTests("", ""); err != nil {
+	if err := runGinkgoTests("", "", 0, ""); err != nil {
 		return fmt.Errorf("E2E tests failed: %v", err)
 	}
 
@@ -1119,7 +1331,7 @@ func stopCapture() error {
 	}
 
 	// Clean up PID file
-	os.Remove(capturePIDFile)
+	_ = os.Remove(capturePIDFile)
 
 	fmt.Println("Capture stopped and artifacts collected")
 	return nil
