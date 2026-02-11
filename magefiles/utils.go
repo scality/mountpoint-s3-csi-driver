@@ -17,10 +17,17 @@ type CredentialsConfig struct {
 	Credentials struct {
 		Account struct {
 			Account1 struct {
-				Username  string `json:"username"`
-				AccessKey string `json:"accessKey"`
-				SecretKey string `json:"secretKey"`
+				Username    string `json:"username"`
+				AccessKey   string `json:"accessKey"`
+				SecretKey   string `json:"secretKey"`
+				CanonicalID string `json:"canonicalId"`
 			} `json:"account1"`
+			Account2 struct {
+				Username    string `json:"username"`
+				AccessKey   string `json:"accessKey"`
+				SecretKey   string `json:"secretKey"`
+				CanonicalID string `json:"canonicalId"`
+			} `json:"account2"`
 		} `json:"account"`
 	} `json:"credentials"`
 }

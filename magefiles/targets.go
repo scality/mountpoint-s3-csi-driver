@@ -26,11 +26,25 @@ func LoadCredentials() error {
 		return fmt.Errorf("account1.secretKey is empty in integration_config.json")
 	}
 
-	// Set environment variables for later use
+	// Set account1 environment variables
 	_ = os.Setenv("ACCOUNT1_ACCESS_KEY", config.Credentials.Account.Account1.AccessKey)
 	_ = os.Setenv("ACCOUNT1_SECRET_KEY", config.Credentials.Account.Account1.SecretKey)
+	if config.Credentials.Account.Account1.CanonicalID != "" {
+		_ = os.Setenv("ACCOUNT1_CANONICAL_ID", config.Credentials.Account.Account1.CanonicalID)
+	}
 
 	fmt.Printf("Credentials loaded for account: %s\n", config.Credentials.Account.Account1.Username)
+
+	// Set account2 environment variables if available
+	acct2 := config.Credentials.Account.Account2
+	if acct2.AccessKey != "" && acct2.SecretKey != "" {
+		_ = os.Setenv("ACCOUNT2_ACCESS_KEY", acct2.AccessKey)
+		_ = os.Setenv("ACCOUNT2_SECRET_KEY", acct2.SecretKey)
+		if acct2.CanonicalID != "" {
+			_ = os.Setenv("ACCOUNT2_CANONICAL_ID", acct2.CanonicalID)
+		}
+		fmt.Printf("Credentials loaded for account: %s\n", acct2.Username)
+	}
 
 	return nil
 }
