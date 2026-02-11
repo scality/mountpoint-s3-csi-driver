@@ -1,0 +1,136 @@
+name: "CRC Setup"
+description: "Provision an OpenShift cluster using CodeReady Containers (CRC)"
+inputs:
+  pull_secret:
+    description: "Red Hat pull secret JSON for CRC (from console.redhat.com)"
+    required: true
+  crc_version:
+    description: "CRC version to install"
+    required: false
+    default: "2.57.0"
+  memory:
+    description: "Memory allocation for CRC VM in MB"
+    required: false
+    default: "16384"
+  cpus:
+    description: "Number of CPUs for CRC VM"
+    required: false
+    default: "6"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Enable KVM
+      shell: bash
+      run: |
+        # GitHub-hosted Linux runners support nested virtualization but
+        # /dev/kvm needs correct permissions for non-root users.
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+        ls -la /dev/kvm
+
+    - name: Install CRC
+      shell: bash
+      run: |
+        CRC_VERSION="${{ inputs.crc_version }}"
+        CRC_URL="https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/${CRC_VERSION}/crc-linux-amd64.tar.xz"
+
+        echo "Downloading CRC ${CRC_VERSION}..."
+        curl -sL "${CRC_URL}" -o crc.tar.xz
+        tar xf crc.tar.xz
+        sudo mv crc-linux-*-amd64/crc /usr/local/bin/
+        rm -rf crc.tar.xz crc-linux-*-amd64
+
+        echo "CRC version:"
+        crc version
+
+    - name: Configure CRC
+      shell: bash
+      run: |
+        crc config set consent-telemetry no
+        crc config set memory ${{ inputs.memory }}
+        crc config set cpus ${{ inputs.cpus }}
+        crc config set disable-update-check true
+        # Ubuntu 22.04 runners use systemd-networkd which CRC's default
+        # libvirt networking doesn't support. Userland mode uses
+        # gvisor-tap-vsock instead and avoids the incompatibility.
+        crc config set network-mode user
+
+    - name: Cache CRC Bundle
+      uses: actions/cache@v4
+      with:
+        path: ~/.crc/cache
+        key: crc-bundle-${{ inputs.crc_version }}
+
+    - name: Write Pull Secret
+      shell: bash
+      run: |
+        echo '${{ inputs.pull_secret }}' > /tmp/crc-pull-secret.json
+
+    - name: CRC Setup and Start
+      shell: bash
+      run: |
+        # First run installs libvirt and creates the group, but exits
+        # non-zero because the user isn't yet an active member.
+        echo "Running crc setup (first pass — installs libvirt)..."
+        crc setup || true
+
+        # Now the libvirt group exists and the user has been added to it,
+        # but the current shell doesn't reflect it. Use `sg libvirt` to
+        # re-run setup and start with the group membership in effect.
+        echo "Running crc setup (second pass — with libvirt group)..."
+        sg libvirt -c "crc setup"
+        echo "Starting CRC cluster..."
+        sg libvirt -c "crc start --pull-secret-file /tmp/crc-pull-secret.json"
+        rm -f /tmp/crc-pull-secret.json
+
+    - name: Configure CLI Tools
+      shell: bash
+      run: |
+        # CRC CLI commands (crc oc-env, crc console) query VM state via
+        # libvirt, which requires group membership that doesn't persist
+        # across composite action steps. Read well-known paths directly.
+
+        # oc binary lives in ~/.crc/bin/oc
+        echo "${HOME}/.crc/bin/oc" >> $GITHUB_PATH
+        export PATH="${HOME}/.crc/bin/oc:${PATH}"
+
+        # KUBECONFIG
+        echo "KUBECONFIG=${HOME}/.crc/machines/crc/kubeconfig" >> $GITHUB_ENV
+        export KUBECONFIG="${HOME}/.crc/machines/crc/kubeconfig"
+
+        # Login as kubeadmin — password written to disk by crc start
+        KUBEADMIN_PWD=$(cat "${HOME}/.crc/machines/crc/kubeadmin-password")
+        oc login -u kubeadmin -p "${KUBEADMIN_PWD}" https://api.crc.testing:6443 --insecure-skip-tls-verify=true
+
+        echo "Cluster info:"
+        oc cluster-info
+        oc get nodes
+
+    - name: Wait for Cluster Operators
+      shell: bash
+      run: |
+        echo "Waiting for cluster operators to stabilize..."
+        # Wait up to 5 minutes for cluster operators
+        timeout=300
+        elapsed=0
+        while [ $elapsed -lt $timeout ]; do
+          # Check if all cluster operators are available
+          NOT_AVAILABLE=$(oc get clusteroperators -o jsonpath='{range .items[*]}{.metadata.name}{" available="}{range .status.conditions[?(@.type=="Available")]}{.status}{end}{"\n"}{end}' | grep -c "available=False" || true)
+          DEGRADED=$(oc get clusteroperators -o jsonpath='{range .items[*]}{.metadata.name}{" degraded="}{range .status.conditions[?(@.type=="Degraded")]}{.status}{end}{"\n"}{end}' | grep -c "degraded=True" || true)
+
+          if [ "$NOT_AVAILABLE" -eq 0 ] && [ "$DEGRADED" -eq 0 ]; then
+            echo "All cluster operators are available and not degraded"
+            break
+          fi
+
+          echo "Waiting for operators... (not available: ${NOT_AVAILABLE}, degraded: ${DEGRADED})"
+          sleep 15
+          elapsed=$((elapsed + 15))
+        done
+
+        if [ $elapsed -ge $timeout ]; then
+          echo "Warning: Timed out waiting for cluster operators"
+          oc get clusteroperators
+        fi

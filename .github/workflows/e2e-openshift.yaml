@@ -1,0 +1,168 @@
+name: E2E Tests (on-demand)
+
+on:
+  # Manual trigger from Actions tab
+  workflow_dispatch:
+
+  # PR label trigger: add "test-openshift" label to run
+  pull_request:
+    types: [labeled]
+
+  # PR comment trigger: comment "/test-openshift" to run
+  issue_comment:
+    types: [created]
+
+env:
+  CLUSTER_TYPE: openshift
+
+jobs:
+  openshift-e2e:
+    name: OpenShift CRC
+    runs-on: ubuntu-22.04-8core
+    # Run when:
+    # 1. Manual dispatch (workflow_dispatch)
+    # 2. PR labeled with "test-openshift"
+    # 3. PR comment contains "/test-openshift"
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'test-openshift')) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/test-openshift'))
+    timeout-minutes: 60
+    env:
+      CLOUDSERVER_TAG: ${{ vars.CLOUDSERVER_RING_9_5 }}
+    steps:
+      - name: Resolve PR ref
+        id: resolve_ref
+        # github.sha works for workflow_dispatch (selected branch HEAD) and
+        # pull_request/labeled (PR merge commit). Only issue_comment is different:
+        # GitHub sets github.sha to the default branch, not the PR, so we look
+        # up the PR head SHA via the API.
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            PR_NUMBER="${{ github.event.issue.number }}"
+            REF=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
+            echo "ref=$REF" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.resolve_ref.outputs.ref }}
+          fetch-depth: 0
+
+      - name: CRC Setup
+        uses: ./.github/actions/crc-setup
+        with:
+          pull_secret: ${{ secrets.CRC_PULL_SECRET }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "tests/e2e/go.mod"
+          cache: true
+
+      - name: Install Mage and Ginkgo
+        run: |
+          go install github.com/magefile/mage@latest
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.25.2
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Configure Docker for CRC Registry
+        run: |
+          REGISTRY=default-route-openshift-image-registry.apps-crc.testing
+          echo "{\"insecure-registries\": [\"$REGISTRY\"]}" | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: Build Container Image
+        run: mage buildImage
+
+      - name: Load Image to CRC
+        run: mage loadImageToCluster
+
+      - name: Deploy CloudServer (S3)
+        run: mage e2e:deployS3
+
+      - name: Get Host IP Address
+        id: get_ip
+        run: |
+          # Try multiple methods to find the IP reachable from CRC VM
+          # Method 1: virsh bridge gateway
+          if command -v virsh &>/dev/null; then
+            BRIDGE_IP=$(sudo virsh net-dumpxml crc 2>/dev/null | grep -oP "ip address='\K[^']+" || true)
+          fi
+          # Method 2: ip route default gateway
+          if [ -z "$BRIDGE_IP" ]; then
+            BRIDGE_IP=$(ip route get 1.1.1.1 | grep -oP 'src \K\S+' || true)
+          fi
+          # Method 3: hostname -I
+          if [ -z "$BRIDGE_IP" ]; then
+            BRIDGE_IP=$(hostname -I | awk '{print $1}')
+          fi
+          echo "host_ip=${BRIDGE_IP}" >> $GITHUB_OUTPUT
+          echo "Detected host IP: ${BRIDGE_IP}"
+
+      - name: Configure hosts file for S3 FQDN
+        run: |
+          echo "${{ steps.get_ip.outputs.host_ip }} s3.scality.com" | sudo tee -a /etc/hosts
+          cat /etc/hosts | grep s3.scality.com
+
+      - name: Configure OpenShift DNS for S3 FQDN
+        run: |
+          S3_HOST_IP=${{ steps.get_ip.outputs.host_ip }} \
+          CLUSTER_TYPE=openshift \
+          mage e2e:configureCIDNS
+
+      - name: Apply SecurityContextConstraints
+        run: oc apply -f .github/openshift/scc.yaml
+
+      - name: Grant Privileged SCC to Test Namespaces
+        run: |
+          # Cache tests run privileged init containers for chmod on hostPath.
+          # Grant the built-in privileged SCC to all SAs in the cluster so
+          # dynamically-created test namespaces can schedule these pods.
+          oc adm policy add-scc-to-group privileged system:serviceaccounts
+
+      - name: Start Kubernetes Event and Log Capture
+        run: mage e2e:startCapture
+
+      - name: Apply CRDs
+        run: mage e2e:applyCRDs
+
+      - name: Run OpenShift E2E Tests
+        run: |
+          mkdir -p test-results
+          S3_ENDPOINT_URL=http://s3.scality.com:8000 \
+          CSI_IMAGE_TAG=local \
+          CSI_IMAGE_REPOSITORY=image-registry.openshift-image-registry.svc:5000/kube-system/mountpoint-s3-csi-driver \
+          JUNIT_REPORT=./test-results/openshift-e2e-results.xml \
+          mage e2e:openShiftAll
+
+      - name: Stop Capture and Collect Artifacts
+        if: always()
+        run: mage e2e:stopCapture
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openshift-e2e-artifacts
+          path: artifacts
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./tests/e2e/test-results/openshift-e2e-results.xml
+          flags: e2e_tests,openshift
+          slug: scality/mountpoint-s3-csi-driver

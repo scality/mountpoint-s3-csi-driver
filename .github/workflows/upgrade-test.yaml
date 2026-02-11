@@ -21,6 +21,7 @@ jobs:
   upgrade-test:
     name: Test v1.2.0 → local upgrade
     runs-on: ubuntu-22.04
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
