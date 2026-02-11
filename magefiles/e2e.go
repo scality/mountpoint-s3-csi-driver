@@ -286,7 +286,7 @@ func configureCIDNS() error {
 
 	// Verify DNS resolution from within a pod
 	fmt.Println("Verifying DNS resolution for s3.scality.com...")
-	if err := sh.RunV("kubectl", "run", "dns-test", "--image=busybox:1.28", "--rm", "-it", "--restart=Never", "--", "nslookup", "s3.scality.com"); err != nil {
+	if err := sh.RunV("kubectl", "run", "dns-test", "--image=busybox:1.36", "--rm", "-it", "--restart=Never", "--", "nslookup", "s3.scality.com"); err != nil {
 		return fmt.Errorf("DNS verification failed: %v", err)
 	}
 
