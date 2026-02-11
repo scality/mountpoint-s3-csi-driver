@@ -24,6 +24,10 @@ mage e2e:verify
 mage e2e:uninstall
 mage e2e:uninstallClean   # also delete custom namespace
 mage e2e:uninstallForce   # force delete including CSI driver registration
+
+# CI diagnostics: capture Kubernetes events and logs
+mage e2e:startCapture     # start background capture
+mage e2e:stopCapture      # stop capture, compress, collect S3 logs
 ```
 
 ### Environment Variables
@@ -43,5 +47,4 @@ The Makefile targets (`make csi-install`, `make e2e-all`, etc.) delegate to Mage
 
 ## Remaining Scripts
 
-- `load-credentials.sh` — Loads S3 credentials from `integration_config.json` and exports as environment variables. Used by `csi-compliance-test` CI step and can be used manually.
-- `capture-events-and-logs.sh` — Background Kubernetes event and log capture for CI diagnostics.
+- `capture-events-and-logs.sh` — Background Kubernetes event and log capture for CI diagnostics. Wrapped by `mage e2e:startCapture` and `mage e2e:stopCapture`.

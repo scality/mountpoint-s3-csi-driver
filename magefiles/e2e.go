@@ -7,7 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/magefile/mage/mg"
@@ -64,6 +67,285 @@ func GetJUnitReportPath() string {
 		}
 	}
 	return ""
+}
+
+// =============================================================================
+// Infrastructure Targets
+// =============================================================================
+
+const dockerComposeDir = ".github/scality-storage-deployment"
+
+// DeployS3 starts CloudServer via docker compose and waits for port 8000.
+func (E2E) DeployS3() error {
+	return deployS3()
+}
+
+func deployS3() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	composeDir := filepath.Join(wd, dockerComposeDir)
+
+	// Create logs directory
+	logsDir := filepath.Join(composeDir, "logs", "s3")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create logs directory: %v", err)
+	}
+
+	fmt.Println("Starting CloudServer via docker compose...")
+	cmd := exec.Command("docker", "compose", "--profile", "s3", "up", "-d", "--quiet-pull")
+	cmd.Dir = composeDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	// Pass through environment (including CLOUDSERVER_TAG)
+	cmd.Env = os.Environ()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker compose up failed: %v", err)
+	}
+
+	fmt.Println("Waiting for CloudServer to be ready on port 8000...")
+	return WaitForPort("localhost", 8000, 30*time.Second)
+}
+
+// StopS3 stops CloudServer via docker compose.
+func (E2E) StopS3() error {
+	return stopS3()
+}
+
+func stopS3() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	composeDir := filepath.Join(wd, dockerComposeDir)
+
+	fmt.Println("Stopping CloudServer via docker compose...")
+	cmd := exec.Command("docker", "compose", "--profile", "s3", "down")
+	cmd.Dir = composeDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker compose down failed: %v", err)
+	}
+
+	fmt.Println("CloudServer stopped")
+	return nil
+}
+
+// PullImages pulls container images and downloads Go dependencies in parallel.
+// Reads CSI_IMAGE_REPOSITORY, CSI_IMAGE_TAG, and CLOUDSERVER_TAG env vars.
+// Skips individual pulls if the corresponding env var is empty.
+func (E2E) PullImages() error {
+	return pullImages()
+}
+
+func pullImages() error {
+	type task struct {
+		name string
+		fn   func() error
+	}
+
+	var tasks []task
+
+	// CSI driver image
+	if repo := GetCSIImageRepository(); repo != "" {
+		if tag := GetCSIImageTag(); tag != "" {
+			image := fmt.Sprintf("%s:%s", repo, tag)
+			tasks = append(tasks, task{
+				name: "CSI driver image",
+				fn: func() error {
+					return sh.Run("docker", "pull", image)
+				},
+			})
+		}
+	}
+
+	// CloudServer image
+	if csTag := os.Getenv("CLOUDSERVER_TAG"); csTag != "" {
+		image := fmt.Sprintf("ghcr.io/scality/cloudserver:%s", csTag)
+		tasks = append(tasks, task{
+			name: "CloudServer image",
+			fn: func() error {
+				return sh.Run("docker", "pull", image)
+			},
+		})
+	}
+
+	// Go mod download for e2e tests
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	e2eDir := filepath.Join(wd, "tests", "e2e")
+	tasks = append(tasks, task{
+		name: "Go dependencies",
+		fn: func() error {
+			cmd := exec.Command("go", "mod", "download")
+			cmd.Dir = e2eDir
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			return cmd.Run()
+		},
+	})
+
+	if len(tasks) == 0 {
+		fmt.Println("No images to pull (env vars not set)")
+		return nil
+	}
+
+	fmt.Printf("Starting %d parallel tasks...\n", len(tasks))
+
+	var wg sync.WaitGroup
+	errs := make([]error, len(tasks))
+
+	for i, t := range tasks {
+		wg.Add(1)
+		go func(idx int, t task) {
+			defer wg.Done()
+			fmt.Printf("  Starting: %s\n", t.name)
+			if err := t.fn(); err != nil {
+				errs[idx] = fmt.Errorf("%s failed: %v", t.name, err)
+				fmt.Printf("  Failed: %s\n", t.name)
+			} else {
+				fmt.Printf("  Done: %s\n", t.name)
+			}
+		}(i, t)
+	}
+
+	wg.Wait()
+
+	// Collect errors
+	var failures []string
+	for _, err := range errs {
+		if err != nil {
+			failures = append(failures, err.Error())
+		}
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("parallel pulls failed:\n  %s", strings.Join(failures, "\n  "))
+	}
+
+	fmt.Println("All parallel tasks completed successfully")
+	return nil
+}
+
+// =============================================================================
+// CI DNS Target
+// =============================================================================
+
+// ConfigureCIDNS configures CoreDNS to resolve s3.scality.com to the CI runner's IP.
+// Requires S3_HOST_IP environment variable. This is separate from local-dev ConfigureS3DNS
+// which maps s3.example.com.
+func (E2E) ConfigureCIDNS() error {
+	return configureCIDNS()
+}
+
+func configureCIDNS() error {
+	hostIP := os.Getenv("S3_HOST_IP")
+	if hostIP == "" {
+		return fmt.Errorf("S3_HOST_IP environment variable is required")
+	}
+
+	fmt.Printf("Configuring CoreDNS: s3.scality.com -> %s\n", hostIP)
+
+	// Get current CoreDNS config
+	currentConfig, err := sh.Output("kubectl", "get", "configmap", "coredns", "-n", "kube-system", "-o", "jsonpath={.data.Corefile}")
+	if err != nil {
+		return fmt.Errorf("failed to get CoreDNS config: %v", err)
+	}
+
+	// Remove any existing s3.scality.com entries
+	lines := strings.Split(currentConfig, "\n")
+	var filtered []string
+	for _, line := range lines {
+		if !strings.Contains(line, "s3.scality.com") {
+			filtered = append(filtered, line)
+		}
+	}
+	newConfig := strings.Join(filtered, "\n")
+
+	// Add s3.scality.com entry
+	if strings.Contains(newConfig, "hosts {") {
+		newConfig = strings.ReplaceAll(newConfig, "hosts {", fmt.Sprintf("hosts {\n        %s s3.scality.com", hostIP))
+	} else {
+		// Insert hosts block before the "ready" directive
+		newConfig = strings.ReplaceAll(newConfig, "ready", fmt.Sprintf("hosts {\n        %s s3.scality.com\n        fallthrough\n    }\n    ready", hostIP))
+	}
+
+	// Patch the ConfigMap
+	patchData := fmt.Sprintf(`{"data":{"Corefile":%q}}`, newConfig)
+	if err := sh.RunV("kubectl", "patch", "configmap", "coredns", "-n", "kube-system", "--type=merge", "-p", patchData); err != nil {
+		return fmt.Errorf("failed to patch CoreDNS configmap: %v", err)
+	}
+
+	// Restart CoreDNS
+	if err := RestartCoreDNS(); err != nil {
+		return err
+	}
+
+	// Verify DNS resolution from within a pod
+	fmt.Println("Verifying DNS resolution for s3.scality.com...")
+	if err := sh.RunV("kubectl", "run", "dns-test", "--image=busybox:1.36", "--rm", "-it", "--restart=Never", "--", "nslookup", "s3.scality.com"); err != nil {
+		return fmt.Errorf("DNS verification failed: %v", err)
+	}
+
+	fmt.Printf("CoreDNS configured: s3.scality.com -> %s\n", hostIP)
+	return nil
+}
+
+// =============================================================================
+// CRD and Compliance Targets
+// =============================================================================
+
+// ApplyCRDs applies the CSI driver CRDs from the Helm chart directory.
+func (E2E) ApplyCRDs() error {
+	fmt.Println("Applying CRDs...")
+	if err := sh.RunV("kubectl", "apply", "-f", "./charts/scality-mountpoint-s3-csi-driver/crds/"); err != nil {
+		return fmt.Errorf("failed to apply CRDs: %v", err)
+	}
+	fmt.Println("CRDs applied successfully")
+	return nil
+}
+
+// csiComplianceSkipPatterns is the set of CSI compliance test patterns to skip.
+// These match the Makefile's CSI_SKIP_PATTERNS.
+const csiComplianceSkipPatterns = "ValidateVolumeCapabilities|Node Service|SingleNodeWriter|" +
+	"should not fail when requesting to create a volume with already existing name and same capacity|" +
+	"should fail when requesting to create a volume with already existing name and different capacity|" +
+	"should not fail when creating volume with maximum-length name|" +
+	"should return appropriate values.*no optional values added"
+
+// ComplianceTest runs CSI compliance (sanity) tests against the deployed S3 backend.
+// Loads credentials from integration_config.json, sets AWS_ENDPOINT_URL from S3_ENDPOINT_URL.
+func (E2E) ComplianceTest() error {
+	return complianceTest()
+}
+
+func complianceTest() error {
+	// Load credentials
+	if err := LoadCredentials(); err != nil {
+		return fmt.Errorf("failed to load credentials: %v", err)
+	}
+
+	s3EndpointURL := os.Getenv("S3_ENDPOINT_URL")
+	if s3EndpointURL == "" {
+		return fmt.Errorf("S3_ENDPOINT_URL environment variable is required")
+	}
+
+	fmt.Printf("Running CSI compliance tests against %s...\n", s3EndpointURL)
+
+	cmd := exec.Command("go", "test", "-v", "./tests/sanity/...",
+		fmt.Sprintf("-ginkgo.skip=%s", csiComplianceSkipPatterns))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("AWS_ENDPOINT_URL=%s", s3EndpointURL))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("CSI compliance tests failed: %v", err)
+	}
+
+	fmt.Println("CSI compliance tests passed")
+	return nil
 }
 
 // =============================================================================
@@ -144,8 +426,7 @@ func installCSIForE2E() error {
 	secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
 	if accessKey == "" || secretKey == "" {
 		return fmt.Errorf("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY environment variables are required.\n" +
-			"Load credentials using: source tests/e2e/scripts/load-credentials.sh\n" +
-			"Or run mage e2e:all which loads them automatically from integration_config.json")
+			"Run mage e2e:all which loads them automatically from integration_config.json")
 	}
 
 	imageTag := GetCSIImageTag()
@@ -460,5 +741,100 @@ func (E2E) All() error {
 	}
 
 	fmt.Println("Full E2E workflow completed successfully")
+	return nil
+}
+
+// =============================================================================
+// Event Capture Targets
+// =============================================================================
+
+const (
+	captureScript  = "tests/e2e/scripts/capture-events-and-logs.sh"
+	captureDir     = "artifacts/k8s-debug"
+	capturePIDFile = "capture.pid"
+	captureArchive = "artifacts/k8s-debug-capture.tar.gz"
+	s3LogsSource   = ".github/scality-storage-deployment/logs/s3"
+	s3LogsDest     = "artifacts/logs/s3"
+)
+
+// StartCapture starts background Kubernetes event and log capture for CI diagnostics.
+func (E2E) StartCapture() error {
+	return startCapture()
+}
+
+func startCapture() error {
+	if err := os.MkdirAll(captureDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create capture directory: %v", err)
+	}
+
+	fmt.Println("Starting Kubernetes event and log capture...")
+	cmd := exec.Command("./"+captureScript, captureDir, "start")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start capture script: %v", err)
+	}
+
+	pid := cmd.Process.Pid
+	if err := os.WriteFile(capturePIDFile, []byte(strconv.Itoa(pid)), 0o644); err != nil {
+		return fmt.Errorf("failed to write PID file: %v", err)
+	}
+
+	fmt.Printf("Capture started (PID %d)\n", pid)
+	return nil
+}
+
+// StopCapture stops event capture, collects final snapshots, and compresses artifacts.
+func (E2E) StopCapture() error {
+	return stopCapture()
+}
+
+func stopCapture() error {
+	// Kill the capture process if running
+	if data, err := os.ReadFile(capturePIDFile); err == nil {
+		if pid, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil {
+			if proc, err := os.FindProcess(pid); err == nil {
+				if err := proc.Signal(syscall.SIGTERM); err != nil {
+					fmt.Printf("Warning: could not stop capture process (PID %d): %v\n", pid, err)
+				} else {
+					fmt.Printf("Stopped capture process (PID %d)\n", pid)
+				}
+			}
+		}
+	}
+
+	// Run the capture script in stop mode to take final snapshots
+	fmt.Println("Taking final cluster state snapshot...")
+	cmd := exec.Command("./"+captureScript, captureDir, "stop")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Warning: capture stop returned error: %v\n", err)
+	}
+
+	// Compress K8s debug data
+	if err := os.MkdirAll("artifacts", 0o755); err != nil {
+		return fmt.Errorf("failed to create artifacts directory: %v", err)
+	}
+	fmt.Println("Compressing capture data...")
+	if err := sh.Run("tar", "-czf", captureArchive, "-C", "artifacts", "k8s-debug/"); err != nil {
+		fmt.Printf("Warning: failed to compress capture data: %v\n", err)
+	}
+
+	// Copy S3 logs to artifacts directory
+	if err := os.MkdirAll(s3LogsDest, 0o755); err != nil {
+		fmt.Printf("Warning: failed to create S3 logs directory: %v\n", err)
+	} else {
+		if err := sh.Run("cp", "-r", s3LogsSource+"/.", s3LogsDest+"/"); err != nil {
+			fmt.Printf("Warning: no S3 logs to copy (or copy failed): %v\n", err)
+		} else {
+			fmt.Println("S3 logs copied to artifacts")
+		}
+	}
+
+	// Clean up PID file
+	os.Remove(capturePIDFile)
+
+	fmt.Println("Capture stopped and artifacts collected")
 	return nil
 }

@@ -5,11 +5,8 @@ End-to-end tests for the Scality CSI Driver for S3 that validate functionality i
 ## Quick Start
 
 ```bash
-# 1. Load credentials (from integration_config.json)
-source tests/e2e/scripts/load-credentials.sh
-
-# 2. Run tests
-make e2e-all S3_ENDPOINT_URL=https://your-s3-endpoint.com
+# Full workflow: load credentials, install driver, run tests
+S3_ENDPOINT_URL=https://your-s3-endpoint.com mage e2e:all
 ```
 
 ## Available Commands
@@ -25,7 +22,7 @@ make e2e-all S3_ENDPOINT_URL=https://your-s3-endpoint.com
 ### Required
 
 - **S3_ENDPOINT_URL**: Your S3 endpoint URL
-- **Credentials**: Load from `integration_config.json` using the load-credentials script
+- **Credentials**: Loaded automatically from `integration_config.json` by `mage e2e:all`
 
 ### Optional
 
@@ -35,39 +32,21 @@ make e2e-all S3_ENDPOINT_URL=https://your-s3-endpoint.com
 ## Examples
 
 ```bash
-# Basic usage (loads from default integration_config.json)
-source tests/e2e/scripts/load-credentials.sh
-make e2e-all S3_ENDPOINT_URL=http://10.200.4.125:8000
-
-# Using custom credentials file
-source tests/e2e/scripts/load-credentials.sh --config-file /path/to/my-credentials.json
-make e2e-all S3_ENDPOINT_URL=https://s3.example.com
+# Full workflow (loads credentials from integration_config.json automatically)
+S3_ENDPOINT_URL=http://10.200.4.125:8000 mage e2e:all
 
 # With custom kubeconfig
-make e2e-all S3_ENDPOINT_URL=https://s3.example.com KUBECONFIG=/path/to/config
+KUBECONFIG=/path/to/config S3_ENDPOINT_URL=https://s3.example.com mage e2e:all
 
 # Run only Go tests
-make e2e-go S3_ENDPOINT_URL=https://s3.example.com
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:goTest
 ```
 
 ## Credential Configuration
 
-The `load-credentials.sh` script reads S3 credentials from a JSON configuration file and exports them as environment variables.
-
-### Default Configuration
-
-By default, credentials are loaded from `tests/e2e/integration_config.json`:
-
-### Using Custom Configuration File
-
-```bash
-# Load from custom file
-source tests/e2e/scripts/load-credentials.sh --config-file /path/to/my-config.json
-
-# Or set environment variable
-export CREDENTIALS_CONFIG_FILE="/path/to/my-config.json"
-source tests/e2e/scripts/load-credentials.sh
-```
+Credentials are loaded automatically from `tests/e2e/integration_config.json` by `mage e2e:all`.
+The Mage target reads the JSON file and sets `ACCOUNT1_ACCESS_KEY` and `ACCOUNT1_SECRET_KEY`
+environment variables.
 
 ## Running Specific Test Suites
 
@@ -89,22 +68,19 @@ You can run specific test suites using ginkgo's `--focus` flag. Below are all av
 
 **Prerequisites (for all test suites):**
 
-1. Load credentials from `integration_config.json`
-2. Set KUBECONFIG to point to your cluster
-3. Have a running Kubernetes cluster with the CSI driver installed
-4. Set S3_ENDPOINT_URL environment variable
+1. A running Kubernetes cluster with the CSI driver installed
+2. S3 credentials set as environment variables (or use `mage e2e:all` which loads them automatically)
+3. `S3_ENDPOINT_URL` environment variable set
+4. `KUBECONFIG` pointing to your cluster
 
 **Basic setup:**
 
 ```bash
-# 1. Load credentials
-source tests/e2e/scripts/load-credentials.sh
-
-# 2. Set environment variables
+# Set environment variables
 export KUBECONFIG=~/.kube/config
 export S3_ENDPOINT_URL="http://s3.example.com:8000"
 
-# 3. Navigate to e2e directory
+# Navigate to e2e directory
 cd tests/e2e
 ```
 

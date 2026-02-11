@@ -249,7 +249,7 @@ Follow conventional commit style based on repository history:
 - `MOUNTPOINT_VERSION`: Mount-s3 version to report
 - `MOUNTPOINT_NAMESPACE`: Namespace for mounter pods
 - `S3_ENDPOINT_URL`: S3 endpoint URL (required for e2e tests)
-- `ACCOUNT1_ACCESS_KEY` / `ACCOUNT1_SECRET_KEY`: S3 credentials (loaded via `load-credentials.sh`)
+- `ACCOUNT1_ACCESS_KEY` / `ACCOUNT1_SECRET_KEY`: S3 credentials (loaded automatically by `mage e2e:all` from `integration_config.json`)
 
 ## Troubleshooting
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -609,6 +610,28 @@ func (rc *ResourceChecker) NamespaceExists(namespace string) (bool, error) {
 		return false, err
 	}
 	return strings.TrimSpace(output) != "", nil
+}
+
+// WaitForPort waits for a TCP port to become available on the given host.
+// It polls every second and returns an error if the port is not reachable within the timeout.
+func WaitForPort(host string, port int, timeout time.Duration) error {
+	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
+	fmt.Printf("Waiting for %s to become available...\n", addr)
+
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", addr, 1*time.Second)
+		if err == nil {
+			_ = conn.Close()
+			fmt.Printf("\nServer ready at %s\n", addr)
+			return nil
+		}
+		fmt.Print(".")
+		time.Sleep(1 * time.Second)
+	}
+
+	fmt.Println()
+	return fmt.Errorf("timeout after %v waiting for %s", timeout, addr)
 }
 
 // SafeGetResource safely gets resource information without throwing errors
