@@ -26,7 +26,7 @@ jobs:
       name: github-pages
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -104,7 +104,7 @@ jobs:
       packages: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Helm
         uses: azure/setup-helm@v4.3.1
@@ -119,7 +119,7 @@ jobs:
           helm package ./charts/scality-mountpoint-s3-csi-driver --version ${{ inputs.tag }} --app-version ${{ inputs.tag }}
 
       - name: Upload Helm Chart as Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: helm-chart
           path: scality-mountpoint-s3-csi-driver-${{ inputs.tag }}.tgz
@@ -143,7 +143,7 @@ jobs:
       contents: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

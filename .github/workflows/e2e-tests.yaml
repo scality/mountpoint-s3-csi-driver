@@ -47,7 +47,7 @@ jobs:
       CLOUDSERVER_TAG: ${{ vars[matrix.github_varirable_name] }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
@@ -58,7 +58,7 @@ jobs:
           cluster_name: helm-test-cluster
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version-file: "tests/e2e/go.mod"
           cache: true
@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload Test Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-test-artifacts-${{ matrix.ring_version }}
           path: artifacts
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -172,7 +172,7 @@ jobs:
 
       - name: Upload Test Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: s3-tls-verify-artifacts
           path: artifacts
