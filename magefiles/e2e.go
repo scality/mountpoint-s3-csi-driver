@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -303,4 +304,161 @@ func (E2E) UninstallClean() error {
 // UninstallForce force-removes the CSI driver, including driver registration.
 func (E2E) UninstallForce() error {
 	return uninstallCSIForE2E(true, true)
+}
+
+// =============================================================================
+// Ginkgo Test Runner
+// =============================================================================
+
+// runGinkgoTests invokes Ginkgo to run E2E tests.
+func runGinkgoTests(s3EndpointURL, junitReportPath string) error {
+	if s3EndpointURL == "" {
+		s3EndpointURL = os.Getenv("S3_ENDPOINT_URL")
+	}
+	if s3EndpointURL == "" {
+		return fmt.Errorf("S3_ENDPOINT_URL environment variable is required")
+	}
+
+	// Resolve tests/e2e directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %v", err)
+	}
+	e2eDir := filepath.Join(wd, "tests", "e2e")
+	if _, err := os.Stat(e2eDir); os.IsNotExist(err) {
+		return fmt.Errorf("tests/e2e directory not found: %s", e2eDir)
+	}
+
+	// Find ginkgo binary
+	ginkgoBin, err := findGinkgo()
+	if err != nil {
+		return err
+	}
+
+	// Build ginkgo command arguments
+	args := []string{
+		"--procs=8",
+		"-timeout=15m",
+		"-v",
+	}
+
+	// Add JUnit report if specified
+	if junitReportPath == "" {
+		junitReportPath = GetJUnitReportPath()
+	}
+	if junitReportPath != "" {
+		// Create output directory if needed
+		reportDir := filepath.Dir(junitReportPath)
+		if reportDir != "." {
+			if err := os.MkdirAll(reportDir, 0o755); err != nil {
+				return fmt.Errorf("failed to create JUnit report directory: %v", err)
+			}
+		}
+		args = append(args, fmt.Sprintf("--junit-report=%s", junitReportPath))
+		fmt.Printf("JUnit report will be written to: %s\n", junitReportPath)
+	}
+
+	// Add test packages and passthrough args
+	args = append(args, "./...", "--", fmt.Sprintf("--s3-endpoint-url=%s", s3EndpointURL))
+
+	// Resolve KUBECONFIG
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		home, _ := os.UserHomeDir()
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	}
+	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
+		return fmt.Errorf("KUBECONFIG file not found: %s", kubeconfig)
+	}
+
+	fmt.Printf("Running Ginkgo E2E tests...\n")
+	fmt.Printf("  Test directory: %s\n", e2eDir)
+	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
+	fmt.Printf("  KUBECONFIG: %s\n", kubeconfig)
+
+	// Execute ginkgo
+	cmd := exec.Command(ginkgoBin, args...)
+	cmd.Dir = e2eDir
+	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfig))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Check for JUnit report files even on failure
+		if junitReportPath != "" {
+			fmt.Println("Checking for JUnit report files after test failure:")
+			_ = filepath.Walk(e2eDir, func(path string, info os.FileInfo, err error) error {
+				if err == nil && strings.HasSuffix(path, ".xml") {
+					fmt.Printf("  Found: %s\n", path)
+				}
+				return nil
+			})
+		}
+		return fmt.Errorf("ginkgo tests failed: %v", err)
+	}
+
+	fmt.Println("Ginkgo E2E tests completed successfully")
+	return nil
+}
+
+// findGinkgo locates the ginkgo binary in PATH or $GOPATH/bin.
+func findGinkgo() (string, error) {
+	// Check PATH first
+	if path, err := exec.LookPath("ginkgo"); err == nil {
+		return path, nil
+	}
+
+	// Check $GOPATH/bin
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		home, _ := os.UserHomeDir()
+		gopath = filepath.Join(home, "go")
+	}
+	ginkgoPath := filepath.Join(gopath, "bin", "ginkgo")
+	if _, err := os.Stat(ginkgoPath); err == nil {
+		return ginkgoPath, nil
+	}
+
+	return "", fmt.Errorf("ginkgo binary not found in PATH or $GOPATH/bin.\n" +
+		"Install it with: go install github.com/onsi/ginkgo/v2/ginkgo@latest")
+}
+
+// GoTest runs Ginkgo E2E tests without verification checks.
+func (E2E) GoTest() error {
+	return runGinkgoTests("", "")
+}
+
+// =============================================================================
+// Orchestration Targets
+// =============================================================================
+
+// Test verifies the CSI driver installation then runs Ginkgo E2E tests.
+func (E2E) Test() error {
+	if err := verifyCSIInstallation(); err != nil {
+		return fmt.Errorf("verification failed, cannot proceed with tests: %v", err)
+	}
+	return runGinkgoTests("", "")
+}
+
+// All loads credentials, installs the CSI driver, and runs E2E tests.
+func (E2E) All() error {
+	fmt.Println("Starting full E2E workflow: load credentials -> install -> test")
+
+	// Load credentials from integration_config.json
+	if err := LoadCredentials(); err != nil {
+		return fmt.Errorf("failed to load credentials: %v", err)
+	}
+
+	// Install CSI driver
+	if err := installCSIForE2E(); err != nil {
+		return fmt.Errorf("CSI driver installation failed: %v", err)
+	}
+
+	// Run tests
+	if err := runGinkgoTests("", ""); err != nil {
+		return fmt.Errorf("E2E tests failed: %v", err)
+	}
+
+	fmt.Println("Full E2E workflow completed successfully")
+	return nil
 }
