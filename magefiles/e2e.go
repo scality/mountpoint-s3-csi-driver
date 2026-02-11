@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -121,4 +122,185 @@ func verifyCSIInstallation() error {
 // Verify checks that the CSI driver is properly installed and healthy.
 func (E2E) Verify() error {
 	return verifyCSIInstallation()
+}
+
+// =============================================================================
+// Install Target
+// =============================================================================
+
+// installCSIForE2E installs the CSI driver for E2E/CI use.
+// Unlike InstallCSI() (local dev), this accepts image params via env vars,
+// defaults to kube-system, and skips DNS configuration.
+func installCSIForE2E() error {
+	namespace := GetE2ENamespace()
+	s3EndpointURL := os.Getenv("S3_ENDPOINT_URL")
+	if s3EndpointURL == "" {
+		return fmt.Errorf("S3_ENDPOINT_URL environment variable is required")
+	}
+
+	// Get credentials
+	accessKey := os.Getenv("ACCOUNT1_ACCESS_KEY")
+	secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
+	if accessKey == "" || secretKey == "" {
+		return fmt.Errorf("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY environment variables are required.\n" +
+			"Load credentials using: source tests/e2e/scripts/load-credentials.sh\n" +
+			"Or run mage e2e:all which loads them automatically from integration_config.json")
+	}
+
+	imageTag := GetCSIImageTag()
+	imageRepo := GetCSIImageRepository()
+
+	fmt.Printf("Installing CSI driver for E2E testing...\n")
+	fmt.Printf("  Namespace: %s\n", namespace)
+	fmt.Printf("  S3 endpoint: %s\n", s3EndpointURL)
+	if imageTag != "" {
+		fmt.Printf("  Image tag: %s\n", imageTag)
+	}
+	if imageRepo != "" {
+		fmt.Printf("  Image repository: %s\n", imageRepo)
+	}
+
+	// Create namespace idempotently
+	fmt.Printf("Creating namespace %s...\n", namespace)
+	nsYAML, err := sh.Output("kubectl", "create", "namespace", namespace, "--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate namespace YAML: %v", err)
+	}
+	if err := pipeToKubectlApply(nsYAML); err != nil {
+		return fmt.Errorf("failed to create namespace: %v", err)
+	}
+
+	// Create secret idempotently
+	fmt.Printf("Creating S3 credentials secret in namespace %s...\n", namespace)
+	secretYAML, err := sh.Output("kubectl", "create", "secret", "generic", "s3-secret",
+		fmt.Sprintf("--from-literal=access_key_id=%s", accessKey),
+		fmt.Sprintf("--from-literal=secret_access_key=%s", secretKey),
+		"-n", namespace,
+		"--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate secret YAML: %v", err)
+	}
+	if err := pipeToKubectlApply(secretYAML); err != nil {
+		return fmt.Errorf("failed to create secret: %v", err)
+	}
+
+	// Build Helm args
+	helmArgs := []string{
+		"upgrade", "--install", "scality-s3-csi",
+		"./charts/scality-mountpoint-s3-csi-driver",
+		"--namespace", namespace,
+		"--create-namespace",
+		"--set", fmt.Sprintf("node.s3EndpointUrl=%s", s3EndpointURL),
+		"--wait",
+		"--timeout", "300s",
+	}
+
+	if imageTag != "" {
+		helmArgs = append(helmArgs, "--set", fmt.Sprintf("image.tag=%s", imageTag))
+	}
+	if imageRepo != "" {
+		helmArgs = append(helmArgs, "--set", fmt.Sprintf("image.repository=%s", imageRepo))
+	}
+
+	fmt.Println("Running Helm install...")
+	if err := sh.RunV("helm", helmArgs...); err != nil {
+		return fmt.Errorf("helm install failed: %v", err)
+	}
+
+	fmt.Println("Helm installation completed. Verifying...")
+	return verifyCSIInstallation()
+}
+
+// pipeToKubectlApply pipes YAML content to kubectl apply.
+func pipeToKubectlApply(yaml string) error {
+	cmd := exec.Command("kubectl", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(yaml)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// Install installs the CSI driver for E2E testing.
+func (E2E) Install() error {
+	return installCSIForE2E()
+}
+
+// =============================================================================
+// Uninstall Targets
+// =============================================================================
+
+// uninstallCSIForE2E removes the CSI driver with configurable cleanup options.
+func uninstallCSIForE2E(deleteNamespace, force bool) error {
+	namespace := GetE2ENamespace()
+
+	fmt.Printf("Uninstalling CSI driver from namespace %s...\n", namespace)
+
+	// Uninstall Helm release
+	if err := sh.Run("helm", "status", "scality-s3-csi", "-n", namespace); err != nil {
+		fmt.Println("Helm release scality-s3-csi not found, skipping Helm uninstall")
+	} else {
+		if err := sh.RunV("helm", "uninstall", "scality-s3-csi", "-n", namespace); err != nil {
+			if force {
+				fmt.Printf("Warning: Helm uninstall failed: %v (continuing in force mode)\n", err)
+			} else {
+				return fmt.Errorf("helm uninstall failed: %v", err)
+			}
+		} else {
+			fmt.Println("Helm release uninstalled successfully")
+		}
+	}
+
+	// Delete secret
+	if err := sh.Run("kubectl", "get", "secret", "s3-secret", "-n", namespace); err == nil {
+		if err := sh.Run("kubectl", "delete", "secret", "s3-secret", "-n", namespace); err != nil {
+			fmt.Printf("Warning: Failed to delete secret: %v\n", err)
+		} else {
+			fmt.Println("S3 credentials secret deleted")
+		}
+	}
+
+	// Delete namespace if requested and it's not kube-system
+	if deleteNamespace && namespace != "kube-system" {
+		fmt.Printf("Deleting namespace %s...\n", namespace)
+		if err := sh.Run("kubectl", "delete", "namespace", namespace, "--timeout=60s"); err != nil {
+			if force {
+				fmt.Printf("Warning: Failed to delete namespace: %v (continuing in force mode)\n", err)
+			} else {
+				return fmt.Errorf("failed to delete namespace %s: %v", namespace, err)
+			}
+		} else {
+			fmt.Printf("Namespace %s deleted\n", namespace)
+		}
+	}
+
+	// Force: delete CSI driver registration
+	if force {
+		output, _ := sh.Output("kubectl", "get", "csidrivers", "-o", "name")
+		if strings.Contains(output, CSIDriverName) {
+			fmt.Printf("Deleting CSI driver registration %s...\n", CSIDriverName)
+			if err := sh.Run("kubectl", "delete", "csidriver", CSIDriverName); err != nil {
+				fmt.Printf("Warning: Failed to delete CSI driver registration: %v\n", err)
+			} else {
+				fmt.Println("CSI driver registration deleted")
+			}
+		}
+	}
+
+	fmt.Println("Uninstallation complete")
+	return nil
+}
+
+// Uninstall removes the CSI driver (Helm release + secret).
+func (E2E) Uninstall() error {
+	return uninstallCSIForE2E(false, false)
+}
+
+// UninstallClean removes the CSI driver and deletes custom namespace (not kube-system).
+func (E2E) UninstallClean() error {
+	return uninstallCSIForE2E(true, false)
+}
+
+// UninstallForce force-removes the CSI driver, including driver registration.
+func (E2E) UninstallForce() error {
+	return uninstallCSIForE2E(true, true)
 }
