@@ -312,6 +312,14 @@ func ensureCacheDirExistsInNode(pod *v1.Pod, cacheDir string) {
 		SecurityContext: &v1.SecurityContext{
 			RunAsUser:  ptr.To(root),
 			RunAsGroup: ptr.To(root),
+			// Required for test infrastructure only: this init container uses a
+			// hostPath volume to prepare the cache directory for the test pod.
+			// On OpenShift, SELinux (enforcing) blocks chmod on host-mounted paths
+			// even when running as root. Privileged bypasses SELinux. This does
+			// NOT affect the production cache feature, which uses mount-s3's
+			// --cache flag inside the mounter pod (no hostPath involved).
+			// No-op on vanilla K8s where SELinux is typically not enforcing.
+			Privileged: ptr.To(true),
 		},
 		VolumeMounts: []v1.VolumeMount{cacheVolumeMount},
 	})
