@@ -46,7 +46,10 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: "tests/e2e/go.mod"
-          cache: true
+          # Disable cache: E2E builds produce a ~16GB build cache whose upload
+          # (~35 min at runner speeds) exceeds the job timeout and gets cancelled.
+          # This workflow runs on-demand so the cache hit rate is too low to justify it.
+          cache: false
 
       - name: Install Mage and Ginkgo
         run: |
