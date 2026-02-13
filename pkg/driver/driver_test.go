@@ -133,8 +133,6 @@ func TestDriverStop(t *testing.T) {
 // TestControllerOnlyAffectsMounterCreation verifies that when CSI_CONTROLLER_ONLY is true,
 // the driver skips mounter initialization and thus has a nil NodeServer; otherwise it creates one.
 func TestControllerOnlyAffectsMounterCreation(t *testing.T) {
-	t.Parallel()
-
 	// Save and restore env vars
 	originalControllerOnly := os.Getenv("CSI_CONTROLLER_ONLY")
 	originalEndpointURL := os.Getenv(envprovider.EnvEndpointURL)
