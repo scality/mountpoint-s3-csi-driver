@@ -165,6 +165,22 @@ S3_ENDPOINT_URL=https://s3.example.com CSI_IMAGE_TAG=v2.0.0 CSI_IMAGE_REPOSITORY
 # make csi-install S3_ENDPOINT_URL=https://s3.example.com
 ```
 
+### OpenShift E2E (CRC-based)
+
+```bash
+# Run full E2E suite on OpenShift
+mage e2e:openShiftAll
+
+# Create image pull secret for GHCR
+mage e2e:createPullSecret
+
+# Apply SCCs manually (used by CI workflow)
+oc apply -f .github/openshift/scc.yaml
+
+# Configure DNS (dispatches to OpenShift path when CLUSTER_TYPE=openshift)
+CLUSTER_TYPE=openshift mage e2e:configureCIDNS
+```
+
 ### Mage Targets (Local Development Workflow)
 
 Mage provides higher-level tasks for local development with minikube/kind:

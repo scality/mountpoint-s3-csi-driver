@@ -140,7 +140,12 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("stat -L -c '%%a %%g %%u' %s | grep '755 %d %d'", volPath, DefaultNonRootGroup, DefaultNonRootUser))
 
 		ginkgo.By("Checking pod identity")
-		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("id | grep 'uid=%d gid=%d groups=%d'", DefaultNonRootUser, DefaultNonRootGroup, DefaultNonRootGroup))
+		// Use "id -u" and "id -g" for numeric-only output.
+		// OpenShift's CRI-O injects /etc/passwd entries for arbitrary UIDs,
+		// causing "id" to output "uid=1001(1001) gid=2000 ..." — the
+		// parenthesised username breaks simple substring matches.
+		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("test \"$(id -u)\" = \"%d\"", DefaultNonRootUser))
+		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("test \"$(id -g)\" = \"%d\"", DefaultNonRootGroup))
 	}
 	ginkgo.It("should access volume as a non-root user", func(ctx context.Context) {
 		validateWriteToVolume(ctx)
