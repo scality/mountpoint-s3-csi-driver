@@ -190,6 +190,13 @@ The `fsGroup` in a pod's security context and the `uid`/`gid` mount options serv
 For S3 volumes, the `uid` and `gid` mount options control what ownership mount-s3 presents for S3 objects.
 The `allow-other` mount option is required so that processes running as a different UID/GID (the workload pod's `runAsUser`/`runAsGroup`) can access the mount.
 
+!!! note "fsGroup takes precedence over --gid"
+    When a workload pod specifies `fsGroup` in its security context, the CSI driver
+    **overrides** any `--gid` value set in PV or StorageClass mount options.
+    The pod-level security intent (`fsGroup`) always wins. The driver also
+    automatically sets `--allow-other`, `--dir-mode=770`, and `--file-mode=660` if
+    not already present. The `--uid` mount option is not affected.
+
 A common configuration pattern is to align these values:
 
 ```yaml

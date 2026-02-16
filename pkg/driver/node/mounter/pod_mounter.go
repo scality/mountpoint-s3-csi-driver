@@ -262,15 +262,12 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 		if fsGroup != "" {
 			klog.V(4).Infof("Resolved fsGroup=%s from workload pod %s/%s SecurityContext",
 				fsGroup, credentialCtx.PodNamespace, credentialCtx.PodName)
-			// Apply the same mount options that node.go sets when VolumeMountGroup is populated.
-			// These options configure mount-s3 to set the correct GID on files/directories
-			// so the workload container (running with this fsGroup) can access the mount.
-			if !args.Has(mountpoint.ArgGid) {
-				args.SetIfAbsent(mountpoint.ArgGid, fsGroup)
-				args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
-				args.SetIfAbsent(mountpoint.ArgDirMode, "770")
-				args.SetIfAbsent(mountpoint.ArgFileMode, "660")
-			}
+			// Pod-level fsGroup always takes precedence over --gid in mount options.
+			// This ensures the workload pod's security intent is honored.
+			args.Set(mountpoint.ArgGid, fsGroup)
+			args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
+			args.SetIfAbsent(mountpoint.ArgDirMode, "770")
+			args.SetIfAbsent(mountpoint.ArgFileMode, "660")
 		}
 	}
 
