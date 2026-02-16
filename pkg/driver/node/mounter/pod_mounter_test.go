@@ -894,6 +894,166 @@ func TestPodMounter(t *testing.T) {
 		})
 	})
 
+	t.Run("FSGroup resolution", func(t *testing.T) {
+		t.Run("Resolves fsGroup from workload pod SecurityContext when VolumeMountGroup is empty", func(t *testing.T) {
+			testCtx := setup(t)
+
+			workloadFSGroup := int64(1001)
+			workloadPodName := "workload-pod"
+			workloadPodNamespace := "default"
+
+			// Create the workload pod with fsGroup in the controller-runtime fake client.
+			// This simulates the pod spec that the reconciler reads from.
+			workloadPod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      workloadPodName,
+					Namespace: workloadPodNamespace,
+					UID:       types.UID(testCtx.podUID),
+				},
+				Spec: corev1.PodSpec{
+					SecurityContext: &corev1.PodSecurityContext{
+						FSGroup: &workloadFSGroup,
+					},
+				},
+			}
+			err := testCtx.k8sClient.Create(testCtx.ctx, workloadPod)
+			assert.NoError(t, err)
+
+			// Create the mounter pod
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+
+			// Create S3PA with WorkloadFSGroup: "1001" (as the reconciler would).
+			// The node driver must resolve the same fsGroup from the pod spec to match.
+			s3pa := &crdv2.MountpointS3PodAttachment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fmt.Sprintf("s3pa-fsgroup-%s", testCtx.podUID[:8]),
+				},
+				Spec: crdv2.MountpointS3PodAttachmentSpec{
+					NodeName:             "test-node",
+					PersistentVolumeName: testCtx.pvName,
+					VolumeID:             testCtx.volumeID,
+					WorkloadFSGroup:      "1001",
+					MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
+						mpPod.pod.Name: {
+							{WorkloadPodUID: testCtx.podUID},
+						},
+					},
+				},
+			}
+			err = testCtx.k8sClient.Create(testCtx.ctx, s3pa)
+			assert.NoError(t, err)
+
+			// Capture mount args to verify fsGroup options are applied
+			var capturedArgs mountpoint.Args
+			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
+				capturedArgs = args
+				_ = testCtx.mount.Mount("mountpoint-s3", target, "fuse", nil)
+				return int(mountertest.OpenDevNull(t).Fd()), nil
+			}
+
+			// Call Mount with empty fsGroup (simulating RWX volume where kubelet
+			// does not populate VolumeMountGroup) but with pod name/namespace set
+			mountRes := make(chan error)
+			go func() {
+				err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+					VolumeID:             testCtx.volumeID,
+					PodID:                testCtx.podUID,
+					PodName:              workloadPodName,
+					PodNamespace:         workloadPodNamespace,
+				}, mountpoint.ParseArgs(nil), "") // Empty fsGroup - should be resolved from pod spec
+				mountRes <- err
+			}()
+
+			// Simulate mounter pod receiving and mounting
+			mpPod.receiveAndMount(testCtx.ctx)
+
+			err = <-mountRes
+			assert.NoError(t, err)
+
+			// Verify mount options include fsGroup-related flags
+			gidVal, found := capturedArgs.Value("--gid")
+			assert.Equals(t, true, found)
+			assert.Equals(t, "1001", string(gidVal))
+			assert.Equals(t, true, capturedArgs.Has("--allow-other"))
+			dirModeVal, found := capturedArgs.Value("--dir-mode")
+			assert.Equals(t, true, found)
+			assert.Equals(t, "770", string(dirModeVal))
+			fileModeVal, found := capturedArgs.Value("--file-mode")
+			assert.Equals(t, true, found)
+			assert.Equals(t, "660", string(fileModeVal))
+		})
+
+		t.Run("Falls back to empty fsGroup when pod name is not available", func(t *testing.T) {
+			testCtx := setup(t)
+
+			// Create S3PA with empty WorkloadFSGroup (no fsGroup on workload pod)
+			go func() {
+				mpPod := createMountpointPod(testCtx)
+				mpPod.runWithCRD() // Creates S3PA with WorkloadFSGroup: ""
+				mpPod.receiveAndMount(testCtx.ctx)
+			}()
+
+			// Call Mount with empty fsGroup AND empty pod name -
+			// should NOT attempt to resolve and should match the empty-fsGroup S3PA
+			err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+				AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+				VolumeID:             testCtx.volumeID,
+				PodID:                testCtx.podUID,
+				PodName:              "", // No pod name - can't resolve fsGroup
+				PodNamespace:         "",
+			}, mountpoint.ParseArgs(nil), "")
+			assert.NoError(t, err)
+		})
+
+		t.Run("Does not override fsGroup from VolumeMountGroup", func(t *testing.T) {
+			testCtx := setup(t)
+
+			// Create S3PA with WorkloadFSGroup: "2000" (as the reconciler would set)
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+
+			s3pa := &crdv2.MountpointS3PodAttachment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fmt.Sprintf("s3pa-vmg-%s", testCtx.podUID[:8]),
+				},
+				Spec: crdv2.MountpointS3PodAttachmentSpec{
+					NodeName:             "test-node",
+					PersistentVolumeName: testCtx.pvName,
+					VolumeID:             testCtx.volumeID,
+					WorkloadFSGroup:      "2000",
+					MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
+						mpPod.pod.Name: {
+							{WorkloadPodUID: testCtx.podUID},
+						},
+					},
+				},
+			}
+			err := testCtx.k8sClient.Create(testCtx.ctx, s3pa)
+			assert.NoError(t, err)
+
+			mountRes := make(chan error)
+			go func() {
+				// Call Mount with fsGroup "2000" (from VolumeMountGroup, already set by node.go)
+				// Should NOT attempt to resolve from pod spec
+				err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+					AuthenticationSource: credentialprovider.AuthenticationSourceDriver,
+					VolumeID:             testCtx.volumeID,
+					PodID:                testCtx.podUID,
+					PodName:              "workload-pod",
+					PodNamespace:         "default",
+				}, mountpoint.ParseArgs(nil), "2000") // fsGroup already set by node.go
+				mountRes <- err
+			}()
+
+			mpPod.receiveAndMount(testCtx.ctx)
+
+			err = <-mountRes
+			assert.NoError(t, err)
+		})
+	})
+
 	t.Run("Checking if target is a mount point", func(t *testing.T) {
 		testCtx := setup(t)
 

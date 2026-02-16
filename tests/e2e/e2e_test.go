@@ -11,6 +11,7 @@ import (
 
 	ginkgo "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	f "k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/storage/framework"
 	"k8s.io/kubernetes/test/e2e/storage/testsuites"
@@ -48,6 +49,7 @@ func init() {
 }
 
 func TestE2E(t *testing.T) {
+	format.MaxLength = 0 // Disable truncation so Gomega prints full error details
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	ginkgo.RunSpecs(t, "Scality CSI Driver for S3 E2E Suite")
 }
@@ -108,6 +110,7 @@ var CSITestSuites = []func() framework.TestSuite{
 	customsuites.InitS3AdvancedPatternsTestSuite,
 	customsuites.InitS3DynamicProvisioningMountOptionsTestSuite,
 	customsuites.InitS3DynamicProvisioningTemplatingTestSuite,
+	customsuites.InitS3MounterPodTestSuite,
 }
 
 // CSI test suite registration and execution.

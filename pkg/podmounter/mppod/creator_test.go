@@ -58,6 +58,7 @@ func createAndVerifyPod(t *testing.T, clusterVariant cluster.Variant, expectedRu
 
 		assert.Equals(t, priorityClassName, mpPod.Spec.PriorityClassName)
 		assert.Equals(t, corev1.RestartPolicyOnFailure, mpPod.Spec.RestartPolicy)
+		assert.Equals(t, expectedRunAsUser, mpPod.Spec.SecurityContext.FSGroup)
 		assert.Equals(t, []corev1.Volume{
 			{
 				Name: mppod.CommunicationDirName,
@@ -171,7 +172,7 @@ func TestNewCreator(t *testing.T) {
 			Image:           "test-image:latest",
 			ImagePullPolicy: corev1.PullIfNotPresent,
 		},
-		CSIDriverVersion: "2.1.0",
+		CSIDriverVersion: "2.1.1",
 		ClusterVariant:   cluster.DefaultKubernetes,
 	}
 
@@ -203,6 +204,7 @@ func TestNewCreator(t *testing.T) {
 	assert.Equals(t, config.MountpointVersion, mpPod.Labels[mppod.LabelMountpointVersion])
 	assert.Equals(t, config.CSIDriverVersion, mpPod.Labels[mppod.LabelCSIDriverVersion])
 	assert.Equals(t, config.PriorityClassName, mpPod.Spec.PriorityClassName)
+	assert.Equals(t, config.ClusterVariant.MountpointPodUserID(), mpPod.Spec.SecurityContext.FSGroup)
 	assert.Equals(t, config.Container.Image, mpPod.Spec.Containers[0].Image)
 	assert.Equals(t, config.Container.ImagePullPolicy, mpPod.Spec.Containers[0].ImagePullPolicy)
 	assert.Equals(t, []string{config.Container.Command}, mpPod.Spec.Containers[0].Command)

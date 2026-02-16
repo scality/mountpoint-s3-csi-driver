@@ -68,6 +68,7 @@ type ProvideContext struct {
 	EnvPath string
 
 	PodID    string
+	PodName  string
 	VolumeID string
 
 	// The following values are provided from CSI volume context.
