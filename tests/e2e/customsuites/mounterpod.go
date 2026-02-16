@@ -13,6 +13,11 @@ Covered behaviors:
     in their PodSecurityContext can successfully mount S3 volumes and read/write
     data. This reproduces the customer-reported issue where fsGroup on the
     workload pod caused the mounter pod's communication socket to time out.
+  - Dynamic provisioning with FSGroup: Verifies that dynamically provisioned
+    volumes work correctly when the workload pod has fsGroup set.
+  - Volume sharing with different FSGroup: Confirms that workload pods with
+    different fsGroup values sharing the same PersistentVolume get separate
+    mounter pods, as the reconciler includes fsGroup in the matching criteria.
 
 These tests validate that the CSI driver spawns properly secured mounter pods.
 */
@@ -21,12 +26,16 @@ package customsuites
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
@@ -89,12 +98,12 @@ func (suite *s3CSIMounterPodTestSuite) DefineTests(driver storageframework.TestD
 
 	cleanup := func() {
 		for i := range testRegistry.resources {
-			resource := testRegistry.resources[i]
+			res := testRegistry.resources[i]
 			func() {
 				defer ginkgo.GinkgoRecover()
 				ctx := context.Background()
 				ginkgo.By("Deleting pv and pvc")
-				err := resource.CleanupResource(ctx)
+				err := res.CleanupResource(ctx)
 				if err != nil {
 					framework.Logf("Warning: Resource cleanup had an error: %v", err)
 				}
@@ -255,5 +264,194 @@ func (suite *s3CSIMounterPodTestSuite) DefineTests(driver storageframework.TestD
 		ginkgo.By("Reading the file back to verify the mount is fully functional")
 		e2evolume.VerifyExecInPodSucceed(testFramework, pod,
 			fmt.Sprintf("cat %s | grep -q %q", testFile, testContent))
+	})
+
+	// --------------------------------------------------------------------
+	// 3. Dynamic provisioning with workload pod fsGroup
+	//
+	// Verifies that dynamically provisioned S3 volumes work correctly when
+	// the workload pod sets fsGroup in its PodSecurityContext. This combines
+	// dynamic provisioning (StorageClass → PVC → automatic bucket creation)
+	// with the fsGroup fix.
+	//
+	// Expected results:
+	// - The PVC binds to a dynamically provisioned PV
+	// - The workload pod with fsGroup reaches Running state
+	// - Data can be written and read through the mounted volume
+	ginkgo.It("should mount dynamically provisioned volume when workload pod has fsGroup set", func(ctx context.Context) {
+		accessKey := os.Getenv("ACCOUNT1_ACCESS_KEY")
+		secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
+		if accessKey == "" || secretKey == "" {
+			ginkgo.Skip("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set for dynamic provisioning tests")
+		}
+
+		ginkgo.By("Creating S3 credential secret for dynamic provisioning")
+		secretName := fmt.Sprintf("s3-secret-fsgroup-%s", uuid.New().String()[:8])
+		secret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: testFramework.Namespace.Name,
+			},
+			Data: map[string][]byte{
+				"access_key_id":     []byte(accessKey),
+				"secret_access_key": []byte(secretKey),
+			},
+		}
+		_, err := testFramework.ClientSet.CoreV1().Secrets(testFramework.Namespace.Name).Create(ctx, secret, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create S3 credential secret")
+		defer func() {
+			delErr := testFramework.ClientSet.CoreV1().Secrets(testFramework.Namespace.Name).Delete(ctx, secretName, metav1.DeleteOptions{})
+			if delErr != nil && !errors.IsNotFound(delErr) {
+				framework.Logf("Warning: failed to delete secret %s: %v", secretName, delErr)
+			}
+		}()
+
+		ginkgo.By("Creating StorageClass with mount options for non-root access")
+		scName := fmt.Sprintf("fsgroup-dynamic-sc-%s", uuid.New().String()[:8])
+		sc := &storagev1.StorageClass{
+			ObjectMeta:  metav1.ObjectMeta{Name: scName},
+			Provisioner: constants.DriverName,
+			Parameters: map[string]string{
+				"csi.storage.k8s.io/provisioner-secret-name":      secretName,
+				"csi.storage.k8s.io/provisioner-secret-namespace": testFramework.Namespace.Name,
+			},
+			MountOptions: []string{
+				fmt.Sprintf("uid=%d", DefaultNonRootUser),
+				fmt.Sprintf("gid=%d", DefaultNonRootGroup),
+				"allow-other",
+			},
+			ReclaimPolicy:     &[]v1.PersistentVolumeReclaimPolicy{v1.PersistentVolumeReclaimDelete}[0],
+			VolumeBindingMode: &[]storagev1.VolumeBindingMode{storagev1.VolumeBindingImmediate}[0],
+		}
+		sc, err = testFramework.ClientSet.StorageV1().StorageClasses().Create(ctx, sc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create StorageClass")
+		defer func() {
+			delErr := testFramework.ClientSet.StorageV1().StorageClasses().Delete(ctx, scName, metav1.DeleteOptions{})
+			if delErr != nil && !errors.IsNotFound(delErr) {
+				framework.Logf("Warning: failed to delete StorageClass %s: %v", scName, delErr)
+			}
+		}()
+
+		ginkgo.By("Creating PVC referencing the StorageClass")
+		pvcName := fmt.Sprintf("fsgroup-dynamic-pvc-%s", uuid.New().String()[:8])
+		pvc := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      pvcName,
+				Namespace: testFramework.Namespace.Name,
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+				StorageClassName: &sc.Name,
+			},
+		}
+		pvc, err = testFramework.ClientSet.CoreV1().PersistentVolumeClaims(testFramework.Namespace.Name).Create(ctx, pvc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create PVC")
+
+		ginkgo.By("Waiting for PVC to be bound")
+		WaitForPVCToBeBound(ctx, testFramework, pvc.Name, testFramework.Namespace.Name)
+
+		ginkgo.By("Creating workload pod with fsGroup in PodSecurityContext")
+		pod := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{pvc}, admissionapi.LevelRestricted, "")
+		pod.Name = fmt.Sprintf("fsgroup-dynamic-pod-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod)
+		pod.Spec.SecurityContext.FSGroup = ptr.To(DefaultNonRootUser)
+
+		pod, err = createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(),
+			"workload pod with fsGroup should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod)
+
+		ginkgo.By("Writing a file through the dynamically provisioned volume")
+		volPath := "/mnt/volume1"
+		testFile := fmt.Sprintf("%s/fsgroup-dynamic-test-%s.txt", volPath, uuid.New().String()[:8])
+		testContent := "fsgroup-dynamic-write-test"
+		CreateFileInPod(testFramework, pod, testFile, testContent)
+
+		ginkgo.By("Reading the file back to verify the mount is fully functional")
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod,
+			fmt.Sprintf("cat %s | grep -q %q", testFile, testContent))
+	})
+
+	// --------------------------------------------------------------------
+	// 4. Volume sharing: different fsGroup → separate mounter pods
+	//
+	// The CSI reconciler includes workload pod fsGroup in its matching
+	// criteria when deciding whether to share a Mountpoint Pod. Two
+	// workload pods referencing the same PersistentVolume but specifying
+	// different fsGroup values must each get their own mounter pod.
+	//
+	// Diagram:
+	//
+	//      [Workload Pod 1]              [Workload Pod 2]
+	//        fsGroup: 1001                 fsGroup: 3000
+	//            |                              |
+	//            ↓                              ↓
+	//      [Mounter Pod A]              [Mounter Pod B]
+	//        (volume: pv-X)               (volume: pv-X)
+	//
+	// Expected results:
+	// - Both workload pods reach Running state
+	// - Two separate mounter pods exist in the mount-s3 namespace for the same volume
+	// - Both pods can independently write and read data
+	ginkgo.It("should create separate mounter pods for workload pods with different fsGroup values", func(ctx context.Context) {
+		ginkgo.By("Creating a shared volume with standard mount options")
+		res := BuildVolumeWithOptions(ctx, testRegistry.config, pattern,
+			DefaultNonRootUser, DefaultNonRootGroup, "0644")
+		testRegistry.resources = append(testRegistry.resources, res)
+
+		pvName := res.Pv.Name
+		fsGroup1 := int64(1001)
+		fsGroup2 := int64(3000)
+
+		ginkgo.By(fmt.Sprintf("Creating first workload pod with fsGroup=%d", fsGroup1))
+		pod1 := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{res.Pvc}, admissionapi.LevelRestricted, "")
+		pod1.Name = fmt.Sprintf("fsgroup-share-1-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod1)
+		pod1.Spec.SecurityContext.FSGroup = ptr.To(fsGroup1)
+
+		pod1, err := createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod1)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "first workload pod should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod1)
+
+		ginkgo.By(fmt.Sprintf("Creating second workload pod with fsGroup=%d (different)", fsGroup2))
+		pod2 := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{res.Pvc}, admissionapi.LevelRestricted, "")
+		pod2.Name = fmt.Sprintf("fsgroup-share-2-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod2)
+		pod2.Spec.SecurityContext.FSGroup = ptr.To(fsGroup2)
+
+		pod2, err = createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod2)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "second workload pod should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod2)
+
+		ginkgo.By(fmt.Sprintf("Verifying separate mounter pods exist for volume %s", pvName))
+		gomega.Eventually(func(g gomega.Gomega) {
+			pods, listErr := testFramework.ClientSet.CoreV1().Pods(mounterPodNamespace).List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", labelVolumeName, pvName),
+			})
+			g.Expect(listErr).NotTo(gomega.HaveOccurred())
+			g.Expect(pods.Items).To(gomega.HaveLen(2),
+				"expected 2 separate mounter pods for workload pods with different fsGroup values, got %d",
+				len(pods.Items))
+		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(gomega.Succeed())
+
+		ginkgo.By("Verifying both workload pods can write data independently")
+		volPath := "/mnt/volume1"
+		testFile1 := fmt.Sprintf("%s/share-test-1-%s.txt", volPath, uuid.New().String()[:8])
+		testFile2 := fmt.Sprintf("%s/share-test-2-%s.txt", volPath, uuid.New().String()[:8])
+		CreateFileInPod(testFramework, pod1, testFile1, "pod1-data")
+		CreateFileInPod(testFramework, pod2, testFile2, "pod2-data")
+
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod1,
+			fmt.Sprintf("cat %s | grep -q %q", testFile1, "pod1-data"))
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod2,
+			fmt.Sprintf("cat %s | grep -q %q", testFile2, "pod2-data"))
 	})
 }

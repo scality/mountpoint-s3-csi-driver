@@ -12,6 +12,12 @@ February 2026
   `PodSecurityContext`, ensuring the communication directory is writable by the non-root mount-s3
   process regardless of the workload pod's `fsGroup` configuration.
 
+### Documentation
+
+- **Pod Security and FSGroup**: Added [Pod Security and FSGroup](concepts-and-reference/pod-security-and-fsgroup.md)
+  reference page explaining how Kubernetes `fsGroup` interacts with the CSI driver's pod mounter,
+  including configuration examples for static and dynamic provisioning.
+
 ### Breaking Changes
 
 None.
