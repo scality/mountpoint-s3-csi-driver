@@ -664,4 +664,85 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 
 		framework.Logf("Successfully verified bidirectional visibility between S3 API and mounted volume with prefix")
 	})
+
+	// This test verifies that the --prefix mount option correctly handles
+	// prefix values that contain equals signs (=). This is a regression test
+	// for a bug where the argument parser would split on the first "=" in the
+	// mount option value, producing an incorrect --prefix argument.
+	//
+	// For example, "prefix=env=prod/" was incorrectly parsed as --prefix=env
+	// (truncating "=prod/") instead of --prefix=env=prod/.
+	//
+	// Test scenario:
+	//
+	//      [Pod]
+	//        |
+	//        ↓
+	//   [S3 Volume with --prefix=key=val/]
+	//        |
+	//        ↓
+	//    [Files stored under key=val/ in S3]
+	//
+	// Expected results:
+	// - Files created in the mounted volume are stored under the full prefix (key=val/) in S3
+	// - The S3 object keys correctly include the equals sign in the prefix
+	ginkgo.It("should handle prefix values containing equals signs", func(ctx context.Context) {
+		s3Client := s3client.New("", "", "")
+
+		// Use a prefix that contains an equals sign — this is the edge case
+		// that the parser fix addresses.
+		prefix := "env=prod/"
+		resource := BuildVolumeWithOptions(
+			ctx,
+			l.config,
+			pattern,
+			DefaultNonRootUser,
+			DefaultNonRootGroup,
+			"",
+			fmt.Sprintf("prefix=%s", prefix),
+		)
+		l.resources = append(l.resources, resource)
+
+		bucketName := GetBucketNameFromVolumeResource(resource)
+		if bucketName == "" {
+			framework.Failf("failed to extract bucket name from volume resource")
+		}
+
+		ginkgo.By("Creating pod with a volume using prefix containing equals sign")
+		pod := MakeNonRootPodWithVolume(f.Namespace.Name, []*v1.PersistentVolumeClaim{resource.Pvc}, "")
+		var err error
+		pod, err = createPod(ctx, f.ClientSet, f.Namespace.Name, pod)
+		framework.ExpectNoError(err)
+		defer func() {
+			framework.ExpectNoError(e2epod.DeletePodWithWait(ctx, f.ClientSet, pod))
+		}()
+
+		volPath := "/mnt/volume1"
+		testFileName := "equals-prefix-test.txt"
+		fileInVol := fmt.Sprintf("%s/%s", volPath, testFileName)
+		testContent := "Testing prefix with equals sign"
+
+		ginkgo.By("Writing a file to the volume")
+		WriteAndVerifyFile(f, pod, fileInVol, testContent)
+
+		ginkgo.By("Verifying file can be read back from the pod")
+		e2evolume.VerifyExecInPodSucceed(f, pod, fmt.Sprintf("cat %s | grep -q '%s'", fileInVol, testContent))
+
+		ginkgo.By(fmt.Sprintf("Verifying object exists under prefix %q in S3 bucket", prefix))
+		err = s3Client.VerifyObjectsExistInS3(ctx, bucketName, prefix, []string{testFileName})
+		framework.ExpectNoError(err, "failed to verify object exists under prefix %q — "+
+			"the prefix parser may have incorrectly split on the equals sign in the value", prefix)
+
+		ginkgo.By("Verifying all objects in the bucket are under the expected prefix")
+		rootListOutput, err := s3Client.ListObjects(ctx, bucketName)
+		framework.ExpectNoError(err, "failed to list objects in bucket")
+
+		for _, obj := range rootListOutput.Contents {
+			if !strings.HasPrefix(*obj.Key, prefix) {
+				framework.Failf("Found unexpected object %q outside prefix %q — "+
+					"this suggests the prefix was truncated at the equals sign", *obj.Key, prefix)
+			}
+		}
+		framework.Logf("Successfully verified prefix with equals sign: all objects under %q", prefix)
+	})
 }
