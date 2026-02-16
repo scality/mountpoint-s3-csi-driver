@@ -18,11 +18,11 @@ package node
 
 import (
 	"context"
+	"maps"
 	"os"
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
@@ -81,7 +81,7 @@ func (ns *S3NodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnst
 }
 
 func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
-	klog.V(4).Infof("NodePublishVolume: new request: %s", protosanitizer.StripSecrets(req))
+	klog.V(4).Infof("NodePublishVolume: new request: %+v", logSafeNodePublishVolumeRequest(req))
 
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
@@ -125,6 +125,10 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 
 	args := mountpoint.ParseArgs(mountpointArgs)
 
+	if args.Has(mountpoint.ArgFsTab) {
+		return nil, status.Error(codes.InvalidArgument, "Running mount-s3 with mount flag -o is not supported in CSI Driver.")
+	}
+
 	fsGroup := ""
 	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {
@@ -165,7 +169,7 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 }
 
 func (ns *S3NodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
-	klog.V(4).Infof("NodeUnpublishVolume: called with args %s", protosanitizer.StripSecrets(req))
+	klog.V(4).Infof("NodeUnpublishVolume: called with args %+v", req)
 
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
@@ -212,7 +216,7 @@ func (ns *S3NodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpan
 }
 
 func (ns *S3NodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
-	klog.V(4).Infof("NodeGetCapabilities: called with args %s", protosanitizer.StripSecrets(req))
+	klog.V(4).Infof("NodeGetCapabilities: called with args %+v", req)
 	var caps []*csi.NodeServiceCapability
 	var nodeCaps []csi.NodeServiceCapability_RPC_Type
 	if util.UsePodMounter() {
@@ -234,7 +238,7 @@ func (ns *S3NodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGe
 }
 
 func (ns *S3NodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
-	klog.V(4).Infof("NodeGetInfo: called with args %s", protosanitizer.StripSecrets(req))
+	klog.V(4).Infof("NodeGetInfo: called with args %+v", req)
 
 	return &csi.NodeGetInfoResponse{
 		NodeId: ns.NodeID,
@@ -295,4 +299,21 @@ func podIDFromTargetPath(target string) (string, bool) {
 		return "", false
 	}
 	return targetPath.PodID, true
+}
+
+// logSafeNodePublishVolumeRequest returns a copy of given `csi.NodePublishVolumeRequest`
+// with sensitive fields removed.
+func logSafeNodePublishVolumeRequest(req *csi.NodePublishVolumeRequest) *csi.NodePublishVolumeRequest {
+	safeVolumeContext := maps.Clone(req.VolumeContext)
+	delete(safeVolumeContext, volumecontext.CSIServiceAccountTokens)
+
+	return &csi.NodePublishVolumeRequest{
+		VolumeId:          req.VolumeId,
+		PublishContext:    req.PublishContext,
+		StagingTargetPath: req.StagingTargetPath,
+		TargetPath:        req.TargetPath,
+		VolumeCapability:  req.VolumeCapability,
+		Readonly:          req.Readonly,
+		VolumeContext:     safeVolumeContext,
+	}
 }
