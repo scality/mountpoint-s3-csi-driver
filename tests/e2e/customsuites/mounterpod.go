@@ -15,9 +15,18 @@ Covered behaviors:
     workload pod caused the mounter pod's communication socket to time out.
   - Dynamic provisioning with FSGroup: Verifies that dynamically provisioned
     volumes work correctly when the workload pod has fsGroup set.
-  - Volume sharing with different FSGroup: Confirms that workload pods with
-    different fsGroup values sharing the same PersistentVolume get separate
+  - Volume sharing with different FSGroup (static): Confirms that workload pods
+    with different fsGroup values sharing the same PersistentVolume get separate
     mounter pods, as the reconciler includes fsGroup in the matching criteria.
+  - Volume sharing with different FSGroup (dynamic): Same as above but with
+    dynamically provisioned volumes.
+  - FSGroup auto-applies mount options: When the workload pod specifies fsGroup
+    but the PV has no --gid mount option, the driver automatically resolves the
+    fsGroup from the pod spec and sets --gid, --allow-other, --dir-mode=770,
+    and --file-mode=660. Verifies files have the correct GID.
+  - FSGroup overrides --gid: When the PV has --gid=<X> and the workload pod
+    has fsGroup=<Y>, the pod's fsGroup takes precedence. Verifies files are
+    presented with fsGroup's GID, not the mount option's.
 
 These tests validate that the CSI driver spawns properly secured mounter pods.
 */
@@ -453,5 +462,264 @@ func (suite *s3CSIMounterPodTestSuite) DefineTests(driver storageframework.TestD
 			fmt.Sprintf("cat %s | grep -q %q", testFile1, "pod1-data"))
 		e2evolume.VerifyExecInPodSucceed(testFramework, pod2,
 			fmt.Sprintf("cat %s | grep -q %q", testFile2, "pod2-data"))
+	})
+
+	// --------------------------------------------------------------------
+	// 5. Dynamic provisioning: volume sharing with different fsGroup
+	//
+	// Same as test 4 but using dynamically provisioned volumes. Verifies
+	// that the reconciler correctly separates mounter pods based on
+	// fsGroup even when volumes are dynamically created.
+	//
+	// Expected results:
+	// - Two separate mounter pods exist for workload pods with different fsGroup
+	// - Both pods can write/read data independently
+	ginkgo.It("should create separate mounter pods for dynamically provisioned volume with different fsGroup values", func(ctx context.Context) {
+		accessKey := os.Getenv("ACCOUNT1_ACCESS_KEY")
+		secretKey := os.Getenv("ACCOUNT1_SECRET_KEY")
+		if accessKey == "" || secretKey == "" {
+			ginkgo.Skip("ACCOUNT1_ACCESS_KEY and ACCOUNT1_SECRET_KEY must be set for dynamic provisioning tests")
+		}
+
+		ginkgo.By("Creating S3 credential secret")
+		secretName := fmt.Sprintf("s3-secret-share-%s", uuid.New().String()[:8])
+		secret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: testFramework.Namespace.Name,
+			},
+			Data: map[string][]byte{
+				"access_key_id":     []byte(accessKey),
+				"secret_access_key": []byte(secretKey),
+			},
+		}
+		_, err := testFramework.ClientSet.CoreV1().Secrets(testFramework.Namespace.Name).Create(ctx, secret, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create S3 credential secret")
+		defer func() {
+			delErr := testFramework.ClientSet.CoreV1().Secrets(testFramework.Namespace.Name).Delete(ctx, secretName, metav1.DeleteOptions{})
+			if delErr != nil && !errors.IsNotFound(delErr) {
+				framework.Logf("Warning: failed to delete secret %s: %v", secretName, delErr)
+			}
+		}()
+
+		ginkgo.By("Creating StorageClass with mount options")
+		scName := fmt.Sprintf("fsgroup-share-sc-%s", uuid.New().String()[:8])
+		sc := &storagev1.StorageClass{
+			ObjectMeta:  metav1.ObjectMeta{Name: scName},
+			Provisioner: constants.DriverName,
+			Parameters: map[string]string{
+				"csi.storage.k8s.io/provisioner-secret-name":      secretName,
+				"csi.storage.k8s.io/provisioner-secret-namespace": testFramework.Namespace.Name,
+			},
+			MountOptions: []string{
+				fmt.Sprintf("uid=%d", DefaultNonRootUser),
+				fmt.Sprintf("gid=%d", DefaultNonRootGroup),
+				"allow-other",
+			},
+			ReclaimPolicy:     &[]v1.PersistentVolumeReclaimPolicy{v1.PersistentVolumeReclaimDelete}[0],
+			VolumeBindingMode: &[]storagev1.VolumeBindingMode{storagev1.VolumeBindingImmediate}[0],
+		}
+		sc, err = testFramework.ClientSet.StorageV1().StorageClasses().Create(ctx, sc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create StorageClass")
+		defer func() {
+			delErr := testFramework.ClientSet.StorageV1().StorageClasses().Delete(ctx, scName, metav1.DeleteOptions{})
+			if delErr != nil && !errors.IsNotFound(delErr) {
+				framework.Logf("Warning: failed to delete StorageClass %s: %v", scName, delErr)
+			}
+		}()
+
+		ginkgo.By("Creating PVC referencing the StorageClass")
+		pvcName := fmt.Sprintf("fsgroup-share-pvc-%s", uuid.New().String()[:8])
+		pvc := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      pvcName,
+				Namespace: testFramework.Namespace.Name,
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+				StorageClassName: &sc.Name,
+			},
+		}
+		pvc, err = testFramework.ClientSet.CoreV1().PersistentVolumeClaims(testFramework.Namespace.Name).Create(ctx, pvc, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Failed to create PVC")
+
+		ginkgo.By("Waiting for PVC to be bound")
+		WaitForPVCToBeBound(ctx, testFramework, pvc.Name, testFramework.Namespace.Name)
+
+		ginkgo.By("Getting the PV name from the bound PVC")
+		pvc, err = testFramework.ClientSet.CoreV1().PersistentVolumeClaims(testFramework.Namespace.Name).Get(ctx, pvc.Name, metav1.GetOptions{})
+		framework.ExpectNoError(err, "Failed to get updated PVC")
+		pvName := pvc.Spec.VolumeName
+		gomega.Expect(pvName).NotTo(gomega.BeEmpty(), "PVC should have a bound PV name")
+
+		fsGroup1 := int64(1001)
+		fsGroup2 := int64(3000)
+
+		ginkgo.By(fmt.Sprintf("Creating first workload pod with fsGroup=%d", fsGroup1))
+		pod1 := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{pvc}, admissionapi.LevelRestricted, "")
+		pod1.Name = fmt.Sprintf("fsgroup-dyn-share-1-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod1)
+		pod1.Spec.SecurityContext.FSGroup = ptr.To(fsGroup1)
+
+		pod1, err = createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod1)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "first workload pod should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod1)
+
+		ginkgo.By(fmt.Sprintf("Creating second workload pod with fsGroup=%d (different)", fsGroup2))
+		pod2 := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{pvc}, admissionapi.LevelRestricted, "")
+		pod2.Name = fmt.Sprintf("fsgroup-dyn-share-2-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod2)
+		pod2.Spec.SecurityContext.FSGroup = ptr.To(fsGroup2)
+
+		pod2, err = createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod2)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "second workload pod should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod2)
+
+		ginkgo.By(fmt.Sprintf("Verifying separate mounter pods exist for volume %s", pvName))
+		gomega.Eventually(func(g gomega.Gomega) {
+			pods, listErr := testFramework.ClientSet.CoreV1().Pods(mounterPodNamespace).List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", labelVolumeName, pvName),
+			})
+			g.Expect(listErr).NotTo(gomega.HaveOccurred())
+			g.Expect(pods.Items).To(gomega.HaveLen(2),
+				"expected 2 separate mounter pods for workload pods with different fsGroup values, got %d",
+				len(pods.Items))
+		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(gomega.Succeed())
+
+		ginkgo.By("Verifying both workload pods can write data independently")
+		volPath := "/mnt/volume1"
+		testFile1 := fmt.Sprintf("%s/dyn-share-1-%s.txt", volPath, uuid.New().String()[:8])
+		testFile2 := fmt.Sprintf("%s/dyn-share-2-%s.txt", volPath, uuid.New().String()[:8])
+		CreateFileInPod(testFramework, pod1, testFile1, "pod1-dynamic-data")
+		CreateFileInPod(testFramework, pod2, testFile2, "pod2-dynamic-data")
+
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod1,
+			fmt.Sprintf("cat %s | grep -q %q", testFile1, "pod1-dynamic-data"))
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod2,
+			fmt.Sprintf("cat %s | grep -q %q", testFile2, "pod2-dynamic-data"))
+	})
+
+	// --------------------------------------------------------------------
+	// 6. FSGroup auto-applies mount options
+	//
+	// When the workload pod specifies fsGroup but the PV has no --gid
+	// mount option, the driver automatically resolves fsGroup from the
+	// pod's SecurityContext and sets --gid, --dir-mode=770, --file-mode=660.
+	//
+	// Diagram:
+	//
+	//      PV mount options:          Pod SecurityContext:
+	//        uid=1001                   fsGroup: 1001
+	//        allow-other
+	//        (no --gid)
+	//            |                          |
+	//            └──────────┬───────────────┘
+	//                       ↓
+	//                 Driver auto-resolves:
+	//                   --gid=1001
+	//                   --dir-mode=770
+	//                   --file-mode=660
+	//
+	// Expected results:
+	// - The workload pod reaches Running state
+	// - Files have GID matching the pod's fsGroup (1001)
+	// - Files have mode 660, directories have mode 770
+	ginkgo.It("should auto-apply gid and mode mount options from workload pod fsGroup", func(ctx context.Context) {
+		ginkgo.By("Creating a volume with uid only (no --gid, --file-mode, or --dir-mode)")
+		res := createVolumeResourceWithMountOptions(ctx, testRegistry.config, pattern, []string{
+			fmt.Sprintf("uid=%d", DefaultNonRootUser),
+			"allow-other",
+			"debug",
+			"debug-crt",
+		})
+		testRegistry.resources = append(testRegistry.resources, res)
+
+		fsGroupVal := DefaultNonRootUser // 1001
+
+		ginkgo.By(fmt.Sprintf("Creating a workload pod with fsGroup=%d", fsGroupVal))
+		pod := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{res.Pvc}, admissionapi.LevelRestricted, "")
+		pod.Name = fmt.Sprintf("fsgroup-autoapply-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod)
+		pod.Spec.SecurityContext.FSGroup = ptr.To(fsGroupVal)
+
+		pod, err := createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(),
+			"workload pod with fsGroup should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod)
+
+		ginkgo.By("Writing a file to verify mount works")
+		volPath := "/mnt/volume1"
+		testFile := fmt.Sprintf("%s/autoapply-test-%s.txt", volPath, uuid.New().String()[:8])
+		CreateFileInPod(testFramework, pod, testFile, "fsgroup-autoapply-test")
+
+		ginkgo.By("Verifying file has GID from fsGroup and auto-applied file-mode=660")
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod,
+			fmt.Sprintf("stat -L -c '%%a %%g %%u' %s | grep '660 %d %d'",
+				testFile, fsGroupVal, DefaultNonRootUser))
+
+		ginkgo.By("Verifying directory has auto-applied dir-mode=770")
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod,
+			fmt.Sprintf("stat -L -c '%%a %%g %%u' %s | grep '770 %d %d'",
+				volPath, fsGroupVal, DefaultNonRootUser))
+	})
+
+	// --------------------------------------------------------------------
+	// 7. FSGroup overrides --gid from mount options
+	//
+	// When the PV has --gid=<X> and the workload pod has fsGroup=<Y>,
+	// the pod's fsGroup takes precedence. The --gid from mount options
+	// is overridden, but other mount options (like --file-mode) are
+	// preserved.
+	//
+	// Diagram:
+	//
+	//      PV mount options:          Pod SecurityContext:
+	//        uid=1001                   fsGroup: 1001
+	//        gid=2000  ─── OVERRIDDEN ──→ --gid=1001
+	//        file-mode=0644             (preserved)
+	//        allow-other                (preserved)
+	//
+	// Expected results:
+	// - Files have GID=1001 (from fsGroup), not GID=2000 (from mount options)
+	// - File mode is 644 (preserved from mount options, not overridden to 660)
+	ginkgo.It("should override gid mount option with workload pod fsGroup", func(ctx context.Context) {
+		mountOptionGid := int64(2000) // This will be overridden by fsGroup
+
+		ginkgo.By(fmt.Sprintf("Creating a volume with --gid=%d in mount options", mountOptionGid))
+		res := BuildVolumeWithOptions(ctx, testRegistry.config, pattern,
+			DefaultNonRootUser, mountOptionGid, "0644")
+		testRegistry.resources = append(testRegistry.resources, res)
+
+		fsGroupVal := DefaultNonRootUser // 1001, different from mount option's gid=2000
+
+		ginkgo.By(fmt.Sprintf("Creating a workload pod with fsGroup=%d (overrides --gid=%d)", fsGroupVal, mountOptionGid))
+		pod := e2epod.MakePod(testFramework.Namespace.Name, nil,
+			[]*v1.PersistentVolumeClaim{res.Pvc}, admissionapi.LevelRestricted, "")
+		pod.Name = fmt.Sprintf("fsgroup-override-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod)
+		pod.Spec.SecurityContext.FSGroup = ptr.To(fsGroupVal)
+
+		pod, err := createPod(ctx, testFramework.ClientSet, testFramework.Namespace.Name, pod)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(),
+			"workload pod with fsGroup should reach Running state")
+		defer e2epod.DeletePodWithWait(ctx, testFramework.ClientSet, pod)
+
+		ginkgo.By("Writing a file to verify mount works")
+		volPath := "/mnt/volume1"
+		testFile := fmt.Sprintf("%s/override-test-%s.txt", volPath, uuid.New().String()[:8])
+		CreateFileInPod(testFramework, pod, testFile, "fsgroup-override-test")
+
+		ginkgo.By(fmt.Sprintf("Verifying file has GID=%d from fsGroup, not GID=%d from mount options", fsGroupVal, mountOptionGid))
+		e2evolume.VerifyExecInPodSucceed(testFramework, pod,
+			fmt.Sprintf("stat -L -c '%%a %%g %%u' %s | grep '644 %d %d'",
+				testFile, fsGroupVal, DefaultNonRootUser))
 	})
 }

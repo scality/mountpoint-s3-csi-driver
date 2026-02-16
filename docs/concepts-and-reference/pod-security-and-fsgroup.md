@@ -197,20 +197,47 @@ The `allow-other` mount option is required so that processes running as a differ
     automatically sets `--allow-other`, `--dir-mode=770`, and `--file-mode=660` if
     not already present. The `--uid` mount option is not affected.
 
-A common configuration pattern is to align these values:
+### Automatic Mount Option Resolution
+
+When a workload pod specifies `fsGroup` in its security context, the CSI driver reads the value directly from the pod's specification and automatically configures the S3 FUSE mount with appropriate ownership and permissions:
+
+| Mount option | Value | Behavior |
+|--------------|-------|----------|
+| `--gid` | `<fsGroup>` | Always set to the pod's `fsGroup` value (overrides any existing `--gid`) |
+| `--allow-other` | (flag) | Set if not already present |
+| `--dir-mode` | `770` | Set if not already present |
+| `--file-mode` | `660` | Set if not already present |
+
+This means you can simplify your configuration by relying on `fsGroup` instead of specifying `--gid` in mount options:
 
 ```yaml
-# Mount options on PV or StorageClass
+# Simplified — let fsGroup drive GID ownership
 mountOptions:
   - uid=1001
-  - gid=1001
-  - allow-other
 
 # Pod security context
 securityContext:
   runAsUser: 1001
   runAsGroup: 1001
-  fsGroup: 1001        # Safe to use — does not affect mounter pod
+  fsGroup: 1001        # Driver auto-sets --gid=1001, --allow-other, --dir-mode=770, --file-mode=660
+```
+
+If you prefer explicit control, you can still specify all mount options. Note that `--gid` will be overridden by `fsGroup` when both are present, but other options like `--file-mode` and `--dir-mode` are preserved:
+
+```yaml
+# Explicit — fsGroup overrides --gid but preserves --file-mode and --dir-mode
+mountOptions:
+  - uid=1001
+  - gid=2000           # Overridden to 1001 by fsGroup
+  - allow-other
+  - file-mode=0644     # Preserved (not overridden to 660)
+  - dir-mode=0755      # Preserved (not overridden to 770)
+
+# Pod security context
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001        # Driver overrides --gid to 1001
 ```
 
 ## Volume Sharing and fsGroup
