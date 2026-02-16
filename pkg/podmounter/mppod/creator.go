@@ -17,8 +17,6 @@ import (
 // Labels populated on spawned Mountpoint Pods.
 const (
 	LabelMountpointVersion = constants.DriverName + "/mountpoint-version"
-	LabelPodUID            = constants.DriverName + "/pod-uid"
-	LabelVolumeName        = constants.DriverName + "/volume-name"
 	LabelCSIDriverVersion  = constants.DriverName + "/mounted-by-csi-driver-version"
 )
 
@@ -62,15 +60,22 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 	node := pod.Spec.NodeName
 	name := MountpointPodNameFor(string(pod.UID), pv.Name)
 
+	var volumeHandle string
+	if pv.Spec.CSI != nil {
+		volumeHandle = pv.Spec.CSI.VolumeHandle
+	}
+
 	mpPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: c.config.Namespace,
 			Labels: map[string]string{
 				LabelMountpointVersion: c.config.MountpointVersion,
-				LabelPodUID:            string(pod.UID),
-				LabelVolumeName:        pv.Name,
 				LabelCSIDriverVersion:  c.config.CSIDriverVersion,
+			},
+			Annotations: map[string]string{
+				AnnotationVolumeName: pv.Name,
+				AnnotationVolumeId:   volumeHandle,
 			},
 		},
 		Spec: corev1.PodSpec{

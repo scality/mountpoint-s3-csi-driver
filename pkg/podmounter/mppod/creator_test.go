@@ -51,10 +51,9 @@ func createAndVerifyPod(t *testing.T, clusterVariant cluster.Variant, expectedRu
 		assert.Equals(t, namespace, mpPod.Namespace)
 		assert.Equals(t, map[string]string{
 			mppod.LabelMountpointVersion: mountpointVersion,
-			mppod.LabelPodUID:            testPodUID,
-			mppod.LabelVolumeName:        testVolName,
 			mppod.LabelCSIDriverVersion:  csiDriverVersion,
 		}, mpPod.Labels)
+		assert.Equals(t, testVolName, mpPod.Annotations[mppod.AnnotationVolumeName])
 
 		assert.Equals(t, priorityClassName, mpPod.Spec.PriorityClassName)
 		assert.Equals(t, corev1.RestartPolicyOnFailure, mpPod.Spec.RestartPolicy)
@@ -202,6 +201,7 @@ func TestNewCreator(t *testing.T) {
 	assert.Equals(t, config.Namespace, mpPod.Namespace)
 	assert.Equals(t, config.MountpointVersion, mpPod.Labels[mppod.LabelMountpointVersion])
 	assert.Equals(t, config.CSIDriverVersion, mpPod.Labels[mppod.LabelCSIDriverVersion])
+	assert.Equals(t, "test-pv", mpPod.Annotations[mppod.AnnotationVolumeName])
 	assert.Equals(t, config.PriorityClassName, mpPod.Spec.PriorityClassName)
 	assert.Equals(t, config.Container.Image, mpPod.Spec.Containers[0].Image)
 	assert.Equals(t, config.Container.ImagePullPolicy, mpPod.Spec.Containers[0].ImagePullPolicy)
