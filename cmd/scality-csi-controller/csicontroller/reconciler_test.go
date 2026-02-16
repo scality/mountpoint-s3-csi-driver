@@ -294,7 +294,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 					Namespace: testNamespace,
 				},
 			},
-			expectedResult: reconcile.Result{},
+			expectedResult: reconcile.Result{Requeue: true}, // Requeue after creating S3PA to let expectations settle
 			expectedError:  false,
 			validateFunc: func(t *testing.T, c client.Client) {
 				// Check that S3PodAttachment was created
