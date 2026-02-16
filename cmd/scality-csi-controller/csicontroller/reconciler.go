@@ -39,13 +39,30 @@ type Reconciler struct {
 	mountpointPodConfig  mppod.Config
 	mountpointPodCreator *mppod.Creator
 
+	// s3paExpectations tracks MountpointS3PodAttachments created by this reconciler to handle eventual consistency.
+	//
+	// Problem: After creating a MountpointS3PodAttachment (S3PA), it may not immediately appear in the reconciler's
+	// informer cache because the cache relies on watch events from the API server (eventual consistency).
+	// This can cause the reconciler to miss newly created attachments, resulting in duplicate S3PA creation.
+	//
+	// Solution: s3paExpectations maintains an in-memory map of pod attachments created by this process, allowing
+	// the reconciler to know about them before they appear in the cache.
+	//
+	// Management: We carefully manage expectations to avoid indefinite waiting:
+	// - setPending() is called in handleNewS3PodAttachment() immediately after successfully creating a new S3PA
+	// - clear() is called in two scenarios:
+	//   1. In handleExistingS3PodAttachment() when a pending S3PA is found (it appeared in the cache)
+	//   2. In removeWorkloadFromS3PodAttachment() when deleting an S3PA with a stale pending expectation
+	//
+	// Note: Reconcile() processes events sequentially, eliminating concurrency concerns.
+	s3paExpectations *expectations
 	client.Client
 }
 
 // NewReconciler returns a new reconciler created from `client` and `podConfig`.
 func NewReconciler(client client.Client, podConfig mppod.Config) *Reconciler {
 	creator := mppod.NewCreator(podConfig)
-	return &Reconciler{Client: client, mountpointPodConfig: podConfig, mountpointPodCreator: creator}
+	return &Reconciler{Client: client, mountpointPodConfig: podConfig, mountpointPodCreator: creator, s3paExpectations: newExpectations()}
 }
 
 // SetupWithManager configures reconciler to run with given `mgr`.
@@ -223,13 +240,13 @@ func (r *Reconciler) spawnOrDeleteMountpointPodIfNeeded(
 	log := r.setupLogger(ctx, workloadPod, pvc, workloadUID, fieldFilters, s3pa)
 
 	if !isPodActive(workloadPod) {
-		return r.handleInactivePod(ctx, s3pa, workloadUID, log)
+		return r.handleInactivePod(ctx, s3pa, workloadUID, fieldFilters, log)
 	}
 
 	if s3pa != nil {
-		return r.handleExistingS3PodAttachment(ctx, workloadPod, pv, s3pa, log)
+		return r.handleExistingS3PodAttachment(ctx, workloadPod, pv, s3pa, fieldFilters, log)
 	} else {
-		return r.handleNewS3PodAttachment(ctx, workloadPod, pv, log)
+		return r.handleNewS3PodAttachment(ctx, workloadPod, pv, fieldFilters, log)
 	}
 }
 
@@ -311,13 +328,13 @@ func (r *Reconciler) getExistingS3PodAttachment(ctx context.Context, fieldFilter
 }
 
 // handleInactivePod handles inactive workload pod.
-func (r *Reconciler) handleInactivePod(ctx context.Context, s3pa *crdv2.MountpointS3PodAttachment, workloadUID string, log logr.Logger) (bool, error) {
+func (r *Reconciler) handleInactivePod(ctx context.Context, s3pa *crdv2.MountpointS3PodAttachment, workloadUID string, fieldFilters client.MatchingFields, log logr.Logger) (bool, error) {
 	if s3pa == nil {
 		log.Info("Workload pod is not active. Did not find any MountpointS3PodAttachments.")
 		return DontRequeue, nil
 	}
 
-	return r.removeWorkloadFromS3PodAttachment(ctx, s3pa, workloadUID, log)
+	return r.removeWorkloadFromS3PodAttachment(ctx, s3pa, workloadUID, fieldFilters, log)
 }
 
 // handleExistingS3PodAttachment handles existing S3 Pod Attachment.
@@ -326,8 +343,14 @@ func (r *Reconciler) handleExistingS3PodAttachment(
 	workloadPod *corev1.Pod,
 	pv *corev1.PersistentVolume,
 	s3pa *crdv2.MountpointS3PodAttachment,
+	fieldFilters client.MatchingFields,
 	log logr.Logger,
 ) (bool, error) {
+	if r.s3paExpectations.isPending(fieldFilters) {
+		log.Info("MountpointS3PodAttachment creation is pending, removing from pending")
+		r.s3paExpectations.clear(fieldFilters)
+	}
+
 	if s3paContainsWorkload(s3pa, string(workloadPod.UID)) {
 		log.Info("MountpointS3PodAttachment already has this workload UID")
 		return DontRequeue, nil
@@ -449,7 +472,7 @@ func (r *Reconciler) assignWorkloadToAnExistingMountpointPod(ctx context.Context
 
 // removeWorkloadFromS3PodAttachment removes workload UID from MountpointS3PodAttachment map.
 // It will delete MountpointS3PodAttachment if map becomes empty.
-func (r *Reconciler) removeWorkloadFromS3PodAttachment(ctx context.Context, s3pa *crdv2.MountpointS3PodAttachment, workloadUID string, log logr.Logger) (bool, error) {
+func (r *Reconciler) removeWorkloadFromS3PodAttachment(ctx context.Context, s3pa *crdv2.MountpointS3PodAttachment, workloadUID string, fieldFilters client.MatchingFields, log logr.Logger) (bool, error) {
 	// Remove workload UID from mountpoint pods
 	for mpPodName, attachments := range s3pa.Spec.MountpointS3PodAttachments {
 		filteredUIDs := []crdv2.WorkloadAttachment{}
@@ -515,6 +538,12 @@ func (r *Reconciler) removeWorkloadFromS3PodAttachment(ctx context.Context, s3pa
 			log.Error(err, "Failed to delete MountpointS3PodAttachment")
 			return Requeue, err
 		}
+		log.Info("Deleted MountpointS3PodAttachment as it no longer has any attached Mountpoint Pods")
+		if r.s3paExpectations.isPending(fieldFilters) {
+			// Clear stale creation expectations to prevent indefinite waiting.
+			log.Info("Clearing stale creation expectation for deleted MountpointS3PodAttachment")
+			r.s3paExpectations.clear(fieldFilters)
+		}
 	}
 
 	return DontRequeue, nil
@@ -525,8 +554,14 @@ func (r *Reconciler) handleNewS3PodAttachment(
 	ctx context.Context,
 	workloadPod *corev1.Pod,
 	pv *corev1.PersistentVolume,
+	fieldFilters client.MatchingFields,
 	log logr.Logger,
 ) (bool, error) {
+	if r.s3paExpectations.isPending(fieldFilters) {
+		log.Info("MountpointS3PodAttachment creation is pending, requeuing")
+		return Requeue, nil
+	}
+
 	if isPodRunning(workloadPod) {
 		// Kubernetes guarantees that all volumes were successfully mounted when a pod is Running.
 		log.Info("Workload pod is already in Running phase and MountpointS3PodAttachment does not exist. " +
@@ -539,7 +574,8 @@ func (r *Reconciler) handleNewS3PodAttachment(
 		return Requeue, err
 	}
 
-	return DontRequeue, nil
+	r.s3paExpectations.setPending(fieldFilters)
+	return Requeue, nil
 }
 
 // createS3PodAttachmentWithMPPod creates new MountpointS3PodAttachment resource and Mountpoint Pod for given workload and PV.
@@ -557,6 +593,9 @@ func (r *Reconciler) createS3PodAttachmentWithMPPod(
 	s3pa := &crdv2.MountpointS3PodAttachment{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "s3pa-",
+			Labels: map[string]string{
+				mppod.LabelCSIDriverVersion: r.mountpointPodConfig.CSIDriverVersion,
+			},
 		},
 		Spec: crdv2.MountpointS3PodAttachmentSpec{
 			NodeName:             workloadPod.Spec.NodeName,
