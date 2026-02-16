@@ -275,6 +275,8 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 		klog.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %v", target, err)
 		return fmt.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %w", target, err)
 	}
+	unlockMountpointPod := lockMountpointPod(mpPodName)
+	defer unlockMountpointPod()
 
 	podCredentialsPath, err := pm.ensureCredentialsDirExists(podPath)
 	if err != nil {
