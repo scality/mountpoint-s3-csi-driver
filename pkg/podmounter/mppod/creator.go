@@ -79,6 +79,9 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 			// here `restartPolicy: OnFailure` allows Pod to only restart on non-zero exit codes (i.e. some failures)
 			// and not successful exists (i.e. zero exit code).
 			RestartPolicy: corev1.RestartPolicyOnFailure,
+			SecurityContext: &corev1.PodSecurityContext{
+				FSGroup: c.config.ClusterVariant.MountpointPodUserID(),
+			},
 			Containers: []corev1.Container{{
 				Name:            "mountpoint",
 				Image:           c.config.Container.Image,
