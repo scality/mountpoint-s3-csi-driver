@@ -3,6 +3,10 @@
 # Declare variables to be passed into templates.
 
 # Global Helm configuration
+# Set to true if running on OpenShift.
+# If not set, auto-detects OpenShift where possible.
+isOpenShift: null
+
 nameOverride: ""
 fullnameOverride: ""
 imagePullSecrets: []
