@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -167,6 +168,34 @@ func (pm *PodMounter) helpMessageForGettingControllerLogs() string {
 	return "You can see the controller logs by running `kubectl logs -n kube-system -lapp=s3-csi-controller`."
 }
 
+// resolveFSGroup looks up the workload pod's SecurityContext.FSGroup via the Kubernetes API.
+// This is needed because kubelet only populates VolumeMountGroup in the CSI request for
+// RWO volumes with the default fsGroupPolicy (ReadWriteOnceWithFSType). Since the S3 CSI
+// driver uses RWX (ReadWriteMany) volumes, VolumeMountGroup is always empty.
+// The reconciler reads fsGroup directly from the pod spec, so the node driver must do the
+// same to ensure both sides use the same value for S3PA field filter matching.
+func (pm *PodMounter) resolveFSGroup(ctx context.Context, credentialCtx credentialprovider.ProvideContext) string {
+	if credentialCtx.PodName == "" || credentialCtx.PodNamespace == "" {
+		return ""
+	}
+
+	pod := &corev1.Pod{}
+	err := pm.k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: credentialCtx.PodNamespace,
+		Name:      credentialCtx.PodName,
+	}, pod)
+	if err != nil {
+		klog.V(4).Infof("Failed to look up workload pod %s/%s for fsGroup resolution: %v",
+			credentialCtx.PodNamespace, credentialCtx.PodName, err)
+		return ""
+	}
+
+	if pod.Spec.SecurityContext != nil && pod.Spec.SecurityContext.FSGroup != nil {
+		return strconv.FormatInt(*pod.Spec.SecurityContext.FSGroup, 10)
+	}
+	return ""
+}
+
 // Mount mounts the given `bucketName` at the `target` path using provided credential context and Mountpoint arguments.
 //
 // Source/Bind Mount Architecture:
@@ -221,6 +250,27 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 		// Try to fix permissions if they're wrong (best effort)
 		if err := os.Chmod(target, 0o755); err != nil {
 			klog.V(4).Infof("Failed to chmod target directory %s: %v (continuing anyway)", target, err)
+		}
+	}
+
+	// Resolve fsGroup from the workload pod's SecurityContext when VolumeMountGroup
+	// is not populated by kubelet. This happens for RWX volumes with the default
+	// fsGroupPolicy (ReadWriteOnceWithFSType). Both the reconciler and node driver
+	// must use the same fsGroup value for S3PA field filter matching.
+	if fsGroup == "" && pm.k8sClient != nil {
+		fsGroup = pm.resolveFSGroup(ctx, credentialCtx)
+		if fsGroup != "" {
+			klog.V(4).Infof("Resolved fsGroup=%s from workload pod %s/%s SecurityContext",
+				fsGroup, credentialCtx.PodNamespace, credentialCtx.PodName)
+			// Apply the same mount options that node.go sets when VolumeMountGroup is populated.
+			// These options configure mount-s3 to set the correct GID on files/directories
+			// so the workload container (running with this fsGroup) can access the mount.
+			if !args.Has(mountpoint.ArgGid) {
+				args.SetIfAbsent(mountpoint.ArgGid, fsGroup)
+				args.SetIfAbsent(mountpoint.ArgAllowOther, mountpoint.ArgNoValue)
+				args.SetIfAbsent(mountpoint.ArgDirMode, "770")
+				args.SetIfAbsent(mountpoint.ArgFileMode, "660")
+			}
 		}
 	}
 
