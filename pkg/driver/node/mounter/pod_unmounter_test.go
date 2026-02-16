@@ -285,7 +285,7 @@ func TestCleanupCredentials(t *testing.T) {
 					Name: "test-pod",
 					UID:  "test-uid",
 					Labels: map[string]string{
-						mppod.LabelVolumeId: "test-volume",
+						mppod.DeprecatedLabelVolumeId: "test-volume",
 					},
 				},
 			}
@@ -306,7 +306,7 @@ func TestCleanupDanglingMounts(t *testing.T) {
 				Name: name,
 				UID:  "test-uid",
 				Labels: map[string]string{
-					mppod.LabelVolumeId: "test-volume",
+					mppod.DeprecatedLabelVolumeId: "test-volume",
 				},
 			},
 		}
@@ -630,7 +630,7 @@ func TestCleanUnmount(t *testing.T) {
 				Name: "mp-test-pod",
 				UID:  "test-uid",
 				Labels: map[string]string{
-					mppod.LabelVolumeId: "test-volume",
+					mppod.DeprecatedLabelVolumeId: "test-volume",
 				},
 			},
 		}
@@ -824,7 +824,7 @@ func TestCleanUnmount(t *testing.T) {
 				Name: "mp-test-pod",
 				UID:  "test-uid",
 				Labels: map[string]string{
-					mppod.LabelVolumeId: "test-volume",
+					mppod.DeprecatedLabelVolumeId: "test-volume",
 				},
 			},
 		}
@@ -874,7 +874,7 @@ func TestCleanUnmount(t *testing.T) {
 				Name: "mp-test-pod",
 				UID:  "test-uid",
 				Labels: map[string]string{
-					mppod.LabelVolumeId: "test-volume",
+					mppod.DeprecatedLabelVolumeId: "test-volume",
 				},
 			},
 		}

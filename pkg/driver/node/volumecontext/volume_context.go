@@ -4,6 +4,13 @@ package volumecontext
 const (
 	BucketName           = "bucketName"
 	AuthenticationSource = "authenticationSource"
+	STSRegion            = "stsRegion"
+
+	Cache                                = "cache"
+	CacheEmptyDirSizeLimit               = "cacheEmptyDirSizeLimit"
+	CacheEmptyDirMedium                  = "cacheEmptyDirMedium"
+	CacheEphemeralStorageClassName       = "cacheEphemeralStorageClassName"
+	CacheEphemeralStorageResourceRequest = "cacheEphemeralStorageResourceRequest"
 
 	MountpointPodServiceAccountName = "mountpointPodServiceAccountName"
 
