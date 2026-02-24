@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -145,6 +146,29 @@ func (d *s3Driver) SkipUnsupportedTest(pattern framework.TestPattern) {
 		// Skip volume data source tests - S3 doesn't support volume cloning or populators
 		if strings.Contains(currentTestName, "should provision storage with any volume data source") {
 			e2eskipper.Skipf("Scality CSI driver for S3: volume data sources not supported - S3 doesn't support volume cloning or populators")
+		}
+	}
+
+	// Skip 2 upstream "volumes should store data" tests on OpenShift:
+	//   - [Testpattern: Dynamic PV (default fs)] volumes should store data
+	//   - [Testpattern: Pre-provisioned PV (default fs)] volumes should store data
+	//
+	// These are Kubernetes CSI framework tests that create pods without explicit
+	// securityContext. On OpenShift, the "restricted" SCC assigns a random UID
+	// from the namespace range (e.g., 1000660000) via the
+	// openshift.io/sa.scc.uid-range annotation. The mount-s3 FUSE mount uses
+	// default_permissions with uid=0/gid=0 (no --uid/--gid mount options), so
+	// when the pod runs as UID 1000660000, POSIX permission checks deny read
+	// access to files owned by uid=0. On vanilla K8s, pods run as root by
+	// default so permissions match.
+	//
+	// Our custom mount-options and multi-volume suites cover the same read/write
+	// functionality with explicit uid/gid mount options that work on both
+	// platforms.
+	if os.Getenv("CLUSTER_TYPE") == "openshift" {
+		currentTestName := ginkgo.CurrentSpecReport().FullText()
+		if strings.Contains(currentTestName, "volumes should store data") {
+			e2eskipper.Skipf("Skipping on OpenShift: SCC UID remapping causes permission mismatch on FUSE mount")
 		}
 	}
 }

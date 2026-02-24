@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,8 +34,14 @@ type CredentialsConfig struct {
 	} `json:"credentials"`
 }
 
-// DetectClusterType automatically detects if kind or minikube is running
+// DetectClusterType automatically detects if kind, minikube, or openshift (CRC) is running
 func DetectClusterType() string {
+	// Check CLUSTER_TYPE env var first (explicit override)
+	if ct := os.Getenv("CLUSTER_TYPE"); ct != "" {
+		fmt.Printf("Using cluster type from CLUSTER_TYPE env var: %s\n", ct)
+		return ct
+	}
+
 	// Check kubectl context first to ensure we have cluster access
 	context, err := sh.Output("kubectl", "config", "current-context")
 	if err != nil {
@@ -54,6 +61,11 @@ func DetectClusterType() string {
 		return "minikube"
 	}
 
+	if strings.Contains(context, "crc") || strings.Contains(context, "api-crc") {
+		fmt.Printf("Detected OpenShift/CRC cluster (context: %s)\n", context)
+		return "openshift"
+	}
+
 	// If context doesn't match patterns, try to detect by checking available tools
 	if err := sh.Run("kind", "get", "clusters"); err == nil {
 		fmt.Printf("Found kind clusters, using kind (context: %s)\n", context)
@@ -65,7 +77,7 @@ func DetectClusterType() string {
 		return "minikube"
 	}
 
-	panic(fmt.Sprintf("Could not determine cluster type for context '%s'. Please ensure kind or minikube is running.", context))
+	panic(fmt.Sprintf("Could not determine cluster type for context '%s'. Please ensure kind, minikube, or CRC is running.", context))
 }
 
 // GetNamespace returns the target namespace for installation
@@ -632,6 +644,94 @@ func WaitForPort(host string, port int, timeout time.Duration) error {
 
 	fmt.Println()
 	return fmt.Errorf("timeout after %v waiting for %s", timeout, addr)
+}
+
+// RestartOpenShiftDNS restarts the OpenShift DNS daemonset and waits for rollout
+func RestartOpenShiftDNS() error {
+	if IsVerbose() {
+		fmt.Println("Restarting OpenShift DNS...")
+	}
+
+	if err := RunCommand("kubectl", "rollout", "restart", "daemonset", "dns-default", "-n", "openshift-dns"); err != nil {
+		return fmt.Errorf("failed to restart OpenShift DNS: %v", err)
+	}
+
+	if IsVerbose() {
+		fmt.Println("Waiting for OpenShift DNS to be ready...")
+	}
+
+	if err := RunCommand("kubectl", "rollout", "status", "daemonset", "dns-default", "-n", "openshift-dns", "--timeout=120s"); err != nil {
+		return fmt.Errorf("OpenShift DNS restart timed out: %v", err)
+	}
+
+	return nil
+}
+
+// ensureNamespace creates a namespace idempotently using dry-run + apply.
+func ensureNamespace(namespace string) error {
+	nsYAML, err := sh.Output("kubectl", "create", "namespace", namespace, "--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate namespace YAML: %v", err)
+	}
+	return pipeToKubectlApply(nsYAML)
+}
+
+// ensureS3Secret creates the s3-secret with access/secret keys idempotently using dry-run + apply.
+func ensureS3Secret(namespace, accessKey, secretKey string) error {
+	secretYAML, err := sh.Output("kubectl", "create", "secret", "generic", "s3-secret",
+		fmt.Sprintf("--from-literal=access_key_id=%s", accessKey),
+		fmt.Sprintf("--from-literal=secret_access_key=%s", secretKey),
+		"-n", namespace,
+		"--dry-run=client", "-o", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to generate secret YAML: %v", err)
+	}
+	return pipeToKubectlApply(secretYAML)
+}
+
+// pipeToKubectlApply pipes YAML content to kubectl apply.
+func pipeToKubectlApply(yaml string) error {
+	cmd := exec.Command("kubectl", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(yaml)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// verifyLocalCSIDeployment waits for CSI controller and node pods, then lists them.
+// Failures are logged as warnings (non-fatal) since this is used in local dev workflows.
+func verifyLocalCSIDeployment(namespace string) error {
+	fmt.Println("Helm installation completed. Verifying CSI driver deployment...")
+	fmt.Println("Waiting for CSI driver pods to become ready...")
+
+	checker := NewResourceChecker(namespace)
+
+	fmt.Println("Waiting for controller pods to be ready...")
+	if err := checker.WaitForPodsWithLabel("app=s3-csi-controller", 120*time.Second); err != nil {
+		fmt.Printf("Warning: Controller pods not ready: %v\n", err)
+		if status := checker.GetPodsStatus("app=s3-csi-controller"); status != "" {
+			fmt.Printf("Controller pod status:\n%s\n", status)
+		}
+	} else {
+		fmt.Println("Controller pods are ready")
+	}
+
+	fmt.Println("Waiting for node pods to be ready...")
+	if err := checker.WaitForPodsWithLabel("app=s3-csi-node", 120*time.Second); err != nil {
+		fmt.Printf("Warning: Node pods not ready: %v\n", err)
+		if status := checker.GetPodsStatus("app=s3-csi-node"); status != "" {
+			fmt.Printf("Node pod status:\n%s\n", status)
+		}
+	} else {
+		fmt.Println("Node pods are ready")
+	}
+
+	fmt.Println("\nVerifying CSI driver pods are running:")
+	if err := sh.RunV("kubectl", "get", "pods", "-n", namespace, "-l", "app.kubernetes.io/name=scality-mountpoint-s3-csi-driver"); err != nil {
+		return fmt.Errorf("failed to get CSI driver pods: %v", err)
+	}
+
+	return nil
 }
 
 // SafeGetResource safely gets resource information without throwing errors

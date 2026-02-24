@@ -88,6 +88,12 @@ exclude = [
     # Exclude GitHub release URLs for this repository (allows merging docs before release)
     "github\\.com/scality/mountpoint-s3-csi-driver/releases/",
 
+    # Exclude Red Hat content gateway URLs with shell variables
+    "^https?://developers\\.redhat\\.com/content-gateway/",
+
+    # Exclude CRC (CodeReady Containers) API endpoint
+    "^https?://api\\.crc\\.testing",
+
     # Exclude URLs with placeholders
     "<[^>]+>",
     "\\$\\{[^}]+\\}",

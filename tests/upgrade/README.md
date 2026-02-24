@@ -144,8 +144,21 @@ mage cleanupUpgradeTests
 mage down
 ```
 
+## Credentials
+
+Credentials are loaded automatically by Mage from `tests/e2e/integration_config.json`. You can also set them via environment variables:
+
+```bash
+# Option 1: Load via Mage (recommended, used by CI)
+mage loadCredentials
+
+# Option 2: Set environment variables directly
+export ACCOUNT1_ACCESS_KEY=<your-access-key>
+export ACCOUNT1_SECRET_KEY=<your-secret-key>
+```
+
 ## Prerequisites
 
 - Kubernetes cluster (Kind or Minikube)
 - S3-compatible storage running on port 8000
-- Credentials in `tests/e2e/integration_config.json`
+- Credentials in `tests/e2e/integration_config.json` or set as environment variables
