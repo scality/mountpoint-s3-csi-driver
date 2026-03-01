@@ -388,11 +388,13 @@ func TestNodePublishVolumeForPodMounter(t *testing.T) {
 			},
 		},
 		{
-			name: "success: uses gid, allow-other, dir-mode, file-mode from mountOptions if fsGroup is set and these flags are provided in mountOptions",
+			name: "success: fsGroup overrides gid from mountOptions, preserves other flags",
 			testFunc: func(t *testing.T) {
 				nodeTestEnv := initNodeServerTestEnv(t)
 				ctx := context.Background()
 				mountFlags := []string{"--gid 456", "--allow-other", "--dir-mode=555", "--file-mode=444", "--force-path-style"}
+				// fsGroup (123) overrides --gid (456) from mount options
+				expectedArgs := []string{"--gid 123", "--allow-other", "--dir-mode=555", "--file-mode=444", "--force-path-style"}
 				req := &csi.NodePublishVolumeRequest{
 					VolumeId: volumeId,
 					VolumeCapability: &csi.VolumeCapability{
@@ -417,7 +419,7 @@ func TestNodePublishVolumeForPodMounter(t *testing.T) {
 					gomock.Eq(credentialprovider.ProvideContext{
 						VolumeID: volumeId,
 					}),
-					gomock.Eq(mountpoint.ParseArgs(mountFlags)),
+					gomock.Eq(mountpoint.ParseArgs(expectedArgs)),
 					gomock.Eq("123")).Return(nil)
 				_, err := nodeTestEnv.server.NodePublishVolume(ctx, req)
 				if err != nil {

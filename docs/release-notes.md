@@ -1,5 +1,27 @@
 # Release Notes
 
+## [2.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.1)
+
+February 2026
+
+### Bug Fixes
+
+- **Mounter Pod FSGroup**: Fixed volume mount failure when workload pods specify `fsGroup` in their
+  `securityContext`. The mounter pod's communication socket (`/comm/mount.sock`) timed out because
+  the emptyDir volume lacked proper group ownership. The fix adds `FSGroup` to the mounter pod's
+  `PodSecurityContext`, ensuring the communication directory is writable by the non-root mount-s3
+  process regardless of the workload pod's `fsGroup` configuration.
+
+### Documentation
+
+- **Pod Security and FSGroup**: Added [Pod Security and FSGroup](concepts-and-reference/pod-security-and-fsgroup.md)
+  reference page explaining how Kubernetes `fsGroup` interacts with the CSI driver's pod mounter,
+  including configuration examples for static and dynamic provisioning.
+
+### Breaking Changes
+
+None.
+
 ## [2.1.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.0)
 
 January 27, 2026

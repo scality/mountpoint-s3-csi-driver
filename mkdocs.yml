@@ -132,6 +132,7 @@ nav:
           - StorageClass Reference and Usage Examples: volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples.md
   - Concepts and Reference:
       - Helm Chart Configuration Reference: concepts-and-reference/helm-chart-configuration-reference.md
+      - Pod Security and FSGroup: concepts-and-reference/pod-security-and-fsgroup.md
       - CRD Reference: architecture/crd-reference.md
       - Filesystem Semantics: concepts-and-reference/filesystem-semantics.md
   - Operations:
