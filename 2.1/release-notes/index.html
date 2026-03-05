@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1621,6 +1621,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#211" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.1.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#210" class="md-nav__link">
     <span class="md-ellipsis">
       2.1.0
@@ -1751,6 +1760,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#211" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.1.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#210" class="md-nav__link">
     <span class="md-ellipsis">
       2.1.0
@@ -1842,6 +1860,18 @@
 
 
 <h1 id="release-notes">Release Notes</h1>
+<h2 id="211"><a href="https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.1">2.1.1</a></h2>
+<p>March 5, 2026</p>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li><strong>Mounter Pod FSGroup</strong>: Fixed volume mount failure when workload pods specify <code>fsGroup</code> in their
+  <code>securityContext</code>. The mounter pod's communication socket (<code>/comm/mount.sock</code>) timed out because
+  the emptyDir volume lacked proper group ownership. The fix adds <code>FSGroup</code> to the mounter pod's
+  <code>PodSecurityContext</code>, ensuring the communication directory is writable by the non-root mount-s3
+  process regardless of the workload pod's <code>fsGroup</code> configuration.</li>
+</ul>
+<h3 id="breaking-changes">Breaking Changes</h3>
+<p>None.</p>
 <h2 id="210"><a href="https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.0">2.1.0</a></h2>
 <p>January 27, 2026</p>
 <h3 id="whats-new">What's New</h3>
@@ -1851,16 +1881,16 @@
 <li><strong>Documentation Updates</strong>: Updated architecture documentation to reflect v2 pod mounter strategy, including new Pod Mounter
   Architecture and CRD Reference pages, updated provisioning flows, and improved reference documentation.</li>
 </ul>
-<h3 id="bug-fixes">Bug Fixes</h3>
+<h3 id="bug-fixes_1">Bug Fixes</h3>
 <ul>
 <li><strong>DeleteVolume Credentials</strong>: Fixed DeleteVolume to use provisioner secrets from the request instead of always using
   driver-level credentials. This resolves bucket deletion failures when volumes were created with different account credentials.</li>
 </ul>
-<h3 id="breaking-changes">Breaking Changes</h3>
+<h3 id="breaking-changes_1">Breaking Changes</h3>
 <p>None.</p>
 <h2 id="201"><a href="https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.0.1">2.0.1</a></h2>
 <p>October 17, 2025</p>
-<h3 id="bug-fixes_1">Bug Fixes</h3>
+<h3 id="bug-fixes_2">Bug Fixes</h3>
 <ul>
 <li><strong>Credential Validation</strong>: Fixed validation logic that was incorrectly rejecting IAM standard 20-character access keys when using node-publish-secret in dynamic provisioning.</li>
 <li><strong>Enhanced Documentation</strong>: Updated documentation to reflect correct usage for node pubblish creds for dynamic provisioning.
@@ -1881,7 +1911,7 @@
 <li><strong>Enhanced Resource Management</strong>: Automatic resource request/limit calculation for mounter pods based on cache size and mount options.</li>
 <li><strong>Controller Improvements</strong>: Enhanced controller service with CRD reconciliation for managing pod attachments.</li>
 </ul>
-<h3 id="breaking-changes_1">Breaking Changes</h3>
+<h3 id="breaking-changes_2">Breaking Changes</h3>
 <ul>
 <li>Default mounter strategy changed from systemd to pod-based mounter. Legacy systemd mounter is still available and will use pod-based mounter once the mount is requested again(pod restarts).</li>
 <li>Requires installation of MountpointS3PodAttachment CRD via kustomize or manual application. Helm v3 does not support automatic installation of CRDs on upgrades.</li>
@@ -1917,7 +1947,7 @@
 <li>Static provisioning flow documentation with detailed workflows</li>
 <li>S3 credentials management architecture and best practices</li>
 </ul>
-<h3 id="bug-fixes_2">Bug Fixes</h3>
+<h3 id="bug-fixes_3">Bug Fixes</h3>
 <ul>
 <li><strong>SystemD D-Bus Reliability</strong>: Fixed D-Bus connection recreation for improved SystemD mount reliability and error handling.</li>
 <li><strong>Documentation Improvements</strong>: Remove base64 mention from credentials in kubernetes secrets as the CSI driver does not use it.</li>

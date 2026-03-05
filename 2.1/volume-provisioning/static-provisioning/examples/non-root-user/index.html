@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1877,7 +1877,8 @@
 <span class="normal">55</span>
 <span class="normal">56</span>
 <span class="normal">57</span>
-<span class="normal">58</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+<span class="normal">58</span>
+<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 </span><span id="__span-0-2"><span class="s">apiVersion: v1</span>
 </span><span id="__span-0-3"><span class="s">kind: PersistentVolume</span>
 </span><span id="__span-0-4"><span class="s">metadata:</span>
@@ -1922,19 +1923,20 @@
 </span><span id="__span-0-43"><span class="s">  securityContext:</span>
 </span><span id="__span-0-44"><span class="s">    runAsUser: 1000</span>
 </span><span id="__span-0-45"><span class="s">    runAsGroup: 2000</span>
-</span><span id="__span-0-46"><span class="s">  containers:</span>
-</span><span id="__span-0-47"><span class="s">    - name: app</span>
-</span><span id="__span-0-48"><span class="s">      image: ubuntu</span>
-</span><span id="__span-0-49"><span class="s">      command: [&quot;/bin/sh&quot;]</span>
-</span><span id="__span-0-50"><span class="s">      args: [&quot;-c&quot;, &quot;echo &#39;Hello from the container!&#39; &gt;&gt; /data/$(date -u).txt; tail -f /dev/null&quot;]</span>
-</span><span id="__span-0-51"><span class="s">      volumeMounts:</span>
-</span><span id="__span-0-52"><span class="s">        - name: persistent-storage</span>
-</span><span id="__span-0-53"><span class="s">          mountPath: /data</span>
-</span><span id="__span-0-54"><span class="s">  volumes:</span>
-</span><span id="__span-0-55"><span class="s">    - name: persistent-storage</span>
-</span><span id="__span-0-56"><span class="s">      persistentVolumeClaim:</span>
-</span><span id="__span-0-57"><span class="s">        claimName: s3-pvc</span>
-</span><span id="__span-0-58"><span class="s">EOF</span>
+</span><span id="__span-0-46"><span class="s">    fsGroup: 2000</span>
+</span><span id="__span-0-47"><span class="s">  containers:</span>
+</span><span id="__span-0-48"><span class="s">    - name: app</span>
+</span><span id="__span-0-49"><span class="s">      image: ubuntu</span>
+</span><span id="__span-0-50"><span class="s">      command: [&quot;/bin/sh&quot;]</span>
+</span><span id="__span-0-51"><span class="s">      args: [&quot;-c&quot;, &quot;echo &#39;Hello from the container!&#39; &gt;&gt; /data/$(date -u).txt; tail -f /dev/null&quot;]</span>
+</span><span id="__span-0-52"><span class="s">      volumeMounts:</span>
+</span><span id="__span-0-53"><span class="s">        - name: persistent-storage</span>
+</span><span id="__span-0-54"><span class="s">          mountPath: /data</span>
+</span><span id="__span-0-55"><span class="s">  volumes:</span>
+</span><span id="__span-0-56"><span class="s">    - name: persistent-storage</span>
+</span><span id="__span-0-57"><span class="s">      persistentVolumeClaim:</span>
+</span><span id="__span-0-58"><span class="s">        claimName: s3-pvc</span>
+</span><span id="__span-0-59"><span class="s">EOF</span>
 </span></code></pre></div></td></tr></table></div>
 <h2 id="key-mount-options">Key Mount Options</h2>
 <ul>

@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1880,6 +1880,11 @@
 <td>Pod cannot write/delete files</td>
 <td>Missing write permissions</td>
 <td>Add <code>allow-delete</code> and/or <code>allow-overwrite</code> to PV <code>mountOptions</code></td>
+</tr>
+<tr>
+<td><code>MountVolume.SetUp failed: context deadline exceeded</code> with mounter pod log showing <code>accept unix /comm/mount.sock: i/o timeout</code></td>
+<td>Mounter pod missing FSGroup in security context</td>
+<td>Upgrade to the latest release. As a workaround, remove <code>fsGroup</code> from workload pod's security context</td>
 </tr>
 </tbody>
 </table>

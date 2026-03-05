@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1968,7 +1968,7 @@ Port number can be omitted for default port <code>80</code> for HTTP or <code>44
 <span class="normal">5</span>
 <span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1">helm<span class="w"> </span>install<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-10-2"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-10-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-10-4"><span class="w">  </span>--set<span class="w"> </span>node.s3EndpointUrl<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">S3_ENDPOINT_URL</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-10-5"><span class="w">  </span>--set<span class="w"> </span>s3CredentialSecret.name<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">SECRET_NAME</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-10-6"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
@@ -2082,7 +2082,7 @@ Port number can be omitted for default port <code>80</code> for HTTP or <code>44
 <span class="normal">4</span>
 <span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1">helm<span class="w"> </span>install<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-12-2"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-12-4"><span class="w">  </span>--values<span class="w"> </span>values-production.yaml<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-12-5"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
 </span></code></pre></div></td></tr></table></div>

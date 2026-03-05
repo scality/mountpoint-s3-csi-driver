@@ -64,7 +64,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     
@@ -1908,7 +1908,7 @@ Helm v3 does not automatically update CRDs on upgrades, so you <strong>must</str
 <span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><span class="c1"># Test upgrade to v2.0 without applying changes</span>
 </span><span id="__span-7-2">helm<span class="w"> </span>upgrade<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-3"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-4"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-5"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-6"><span class="w">  </span>--reuse-values<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-7"><span class="w">  </span>--dry-run
@@ -1933,7 +1933,7 @@ Once the upgrade is complete, the application pods will automatically regain acc
 <span class="normal">4</span>
 <span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1">helm<span class="w"> </span>upgrade<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-2"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-4"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-5"><span class="w">  </span>--reuse-values
 </span></code></pre></div></td></tr></table></div>
@@ -1945,7 +1945,7 @@ Once the upgrade is complete, the application pods will automatically regain acc
 <span class="normal">4</span>
 <span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1">helm<span class="w"> </span>upgrade<span class="w"> </span>scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-2"><span class="w">  </span>oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><span class="w">  </span>--version<span class="w"> </span><span class="m">2</span>.1.1<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-4"><span class="w">  </span>--values<span class="w"> </span>values-production.yaml<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-5"><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NAMESPACE</span><span class="si">}</span>
 </span></code></pre></div></td></tr></table></div>
