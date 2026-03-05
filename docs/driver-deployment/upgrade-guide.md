@@ -94,7 +94,7 @@ kubectl get pods -n ${NAMESPACE} -l app.kubernetes.io/name=scality-mountpoint-s3
 # Test upgrade to v2.0 without applying changes
 helm upgrade scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.1.0 \
+  --version 2.1.1 \
   --namespace ${NAMESPACE} \
   --reuse-values \
   --dry-run
@@ -118,7 +118,7 @@ For installations using existing configuration:
 ```bash
 helm upgrade scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.1.0 \
+  --version 2.1.1 \
   --namespace ${NAMESPACE} \
   --reuse-values
 ```
@@ -130,7 +130,7 @@ For installations with custom configuration file:
 ```bash
 helm upgrade scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.1.0 \
+  --version 2.1.1 \
   --values values-production.yaml \
   --namespace ${NAMESPACE}
 ```

@@ -172,7 +172,7 @@ func TestNewCreator(t *testing.T) {
 			Image:           "test-image:latest",
 			ImagePullPolicy: corev1.PullIfNotPresent,
 		},
-		CSIDriverVersion: "2.1.0",
+		CSIDriverVersion: "2.1.1",
 		ClusterVariant:   cluster.DefaultKubernetes,
 	}
 
