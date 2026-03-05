@@ -56,6 +56,7 @@ spec:
   securityContext:
     runAsUser: 1000
     runAsGroup: 2000
+    fsGroup: 2000
   containers:
     - name: app
       image: ubuntu

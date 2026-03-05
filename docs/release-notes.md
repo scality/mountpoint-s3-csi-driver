@@ -1,5 +1,21 @@
 # Release Notes
 
+## [next]
+
+Date - TBD
+
+### Bug Fixes
+
+- **FSGroup Support for Mounter Pod**: Workload pods with `fsGroup` in their
+  security context failed to mount S3 volumes, resulting in
+  `context deadline exceeded` errors during mount. This is now resolved and
+  pods with `fsGroup` set mount successfully.
+- **Volume Matching for ReadWriteMany Volumes**: S3 volumes using
+  `ReadWriteMany` access mode could fail to match with their assigned mounter
+  pod when the workload pod had `fsGroup` set. This mismatch caused mount
+  timeouts. Volumes now mount correctly regardless of access mode and
+  `fsGroup` configuration.
+
 ## [2.1.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.0)
 
 January 27, 2026

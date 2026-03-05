@@ -34,6 +34,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 | Pod stuck in `Terminating` | Mount point busy or corrupted | 1. Force delete pod: `kubectl delete pod <name> --force`<br/>2. Check for `subPath` issues (see below) |
 | Pod fails with "Permission denied" | Missing mount permissions | Add `allow-other` to PV `mountOptions` |
 | Pod cannot write/delete files | Missing write permissions | Add `allow-delete` and/or `allow-overwrite` to PV `mountOptions` |
+| `MountVolume.SetUp failed: context deadline exceeded` with mounter pod log showing `accept unix /comm/mount.sock: i/o timeout` | Mounter pod missing FSGroup in security context | Upgrade to the latest release. As a workaround, remove `fsGroup` from workload pod's security context |
 
 ### Mount Issues
 

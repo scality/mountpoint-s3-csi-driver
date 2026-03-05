@@ -123,7 +123,13 @@ func (pm *PodMounter) waitForMountpointPodAttachment(ctx context.Context, podID,
 		crdv2.FieldNodeName:             pm.nodeName,
 		crdv2.FieldPersistentVolumeName: volumeName,
 		crdv2.FieldVolumeID:             volumeID,
-		crdv2.FieldWorkloadFSGroup:      fsGroup,
+	}
+	// Only filter by WorkloadFSGroup when kubelet provides VolumeMountGroup.
+	// For RWX volumes, kubelet does not populate this field, so the node driver
+	// receives an empty string while the reconciler stores the pod's actual fsGroup.
+	// Skipping the filter avoids this mismatch.
+	if fsGroup != "" {
+		fieldFilters[crdv2.FieldWorkloadFSGroup] = fsGroup
 	}
 
 	klog.V(4).Infof("Waiting for MountpointS3PodAttachment for podID=%s, volumeName=%s, volumeID=%s", podID, volumeName, volumeID)
