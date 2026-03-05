@@ -18,6 +18,7 @@ package customsuites
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -141,25 +142,33 @@ func (suite *s3MounterPodTestSuite) DefineTests(driver storageframework.TestDriv
 	}
 
 	// verifyMounterPodFSGroup finds the mounter pod and asserts its security context.
+	// On OpenShift, the SCC assigns UIDs from the namespace range (MountpointPodUserID
+	// returns nil), so we only verify FSGroup is non-nil. On vanilla K8s, we check
+	// the exact value (1000).
 	verifyMounterPodFSGroup := func(ctx context.Context, pvName string) {
 		mounterPod := findMounterPod(ctx, pvName)
+		isOpenShift := os.Getenv("CLUSTER_TYPE") == "openshift"
 
 		ginkgo.By("Verifying mounter pod PodSecurityContext.FSGroup is set")
 		gomega.Expect(mounterPod.Spec.SecurityContext).NotTo(gomega.BeNil(),
 			"mounter pod should have PodSecurityContext")
 		gomega.Expect(mounterPod.Spec.SecurityContext.FSGroup).NotTo(gomega.BeNil(),
 			"mounter pod should have FSGroup set")
-		gomega.Expect(*mounterPod.Spec.SecurityContext.FSGroup).To(gomega.Equal(expectedMounterFSGroup),
-			"mounter pod FSGroup should be %d", expectedMounterFSGroup)
+		if !isOpenShift {
+			gomega.Expect(*mounterPod.Spec.SecurityContext.FSGroup).To(gomega.Equal(expectedMounterFSGroup),
+				"mounter pod FSGroup should be %d", expectedMounterFSGroup)
+		}
 
 		ginkgo.By("Verifying mounter pod container SecurityContext")
 		gomega.Expect(mounterPod.Spec.Containers).NotTo(gomega.BeEmpty())
 		sc := mounterPod.Spec.Containers[0].SecurityContext
 		gomega.Expect(sc).NotTo(gomega.BeNil())
-		gomega.Expect(sc.RunAsUser).NotTo(gomega.BeNil())
-		gomega.Expect(*sc.RunAsUser).To(gomega.Equal(expectedMounterFSGroup))
 		gomega.Expect(sc.RunAsNonRoot).NotTo(gomega.BeNil())
 		gomega.Expect(*sc.RunAsNonRoot).To(gomega.BeTrue())
+		if !isOpenShift {
+			gomega.Expect(sc.RunAsUser).NotTo(gomega.BeNil())
+			gomega.Expect(*sc.RunAsUser).To(gomega.Equal(expectedMounterFSGroup))
+		}
 	}
 
 	// createDynamicVolumeWithFSGroupPod creates a StorageClass, PVC, and workload pod with fsGroup.
