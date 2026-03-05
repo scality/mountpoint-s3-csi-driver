@@ -894,6 +894,47 @@ func TestPodMounter(t *testing.T) {
 		})
 	})
 
+	// Tests for S3PA WorkloadFSGroup matching behavior.
+	// For RWX volumes, kubelet does not send VolumeMountGroup so the node driver
+	// receives fsGroup="" while the reconciler stores the workload pod's actual fsGroup.
+	t.Run("Mounts when CRD has non-empty WorkloadFSGroup but node has empty fsGroup (RWX)", func(t *testing.T) {
+		testCtx := setup(t)
+
+		go func() {
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+			// Simulate reconciler storing the workload pod's fsGroup in the S3PA CRD.
+			// The node driver receives empty fsGroup from kubelet for RWX volumes.
+			err := createMountpointS3PodAttachmentWithFSGroup(context.Background(), testCtx, mpPod.pod.Name, "1001")
+			assert.NoError(t, err)
+			mpPod.receiveAndMount(testCtx.ctx)
+		}()
+
+		err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+			VolumeID: testCtx.volumeID,
+			PodID:    testCtx.podUID,
+		}, mountpoint.ParseArgs(nil), "")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Mounts when both CRD and node have matching non-empty fsGroup", func(t *testing.T) {
+		testCtx := setup(t)
+
+		go func() {
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+			err := createMountpointS3PodAttachmentWithFSGroup(context.Background(), testCtx, mpPod.pod.Name, "1001")
+			assert.NoError(t, err)
+			mpPod.receiveAndMount(testCtx.ctx)
+		}()
+
+		err := testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+			VolumeID: testCtx.volumeID,
+			PodID:    testCtx.podUID,
+		}, mountpoint.ParseArgs(nil), "1001")
+		assert.NoError(t, err)
+	})
+
 	t.Run("Checking if target is a mount point", func(t *testing.T) {
 		testCtx := setup(t)
 
@@ -982,6 +1023,11 @@ func createMountpointPod(testCtx *testCtx) *mountpointPod {
 
 // createMountpointS3PodAttachment creates a MountpointS3PodAttachment CRD for testing
 func createMountpointS3PodAttachment(ctx context.Context, testCtx *testCtx, mpPodName string) error {
+	return createMountpointS3PodAttachmentWithFSGroup(ctx, testCtx, mpPodName, "")
+}
+
+// createMountpointS3PodAttachmentWithFSGroup creates a MountpointS3PodAttachment CRD with a specific WorkloadFSGroup value.
+func createMountpointS3PodAttachmentWithFSGroup(ctx context.Context, testCtx *testCtx, mpPodName string, fsGroup string) error {
 	s3pa := &crdv2.MountpointS3PodAttachment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", testCtx.pvName, testCtx.podUID[:8]),
@@ -991,7 +1037,7 @@ func createMountpointS3PodAttachment(ctx context.Context, testCtx *testCtx, mpPo
 			NodeName:             "test-node",
 			PersistentVolumeName: testCtx.pvName,
 			VolumeID:             testCtx.volumeID,
-			WorkloadFSGroup:      "",
+			WorkloadFSGroup:      fsGroup,
 			MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
 				mpPodName: {
 					{
