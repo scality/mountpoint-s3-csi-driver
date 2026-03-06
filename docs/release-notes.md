@@ -1,5 +1,29 @@
 # Release Notes
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **Concurrent volume mount race condition**: Fixed a race condition where multiple pods
+  sharing the same volume could fail to mount when starting at the same time on the same
+  node. The mount operation is now properly serialized so that only one pod sets up the
+  S3 connection while others wait and reuse it.
+
+  **Before this fix:** When two or more pods referencing the same PVC started concurrently
+  on the same node, one pod could fail with a `"connection refused"` error. The pod would
+  eventually start after Kubernetes retried the mount, but with a delay of up to 2 minutes.
+
+  **After this fix:** All pods start without errors or delays. The first pod sets up the
+  S3 mount; subsequent pods reuse it automatically.
+
+  **Affected scenarios:** Deployments with `replicas > 1`, Jobs with `parallelism > 1`,
+  pod restarts while another pod using the same volume is still mounting, and rolling
+  updates of Deployments with shared volumes.
+
+### Breaking Changes
+
+None.
+
 ## [2.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.1)
 
 March 5, 2026
