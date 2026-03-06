@@ -763,13 +763,12 @@ func expectNoMountpointPodFor(pod *testPod, vol *testVolume) {
 
 // expectNoMountpointPodForWorkloadPod verifies that there is no Mountpoint Pod scheduled for given `pod`.
 // `expectNoMountpointPodFor` is preferable to this method if the `vol` is known as this performs a slower list operation.
-func expectNoMountpointPodForWorkloadPod(pod *testPod) {
+// This lists all pods in the mountpoint namespace with the mountpoint-version label to find any mountpoint pods.
+func expectNoMountpointPodForWorkloadPod(_ *testPod) {
 	Consistently(func(g Gomega) {
 		podList := &corev1.PodList{}
 		g.Expect(k8sClient.List(ctx, podList,
-			client.InNamespace(mountpointNamespace), client.MatchingLabels{
-				mppod.LabelPodUID: string(pod.UID),
-			},
+			client.InNamespace(mountpointNamespace), client.HasLabels{mppod.LabelMountpointVersion},
 		)).To(Succeed())
 
 		g.Expect(podList.Items).To(BeEmpty(), "Expected empty list but got: %#v", podList)
@@ -786,9 +785,8 @@ func waitAndVerifyMountpointPodFor(pod *testPod, vol *testVolume) {
 // verifyMountpointPodFor verifies given `mountpointPod` for given `pod` and `vol`.
 func verifyMountpointPodFor(pod *testPod, vol *testVolume, mountpointPod *testPod) {
 	Expect(mountpointPod.ObjectMeta.Labels).To(HaveKeyWithValue(mppod.LabelMountpointVersion, mountpointVersion))
-	Expect(mountpointPod.ObjectMeta.Labels).To(HaveKeyWithValue(mppod.LabelPodUID, string(pod.UID)))
-	Expect(mountpointPod.ObjectMeta.Labels).To(HaveKeyWithValue(mppod.LabelVolumeName, vol.pvc.Spec.VolumeName))
 	Expect(mountpointPod.ObjectMeta.Labels).To(HaveKeyWithValue(mppod.LabelCSIDriverVersion, version.GetVersion().DriverVersion))
+	Expect(mountpointPod.ObjectMeta.Annotations).To(HaveKeyWithValue(mppod.AnnotationVolumeName, vol.pvc.Spec.VolumeName))
 
 	Expect(mountpointPod.Spec.RestartPolicy).To(Equal(corev1.RestartPolicyOnFailure))
 
