@@ -791,6 +791,90 @@ func TestPodMounter(t *testing.T) {
 			<-done // Wait for goroutine to complete
 		})
 
+		t.Run("Concurrent Mount() calls for same Mountpoint Pod are serialized", func(t *testing.T) {
+			testCtx := setup(t)
+
+			// Create a second workload pod with different podUID but same PV
+			podUID2 := uuid.New().String()
+			targetPath2 := filepath.Join(
+				testCtx.kubeletPath,
+				fmt.Sprintf("pods/%s/volumes/kubernetes.io~csi/%s/mount", podUID2, testCtx.pvName),
+			)
+			err := os.MkdirAll(filepath.Dir(targetPath2), 0o750)
+			assert.NoError(t, err)
+			parentDir2, err := filepath.EvalSymlinks(filepath.Dir(targetPath2))
+			assert.NoError(t, err)
+			targetPath2 = filepath.Join(parentDir2, filepath.Base(targetPath2))
+
+			var mountCalls atomic.Int32
+
+			testCtx.mountSyscall = func(target string, args mountpoint.Args) (fd int, err error) {
+				mountCalls.Add(1)
+				_ = testCtx.mount.Mount("mountpoint-s3", target, "fuse", nil)
+				return int(mountertest.OpenDevNull(t).Fd()), nil
+			}
+
+			// Create mountpoint pod and CRD mapping both workload pods to same mp pod
+			mpPod := createMountpointPod(testCtx)
+			mpPod.run()
+
+			s3pa := &crdv2.MountpointS3PodAttachment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("%s-%s", testCtx.pvName, testCtx.podUID[:8]),
+					Namespace: mountpointPodNamespace,
+				},
+				Spec: crdv2.MountpointS3PodAttachmentSpec{
+					NodeName:             "test-node",
+					PersistentVolumeName: testCtx.pvName,
+					VolumeID:             testCtx.volumeID,
+					MountpointS3PodAttachments: map[string][]crdv2.WorkloadAttachment{
+						mpPod.pod.Name: {
+							{WorkloadPodUID: testCtx.podUID},
+							{WorkloadPodUID: podUID2},
+						},
+					},
+				},
+			}
+			err = testCtx.k8sClient.Create(testCtx.ctx, s3pa)
+			assert.NoError(t, err)
+
+			// Single receiver — only one FUSE mount should happen (the second
+			// goroutine sees isSourceMounted=true inside the lock and skips).
+			go func() {
+				mpPod.receiveAndMount(testCtx.ctx)
+			}()
+
+			// Launch 2 concurrent Mount() calls
+			var wg sync.WaitGroup
+			errs := make([]error, 2)
+
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				errs[0] = testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, testCtx.targetPath, credentialprovider.ProvideContext{
+					VolumeID: testCtx.volumeID,
+					PodID:    testCtx.podUID,
+				}, mountpoint.ParseArgs(nil), "")
+			}()
+			go func() {
+				defer wg.Done()
+				errs[1] = testCtx.podMounter.Mount(testCtx.ctx, testCtx.bucketName, targetPath2, credentialprovider.ProvideContext{
+					VolumeID: testCtx.volumeID,
+					PodID:    podUID2,
+				}, mountpoint.ParseArgs(nil), "")
+			}()
+
+			wg.Wait()
+
+			assert.NoError(t, errs[0])
+			assert.NoError(t, errs[1])
+
+			// isSourceMounted is checked inside the lock, so only the first
+			// goroutine performs the FUSE mount; the second finds source already
+			// mounted and skips directly to bind mount.
+			assert.Equals(t, int32(1), mountCalls.Load())
+		})
+
 		t.Run("Unmounts target if Mountpoint Pod does not receive mount options", func(t *testing.T) {
 			testCtx := setup(t)
 
