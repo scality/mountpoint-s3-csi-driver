@@ -248,24 +248,14 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	}
 	klog.V(4).Infof("Using Mountpoint Pod name: %s", mpPodName)
 
-	// Step 2: Setup source mount directory
-	// Source path: /var/lib/kubelet/plugins/s3.csi.scality.com/mnt/<mp-pod-name>
-	// This is where S3 bucket will be mounted (shared across containers)
+	// Step 2: Setup source and target mount directories
 	source := filepath.Join(SourceMountDir(pm.kubeletPath), mpPodName)
 
-	// Verify source mount directory can be used
 	err = pm.verifyOrSetupMountTarget(source)
 	if err != nil {
 		return fmt.Errorf("failed to verify source path can be used as a mount point %q: %w", source, err)
 	}
 
-	// Check if source is already mounted
-	isSourceMounted, err := pm.IsMountPoint(source)
-	if err != nil {
-		return fmt.Errorf("could not check if source %q is already a mount point: %w", source, err)
-	}
-
-	// Check if target is already mounted (bind mount)
 	err = pm.verifyOrSetupMountTarget(target)
 	if err != nil {
 		return fmt.Errorf("failed to verify target path can be used as a mount point %q: %w", target, err)
@@ -280,6 +270,16 @@ func (pm *PodMounter) Mount(ctx context.Context, bucketName string, target strin
 	if err != nil {
 		klog.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %v", target, err)
 		return fmt.Errorf("failed to wait for Mountpoint Pod to be ready for %q: %w", target, err)
+	}
+
+	unlockMountpointPod := lockMountpointPod(mpPodName)
+	defer unlockMountpointPod()
+
+	// Check if source is already mounted — must be inside the lock so concurrent
+	// callers see the up-to-date mount state and only one performs the FUSE mount.
+	isSourceMounted, err := pm.IsMountPoint(source)
+	if err != nil {
+		return fmt.Errorf("could not check if source %q is already a mount point: %w", source, err)
 	}
 
 	podCredentialsPath, err := pm.ensureCredentialsDirExists(podPath)

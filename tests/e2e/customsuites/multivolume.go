@@ -3,12 +3,14 @@ package customsuites
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
@@ -318,5 +320,109 @@ func (t *s3CSIMultiVolumeTestSuite) DefineTests(driver storageframework.TestDriv
 		// Verify file exists on pod2
 		ginkgo.By("Verifying file exists on second pod")
 		e2evolume.VerifyExecInPodSucceed(f, pod2, fmt.Sprintf("ls -la %s", fileInVol))
+	})
+
+	// Test 4: Concurrent pod creation with shared volume
+	// This test validates the concurrent mount lock by creating multiple pods
+	// simultaneously on the same node, all sharing the same PVC.
+	//
+	//   [Pod-1]  [Pod-2]  [Pod-3]  [Pod-4]
+	//      \        |        |        /
+	//       \       |        |       /
+	//        \      |        |      /
+	//         [Single S3 Volume]
+	//               |
+	//           [S3 Bucket]
+	//
+	// Unlike the sequential multi-pod test, this test creates pods concurrently
+	// (without waiting for each to reach Running before creating the next) to
+	// exercise the per-pod mutex lock that serializes NodePublishVolume calls
+	// for the same Mountpoint Pod.
+	//
+	// Before the lock fix, concurrent NodePublishVolume calls could race on:
+	// - Credential file writes
+	// - FUSE mount setup (mount.sock Recv/Send)
+	// - Bind mount creation
+	// resulting in "connection refused" errors and up to 2-minute retry delays.
+	ginkgo.It("should handle concurrent pod creation with shared volume", func(ctx context.Context) {
+		resource := createVolumeResourceWithMountOptions(ctx, l.config, pattern, mountOptions)
+		l.resources = append(l.resources, resource)
+
+		// Create the first pod and wait for it to be Running so we can
+		// determine the node it landed on.
+		ginkgo.By("Creating first pod to determine target node")
+		pod1 := e2epod.MakePod(f.Namespace.Name, nil, []*v1.PersistentVolumeClaim{resource.Pvc}, admissionapi.LevelRestricted, "")
+		pod1.Name = fmt.Sprintf("concurrent-pod1-%s", uuid.New().String()[:8])
+		podModifierNonRoot(pod1)
+		pod1, err := createPod(ctx, f.ClientSet, f.Namespace.Name, pod1)
+		framework.ExpectNoError(err)
+
+		nodeName := pod1.Spec.NodeName
+		framework.Logf("First pod scheduled on node %s", nodeName)
+
+		// Create 3 more pods simultaneously, all pinned to the same node.
+		// We use raw Create (no wait) so the kubelet receives concurrent
+		// NodePublishVolume RPCs.
+		const concurrentPods = 3
+		ginkgo.By(fmt.Sprintf("Creating %d pods concurrently on node %s", concurrentPods, nodeName))
+		concurrentPodNames := make([]string, concurrentPods)
+		for i := 0; i < concurrentPods; i++ {
+			pod := e2epod.MakePod(f.Namespace.Name, nil, []*v1.PersistentVolumeClaim{resource.Pvc}, admissionapi.LevelRestricted, "")
+			pod.Name = fmt.Sprintf("concurrent-pod%d-%s", i+2, uuid.New().String()[:8])
+			podModifierNonRoot(pod)
+			pod.Spec.NodeSelector = map[string]string{
+				"kubernetes.io/hostname": nodeName,
+			}
+			_, err := f.ClientSet.CoreV1().Pods(f.Namespace.Name).Create(ctx, pod, metav1.CreateOptions{})
+			framework.ExpectNoError(err, "failed to create concurrent pod %d", i+2)
+			concurrentPodNames[i] = pod.Name
+		}
+
+		// Wait for all concurrent pods to reach Running.
+		ginkgo.By("Waiting for all concurrent pods to be Running")
+		var wg sync.WaitGroup
+		waitErrors := make([]error, concurrentPods)
+		for i, podName := range concurrentPodNames {
+			wg.Add(1)
+			go func(idx int, name string) {
+				defer ginkgo.GinkgoRecover()
+				defer wg.Done()
+				waitErrors[idx] = e2epod.WaitForPodNameRunningInNamespace(ctx, f.ClientSet, name, f.Namespace.Name)
+			}(i, podName)
+		}
+		wg.Wait()
+
+		for i, waitErr := range waitErrors {
+			framework.ExpectNoError(waitErr, "concurrent pod %s failed to reach Running", concurrentPodNames[i])
+		}
+
+		// Collect all pods (including pod1) for cleanup and verification
+		allPods := make([]*v1.Pod, 0, 1+concurrentPods)
+		allPods = append(allPods, pod1)
+		for _, name := range concurrentPodNames {
+			p, err := f.ClientSet.CoreV1().Pods(f.Namespace.Name).Get(ctx, name, metav1.GetOptions{})
+			framework.ExpectNoError(err)
+			allPods = append(allPods, p)
+		}
+
+		defer func() {
+			for _, p := range allPods {
+				framework.ExpectNoError(e2epod.DeletePodWithWait(ctx, f.ClientSet, p))
+			}
+		}()
+
+		// Verify all pods can access the volume
+		ginkgo.By("Writing data from pod1")
+		volPath := "/mnt/volume1"
+		fileInVol := fmt.Sprintf("%s/concurrent-test.txt", volPath)
+		seed := time.Now().UTC().UnixNano()
+		toWrite := 1024
+
+		checkWriteToPath(f, pod1, fileInVol, toWrite, seed)
+
+		ginkgo.By("Verifying all concurrent pods can read the data")
+		for _, p := range allPods[1:] {
+			checkReadFromPath(f, p, fileInVol, toWrite, seed)
+		}
 	})
 }
