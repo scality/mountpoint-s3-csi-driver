@@ -66,22 +66,20 @@ func ParseArgs(passedArgs []string) Args {
 	for _, a := range passedArgs {
 		var key, value string
 
-		parts := strings.SplitN(strings.Trim(a, " "), "=", 2)
-		if len(parts) == 2 {
-			// Ex: `--key=value` or `key=value`
-			key, value = parts[0], parts[1]
+		trimmed := strings.Trim(a, " ")
+
+		spacePos := strings.Index(trimmed, " ")
+		equalsPos := strings.Index(trimmed, "=")
+
+		if spacePos != -1 && (equalsPos == -1 || spacePos < equalsPos) {
+			parts := strings.SplitN(trimmed, " ", 2)
+			key, value = parts[0], strings.Trim(parts[1], " ")
+		} else if equalsPos != -1 {
+			parts := strings.SplitN(trimmed, "=", 2)
+			key, value = parts[0], strings.Trim(parts[1], " ")
 		} else {
-			// Ex: `--key value` or `key value`
-			// Ex: `--key` or `key`
-			parts = strings.SplitN(strings.Trim(parts[0], " "), " ", 2)
-			if len(parts) == 1 {
-				// Ex: `--key` or `key`
-				key = parts[0]
-				value = ArgNoValue
-			} else {
-				// Ex: `--key value` or `key value`
-				key, value = parts[0], strings.Trim(parts[1], " ")
-			}
+			key = trimmed
+			value = ArgNoValue
 		}
 
 		// prepend -- if it's not already there

@@ -126,6 +126,69 @@ func TestParsingMountpointArgs(t *testing.T) {
 			},
 		},
 		{
+			name: "prefix with space separator and equals in value",
+			input: []string{
+				"prefix kwk3-di/sub=vault/",
+			},
+			want: []string{
+				"--prefix=kwk3-di/sub=vault/",
+			},
+		},
+		{
+			name: "prefix with equals separator and space in value",
+			input: []string{
+				"prefix=kwk3-di/sub vault/",
+			},
+			want: []string{
+				"--prefix=kwk3-di/sub vault/",
+			},
+		},
+		{
+			name: "prefix with equals in key and value",
+			input: []string{
+				"prefix=kwk3-di/sub=vault/",
+			},
+			want: []string{
+				"--prefix=kwk3-di/sub=vault/",
+			},
+		},
+		{
+			name: "prefix with spaces in both key and value",
+			input: []string{
+				"prefix kwk3-di/sub vault/",
+			},
+			want: []string{
+				"--prefix=kwk3-di/sub vault/",
+			},
+		},
+		{
+			name: "prefix with spaces and equals in value",
+			input: []string{
+				"prefix my folder/sub=test/",
+			},
+			want: []string{
+				"--prefix=my folder/sub=test/",
+			},
+		},
+		{
+			name: "prefix with multiple equals in value",
+			input: []string{
+				"prefix env=prod/app=web/version=1.0/",
+			},
+			want: []string{
+				"--prefix=env=prod/app=web/version=1.0/",
+			},
+		},
+		{
+			name: "prefix with spaces around equals in value",
+			input: []string{
+				"prefix backup files = production/",
+			},
+			want: []string{
+				"--prefix=backup files = production/",
+			},
+		},
+		{
 			name: "with duplicated options",
 			input: []string{
 				"--allow-other",
