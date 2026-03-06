@@ -1,5 +1,14 @@
 # Release Notes
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **Prefix Parsing with Equals Signs**: Fixed mount option parsing that incorrectly truncated prefix
+  values containing equals signs. For example, `prefix=env=prod/` was parsed as `--prefix=env` instead
+  of `--prefix=env=prod/`. The parser now splits on whichever separator (space or `=`) appears first,
+  preserving the full value. (S3CSI-223)
+
 ## [2.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.1)
 
 March 5, 2026
