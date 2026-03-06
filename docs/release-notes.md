@@ -20,6 +20,11 @@
   pod restarts while another pod using the same volume is still mounting, and rolling
   updates of Deployments with shared volumes.
 
+- **Prefix Parsing with Equals Signs**: Fixed mount option parsing that incorrectly truncated prefix
+  values containing equals signs. For example, `prefix=env=prod/` was parsed as `--prefix=env` instead
+  of `--prefix=env=prod/`. The parser now splits on whichever separator (space or `=`) appears first,
+  preserving the full value.
+
 ### Breaking Changes
 
 None.
