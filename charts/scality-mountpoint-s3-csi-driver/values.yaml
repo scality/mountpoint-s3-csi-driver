@@ -129,6 +129,8 @@ controller:
 # Mountpoint pod configuration
 mountpointPod:
   namespace: mount-s3
+  # Set to false if you manage the namespace yourself (e.g., GitOps, pre-created namespaces)
+  createNamespace: true
   priorityClassName: mount-s3-critical
   # Priority class for pods that can preempt headroom pods
   preemptingPriorityClassName: mount-s3-preempting
