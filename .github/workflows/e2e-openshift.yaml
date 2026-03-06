@@ -58,7 +58,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.resolve_ref.outputs.ref }}
           fetch-depth: 0
@@ -72,7 +72,7 @@ jobs:
         uses: azure/setup-helm@v4.3.1
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version-file: "tests/e2e/go.mod"
           # Disable cache: E2E builds produce a ~16GB build cache whose upload
@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload Test Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: openshift-e2e-artifacts
           path: artifacts
