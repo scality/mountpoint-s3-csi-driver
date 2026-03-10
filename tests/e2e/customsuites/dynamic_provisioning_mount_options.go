@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
@@ -498,8 +499,31 @@ func (t *s3CSIDynamicProvisioningMountOptionsTestSuite) DefineTests(driver stora
 			testPolicyEnforcement(ctx, []string{"--storage-class=EXPRESS_ONEZONE"}, "storage-class")
 		})
 
-		ginkgo.It("should strip -o from mount options", func(ctx context.Context) {
-			testPolicyEnforcement(ctx, []string{"-o"}, "fs-tab")
+		ginkgo.It("should reject -o mount option with InvalidArgument error", func(ctx context.Context) {
+			ginkgo.By("Creating StorageClass with disallowed -o mount option")
+
+			mountOptions := []string{
+				fmt.Sprintf("uid=%d", DefaultNonRootUser),
+				fmt.Sprintf("gid=%d", DefaultNonRootGroup),
+				"allow-other",
+				"-o",
+			}
+
+			l.storageClass = createStorageClassWithMountOptions(ctx, mountOptions, nil, "fs-tab")
+
+			ginkgo.By("Creating PVC with the StorageClass")
+			pvc := createPVCWithStorageClass(ctx, l.storageClass, "fs-tab-pvc")
+
+			ginkgo.By("Creating pod that mounts the volume")
+			pod := MakeNonRootPodWithVolume(f.Namespace.Name, []*v1.PersistentVolumeClaim{pvc}, "")
+			pod, err := f.ClientSet.CoreV1().Pods(f.Namespace.Name).Create(ctx, pod, metav1.CreateOptions{})
+			framework.ExpectNoError(err)
+			defer func() {
+				framework.ExpectNoError(CleanupPodInErrorState(ctx, f, pod.Name))
+			}()
+
+			ginkgo.By("Verifying pod fails to start with CSI driver rejection message")
+			framework.ExpectNoError(WaitForPodError(ctx, f, pod.Name, "not supported in CSI Driver", 2*time.Minute))
 		})
 
 		ginkgo.It("should strip multiple disallowed mount options", func(ctx context.Context) {

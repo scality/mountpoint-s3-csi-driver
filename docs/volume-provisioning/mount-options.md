@@ -72,6 +72,25 @@ parameters:
 ```
 
 
+## Unsupported Syntax
+
+The CSI driver does **not** support fstab-style mount syntax using the `-o` flag.
+Each option must be a separate entry in the `mountOptions` array.
+
+!!! failure "This will fail"
+    ```yaml
+    mountOptions:
+      - "-o uid=1000,gid=2000,allow-other"  # ❌ Not supported — causes InvalidArgument error
+    ```
+
+!!! success "Use this instead"
+    ```yaml
+    mountOptions:
+      - "uid=1000"     # ✅ Each option as its own entry
+      - "gid=2000"
+      - "allow-other"
+    ```
+
 ## Common Mount Options
 
 Here's a list of commonly used Mountpoint S3 options relevant for the CSI driver:

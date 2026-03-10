@@ -40,6 +40,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 
 | Error Message | Cause | Solution |
 |---------------|-------|----------|
+| `MountVolume.SetUp failed: running mount-s3 with mount flag -o is not supported in CSI Driver` | `-o` (fstab-style) flag present in PV or StorageClass `mountOptions` | Remove the `-o` entry from `mountOptions`. The CSI driver uses Mountpoint-style options directly — e.g., use `uid=1000` and `allow-other` as separate entries rather than `-o uid=1000,allow-other`. |
 | "Transport endpoint not connected" | S3 endpoint unreachable | 1. Check network connectivity<br/>2. Check endpoint URL configuration<br/>3. Check security groups/firewall rules |
 | "Failed to create mount process" | Mountpoint binary issue | 1. Check initContainer logs<br/>2. Check `/opt/mountpoint-s3-csi/bin/mount-s3` exists on node |
 | "Access Denied" | Invalid S3 credentials | 1. Check secret contains `access_key_id` and `secret_access_key`<br/>2. Test credentials with AWS CLI<br/>3. Check bucket policy |

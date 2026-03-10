@@ -11,6 +11,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
@@ -250,8 +251,30 @@ func (t *s3CSIMountOptionsTestSuite) DefineTests(driver storageframework.TestDri
 			)
 		})
 
-		ginkgo.It("strips -o flag", func(ctx context.Context) {
-			validateStrippedOption(ctx, "-o", "fs-tab")
+		ginkgo.It("rejects -o flag with InvalidArgument error", func(ctx context.Context) {
+			ginkgo.By("PVC with disallowed flag: fs-tab")
+
+			res := BuildVolumeWithOptions(
+				ctx,
+				l.config,
+				pattern,
+				DefaultNonRootUser,
+				DefaultNonRootGroup,
+				"", // No specific file mode
+				"-o",
+			)
+			l.resources = append(l.resources, res)
+
+			ginkgo.By("Creating pod with a volume using -o flag")
+			pod := MakeNonRootPodWithVolume(f.Namespace.Name, []*v1.PersistentVolumeClaim{res.Pvc}, "")
+			pod, err := f.ClientSet.CoreV1().Pods(f.Namespace.Name).Create(ctx, pod, metav1.CreateOptions{})
+			framework.ExpectNoError(err)
+			defer func() {
+				framework.ExpectNoError(CleanupPodInErrorState(ctx, f, pod.Name))
+			}()
+
+			ginkgo.By("Verifying pod fails to start with CSI driver rejection message")
+			framework.ExpectNoError(WaitForPodError(ctx, f, pod.Name, "not supported in CSI Driver", 2*time.Minute))
 		})
 
 		ginkgo.It("strips all unsupported volume level mount flags when they arrive together", func(ctx context.Context) {

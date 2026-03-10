@@ -4,75 +4,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-The Scality CSI Driver for S3 is a Kubernetes CSI driver that enables mounting Scality RING S3 buckets as persistent volumes.
-It uses mount-s3 (a FUSE-based filesystem) to provide POSIX-like access to S3 objects. The driver supports both static provisioning (pre-existing buckets) and dynamic provisioning (automatic bucket creation).
+Scality CSI Driver for S3 — a Kubernetes CSI driver that mounts Scality RING S3
+buckets as persistent volumes using mount-s3 (FUSE-based). Supports static
+provisioning (pre-existing buckets) and dynamic provisioning (automatic bucket
+creation). This is a Scality fork of the AWS upstream CSI driver with additional
+features: dynamic provisioning and RING S3 compatibility.
 
-## Architecture
-
-### Key Components
-
-1. **CSI Driver Node Service** (`cmd/scality-csi-driver`): Main CSI driver implementing NodePublishVolume/NodeUnpublishVolume RPCs. Runs as a DaemonSet on each node and handles volume mount/unmount operations.
-
-2. **CSI Controller Service** (`cmd/scality-csi-controller`): Implements CSI Controller Service for dynamic provisioning. Handles CreateVolume/DeleteVolume RPCs and manages S3 bucket lifecycle.
-Includes a separate controller process that reconciles MountpointS3PodAttachment CRDs.
-
-3. **CSI Mounter** (`cmd/scality-csi-mounter`): Helper binary that runs mount-s3 processes inside dedicated "mounter pods" for improved isolation and resource management.
-
-4. **Install MP** (`cmd/install-mp`): Installation helper for mount-s3 binary.
-
-### Package Structure
-
-- `pkg/driver`: Core CSI driver implementation (controller, node, identity services)
-- `pkg/driver/node/mounter`: Mounting logic with two strategies:
-  - **systemd mounter**: Runs mount-s3 via systemd transient services (legacy)
-  - **pod mounter**: Runs mount-s3 in dedicated Kubernetes pods (default)
-- `pkg/driver/node/credentialprovider`: Credential resolution from secrets, driver defaults, or AWS profiles
-- `pkg/driver/controller/credentialprovider`: Controller-side credential provider for dynamic provisioning
-- `pkg/podmounter/mppod`: Mounter pod creation, management, and resource calculations
-- `pkg/mountpoint`: mount-s3 argument construction and process execution
-- `pkg/api/v2`: CRD definitions for MountpointS3PodAttachment (tracks volume attachments)
-- `pkg/s3client`: S3 client wrapper for bucket operations
-- `pkg/system`: Low-level system interactions (systemd, pts, namespaces)
-
-### Critical Design Patterns
-
-- **Dual Mounter Strategy**: The driver supports two mounting approaches. Pod mounter is enabled by default and recommended. Systemd mounter is legacy but still supported.
-- **Credential Resolution Chain**: Credentials are resolved in order: secret-based → driver-level → AWS profile → IAM roles.
-- **Volume Sharing**: Multiple pods can share the same S3 volume. MountpointS3PodAttachment CRD tracks these shared mounts.
-- **Resource Management**: Mounter pods have resource requests/limits calculated based on cache size and mount options.
-
-## Development Commands
-
-### Building
+## Build & Test Commands
 
 ```bash
-# Build all binaries (cross-compiles to Linux)
-make bin
+# Build
+make bin                              # Cross-compile all Go binaries (CGO_ENABLED=0 GOOS=linux)
+make container CONTAINER_TAG=local    # Build Docker image
 
-# Build container image (default tag: local)
-make container
+# Test
+make test                             # Unit tests + CSI compliance (race detection + coverage)
+make controller-integration-test      # Controller tests with envtest (real K8s API server)
+go test -v ./pkg/driver/node/mounter -run TestPodMounter  # Single test
 
-# Build with custom tag
-make container CONTAINER_TAG=v2.0.0
+# Code quality
+make fmt                              # gofmt + goimports + gofumpt
+make precommit                        # All pre-commit hooks (includes golangci-lint with GOOS=linux)
+
+# Code generation (after modifying pkg/api/v2/ types)
+make generate                         # Regenerates CRD YAML + zz_generated.deepcopy.go
 ```
 
-### Testing
+### Local Development with Mage
+
+Mage provides higher-level orchestration for local development with kind/minikube:
 
 ```bash
-# Run unit tests
-make unit-test
+# Core workflow
+mage up                               # Build from source, load image, install via Helm
+mage status                           # Check installation
+mage down                             # Remove driver and cleanup
 
-# Run unit tests with race detection and coverage
-make test
+# With S3 endpoint
+S3_ENDPOINT_URL=http://192.0.0.2:8000 mage up
 
-# Generate coverage report
-make cover
+# Install published version (not from source)
+SCALITY_CSI_VERSION=2.0.0 mage install
 
-# Run CSI compliance tests (sanity tests)
-make csi-compliance-test
-
-# Run controller integration tests (uses envtest)
-make controller-integration-test
+# DNS mapping for S3 endpoints (via CoreDNS)
+mage configureS3DNS / removeS3DNS / showS3DNSStatus
 ```
 
 ### Code Quality
@@ -211,75 +186,176 @@ mage showS3DNSStatus
 
 ### E2E Tests
 
-- Located in `tests/e2e/`
-- Use Ginkgo/Gomega testing framework
-- Require real S3 infrastructure
-- Test both static and dynamic provisioning scenarios
-- Separate `go.mod` to isolate e2e dependencies
-
-### Running Single Test
+Require real S3 infrastructure. Credentials loaded from `tests/e2e/integration_config.json`.
 
 ```bash
-# Run specific test by name
-go test -v ./pkg/driver/node/mounter -run TestPodMounter
-
-# Run tests in specific package
-go test -v ./pkg/driver/...
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:all     # Full workflow
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:install  # Install only
+S3_ENDPOINT_URL=https://s3.example.com mage e2e:test     # Run tests only
+mage e2e:verify                                           # Health check
+mage e2e:uninstall                                        # Cleanup
+mage e2e:uninstallForce                                   # Force cleanup + delete CSI registration
 ```
 
-## Important Conventions
+## Architecture
 
-### Version Management
+### Components (cmd/)
 
-Version is set in Makefile (`VERSION=2.0.0`) and injected at build time via ldflags into `pkg/driver/version`.
+| Binary | Role |
+|--------|------|
+| `scality-csi-driver` | Node service — handles mount/unmount (NodePublish/NodeUnpublish RPCs). Runs as DaemonSet. |
+| `scality-csi-controller` | Controller service — handles bucket creation/deletion (CreateVolume/DeleteVolume RPCs) + reconciles MountpointS3PodAttachment CRDs. |
+| `scality-csi-mounter` | Helper binary running mount-s3 inside dedicated "mounter pods". |
+| `install-mp` | Installation helper for mount-s3 binary. |
 
-### Commit Messages
+### Key Packages (pkg/)
 
-Follow conventional commit style based on repository history:
+- **`driver/node/`** — Node service implementation. Core mount/unmount logic.
+  - `mounter/` — Pod mounter implementation (runs mount-s3 in dedicated K8s pods).
+  - `credentialprovider/` — Credential resolution chain: secret → driver defaults → AWS profile → IAM roles.
+- **`driver/controller/`** — Controller service for dynamic provisioning.
+- **`api/v2/`** — CRD definitions for `MountpointS3PodAttachment` (API group: `s3.csi.scality.com/v2`, short name: `s3pa`). Tracks volume attachments to enable sharing across pods.
+- **`podmounter/mppod/`** — Mounter pod creation, lifecycle management, resource calculations.
+- **`mountpoint/`** — mount-s3 argument construction (`mounter/`) and process execution (`runner/`).
+- **`s3client/`** — S3 client wrapper for bucket operations (create/delete/head).
+- **`system/`** — Low-level system interactions: pseudo-terminal management (`pts/`).
+- **`storageclass/`** — StorageClass parameter parsing.
 
-- Use prefixes: `S3CSI-XXX:` for Jira ticket references
-- Format: `S3CSI-XXX: Brief description of change`
-- Focus on what changed and why
+### Design Patterns
 
-### Branch Strategy
-
-- Main branch: `main`
-- Feature branches: `feature/S3CSI-XXX-description`
-- Improvement branches: `improvement/S3CSI-XXX-description`
-
-### Platform-Specific Code
-
-- Platform-specific files use build tags: `//go:build linux` or `//go:build darwin`
-- Always provide Darwin stubs for Linux-only functionality to support local development on macOS
-- CI runs with `GOOS=linux` to ensure Linux-specific code is analyzed
+- **Pod mounter**: mount-s3 runs in dedicated K8s pods for isolation and resource management.
+- **Volume sharing**: Multiple workload pods can share the same S3 volume. `MountpointS3PodAttachment` CRD tracks these shared mounts with one CRD per (PV, node) pair.
+- **Platform-specific code**: Linux-only functionality uses `//go:build linux` tags with Darwin stubs for macOS development. CI lints with `GOOS=linux`.
 
 ### Helm Chart
 
-- Chart location: `charts/scality-mountpoint-s3-csi-driver/`
-- Values can be customized for image repository, tag, resources, etc.
-- CRDs are included in `crds/` subdirectory
+Located at `charts/scality-mountpoint-s3-csi-driver/`. Key values:
+
+- `s3.endpointUrl` — S3 endpoint (required)
+- `s3.region` — Default region (us-east-1)
+- `image.repository` / `image.tag` — CSI driver image
+- `s3CredentialSecret` — Secret name and key fields for S3 credentials
+
+CRDs are in `charts/scality-mountpoint-s3-csi-driver/crds/`.
+
+## Version Management
+
+Version is set in `Makefile` (`VERSION=2.1.0`) and injected at build time via ldflags into `pkg/driver/version`.
+
+## Conventions
+
+- **Commit messages**: `S3CSI-XXX: Brief description` (Jira ticket prefix)
+- **Branches**: `feature/S3CSI-XXX-description` or `improvement/S3CSI-XXX-description`
+- **Go formatting**: gofmt → goimports → gofumpt (in that order)
+- **Linting**: golangci-lint with `GOOS=linux` (errcheck, govet, ineffassign, staticcheck, unused)
+- **Code generation trigger**: Any change to `pkg/api/v2/` types requires `make generate`
+- **Testing workflow**: Before every commit run `make fmt && make precommit`.
+  Then consult the "Testing Guide: From Diff to Done" table in
+  `docs/dev/multi-cluster-setup.md` to determine which additional tests
+  (unit, integration, E2E, upgrade) are required based on what files you
+  changed. Run all required tests locally on your own Kind cluster before
+  pushing. **You MUST actually run the tests, not just suggest them.**
+  See the mandatory testing section below.
+
+## Mandatory Local Testing
+
+**Every code change MUST be tested on a local Kind cluster before considering
+it done.** This is non-negotiable. Unit tests alone are insufficient — you
+must verify the change works end-to-end in a real Kubernetes environment.
+
+### Test Execution Requirements
+
+1. **Always run first** (no cluster needed):
+
+   ```bash
+   make fmt && make precommit
+   make unit-test
+   ```
+
+2. **Then build and deploy to your Kind cluster:**
+
+   ```bash
+   make container CONTAINER_TAG=local
+   kind load docker-image scality/mountpoint-s3-csi-driver:local --name <cluster>
+   kubectl config use-context kind-<cluster>
+   KIND_CLUSTER_NAME=<cluster> S3_ENDPOINT_URL=http://192.168.64.1:8000 mage up
+   ```
+
+3. **Run smoke test** (quick validation — static + dynamic provisioning):
+   Follow the smoke test instructions in `docs/dev/multi-cluster-setup.md`. For bug fixes, reproduce the customer's exact scenario (security context, mount options, provisioning mode) and verify it works.
+
+4. **Run E2E tests** (full validation):
+
+   ```bash
+   S3_ENDPOINT_URL=http://192.168.64.1:8000 \
+     KIND_CLUSTER_NAME=<cluster> \
+     CONTAINER_TAG=local \
+     CSI_IMAGE_REPOSITORY=scality/mountpoint-s3-csi-driver \
+     mage e2e:all
+   ```
+
+### Credentials
+
+S3 credentials are in `tests/e2e/integration_config.json`. For environment variables:
+
+- `ACCOUNT1_ACCESS_KEY=accessKey1`, `ACCOUNT1_SECRET_KEY=verySecretKey1`
+- S3 endpoint from Docker Desktop on macOS: `http://192.168.64.1:8000`
+
+### Parallel Testing with Multiple Clusters
+
+When running both smoke tests and E2E tests, use separate Kind clusters to avoid interference:
+
+```bash
+# Build image once
+make container CONTAINER_TAG=local
+
+# Load into both clusters
+kind load docker-image scality/mountpoint-s3-csi-driver:local --name s3csi-1
+kind load docker-image scality/mountpoint-s3-csi-driver:local --name s3csi-2
+
+# Smoke test on cluster 1 (mage up installs in default namespace)
+kubectl config use-context kind-s3csi-1
+KIND_CLUSTER_NAME=s3csi-1 S3_ENDPOINT_URL=http://192.168.64.1:8000 mage up
+# ... run smoke test manifests ...
+
+# E2E on cluster 2 (e2e:all installs in kube-system namespace)
+kubectl config use-context kind-s3csi-2
+ACCOUNT1_ACCESS_KEY=accessKey1 ACCOUNT1_SECRET_KEY=verySecretKey1 \
+  S3_ENDPOINT_URL=http://192.168.64.1:8000 KIND_CLUSTER_NAME=s3csi-2 \
+  CONTAINER_TAG=local CSI_IMAGE_REPOSITORY=scality/mountpoint-s3-csi-driver \
+  mage e2e:all
+```
+
+When spawning agent teams, assign each agent its own cluster. Never share a cluster between agents — E2E tests create/delete namespaces and resources that can conflict with smoke tests.
+
+### When to Run Which Tests
+
+Consult the "Testing Guide: From Diff to Done" table in `docs/dev/multi-cluster-setup.md` for the complete mapping. Key rules:
+
+- **Any `pkg/` change**: `make test` + build image + `mage e2e:all`
+- **`tests/e2e/` change**: build image + `mage e2e:all`
+- **`charts/` change**: `make validate-helm` + build image + `mage e2e:all`
+- **Bug fix for customer issue**: Reproduce the exact customer scenario as a smoke test, then run full E2E
 
 ## Key Environment Variables
 
-- `CSI_NODE_NAME`: Node name for CSI driver
-- `MOUNTPOINT_VERSION`: Mount-s3 version to report
-- `MOUNTPOINT_NAMESPACE`: Namespace for mounter pods
-- `S3_ENDPOINT_URL`: S3 endpoint URL (required for e2e tests)
-- `ACCOUNT1_ACCESS_KEY` / `ACCOUNT1_SECRET_KEY`: S3 credentials (loaded automatically by `mage e2e:all` from `integration_config.json`)
+| Variable | Used By | Purpose |
+|----------|---------|---------|
+| `S3_ENDPOINT_URL` | mage up, e2e | S3 endpoint URL |
+| `SCALITY_CSI_VERSION` | mage install | Published version to install |
+| `CONTAINER_TAG` | make container, mage up | Docker image tag (default: local) |
+| `CSI_NAMESPACE` | mage | Target namespace (default: default for dev, kube-system for e2e) |
+| `KIND_CLUSTER_NAME` | mage | Kind cluster name (default: kind) |
+| `VERBOSE` | mage | Enable verbose output |
 
-## Troubleshooting
+## Test Structure
 
-- Check pod logs: `kubectl logs -n kube-system <pod-name>`
-- Check systemd services (legacy mounter): `systemctl status mount-s3-*`
-- Check mounter pods: `kubectl get pods -n kube-system -l app=mountpoint-s3-csi-mounter`
-- Check CRDs: `kubectl get mountpoints3podattachments` or `kubectl get s3pa`
-- Enable debug logging via mount option: `--log-level debug`
-
-## Important Files
-
-- `Makefile`: Primary build and test commands
-- `magefiles/`: Mage-based development workflow
-- `.pre-commit-config.yaml`: Pre-commit hooks configuration
-- `.golangci.yaml`: Linter configuration
-- `mkdocs.yml`: Documentation site configuration
-- `integration_config.json`: E2E test credentials (not in repo, user-provided)
+- **Unit tests**: Standard Go tests with mocks (`*_test.go` files, `*/mocks/` directories). Mock generation via `github.com/golang/mock`.
+- **CSI compliance**: `tests/sanity/` — Ginkgo-based CSI spec conformance.
+- **Controller integration**: `tests/controller/` — Uses envtest with real K8s API server (Ginkgo).
+- **E2E**: `tests/e2e/` — Separate `go.mod`, Ginkgo/Gomega, requires real S3.
+  Custom suites in `tests/e2e/customsuites/` cover credentials, mount options,
+  multi-volume, cache, file permissions, and dynamic provisioning variants.
+  Performance tests exist but only run with `-performance` flag.
+- **Upgrade**: `tests/upgrade/` — Version migration scenarios.
+- **Helm validation**: `tests/helm/validate_charts.sh`.

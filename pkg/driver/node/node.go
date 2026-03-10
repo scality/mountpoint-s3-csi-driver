@@ -125,6 +125,10 @@ func (ns *S3NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePubl
 
 	args := mountpoint.ParseArgs(mountpointArgs)
 
+	if args.Has(mountpoint.ArgFsTab) {
+		return nil, status.Error(codes.InvalidArgument, "Running mount-s3 with mount flag -o is not supported in Scality CSI Driver for S3.")
+	}
+
 	fsGroup := ""
 	if capMount := volCap.GetMount(); capMount != nil {
 		if volumeMountGroup := capMount.GetVolumeMountGroup(); volumeMountGroup != "" {

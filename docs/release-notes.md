@@ -1,5 +1,20 @@
 # Release Notes
 
+## [Unreleased]
+
+### Breaking Changes
+
+- **`-o` Mount Option Now Rejected**: The CSI driver now explicitly rejects volumes that specify
+  the `-o` (fstab-style) mount flag with an `InvalidArgument` error, rather than silently
+  stripping it. Pods using PVs or StorageClasses with `-o` in `mountOptions` will fail to start
+  after this upgrade.
+
+  **Migration**: Remove any `-o` entries from your PV or StorageClass `mountOptions`. The flag
+  was always silently ignored and had no effect on the mount. If you intended to pass options via
+  `-o option1,option2`, specify each option directly instead (e.g., use `uid=1000` and
+  `allow-other` as separate entries rather than `-o uid=1000,allow-other`). See
+  [Mount Options](docs/volume-provisioning/mount-options.md) for supported option syntax.
+
 ## [2.1.1](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.1.1)
 
 March 5, 2026
