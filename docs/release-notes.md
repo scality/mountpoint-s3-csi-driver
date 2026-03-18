@@ -4,11 +4,18 @@
 
 ### What's New
 
-- **Version label on S3PA resources**: MountpointS3PodAttachment resources now include
-  a `s3.csi.scality.com/mounted-by-csi-driver-version` label that records the CSI driver
-  version that created the resource. This enables version-aware pod sharing and upgrade
-  safety by allowing controllers to distinguish S3PA resources created by different driver
-  versions.
+- **Version-aware mounter pod management during rolling upgrades**: During a rolling
+  upgrade of the CSI driver, new workloads will no longer reuse mounter pods created by a
+  previous driver version. The controller now creates a fresh mounter pod running the same
+  version as the current driver, ensuring consistent behavior throughout the upgrade window.
+  Existing workloads continue running undisturbed on their current mounter pods until they
+  are naturally rescheduled.
+
+  **Why this matters:** Without version affinity, a newly-started driver node could reuse a
+  mounter pod still running a previous driver version. If the two versions differ in
+  communication protocol, mount options handling, or expected binary behavior, workloads
+  could experience subtle and hard-to-diagnose mount failures during the upgrade window.
+  Version-aware management eliminates this class of issue entirely.
 
 ### Bug Fixes
 
