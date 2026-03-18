@@ -24,6 +24,7 @@ This glossary defines acronyms, technical terms, and concepts used throughout th
 | **PVC** | PersistentVolumeClaim | Kubernetes resource requesting storage from a PV |
 | **RBAC** | Role-Based Access Control | Method of restricting access based on user roles |
 | **S3** | Simple Storage Service | Object storage service protocol |
+| **S3PA** | S3 Pod Attachment (MountpointS3PodAttachment) | Kubernetes custom resource that tracks which workload pods are attached to a specific S3 volume, enabling volume sharing and mounter pod lifecycle management |
 | **SDK** | Software Development Kit | Collection of tools for developing applications |
 | **SSE** | Server-Side Encryption | Encryption of data at rest on the server |
 | **TTL** | Time To Live | Duration for which data is considered valid |

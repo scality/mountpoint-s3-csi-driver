@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### What's New
+
+- **Version label on S3PA resources**: MountpointS3PodAttachment resources now include
+  a `s3.csi.scality.com/mounted-by-csi-driver-version` label that records the CSI driver
+  version that created the resource. This enables version-aware pod sharing and upgrade
+  safety by allowing controllers to distinguish S3PA resources created by different driver
+  versions.
+
 ### Bug Fixes
 
 - **Concurrent volume mount race condition**: Fixed a race condition where multiple pods
@@ -19,6 +27,12 @@
   **Affected scenarios:** Deployments with `replicas > 1`, Jobs with `parallelism > 1`,
   pod restarts while another pod using the same volume is still mounting, and rolling
   updates of Deployments with shared volumes.
+
+- **Duplicate S3PA creation during concurrent mounts**: Fixed a race condition where the
+  controller could create duplicate MountpointS3PodAttachment resources when multiple pods
+  mounting the same volume were reconciled concurrently. An expectations system now tracks
+  pending S3PA creations, preventing the controller from creating a duplicate while a
+  recently-created S3PA is not yet visible in the informer cache.
 
 - **Prefix Parsing with Equals Signs**: Fixed mount option parsing that incorrectly truncated prefix
   values containing equals signs. For example, `prefix=env=prod/` was parsed as `--prefix=env` instead
