@@ -18,7 +18,3 @@ coverage.out
 # E2E test artifacts
 logs-for-e2e-tests/
 artifacts/
-
-# Claude Code local user workflow specific files
-.claude/
-plans/
