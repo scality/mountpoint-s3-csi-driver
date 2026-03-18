@@ -152,6 +152,58 @@ func TestParsingMountpointArgs(t *testing.T) {
 				"--read-only",
 			},
 		},
+		{
+			name: "prefix with space separator and equals in value",
+			input: []string{
+				"allow-delete",
+				"region us-west-2",
+				"prefix kwk3-di/sub=vault/",
+			},
+			want: []string{
+				"--allow-delete",
+				"--prefix=kwk3-di/sub=vault/",
+				"--region=us-west-2",
+			},
+		},
+		{
+			name: "prefix with equals separator and space in value",
+			input: []string{
+				"allow-delete",
+				"region us-west-2",
+				"prefix=kwk3-di/sub vault/",
+			},
+			want: []string{
+				"--allow-delete",
+				"--prefix=kwk3-di/sub vault/",
+				"--region=us-west-2",
+			},
+		},
+		{
+			name: "prefix with equals in key and value",
+			input: []string{
+				"allow-delete",
+				"region us-west-2",
+				"prefix=kwk3-di/sub=vault/",
+			},
+			want: []string{
+				"--allow-delete",
+				"--prefix=kwk3-di/sub=vault/",
+				"--region=us-west-2",
+			},
+		},
+		{
+			name: "prefix with multiple equals in value",
+			input: []string{
+				"allow-delete",
+				"region us-west-2",
+				"prefix env=prod/app=web/version=1.0/",
+			},
+			want: []string{
+				"--allow-delete",
+				"--prefix=env=prod/app=web/version=1.0/",
+				"--region=us-west-2",
+			},
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
