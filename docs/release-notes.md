@@ -4,6 +4,14 @@
 
 ### What's New
 
+- **Node startup taint watcher**: Added automatic taint removal to prevent the
+  race condition where workload pods are scheduled before the CSI driver registers
+  with kubelet. Cluster admins can pre-taint nodes with
+  `s3.csi.scality.com/agent-not-ready:NoExecute`; the driver automatically removes
+  the taint once it has registered, ensuring pods never see "driver not found" errors
+  during node startup, reboot, or autoscaling events.
+  See [Node Startup Taint](driver-deployment/node-startup-taint.md) for details.
+
 - **Version-aware mounter pod management during rolling upgrades**: During a rolling
   upgrade of the CSI driver, new workloads will no longer reuse mounter pods created by a
   previous driver version. The controller now creates a fresh mounter pod running the same

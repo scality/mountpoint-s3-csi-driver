@@ -35,6 +35,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 | Pod fails with "Permission denied" | Missing mount permissions | Add `allow-other` to PV `mountOptions` |
 | Pod cannot write/delete files | Missing write permissions | Add `allow-delete` and/or `allow-overwrite` to PV `mountOptions` |
 | `MountVolume.SetUp failed: context deadline exceeded` with mounter pod log showing `accept unix /comm/mount.sock: i/o timeout` | Mounter pod missing FSGroup in security context | Upgrade to the latest release. As a workaround, remove `fsGroup` from workload pod's security context |
+| Pod stuck in `ContainerCreating` with "driver name s3.csi.scality.com not found in the list of registered CSI drivers" | CSI driver not yet registered (startup race condition) | Apply `s3.csi.scality.com/agent-not-ready:NoExecute` taint to nodes. See [Node Startup Taint](driver-deployment/node-startup-taint.md) |
 
 ### Mount Issues
 
