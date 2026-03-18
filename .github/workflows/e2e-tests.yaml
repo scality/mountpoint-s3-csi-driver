@@ -130,6 +130,85 @@ jobs:
           flags: e2e_tests,cloudserver_${{ matrix.ring_version }}
           slug: scality/mountpoint-s3-csi-driver
 
+  taint-watcher-test:
+    name: Taint Watcher
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    needs: dev-image
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: CI Setup (multi-node cluster)
+        uses: ./.github/actions/ci-setup
+        with:
+          cluster_name: taint-watcher-cluster
+          kind_config: tests/taint-watcher/kind-config.yaml
+
+      - name: Get Host IP Address
+        id: get_ip
+        run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Set Environment Variables
+        run: |
+          echo "S3_ENDPOINT_URL=http://s3.scality.com:8000" >> $GITHUB_ENV
+          echo "KIND_CLUSTER_NAME=taint-watcher-cluster" >> $GITHUB_ENV
+
+      - name: Pull Dev Image
+        run: docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Load Image into Kind
+        run: kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name taint-watcher-cluster
+
+      - name: Deploy CloudServer (S3 Backend)
+        run: mage e2e:deployS3
+
+      - name: Configure hosts file for S3 FQDN
+        run: |
+          echo "${{ steps.get_ip.outputs.host_ip }} s3.scality.com" | sudo tee -a /etc/hosts
+
+      - name: Configure CoreDNS for S3 FQDN
+        run: S3_HOST_IP=${{ steps.get_ip.outputs.host_ip }} mage e2e:configureCIDNS
+
+      - name: Start Kubernetes Event and Log Capture
+        run: mage e2e:startCapture
+
+      - name: Apply CRDs
+        run: mage e2e:applyCRDs
+
+      - name: Pre-taint Worker Node
+        run: mage setupTaintWatcherTest
+
+      - name: Install CSI Driver
+        run: |
+          CSI_IMAGE_TAG=${{ github.sha }} \
+          CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
+          mage installCSIForTaintTest
+
+      - name: Run Taint Watcher Test
+        run: mage testTaintWatcher
+
+      - name: Run Taint Watcher Restart Test
+        run: mage testTaintWatcherRestart
+
+      - name: Stop Capture and Collect Artifacts
+        if: always()
+        run: mage e2e:stopCapture
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taint-watcher-test-artifacts
+          path: artifacts
+
+      - name: Cleanup
+        if: always()
+        run: mage cleanupTaintWatcherTest || true
+
   s3-tls-verify:
     name: S3 TLS Verification
     runs-on: ubuntu-22.04
