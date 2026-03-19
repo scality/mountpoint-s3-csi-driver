@@ -140,6 +140,26 @@ mountpointPod:
     tag: "3.10"
     pullPolicy: IfNotPresent
 
+# TLS configuration for custom CA certificates
+tls:
+  # Name of the ConfigMap containing the CA certificate bundle (key: ca-bundle.crt).
+  # Must exist in TWO namespaces because the controller and mounter pods run in separate namespaces:
+  #   1. Controller namespace (e.g., kube-system) — mounted by the s3-csi-controller for AWS SDK S3 calls
+  #   2. mountpointPod.namespace (e.g., mount-s3) — mounted by mounter pod init containers for mount-s3
+  # If missing from either namespace, the respective pod stays in ContainerCreating.
+  # Leave empty to disable TLS CA certificate injection
+  caCertConfigMap: ""
+  initImage:
+    repository: alpine
+    tag: "3.21"
+    pullPolicy: IfNotPresent
+  initResources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
+
 # CRD Cleanup Configuration
 # Enable automatic cleanup of MountpointS3PodAttachment CRDs and Mountpoint Pods during helm uninstall
 # Warning: This will forcefully terminate all active S3 mounts
