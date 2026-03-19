@@ -7,11 +7,13 @@ This glossary defines acronyms, technical terms, and concepts used throughout th
 | Acronym | Full Form | Definition |
 |---------|-----------|------------|
 | **API** | Application Programming Interface | A set of protocols and tools for building software applications |
+| **CA** | Certificate Authority | Trusted entity that issues digital certificates for verifying identity |
 | **CLI** | Command Line Interface | A text-based interface for interacting with software |
 | **CRD** | Custom Resource Definition | Kubernetes extension mechanism for defining custom resources |
 | **CRT** | Common Runtime | AWS Common Runtime library used for S3 operations |
 | **CSI** | Container Storage Interface | A standard for exposing storage systems to containerized workloads |
 | **DNS** | Domain Name System | System that translates domain names to IP addresses |
+| **FUSE** | Filesystem in Userspace | Mechanism allowing non-privileged users to create file systems without editing kernel code |
 | **GID** | Group Identifier | Numeric identifier for a group in Unix-like systems |
 | **GHCR** | GitHub Container Registry | GitHub's container image registry service |
 | **HTTP** | Hypertext Transfer Protocol | Protocol for transferring data over the web |
@@ -19,17 +21,22 @@ This glossary defines acronyms, technical terms, and concepts used throughout th
 | **IAM** | Identity and Access Management | System for managing user identities and permissions |
 | **JSON** | JavaScript Object Notation | Lightweight data interchange format |
 | **KMS** | Key Management Service | Service for managing encryption keys |
+| **PEM** | Privacy-Enhanced Mail | Text encoding format for cryptographic keys and certificates |
 | **POSIX** | Portable Operating System Interface | Set of standards for Unix-like operating systems |
 | **PV** | PersistentVolume | Kubernetes resource representing a piece of storage |
 | **PVC** | PersistentVolumeClaim | Kubernetes resource requesting storage from a PV |
 | **RBAC** | Role-Based Access Control | Method of restricting access based on user roles |
 | **S3** | Simple Storage Service | Object storage service protocol |
 | **S3PA** | S3 Pod Attachment (MountpointS3PodAttachment) | Kubernetes custom resource that tracks which workload pods are attached to a specific S3 volume, enabling volume sharing and mounter pod lifecycle management |
+| **s2n-tls** | Signal to Noise TLS | AWS's open-source TLS implementation used by mount-s3 |
 | **SDK** | Software Development Kit | Collection of tools for developing applications |
+| **SSL** | Secure Sockets Layer | Predecessor to TLS, often used colloquially to mean TLS |
 | **SSE** | Server-Side Encryption | Encryption of data at rest on the server |
+| **TLS** | Transport Layer Security | Cryptographic protocol for secure communication over networks |
 | **TTL** | Time To Live | Duration for which data is considered valid |
 | **UID** | User Identifier | Numeric identifier for a user in Unix-like systems |
 | **URL** | Uniform Resource Locator | Web address identifying a resource |
+| **X.509** | X.509 | ITU-T standard for public key certificates, used in TLS |
 | **YAML** | YAML Ain't Markup Language | Human-readable data serialization standard |
 
 ## Technical Terms

@@ -153,6 +153,25 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 | `mountpointPod.headroomImage.tag`                   | Image tag for headroom pods.                                                                                                                       | `3.10`                                                 | No                          |
 | `mountpointPod.headroomImage.pullPolicy`            | Image pull policy for headroom pods.                                                                                                               | `IfNotPresent`                                         | No                          |
 
+## TLS Configuration
+
+<!-- markdownlint-disable MD046 -->
+!!! info "Custom CA Certificates"
+    When your S3 endpoint uses TLS with a private or internal CA, configure the `tls.*` parameters to inject the CA certificate.
+    The ConfigMap must exist in **two** namespaces (controller and mounter pod) because they run in separate namespaces.
+    See the [TLS Configuration Guide](../driver-deployment/tls-configuration.md) for ordering constraints and setup instructions.
+<!-- markdownlint-enable MD046 -->
+
+| Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
+|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
+| `tls.caCertConfigMap`                                | Name of the ConfigMap containing the CA certificate bundle (key: `ca-bundle.crt`). Must exist in both the controller namespace and `mountpointPod.namespace`. Create in the controller namespace **before** Helm install, and in `mountpointPod.namespace` **after** (since Helm creates that namespace). If missing from either namespace, the respective pod stays in `ContainerCreating`. Leave empty to disable. | `""`                                                   | No                          |
+| `tls.initImage.repository`                           | Image repository for the CA certificate installation initContainer in mounter pods.                                                                | `alpine`                                               | No                          |
+| `tls.initImage.tag`                                  | Image tag for the CA certificate installation initContainer.                                                                                       | `3.21`                                                 | No                          |
+| `tls.initImage.pullPolicy`                           | Pull policy for the CA certificate init image.                                                                                                     | `IfNotPresent`                                         | No                          |
+| `tls.initResources.requests.cpu`                     | CPU request for the CA certificate init container.                                                                                                 | `10m`                                                  | No                          |
+| `tls.initResources.requests.memory`                  | Memory request for the CA certificate init container.                                                                                              | `16Mi`                                                 | No                          |
+| `tls.initResources.limits.memory`                    | Memory limit for the CA certificate init container.                                                                                                | `64Mi`                                                 | No                          |
+
 ## CRD Cleanup Configuration (v2.0)
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
