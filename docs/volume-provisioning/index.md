@@ -31,6 +31,7 @@ The Scality CSI Driver for S3 supports two methods for creating and managing per
     **Common Configuration:**
 
     - [Mount Options Reference](mount-options.md) - Customization options for both provisioning methods
+    - [TLS Configuration](../driver-deployment/tls-configuration.md) - Custom CA certificate support for HTTPS S3 endpoints
 <!-- markdownlint-enable MD046 -->
 
 ### Quick Start: Static Provisioning
