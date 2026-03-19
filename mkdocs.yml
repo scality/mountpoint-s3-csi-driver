@@ -106,6 +106,7 @@ nav:
       - Quick Start: driver-deployment/quick-start.md
       - Installation Guide: driver-deployment/installation-guide.md
       - Upgrade Guide: driver-deployment/upgrade-guide.md
+      - Node Startup Taint: driver-deployment/node-startup-taint.md
       - Uninstallation: driver-deployment/uninstallation.md
   - Volume Provisioning:
       - Overview: volume-provisioning/index.md

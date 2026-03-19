@@ -32,6 +32,9 @@ spec:
         {{- else if .Values.node.defaultTolerations }}
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: s3.csi.scality.com/agent-not-ready
+          operator: Exists
+          effect: NoExecute
         - operator: Exists
           effect: NoExecute
           tolerationSeconds: 300

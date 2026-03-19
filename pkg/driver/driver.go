@@ -237,6 +237,7 @@ type Driver struct {
 	NodeID   string
 
 	NodeServer *node.S3NodeServer
+	Clientset  kubernetes.Interface
 
 	// Controller credential provider for dynamic provisioning
 	controllerCredProvider *controllerCredProvider.Provider
@@ -340,6 +341,7 @@ func NewDriver(endpoint string, mpVersion string, nodeID string) (*Driver, error
 		Endpoint:               endpoint,
 		NodeID:                 nodeID,
 		NodeServer:             nodeServer,
+		Clientset:              clientset,
 		controllerCredProvider: controllerCredProvider,
 		stopCh:                 stopCh,
 	}, nil
@@ -354,6 +356,7 @@ func NewDriverForTests(endpoint, nodeID string, nodeServer *node.S3NodeServer, k
 		Endpoint:               endpoint,
 		NodeID:                 nodeID,
 		NodeServer:             nodeServer,
+		Clientset:              kubeClient,
 		controllerCredProvider: controllerCredProv,
 		stopCh:                 make(chan struct{}),
 	}
@@ -403,6 +406,12 @@ func (d *Driver) Run() error {
 	csi.RegisterControllerServer(d.Srv, d)
 	if d.NodeServer != nil {
 		csi.RegisterNodeServer(d.Srv, d.NodeServer)
+	}
+
+	// Start taint watcher when gRPC server is ready to accept connections.
+	// Only start in node mode (not controller-only).
+	if d.NodeServer != nil && d.Clientset != nil {
+		go node.StartNotReadyTaintWatcher(d.Clientset, d.NodeID, node.TaintWatcherDuration)
 	}
 
 	klog.Infof("Listening for connections on address: %#v", listener.Addr())

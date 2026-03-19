@@ -4,6 +4,10 @@ inputs:
   cluster_name:
     description: "Name for the Kind cluster"
     required: true
+  kind_config:
+    description: "Path to kind cluster config file (optional, for multi-node)"
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -24,8 +28,17 @@ runs:
         go install github.com/magefile/mage@latest
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-    - name: Create Kind Cluster
+    - name: Create Kind Cluster (default)
+      if: inputs.kind_config == ''
       uses: helm/kind-action@v1.12.0
       with:
         wait: 90s
         cluster_name: ${{ inputs.cluster_name }}
+
+    - name: Create Kind Cluster (custom config)
+      if: inputs.kind_config != ''
+      uses: helm/kind-action@v1.12.0
+      with:
+        wait: 90s
+        cluster_name: ${{ inputs.cluster_name }}
+        config: ${{ inputs.kind_config }}
