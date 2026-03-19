@@ -14,12 +14,17 @@ const (
 	AnnotationNeedsUnmount = constants.DriverName + "/needs-unmount"
 	// AnnotationNoNewWorkload is the annotation used to prevent new workloads from being assigned
 	AnnotationNoNewWorkload = constants.DriverName + "/no-new-workload"
+	// AnnotationVolumeName stores the PV name as an annotation (no length limit unlike labels).
+	AnnotationVolumeName = constants.DriverName + "/volume-name"
+	// AnnotationVolumeId stores the volume ID as an annotation (no length limit unlike labels).
+	AnnotationVolumeId = constants.DriverName + "/volume-id"
 )
 
-// Pod labels
+// Deprecated Pod labels -- kept for backward compatibility with older Mountpoint Pods.
 const (
-	// LabelVolumeId is the label used to store the volume ID
-	LabelVolumeId = constants.DriverName + "/volume-id"
+	// DeprecatedLabelVolumeId is the deprecated label used to store the volume ID.
+	// Use AnnotationVolumeId instead. Labels are limited to 63 characters.
+	DeprecatedLabelVolumeId = constants.DriverName + "/volume-id"
 )
 
 // MountpointPodNameFor returns a consistent and unique Pod name for
