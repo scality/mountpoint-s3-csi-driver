@@ -237,7 +237,7 @@ func (c *Creator) configureTLS(volumes []corev1.Volume, volumeMounts []corev1.Vo
 			ImagePullPolicy: c.config.TLS.InitImagePullPolicy,
 			Command: []string{
 				"sh", "-c",
-				"set -e; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
+				"set -e; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; echo >> /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{
