@@ -24,12 +24,31 @@ const (
 
 const EmptyDirSizeLimit = 10 * 1024 * 1024 // 10MiB
 
+const TLSEmptyDirSizeLimit = 2 * 1024 * 1024 // 2MiB — room for system CA bundle (~200KB) + custom CAs
+
+// Volume and container name constants for TLS configuration.
+const (
+	TLSCACertVolumeName      = "custom-ca-cert"
+	TLSEtcSSLCertsVolumeName = "etc-ssl-certs"
+	TLSInitContainerName     = "install-ca-cert"
+)
+
 // A ContainerConfig represents configuration for containers in the spawned Mountpoint Pods.
 type ContainerConfig struct {
 	Command         string
 	Image           string
 	HeadroomImage   string // Image to use for headroom pods (typically a pause container)
 	ImagePullPolicy corev1.PullPolicy
+}
+
+// TLSConfig holds TLS configuration for custom CA certificates in mounter pods.
+type TLSConfig struct {
+	CACertConfigMapName    string
+	InitImage              string
+	InitImagePullPolicy    corev1.PullPolicy
+	InitResourcesReqCPU    resource.Quantity
+	InitResourcesReqMemory resource.Quantity
+	InitResourcesLimMemory resource.Quantity
 }
 
 // A Config represents configuration for spawned Mountpoint Pods.
@@ -42,6 +61,7 @@ type Config struct {
 	Container                   ContainerConfig
 	CSIDriverVersion            string
 	ClusterVariant              cluster.Variant
+	TLS                         *TLSConfig
 }
 
 // A Creator allows creating specification for Mountpoint Pods to schedule.
@@ -61,6 +81,31 @@ func NewCreator(config Config) *Creator {
 func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.Pod {
 	node := pod.Spec.NodeName
 	name := MountpointPodNameFor(string(pod.UID), pv.Name)
+
+	volumes := []corev1.Volume{
+		// This emptyDir volume is used for communication between Mountpoint Pod and the CSI Driver Node Pod
+		{
+			Name: CommunicationDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{
+					Medium:    corev1.StorageMediumMemory,
+					SizeLimit: resource.NewQuantity(EmptyDirSizeLimit, resource.BinarySI),
+				},
+			},
+		},
+	}
+
+	volumeMounts := []corev1.VolumeMount{
+		{
+			Name:      CommunicationDirName,
+			MountPath: filepath.Join("/", CommunicationDirName),
+		},
+	}
+
+	var initContainers []corev1.Container
+	if c.config.TLS != nil && c.config.TLS.CACertConfigMapName != "" {
+		volumes, volumeMounts, initContainers = c.configureTLS(volumes, volumeMounts)
+	}
 
 	mpPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -82,6 +127,7 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 			SecurityContext: &corev1.PodSecurityContext{
 				FSGroup: c.config.ClusterVariant.MountpointPodUserID(),
 			},
+			InitContainers: initContainers,
 			Containers: []corev1.Container{{
 				Name:            "mountpoint",
 				Image:           c.config.Container.Image,
@@ -98,12 +144,7 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
 				},
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      CommunicationDirName,
-						MountPath: filepath.Join("/", CommunicationDirName),
-					},
-				},
+				VolumeMounts: volumeMounts,
 			}},
 			PriorityClassName: c.config.PriorityClassName,
 			Affinity: &corev1.Affinity{
@@ -132,18 +173,7 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 				//   would also get descheduled naturally due to CSI volume lifecycle.
 				{Operator: corev1.TolerationOpExists},
 			},
-			Volumes: []corev1.Volume{
-				// This emptyDir volume is used for communication between Mountpoint Pod and the CSI Driver Node Pod
-				{
-					Name: CommunicationDirName,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{
-							Medium:    corev1.StorageMediumMemory,
-							SizeLimit: resource.NewQuantity(EmptyDirSizeLimit, resource.BinarySI),
-						},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 
@@ -154,6 +184,96 @@ func (c *Creator) Create(pod *corev1.Pod, pv *corev1.PersistentVolume) *corev1.P
 	}
 
 	return mpPod
+}
+
+// configureTLS adds TLS-related volumes, volume mounts, and init containers for custom CA certificate support.
+// The init container installs the CA certificate into the system trust store so mount-s3's s2n-tls can use it.
+func (c *Creator) configureTLS(volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount, []corev1.Container) {
+	// ConfigMap volume with ca-bundle.crt key.
+	// CA certificates are public, non-sensitive data — ConfigMap is the standard K8s choice over Secret.
+	// Items selects only the ca-bundle.crt key to avoid mounting unrelated keys if the ConfigMap is shared.
+	volumes = append(volumes, corev1.Volume{
+		Name: TLSCACertVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: c.config.TLS.CACertConfigMapName,
+				},
+				Items: []corev1.KeyToPath{{Key: "ca-bundle.crt", Path: "ca-bundle.crt"}},
+			},
+		},
+	})
+
+	// emptyDir for shared cert store between init container and main container
+	volumes = append(volumes, corev1.Volume{
+		Name: TLSEtcSSLCertsVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{
+				SizeLimit: resource.NewQuantity(TLSEmptyDirSizeLimit, resource.BinarySI),
+			},
+		},
+	})
+
+	// Mount the shared cert store in the main container (read-only)
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
+		Name:      TLSEtcSSLCertsVolumeName,
+		MountPath: "/etc/ssl/certs",
+		ReadOnly:  true,
+	})
+
+	// Init container that builds a combined CA bundle for mount-s3's s2n-tls.
+	//
+	// Why an init container instead of mounting the ConfigMap directly at /etc/ssl/certs?
+	// Mounting the ConfigMap there would shadow the system CA bundle, leaving mount-s3
+	// unable to verify well-known CAs (e.g., AWS endpoints, OCSP responders).
+	// Instead, we copy the system bundle and append the custom CA into a shared emptyDir,
+	// so s2n-tls finds both default and custom CAs in /etc/ssl/certs/ca-certificates.crt.
+	//
+	// Runs as non-root to comply with PodSecurity "restricted" policy.
+	initContainers := []corev1.Container{
+		{
+			Name:            TLSInitContainerName,
+			Image:           c.config.TLS.InitImage,
+			ImagePullPolicy: c.config.TLS.InitImagePullPolicy,
+			Command: []string{
+				"sh", "-c",
+				"set -e; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      TLSCACertVolumeName,
+					MountPath: "/custom-ca",
+					ReadOnly:  true,
+				},
+				{
+					Name:      TLSEtcSSLCertsVolumeName,
+					MountPath: "/shared-certs",
+				},
+			},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    c.config.TLS.InitResourcesReqCPU,
+					corev1.ResourceMemory: c.config.TLS.InitResourcesReqMemory,
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: c.config.TLS.InitResourcesLimMemory,
+				},
+			},
+			SecurityContext: &corev1.SecurityContext{
+				AllowPrivilegeEscalation: ptr.To(false),
+				Capabilities: &corev1.Capabilities{
+					Drop: []corev1.Capability{"ALL"},
+				},
+				RunAsNonRoot: ptr.To(true),
+				RunAsUser:    c.config.ClusterVariant.MountpointPodUserID(),
+				SeccompProfile: &corev1.SeccompProfile{
+					Type: corev1.SeccompProfileTypeRuntimeDefault,
+				},
+			},
+		},
+	}
+
+	return volumes, volumeMounts, initContainers
 }
 
 // extractVolumeAttributes extracts volume attributes from given `pv`.
