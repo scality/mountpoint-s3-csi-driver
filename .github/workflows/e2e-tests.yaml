@@ -257,3 +257,93 @@ jobs:
         with:
           name: s3-tls-verify-artifacts
           path: artifacts
+
+  e2e-tests-tls:
+    name: E2E TLS
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 45
+    needs: dev-image
+    env:
+      CLOUDSERVER_TAG: ${{ vars.CLOUDSERVER_RING_9_5 }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: CI Setup
+        uses: ./.github/actions/ci-setup
+        with:
+          cluster_name: tls-e2e-cluster
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "tests/e2e/go.mod"
+          cache: true
+
+      - name: Install Ginkgo CLI
+        run: go install github.com/onsi/ginkgo/v2/ginkgo@v2.25.2
+
+      - name: Pull Container Images and Download Go Dependencies in Parallel
+        run: |
+          CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
+          CSI_IMAGE_TAG=${{ github.sha }} \
+          CLOUDSERVER_TAG=${CLOUDSERVER_TAG} \
+          mage e2e:pullImages
+
+      - name: Load CSI Driver into KIND
+        run: kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name tls-e2e-cluster
+
+      - name: Deploy S3 with TLS
+        run: mage e2e:deployS3TLS
+
+      - name: Get Host IP Address
+        id: get_ip
+        run: echo "host_ip=$(hostname -I | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      # DNS must be configured at two levels for TLS hostname resolution:
+      # - /etc/hosts: so the CI runner (Ginkgo test binary) can reach s3.scality.com for bucket operations
+      # - CoreDNS: so pods inside the KIND cluster (mounter pods, init containers) can reach s3.scality.com
+      - name: Configure hosts file for S3 FQDN
+        run: |
+          echo "${{ steps.get_ip.outputs.host_ip }} s3.scality.com" | sudo tee -a /etc/hosts
+
+      - name: Configure CoreDNS for S3 FQDN
+        run: S3_HOST_IP=${{ steps.get_ip.outputs.host_ip }} mage e2e:configureCIDNS
+
+      - name: Start Kubernetes Event and Log Capture
+        run: mage e2e:startCapture
+
+      - name: Apply CRDs
+        run: mage e2e:applyCRDs
+
+      - name: Run TLS E2E Tests
+        run: |
+          mkdir -p test-results
+          S3_ENDPOINT_URL=https://s3.scality.com:8443 \
+          CSI_IMAGE_TAG=${{ github.sha }} \
+          CSI_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }} \
+          JUNIT_REPORT=./test-results/e2e-tls-tests-results.xml \
+          mage e2e:tlsAll
+
+      - name: Stop Capture and Collect Artifacts
+        if: always()
+        run: mage e2e:stopCapture
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-tls-test-artifacts
+          path: artifacts
+
+      - name: Upload test results to Codecov
+        if: ${{ always() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./tests/e2e/test-results/e2e-tls-tests-results.xml
+          flags: e2e_tls_tests
+          slug: scality/mountpoint-s3-csi-driver

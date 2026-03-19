@@ -399,6 +399,99 @@ spec:
 	return nil
 }
 
+// =============================================================================
+// TLS CA ConfigMap Helpers
+// =============================================================================
+
+const caCertConfigMapName = "s3-ca-cert"
+
+// ensureCACertConfigMap creates the CA certificate ConfigMap in the given namespaces.
+func ensureCACertConfigMap(namespaces []string) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+	caCertPath := filepath.Join(wd, certsDir, "ca.crt")
+
+	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
+		return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCertPath)
+	}
+
+	for _, ns := range namespaces {
+		fmt.Printf("Creating CA cert ConfigMap %s in namespace %s...\n", caCertConfigMapName, ns)
+		if err := ensureNamespace(ns); err != nil {
+			return fmt.Errorf("failed to create namespace %s: %w", ns, err)
+		}
+		cmYAML, err := sh.Output("kubectl", "create", "configmap", caCertConfigMapName,
+			fmt.Sprintf("--from-file=ca-bundle.crt=%s", caCertPath),
+			"-n", ns, "--dry-run=client", "-o", "yaml")
+		if err != nil {
+			return fmt.Errorf("failed to generate ConfigMap YAML for namespace %s: %w", ns, err)
+		}
+		if err := pipeToKubectlApply(cmYAML); err != nil {
+			return fmt.Errorf("failed to apply CA cert ConfigMap in namespace %s: %w", ns, err)
+		}
+	}
+
+	fmt.Printf("CA cert ConfigMap %s created in namespaces: %v\n", caCertConfigMapName, namespaces)
+	return nil
+}
+
+// EnsureCACertConfigMap creates the CA certificate ConfigMap in the E2E and mount-s3 namespaces.
+func (E2E) EnsureCACertConfigMap() error {
+	return ensureCACertConfigMap([]string{GetE2ENamespace(), "mount-s3"})
+}
+
+// TLSAll runs the full TLS E2E workflow: load credentials, deploy S3 with TLS,
+// install CSI driver with TLS config, create CA ConfigMaps, and run E2E tests.
+func (E2E) TLSAll() error {
+	fmt.Println("Starting TLS E2E workflow...")
+
+	// Load credentials from integration_config.json
+	if err := LoadCredentials(); err != nil {
+		return fmt.Errorf("failed to load credentials: %w", err)
+	}
+
+	// Create CA cert ConfigMap in the controller namespace BEFORE Helm install.
+	// The controller's ConfigMap volume is NOT optional — if the ConfigMap doesn't exist,
+	// the controller pod stays in ContainerCreating (same pattern as the credentials Secret).
+	if err := ensureCACertConfigMap([]string{GetE2ENamespace()}); err != nil {
+		return fmt.Errorf("failed to create CA cert ConfigMap in controller namespace: %w", err)
+	}
+
+	// Install CSI driver with TLS ConfigMap setting
+	if err := installCSIDriver(false, "--set", fmt.Sprintf("tls.caCertConfigMap=%s", caCertConfigMapName)); err != nil {
+		return fmt.Errorf("CSI driver installation failed: %w", err)
+	}
+
+	// Create CA cert ConfigMap in mount-s3 namespace AFTER Helm install.
+	// The mount-s3 namespace is created by the Helm chart, so it doesn't exist yet before install.
+	// Mounter pods are created on-demand (when workloads mount PVCs), so this timing is safe.
+	if err := ensureCACertConfigMap([]string{"mount-s3"}); err != nil {
+		return fmt.Errorf("failed to create CA cert ConfigMap in mount-s3 namespace: %w", err)
+	}
+
+	// Set AWS_CA_BUNDLE so the Ginkgo test binary's S3 client trusts the custom CA
+	// when creating buckets for pre-provisioned PV tests.
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+	caCertPath := filepath.Join(wd, certsDir, "ca.crt")
+	if err := os.Setenv("AWS_CA_BUNDLE", caCertPath); err != nil {
+		return fmt.Errorf("failed to set AWS_CA_BUNDLE: %w", err)
+	}
+
+	// Run tests against HTTPS endpoint
+	tlsEndpoint := fmt.Sprintf("https://%s:%d", tlsHostname, tlsPort)
+	if err := runGinkgoTests(tlsEndpoint, "", 0, ""); err != nil {
+		return fmt.Errorf("TLS E2E tests failed: %w", err)
+	}
+
+	fmt.Println("TLS E2E workflow completed successfully")
+	return nil
+}
+
 // PullImages pulls container images and downloads Go dependencies in parallel.
 // Reads CSI_IMAGE_REPOSITORY, CSI_IMAGE_TAG, and CLOUDSERVER_TAG env vars.
 // Skips individual pulls if the corresponding env var is empty.
@@ -912,7 +1005,8 @@ func installCSIForE2E() error {
 // installCSIDriver is the consolidated installer for both E2E and OpenShift workflows.
 // When openshift is true, grants image pull access to mount-s3 namespace after install.
 // Both paths use "upgrade --install" for idempotency.
-func installCSIDriver(openshift bool) error {
+// extraHelmArgs allows passing additional --set or other Helm flags.
+func installCSIDriver(openshift bool, extraHelmArgs ...string) error {
 	namespace := GetE2ENamespace()
 	s3EndpointURL := os.Getenv("S3_ENDPOINT_URL")
 	if s3EndpointURL == "" {
@@ -971,6 +1065,9 @@ func installCSIDriver(openshift bool) error {
 	if imageRepo != "" {
 		helmArgs = append(helmArgs, "--set", fmt.Sprintf("image.repository=%s", imageRepo))
 	}
+
+	// Append extra Helm args (e.g., TLS settings)
+	helmArgs = append(helmArgs, extraHelmArgs...)
 
 	fmt.Println("Running Helm install...")
 	if err := sh.RunV("helm", helmArgs...); err != nil {
