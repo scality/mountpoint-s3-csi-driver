@@ -143,12 +143,16 @@ mountpointPod:
 # TLS configuration for custom CA certificates
 tls:
   # Name of the ConfigMap containing the CA certificate bundle (key: ca-bundle.crt).
-  # Must exist in TWO namespaces because the controller and mounter pods run in separate namespaces:
-  #   1. Controller namespace (e.g., kube-system) — mounted by the s3-csi-controller for AWS SDK S3 calls
-  #   2. mountpointPod.namespace (e.g., mount-s3) — mounted by mounter pod init containers for mount-s3
-  # If missing from either namespace, the respective pod stays in ContainerCreating.
-  # Leave empty to disable TLS CA certificate injection
+  # Must exist in TWO namespaces: controller namespace and mountpointPod.namespace.
+  # When tls.caCertData is also set, Helm creates the ConfigMap in both namespaces automatically.
+  # When tls.caCertData is empty, you must create the ConfigMap manually in both namespaces.
+  # Leave empty to disable TLS CA certificate injection.
   caCertConfigMap: ""
+  # PEM-encoded CA certificate content. When set together with caCertConfigMap,
+  # Helm creates the ConfigMap in both namespaces automatically (Helm-managed mode).
+  # Use: --set-file tls.caCertData=/path/to/your/ca.crt
+  # When empty, users must create the ConfigMap manually in both namespaces (manual mode).
+  caCertData: ""
   initImage:
     repository: alpine
     tag: "3.21"

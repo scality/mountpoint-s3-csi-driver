@@ -215,6 +215,12 @@ func TestCreatingMountpointPodsWithTLS(t *testing.T) {
 	assert.Equals(t, "alpine:3.21", initContainer.Image)
 	assert.Equals(t, corev1.PullIfNotPresent, initContainer.ImagePullPolicy)
 
+	// Verify init container command includes ca-certificates existence check
+	assert.Equals(t, []string{
+		"sh", "-c",
+		"set -e; if [ ! -f /etc/ssl/certs/ca-certificates.crt ]; then echo 'ERROR: /etc/ssl/certs/ca-certificates.crt not found. The TLS init image must include the ca-certificates package.' >&2; exit 1; fi; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; echo >> /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
+	}, initContainer.Command)
+
 	// Verify init container mounts
 	assert.Equals(t, 2, len(initContainer.VolumeMounts))
 	assert.Equals(t, mppod.TLSCACertVolumeName, initContainer.VolumeMounts[0].Name)

@@ -413,8 +413,11 @@ func ensureCACertConfigMap(namespaces []string) error {
 	}
 	caCertPath := filepath.Join(wd, certsDir, "ca.crt")
 
-	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
-		return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCertPath)
+	if _, err := os.Stat(caCertPath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("CA certificate not found at %s (run GenerateTLSCerts first)", caCertPath)
+		}
+		return fmt.Errorf("failed to access CA certificate at %s: %w", caCertPath, err)
 	}
 
 	for _, ns := range namespaces {
@@ -443,7 +446,7 @@ func (E2E) EnsureCACertConfigMap() error {
 }
 
 // TLSAll runs the full TLS E2E workflow: load credentials, deploy S3 with TLS,
-// install CSI driver with TLS config, create CA ConfigMaps, and run E2E tests.
+// install CSI driver with Helm-managed TLS ConfigMaps, and run E2E tests.
 func (E2E) TLSAll() error {
 	fmt.Println("Starting TLS E2E workflow...")
 
@@ -452,32 +455,28 @@ func (E2E) TLSAll() error {
 		return fmt.Errorf("failed to load credentials: %w", err)
 	}
 
-	// Create CA cert ConfigMap in the controller namespace BEFORE Helm install.
-	// The controller's ConfigMap volume is NOT optional — if the ConfigMap doesn't exist,
-	// the controller pod stays in ContainerCreating (same pattern as the credentials Secret).
-	if err := ensureCACertConfigMap([]string{GetE2ENamespace()}); err != nil {
-		return fmt.Errorf("failed to create CA cert ConfigMap in controller namespace: %w", err)
-	}
-
-	// Install CSI driver with TLS ConfigMap setting
-	if err := installCSIDriver(false, "--set", fmt.Sprintf("tls.caCertConfigMap=%s", caCertConfigMapName)); err != nil {
-		return fmt.Errorf("CSI driver installation failed: %w", err)
-	}
-
-	// Create CA cert ConfigMap in mount-s3 namespace AFTER Helm install.
-	// The mount-s3 namespace is created by the Helm chart, so it doesn't exist yet before install.
-	// Mounter pods are created on-demand (when workloads mount PVCs), so this timing is safe.
-	if err := ensureCACertConfigMap([]string{"mount-s3"}); err != nil {
-		return fmt.Errorf("failed to create CA cert ConfigMap in mount-s3 namespace: %w", err)
-	}
-
-	// Set AWS_CA_BUNDLE so the Ginkgo test binary's S3 client trusts the custom CA
-	// when creating buckets for pre-provisioned PV tests.
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 	caCertPath := filepath.Join(wd, certsDir, "ca.crt")
+
+	if _, err := os.Stat(caCertPath); err != nil {
+		return fmt.Errorf("CA certificate not accessible at %s (run GenerateTLSCerts first): %w", caCertPath, err)
+	}
+
+	// Install CSI driver with Helm-managed TLS ConfigMaps.
+	// --set-file passes the PEM content directly, and the Helm chart creates
+	// the ConfigMap in both controller and mounter pod namespaces automatically.
+	if err := installCSIDriver(false,
+		"--set", fmt.Sprintf("tls.caCertConfigMap=%s", caCertConfigMapName),
+		"--set-file", fmt.Sprintf("tls.caCertData=%s", caCertPath),
+	); err != nil {
+		return fmt.Errorf("CSI driver installation failed: %w", err)
+	}
+
+	// Set AWS_CA_BUNDLE so the Ginkgo test binary's S3 client trusts the custom CA
+	// when creating buckets for pre-provisioned PV tests.
 	if err := os.Setenv("AWS_CA_BUNDLE", caCertPath); err != nil {
 		return fmt.Errorf("failed to set AWS_CA_BUNDLE: %w", err)
 	}

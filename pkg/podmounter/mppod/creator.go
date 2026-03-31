@@ -237,7 +237,7 @@ func (c *Creator) configureTLS(volumes []corev1.Volume, volumeMounts []corev1.Vo
 			ImagePullPolicy: c.config.TLS.InitImagePullPolicy,
 			Command: []string{
 				"sh", "-c",
-				"set -e; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; echo >> /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
+				"set -e; if [ ! -f /etc/ssl/certs/ca-certificates.crt ]; then echo 'ERROR: /etc/ssl/certs/ca-certificates.crt not found. The TLS init image must include the ca-certificates package.' >&2; exit 1; fi; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; echo >> /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{

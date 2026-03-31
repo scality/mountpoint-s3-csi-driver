@@ -47,7 +47,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 | "Access Denied" | Invalid S3 credentials | 1. Check secret contains `access_key_id` and `secret_access_key`<br/>2. Test credentials with AWS CLI<br/>3. Check bucket policy |
 | "InvalidBucketName" | Bucket name issue | 1. Check bucket exists<br/>2. Check bucket name format<br/>3. Ensure no typos |
 | "AWS_ENDPOINT_URL environment variable must be set" | Missing endpoint configuration | Set `s3EndpointUrl` in Helm values or driver configuration |
-| TLS handshake failure or certificate verify failed | CA certificate ConfigMap missing or incorrect | Check ConfigMap exists in both `kube-system` and `mount-s3` namespaces with key `ca-bundle.crt`. See [TLS Configuration](driver-deployment/tls-configuration.md#certificate-not-found) |
+| TLS handshake failure or certificate verify failed | CA certificate ConfigMap missing or incorrect | Check the CA ConfigMap exists in both the controller namespace (default: `kube-system`) and the mounter pod namespace (`mountpointPod.namespace`, default: `mount-s3`) with key `ca-bundle.crt`. See [TLS Configuration](driver-deployment/tls-configuration.md#certificate-not-found) |
 
 ### Volume Issues
 

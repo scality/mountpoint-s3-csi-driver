@@ -22,11 +22,11 @@ These parameters configure the overall behavior of the CSI driver components.
 
 ## S3 Global Configuration
 
-<!-- markdownlint-disable MD046 -->
+
 !!! important "Required Configuration"
     The S3 endpoint URL must be configured for the CSI driver to function. Use the global `s3.endpointUrl` and `s3.region` settings,
     which are used by both node and controller components for dynamic provisioning.
-<!-- markdownlint-enable MD046 -->
+
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -35,10 +35,10 @@ These parameters configure the overall behavior of the CSI driver components.
 
 ### Legacy Values (Backward Compatibility)
 
-<!-- markdownlint-disable MD046 -->
+
 !!! warning "Deprecated Configuration"
     The following legacy Helm values are supported for backward compatibility with earlier versions. **Use the new `s3.*` values for new installations.** Legacy values may be removed in a future release.
-<!-- markdownlint-enable MD046 -->
+
 
 | Legacy Value | New Value | Behavior |
 |--------------|-----------|----------|
@@ -56,14 +56,14 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 
 ## S3 Credentials Secret Configuration
 
-<!-- markdownlint-disable MD046 -->
+
 !!! important "Security Note"
     The Helm chart **does not create secrets automatically**. A Kubernetes Secret containing S3 credentials must be created before installing the chart. The secret must contain the following keys:
 
     - `access_key_id`: S3 Access Key ID.
     - `secret_access_key`: S3 Secret Access Key.
     - `session_token` (optional): S3 Session Token, if using temporary credentials.
-<!-- markdownlint-enable MD046 -->
+
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -74,7 +74,7 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 
 ## Node Plugin Configuration
 
-<!-- markdownlint-disable MD046 -->
+
 !!! note "SELinux Context Note"
     The `node.seLinuxOptions.*` parameters define the SELinux security context for the CSI driver containers.
     These settings are applied to CSI Node DaemonSet containers and allow the containers to interact with systemd and manage mount points in SELinux-enforced environments.
@@ -84,7 +84,7 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
     - `type`: `super_t`
     - `role`: `system_r`
     - `level`: `s0`
-<!-- markdownlint-enable MD046 -->
+
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -125,11 +125,11 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 
 ## Controller Plugin Configuration (Dynamic Provisioning)
 
-<!-- markdownlint-disable MD046 -->
+
 !!! note "Dynamic Provisioning"
     The controller component is always deployed and provides dynamic provisioning capabilities.
     It automatically creates and deletes S3 buckets based on PersistentVolumeClaim requests that reference a StorageClass with the CSI driver.
-<!-- markdownlint-enable MD046 -->
+
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -138,10 +138,10 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 
 ## Mountpoint Pod Configuration (v2.0)
 
-<!-- markdownlint-disable MD046 -->
+
 !!! info "Pod Mounter Strategy"
     Version 2.0 uses pod-based mounter as the default strategy. Mounter pods are created in the `mount-s3` namespace to handle S3 mount operations with improved isolation and resource management.
-<!-- markdownlint-enable MD046 -->
+
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -155,16 +155,16 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 
 ## TLS Configuration
 
-<!-- markdownlint-disable MD046 -->
+
 !!! info "Custom CA Certificates"
     When your S3 endpoint uses TLS with a private or internal CA, configure the `tls.*` parameters to inject the CA certificate.
-    The ConfigMap must exist in **two** namespaces (controller and mounter pod) because they run in separate namespaces.
-    See the [TLS Configuration Guide](../driver-deployment/tls-configuration.md) for ordering constraints and setup instructions.
-<!-- markdownlint-enable MD046 -->
+    **Recommended:** Use `tls.caCertData` with `--set-file` so Helm creates the ConfigMap in both namespaces automatically.
+    See the [TLS Configuration Guide](../driver-deployment/tls-configuration.md) for setup instructions.
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
-| `tls.caCertConfigMap`                                | Name of the ConfigMap containing the CA certificate bundle (key: `ca-bundle.crt`). Must exist in both the controller namespace and `mountpointPod.namespace`. Create in the controller namespace **before** Helm install, and in `mountpointPod.namespace` **after** (since Helm creates that namespace). If missing from either namespace, the respective pod stays in `ContainerCreating`. Leave empty to disable. | `""`                                                   | No                          |
+| `tls.caCertConfigMap`                                | Name of the ConfigMap containing the CA certificate bundle (key: `ca-bundle.crt`). When `tls.caCertData` is also set, Helm creates the ConfigMap in both namespaces automatically. When `tls.caCertData` is empty, you must create the ConfigMap manually in both the controller namespace and `mountpointPod.namespace`. Leave empty to disable TLS. | `""`                                                   | No                          |
+| `tls.caCertData`                                     | PEM-encoded CA certificate content. When set together with `tls.caCertConfigMap`, Helm creates the ConfigMap in both namespaces automatically. Use `--set-file tls.caCertData=/path/to/ca.crt`. When empty, users must create the ConfigMap manually (see [Manual Mode](../driver-deployment/tls-configuration.md#manual-mode)). | `""`                                                   | No                          |
 | `tls.initImage.repository`                           | Image repository for the CA certificate installation initContainer in mounter pods.                                                                | `alpine`                                               | No                          |
 | `tls.initImage.tag`                                  | Image tag for the CA certificate installation initContainer.                                                                                       | `3.21`                                                 | No                          |
 | `tls.initImage.pullPolicy`                           | Pull policy for the CA certificate init image.                                                                                                     | `IfNotPresent`                                         | No                          |
