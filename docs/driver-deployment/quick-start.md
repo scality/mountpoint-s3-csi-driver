@@ -6,7 +6,6 @@ This guide provides a fast way to deploy the Scality CSI Driver for S3 using Hel
 
 Before starting, ensure all requirements outlined in the **[Prerequisites](prerequisites.md)** guide are met.
 
-<!-- markdownlint-disable MD046 -->
 !!! warning "For Testing Only"
     The quick start guide is intended for testing purposes only. The installation uses default values including:
 
@@ -15,7 +14,6 @@ Before starting, ensure all requirements outlined in the **[Prerequisites](prere
     - Default S3 Region (can be overridden at volume level): `us-east-1`
 
     For production deployments and to customize these values or use a different namespace, see the [installation guide](installation-guide.md).
-<!-- markdownlint-enable MD046 -->
 
 ## Installation
 
