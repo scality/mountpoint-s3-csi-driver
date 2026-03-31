@@ -45,7 +45,7 @@ kubectl create secret generic s3-secret \
 helm install \
   scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.1.1 \
+  --version 2.2.0 \
   --set node.s3EndpointUrl="${S3_ENDPOINT_URL}"
 ```
 

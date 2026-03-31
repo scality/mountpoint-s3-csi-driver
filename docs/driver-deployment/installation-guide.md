@@ -116,7 +116,7 @@ Deploy the driver with minimal configuration.
 ```bash
 helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.1.1 \
+  --version 2.2.0 \
   --set node.s3EndpointUrl="${S3_ENDPOINT_URL}" \
   --set s3CredentialSecret.name="${SECRET_NAME}" \
   --namespace ${NAMESPACE}
@@ -190,7 +190,7 @@ Deploy the driver using the custom values file.
 ```bash
 helm install scality-mountpoint-s3-csi-driver \
   oci://ghcr.io/scality/mountpoint-s3-csi-driver/helm-charts/scality-mountpoint-s3-csi-driver \
-  --version 2.1.1 \
+  --version 2.2.0 \
   --values values-production.yaml \
   --namespace ${NAMESPACE}
 ```
