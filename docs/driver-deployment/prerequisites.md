@@ -30,6 +30,8 @@ The deployment of the Scality CSI Driver for S3 requires access to several conta
 | **Liveness Probe** | `ghcr.io/scality/mountpoint-s3-csi-driver/livenessprobe:v2.16.0` | GitHub Container Registry (GHCR) | Health monitoring for CSI driver pods |
 | **CSI Provisioner** | `ghcr.io/scality/mountpoint-s3-csi-driver/csi-provisioner:v5.3.0` | GitHub Container Registry (GHCR) | External provisioner for CSI driver (Dynamic provisioning feature) |
 | **Pause Container** | `ghcr.io/scality/mountpoint-s3-csi-driver/pause:3.10` | GitHub Container Registry (GHCR) | Headroom pods for pod mounter resource management |
+| **TLS Init Container** | `ghcr.io/scality/mountpoint-s3-csi-driver/alpine:3.21` | GitHub Container Registry (GHCR) | Injects custom CA certificates into mounter pods (only pulled when `tls.caCertConfigMap` is set in Helm chart) |
+
 
 !!! note "Private Registry Configuration"
     If using a private container registry or image mirroring, update the `image.repository` values in the Helm chart configuration accordingly.
