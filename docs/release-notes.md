@@ -2,7 +2,7 @@
 
 ## [2.2.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.2.0)
 
-March 31, 2026
+April 1, 2026
 
 ### What's New
 
