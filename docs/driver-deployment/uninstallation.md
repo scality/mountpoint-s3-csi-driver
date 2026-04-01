@@ -4,13 +4,11 @@ This guide provides instructions for completely removing the Scality CSI Driver 
 
 ## Before You Begin
 
-<!-- markdownlint-disable MD046 -->
 !!! warning "Data Persistence"
     - Uninstalling the CSI driver does **not** delete data in S3 buckets
     - Existing PersistentVolumes with `Retain` policy will preserve bucket data
     - Kubernetes pod applications using S3 buckets as volumes will still be able to access their data after the driver is uninstalled deleted as the driver is responsible for mounting S3 when the pod starts.
     - If the driver is re-installed, pods which lost access to S3 will be able to access their data again.
-<!-- markdownlint-enable MD046 -->
 
 !!! danger "Access to Data"
     If the driver is uninstalled while applications are still using S3 volumes, those applications will lose access to their to S3 if the kubernetes pods are deleted. This is due to orphaned FUSE processes.

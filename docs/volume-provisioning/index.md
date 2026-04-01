@@ -16,7 +16,6 @@ The Scality CSI Driver for S3 supports two methods for creating and managing per
 
 ## Getting Started
 
-<!-- markdownlint-disable MD046 -->
 !!! tip "Quick Navigation"
     **Static Provisioning:**
 
@@ -25,13 +24,13 @@ The Scality CSI Driver for S3 supports two methods for creating and managing per
 
     **Dynamic Provisioning:**
 
-    - [Overview & Examples](dynamic-provisioning/overview.md) - StorageClass setup and workflows  
+    - [Overview & Examples](dynamic-provisioning/overview.md) - StorageClass setup and workflows
     - [Credentials Management](../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md) - Template-based and fixed authentication methods
 
     **Common Configuration:**
 
     - [Mount Options Reference](mount-options.md) - Customization options for both provisioning methods
-<!-- markdownlint-enable MD046 -->
+    - [TLS Configuration](../driver-deployment/tls-configuration.md) - Custom CA certificate support for HTTPS S3 endpoints
 
 ### Quick Start: Static Provisioning
 

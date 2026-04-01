@@ -36,6 +36,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 | Pod cannot write/delete files | Missing write permissions | Add `allow-delete` and/or `allow-overwrite` to PV `mountOptions` |
 | `MountVolume.SetUp failed: context deadline exceeded` with mounter pod log showing `accept unix /comm/mount.sock: i/o timeout` | Mounter pod missing FSGroup in security context | Upgrade to the latest release. As a workaround, remove `fsGroup` from workload pod's security context |
 | Pod stuck in `ContainerCreating` with "driver name s3.csi.scality.com not found in the list of registered CSI drivers" | CSI driver not yet registered (startup race condition) | Apply `s3.csi.scality.com/agent-not-ready:NoExecute` taint to nodes. See [Node Startup Taint](driver-deployment/node-startup-taint.md) |
+| Pod stuck in `ContainerCreating` with `configmap "..." not found` event | CA certificate ConfigMap missing from the pod's namespace | Create the ConfigMap in the correct namespace. See [TLS Troubleshooting](driver-deployment/tls-configuration.md#pod-stuck-in-containercreating) |
 
 ### Mount Issues
 
@@ -46,6 +47,7 @@ aws s3 ls s3://your-bucket --endpoint-url https://your-s3-endpoint.com
 | "Access Denied" | Invalid S3 credentials | 1. Check secret contains `access_key_id` and `secret_access_key`<br/>2. Test credentials with AWS CLI<br/>3. Check bucket policy |
 | "InvalidBucketName" | Bucket name issue | 1. Check bucket exists<br/>2. Check bucket name format<br/>3. Ensure no typos |
 | "AWS_ENDPOINT_URL environment variable must be set" | Missing endpoint configuration | Set `s3EndpointUrl` in Helm values or driver configuration |
+| TLS handshake failure or certificate verify failed | CA certificate ConfigMap missing or incorrect | Check the CA ConfigMap exists in both the controller namespace (default: `kube-system`) and the mounter pod namespace (`mountpointPod.namespace`, default: `mount-s3`) with key `ca-bundle.crt`. See [TLS Configuration](driver-deployment/tls-configuration.md#certificate-not-found) |
 
 ### Volume Issues
 

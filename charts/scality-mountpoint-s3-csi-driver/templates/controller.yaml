@@ -61,6 +61,11 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
+            {{- if .Values.tls.caCertConfigMap }}
+            - name: custom-ca-cert
+              mountPath: /etc/ssl/custom-ca
+              readOnly: true
+            {{- end }}
           {{- with .Values.controller.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -84,6 +89,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.s3CredentialSecret.name }}
                   key: {{ .Values.s3CredentialSecret.secretAccessKey }}
+            {{- if .Values.tls.caCertConfigMap }}
+            - name: AWS_CA_BUNDLE
+              value: "/etc/ssl/custom-ca/ca-bundle.crt"
+            {{- end }}
         # Reconciler for MountpointS3PodAttachment CRDs
         - name: s3-pod-reconciler
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
@@ -115,6 +124,20 @@ spec:
               value: {{ printf "%s:%s" .Values.mountpointPod.headroomImage.repository .Values.mountpointPod.headroomImage.tag | quote }}
             - name: MOUNTPOINT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | quote }}
+            {{- if .Values.tls.caCertConfigMap }}
+            - name: TLS_CA_CERT_CONFIGMAP
+              value: {{ .Values.tls.caCertConfigMap | quote }}
+            - name: TLS_INIT_IMAGE
+              value: {{ printf "%s:%s" .Values.tls.initImage.repository .Values.tls.initImage.tag | quote }}
+            - name: TLS_INIT_IMAGE_PULL_POLICY
+              value: {{ .Values.tls.initImage.pullPolicy | quote }}
+            - name: TLS_INIT_RESOURCES_REQUESTS_CPU
+              value: {{ .Values.tls.initResources.requests.cpu | quote }}
+            - name: TLS_INIT_RESOURCES_REQUESTS_MEMORY
+              value: {{ .Values.tls.initResources.requests.memory | quote }}
+            - name: TLS_INIT_RESOURCES_LIMITS_MEMORY
+              value: {{ .Values.tls.initResources.limits.memory | quote }}
+            {{- end }}
         - name: csi-provisioner
           image: {{ .Values.sidecars.csiProvisioner.image.repository }}:{{ .Values.sidecars.csiProvisioner.image.tag }}
           imagePullPolicy: {{ .Values.sidecars.csiProvisioner.image.pullPolicy }}
@@ -127,3 +150,13 @@ spec:
       volumes:
         - name: socket-dir
           emptyDir: {}
+        {{- if .Values.tls.caCertConfigMap }}
+        # ConfigMap volume is NOT optional — if the ConfigMap doesn't exist, the pod stays in
+        # ContainerCreating with a clear event, matching the behavior of the credentials Secret above.
+        - name: custom-ca-cert
+          configMap:
+            name: {{ .Values.tls.caCertConfigMap }}
+            items:
+              - key: ca-bundle.crt
+                path: ca-bundle.crt
+        {{- end }}

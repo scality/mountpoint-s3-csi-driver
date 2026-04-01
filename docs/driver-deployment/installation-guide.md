@@ -38,7 +38,6 @@ The installation process consists of:
 
 - Set the secret access key. Replace `YOUR_SECRET_ACCESS_KEY` with the actual secret access key.
 
-    <!-- markdownlint-disable MD046 -->
     !!! note
         To avoid storing sensitive credentials in your shell history, history can be temporarily disabled before running commands with sensitive information:
 
@@ -49,7 +48,6 @@ The installation process consists of:
 
         set -o history # turn it back on
         ```
-    <!-- markdownlint-enable MD046 -->
 
     ```bash
     export SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"

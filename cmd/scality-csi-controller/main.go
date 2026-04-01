@@ -7,7 +7,9 @@ import (
 	"flag"
 	"os"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -34,6 +36,12 @@ var (
 	headroomImage                         = flag.String("headroom-image", os.Getenv("MOUNTPOINT_HEADROOM_IMAGE"), "Image of a pause container to use in spawned Headroom Pods.")
 	mountpointImagePullPolicy             = flag.String("mountpoint-image-pull-policy", os.Getenv("MOUNTPOINT_IMAGE_PULL_POLICY"), "Pull policy of Mountpoint images.")
 	mountpointContainerCommand            = flag.String("mountpoint-container-command", "/bin/scality-s3-csi-mounter", "Entrypoint command of the Mountpoint Pods.")
+	tlsCACertConfigMap                    = flag.String("tls-ca-cert-configmap", os.Getenv("TLS_CA_CERT_CONFIGMAP"), "Name of ConfigMap containing custom CA certificate(s).")
+	tlsInitImage                          = flag.String("tls-init-image", os.Getenv("TLS_INIT_IMAGE"), "Image for CA certificate installation initContainer.")
+	tlsInitImagePullPolicy                = flag.String("tls-init-image-pull-policy", os.Getenv("TLS_INIT_IMAGE_PULL_POLICY"), "Pull policy for TLS init image.")
+	tlsInitResourcesReqCPU                = flag.String("tls-init-resources-req-cpu", os.Getenv("TLS_INIT_RESOURCES_REQUESTS_CPU"), "CPU request for TLS init container.")
+	tlsInitResourcesReqMemory             = flag.String("tls-init-resources-req-memory", os.Getenv("TLS_INIT_RESOURCES_REQUESTS_MEMORY"), "Memory request for TLS init container.")
+	tlsInitResourcesLimMemory             = flag.String("tls-init-resources-lim-memory", os.Getenv("TLS_INIT_RESOURCES_LIMITS_MEMORY"), "Memory limit for TLS init container.")
 )
 
 var scheme = runtime.NewScheme()
@@ -79,6 +87,7 @@ func main() {
 		},
 		CSIDriverVersion: version.GetVersion().DriverVersion,
 		ClusterVariant:   cluster.DetectVariant(conf, log),
+		TLS:              buildTLSConfig(log),
 	}
 
 	// Setup the pod reconciler that will create MountpointS3PodAttachments
@@ -103,5 +112,63 @@ func main() {
 	if err := mgr.Start(ctx); err != nil {
 		log.Error(err, "failed to start manager")
 		os.Exit(1)
+	}
+}
+
+// buildTLSConfig constructs a TLSConfig from flags/env vars. Returns nil if no ConfigMap name is set.
+func buildTLSConfig(log logr.Logger) *mppod.TLSConfig {
+	if *tlsCACertConfigMap == "" {
+		return nil
+	}
+
+	initImage := *tlsInitImage
+	if initImage == "" {
+		initImage = "alpine:3.21"
+	}
+
+	pullPolicy := corev1.PullPolicy(*tlsInitImagePullPolicy)
+	if pullPolicy == "" {
+		pullPolicy = corev1.PullIfNotPresent
+	}
+
+	reqCPU := resource.MustParse("10m")
+	if *tlsInitResourcesReqCPU != "" {
+		parsed, err := resource.ParseQuantity(*tlsInitResourcesReqCPU)
+		if err != nil {
+			log.Error(err, "invalid TLS init CPU request", "value", *tlsInitResourcesReqCPU)
+			os.Exit(1)
+		}
+		reqCPU = parsed
+	}
+
+	reqMemory := resource.MustParse("16Mi")
+	if *tlsInitResourcesReqMemory != "" {
+		parsed, err := resource.ParseQuantity(*tlsInitResourcesReqMemory)
+		if err != nil {
+			log.Error(err, "invalid TLS init memory request", "value", *tlsInitResourcesReqMemory)
+			os.Exit(1)
+		}
+		reqMemory = parsed
+	}
+
+	limMemory := resource.MustParse("64Mi")
+	if *tlsInitResourcesLimMemory != "" {
+		parsed, err := resource.ParseQuantity(*tlsInitResourcesLimMemory)
+		if err != nil {
+			log.Error(err, "invalid TLS init memory limit", "value", *tlsInitResourcesLimMemory)
+			os.Exit(1)
+		}
+		limMemory = parsed
+	}
+
+	log.Info("TLS configuration enabled", "configmap", *tlsCACertConfigMap, "initImage", initImage)
+
+	return &mppod.TLSConfig{
+		CACertConfigMapName:    *tlsCACertConfigMap,
+		InitImage:              initImage,
+		InitImagePullPolicy:    pullPolicy,
+		InitResourcesReqCPU:    reqCPU,
+		InitResourcesReqMemory: reqMemory,
+		InitResourcesLimMemory: limMemory,
 	}
 }

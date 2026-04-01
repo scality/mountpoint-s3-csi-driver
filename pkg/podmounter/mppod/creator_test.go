@@ -162,6 +162,123 @@ func TestCreatingMountpointPodsInOpenShift(t *testing.T) {
 	createAndVerifyPod(t, cluster.OpenShift, (*int64)(nil))
 }
 
+func TestCreatingMountpointPodsWithTLS(t *testing.T) {
+	tlsConfig := &mppod.TLSConfig{
+		CACertConfigMapName:    "my-ca-cert",
+		InitImage:              "alpine:3.21",
+		InitImagePullPolicy:    corev1.PullIfNotPresent,
+		InitResourcesReqCPU:    resource.MustParse("10m"),
+		InitResourcesReqMemory: resource.MustParse("16Mi"),
+		InitResourcesLimMemory: resource.MustParse("64Mi"),
+	}
+
+	config := createTestConfig(cluster.DefaultKubernetes)
+	config.TLS = tlsConfig
+	creator := mppod.NewCreator(config)
+
+	mpPod := creator.Create(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID: types.UID(testPodUID),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: testNode,
+		},
+	}, &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testVolName,
+		},
+	})
+
+	// Verify 3 volumes: communication + ConfigMap + emptyDir
+	assert.Equals(t, 3, len(mpPod.Spec.Volumes))
+	assert.Equals(t, mppod.CommunicationDirName, mpPod.Spec.Volumes[0].Name)
+	assert.Equals(t, mppod.TLSCACertVolumeName, mpPod.Spec.Volumes[1].Name)
+	assert.Equals(t, mppod.TLSEtcSSLCertsVolumeName, mpPod.Spec.Volumes[2].Name)
+
+	// Verify ConfigMap volume (NOT Secret)
+	if mpPod.Spec.Volumes[1].ConfigMap == nil {
+		t.Fatal("expected ConfigMap volume source, got nil")
+	}
+	assert.Equals(t, "my-ca-cert", mpPod.Spec.Volumes[1].ConfigMap.Name)
+	assert.Equals(t, []corev1.KeyToPath{{Key: "ca-bundle.crt", Path: "ca-bundle.crt"}}, mpPod.Spec.Volumes[1].ConfigMap.Items)
+
+	// Verify emptyDir volume for shared cert store
+	if mpPod.Spec.Volumes[2].EmptyDir == nil {
+		t.Fatal("expected EmptyDir volume source, got nil")
+	}
+	assert.Equals(t, resource.NewQuantity(mppod.TLSEmptyDirSizeLimit, resource.BinarySI), mpPod.Spec.Volumes[2].EmptyDir.SizeLimit)
+
+	// Verify 1 initContainer with correct configuration
+	assert.Equals(t, 1, len(mpPod.Spec.InitContainers))
+	initContainer := mpPod.Spec.InitContainers[0]
+	assert.Equals(t, mppod.TLSInitContainerName, initContainer.Name)
+	assert.Equals(t, "alpine:3.21", initContainer.Image)
+	assert.Equals(t, corev1.PullIfNotPresent, initContainer.ImagePullPolicy)
+
+	// Verify init container command includes ca-certificates existence check
+	assert.Equals(t, []string{
+		"sh", "-c",
+		"set -e; if [ ! -f /etc/ssl/certs/ca-certificates.crt ]; then echo 'ERROR: /etc/ssl/certs/ca-certificates.crt not found. The TLS init image must include the ca-certificates package.' >&2; exit 1; fi; cp /etc/ssl/certs/ca-certificates.crt /shared-certs/ca-certificates.crt; echo >> /shared-certs/ca-certificates.crt; cat /custom-ca/ca-bundle.crt >> /shared-certs/ca-certificates.crt",
+	}, initContainer.Command)
+
+	// Verify init container mounts
+	assert.Equals(t, 2, len(initContainer.VolumeMounts))
+	assert.Equals(t, mppod.TLSCACertVolumeName, initContainer.VolumeMounts[0].Name)
+	assert.Equals(t, "/custom-ca", initContainer.VolumeMounts[0].MountPath)
+	assert.Equals(t, true, initContainer.VolumeMounts[0].ReadOnly)
+	assert.Equals(t, mppod.TLSEtcSSLCertsVolumeName, initContainer.VolumeMounts[1].Name)
+	assert.Equals(t, "/shared-certs", initContainer.VolumeMounts[1].MountPath)
+
+	// Verify init container resources
+	assert.Equals(t, resource.MustParse("10m"), initContainer.Resources.Requests[corev1.ResourceCPU])
+	assert.Equals(t, resource.MustParse("16Mi"), initContainer.Resources.Requests[corev1.ResourceMemory])
+	assert.Equals(t, resource.MustParse("64Mi"), initContainer.Resources.Limits[corev1.ResourceMemory])
+
+	// Verify init container has restricted security context (compliant with PodSecurity "restricted")
+	assert.Equals(t, ptr.To(false), initContainer.SecurityContext.AllowPrivilegeEscalation)
+	assert.Equals(t, &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}}, initContainer.SecurityContext.Capabilities)
+	assert.Equals(t, ptr.To(true), initContainer.SecurityContext.RunAsNonRoot)
+	assert.Equals(t, ptr.To(int64(1000)), initContainer.SecurityContext.RunAsUser)
+	assert.Equals(t, &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault}, initContainer.SecurityContext.SeccompProfile)
+
+	// Verify main container has /etc/ssl/certs mount (read-only)
+	assert.Equals(t, 2, len(mpPod.Spec.Containers[0].VolumeMounts))
+	assert.Equals(t, mppod.CommunicationDirName, mpPod.Spec.Containers[0].VolumeMounts[0].Name)
+	assert.Equals(t, mppod.TLSEtcSSLCertsVolumeName, mpPod.Spec.Containers[0].VolumeMounts[1].Name)
+	assert.Equals(t, "/etc/ssl/certs", mpPod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equals(t, true, mpPod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
+}
+
+func TestCreatingMountpointPodsWithoutTLS(t *testing.T) {
+	config := createTestConfig(cluster.DefaultKubernetes)
+	// TLS is nil by default
+	creator := mppod.NewCreator(config)
+
+	mpPod := creator.Create(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID: types.UID(testPodUID),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: testNode,
+		},
+	}, &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testVolName,
+		},
+	})
+
+	// Verify 0 init containers
+	assert.Equals(t, 0, len(mpPod.Spec.InitContainers))
+
+	// Verify 1 volume (communication only)
+	assert.Equals(t, 1, len(mpPod.Spec.Volumes))
+	assert.Equals(t, mppod.CommunicationDirName, mpPod.Spec.Volumes[0].Name)
+
+	// Verify 1 volume mount (communication only)
+	assert.Equals(t, 1, len(mpPod.Spec.Containers[0].VolumeMounts))
+	assert.Equals(t, mppod.CommunicationDirName, mpPod.Spec.Containers[0].VolumeMounts[0].Name)
+}
+
 func TestNewCreator(t *testing.T) {
 	config := mppod.Config{
 		Namespace:         "test-namespace",

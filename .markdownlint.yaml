@@ -51,7 +51,7 @@ MD033:
 MD034: true
 
 # Code blocks & emphasis styling
-MD046: { style: fenced }            # Require triple‑backtick fences
+MD046: false                         # Disabled — MkDocs Material admonitions use indented code blocks
 MD048: { style: backtick }          # Use backticks (```) not tildes (~~~)
 MD049: { style: consistent }        # Whatever emphasis marker (* or _) appears first must be used consistently
 MD050: { style: asterisk }          # Use **asterisk** not __underscore__ for bold

@@ -140,6 +140,30 @@ mountpointPod:
     tag: "3.10"
     pullPolicy: IfNotPresent
 
+# TLS configuration for custom CA certificates
+tls:
+  # Name of the ConfigMap containing the CA certificate bundle (key: ca-bundle.crt).
+  # Must exist in TWO namespaces: controller namespace and mountpointPod.namespace.
+  # When tls.caCertData is also set, Helm creates the ConfigMap in both namespaces automatically.
+  # When tls.caCertData is empty, you must create the ConfigMap manually in both namespaces.
+  # Leave empty to disable TLS CA certificate injection.
+  caCertConfigMap: ""
+  # PEM-encoded CA certificate content. When set together with caCertConfigMap,
+  # Helm creates the ConfigMap in both namespaces automatically (Helm-managed mode).
+  # Use: --set-file tls.caCertData=/path/to/your/ca.crt
+  # When empty, users must create the ConfigMap manually in both namespaces (manual mode).
+  caCertData: ""
+  initImage:
+    repository: alpine
+    tag: "3.21"
+    pullPolicy: IfNotPresent
+  initResources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
+
 # CRD Cleanup Configuration
 # Enable automatic cleanup of MountpointS3PodAttachment CRDs and Mountpoint Pods during helm uninstall
 # Warning: This will forcefully terminate all active S3 mounts

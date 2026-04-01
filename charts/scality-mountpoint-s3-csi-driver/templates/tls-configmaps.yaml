@@ -1,0 +1,29 @@
+{{- if and .Values.tls.caCertConfigMap .Values.tls.caCertData }}
+# Helm-managed CA certificate ConfigMap in the controller (release) namespace.
+# Created automatically when tls.caCertData is provided via --set-file.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.tls.caCertConfigMap }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scality-mountpoint-s3-csi-driver.labels" . | nindent 4 }}
+data:
+  ca-bundle.crt: |
+    {{- .Values.tls.caCertData | nindent 4 }}
+{{- if ne .Release.Namespace .Values.mountpointPod.namespace }}
+---
+# Helm-managed CA certificate ConfigMap in the mounter pod namespace.
+# Mounter pods mount this ConfigMap to inject the CA into the system trust store.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.tls.caCertConfigMap }}
+  namespace: {{ .Values.mountpointPod.namespace }}
+  labels:
+    {{- include "scality-mountpoint-s3-csi-driver.labels" . | nindent 4 }}
+data:
+  ca-bundle.crt: |
+    {{- .Values.tls.caCertData | nindent 4 }}
+{{- end }}
+{{- end }}
