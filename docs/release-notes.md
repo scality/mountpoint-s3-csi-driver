@@ -1,8 +1,17 @@
 # Release Notes
 
-## [Unreleased]
+## [2.2.0](https://github.com/scality/mountpoint-s3-csi-driver/releases/tag/2.2.0)
+
+April 1, 2026
 
 ### What's New
+
+- **Custom CA Certificate Support for TLS**: Added support for injecting custom CA certificates
+  into mounter pods, enabling TLS connections to S3 endpoints with self-signed or internally-signed
+  certificates. Configure via `tls.caCertConfigMap` (ConfigMap name) and optionally `tls.caCertData`
+  (PEM content via `--set-file`) so Helm creates the ConfigMap in both the controller and mounter
+  pod namespaces automatically.
+  See [TLS Configuration](driver-deployment/tls-configuration.md) for details.
 
 - **Node startup taint watcher**: Added automatic taint removal to prevent the
   race condition where workload pods are scheduled before the CSI driver registers

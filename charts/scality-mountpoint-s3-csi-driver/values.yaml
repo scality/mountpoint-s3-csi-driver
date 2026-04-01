@@ -24,7 +24,7 @@ image:
   repository: ghcr.io/scality/mountpoint-s3-csi-driver
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2.1.1"
+  tag: "2.2.0"
 
 # Node plugin configuration (DaemonSet)
 node:
@@ -153,8 +153,14 @@ tls:
   # Use: --set-file tls.caCertData=/path/to/your/ca.crt
   # When empty, users must create the ConfigMap manually in both namespaces (manual mode).
   caCertData: ""
+  # Init container image used to inject the custom CA certificate into the mounter pod trust store.
+  # The image must include the ca-certificates package (provides /etc/ssl/certs/ca-certificates.crt).
+  # The default is a Scality-mirrored Alpine image hosted on GHCR for air-gapped and rate-limit-free pulls.
+  # Any Alpine-based image with ca-certificates installed can be used, for example:
+  #   repository: alpine           # Docker Hub (subject to pull rate limits)
+  #   repository: ghcr.io/scality/mountpoint-s3-csi-driver/alpine  # Scality mirror on GHCR (default)
   initImage:
-    repository: alpine
+    repository: ghcr.io/scality/mountpoint-s3-csi-driver/alpine
     tag: "3.21"
     pullPolicy: IfNotPresent
   initResources:
