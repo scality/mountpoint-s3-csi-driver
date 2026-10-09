@@ -30,6 +30,7 @@ export default defineConfig({
     link: { checkDeadLinks: { excludes: isExampleManifest } },
   },
   themeConfig: {
+    llmsUI: { viewOptions: false },
     sidebar: { '/': sidebar },
     socialLinks: [{ icon: 'github', mode: 'link', content: repo }],
     editLink: { docRepoBaseUrl: `${repo}/edit/main/docs/` },
@@ -37,4 +38,5 @@ export default defineConfig({
       message: `Licensed under the <a href="${repo}/blob/main/LICENSE">Apache License 2.0</a>`,
     },
   },
+  llms: true,
 });
