@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "rspress dev",
-    "build": "rspress build && rspress-portable-base doc_build",
+    "build": "rspress build && cp -R ../docs/volume-provisioning/static-provisioning/examples/assets doc_build/volume-provisioning/static-provisioning/examples/ && rspress-portable-base doc_build",
     "preview": "rspress preview"
   },
   "dependencies": {

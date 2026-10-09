@@ -29,6 +29,7 @@ repos:
     hooks:
       - id: lychee
         args: [--config, .lychee.toml]
+        exclude: package-lock\.json$
 
   - repo: local
     hooks:
