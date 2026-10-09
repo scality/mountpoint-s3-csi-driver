@@ -128,4 +128,4 @@ kubectl delete secret s3-credentials
 
 ## Download YAML
 
-[📁 secret_authentication.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/secret_authentication.yaml)
+[📁 secret_authentication.yaml](assets/secret_authentication.yaml)

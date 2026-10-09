@@ -110,4 +110,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 multiple_pods_one_pv.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/multiple_pods_one_pv.yaml)
+[📁 multiple_pods_one_pv.yaml](assets/multiple_pods_one_pv.yaml)

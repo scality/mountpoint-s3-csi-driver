@@ -53,8 +53,8 @@ repos:
       # Matches CI formatting checks exactly to prevent CI failures
       #
       # REQUIRED: Install formatting tools locally (run once):
-      # go install golang.org/x/tools/cmd/goimports@latest  # Organizes imports
-      # go install mvdan.cc/gofumpt@latest                  # Stricter gofmt
+      # go install golang.org/x/tools/cmd/goimports@v0.49.0  # Organizes imports
+      # go install mvdan.cc/gofumpt@v0.11.0                  # Stricter gofmt
       # gofmt comes with Go by default                      # Basic formatting
       #
       # To fix formatting issues manually:
