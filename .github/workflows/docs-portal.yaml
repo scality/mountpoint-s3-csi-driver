@@ -1,0 +1,63 @@
+name: Publish documentation to documentation.scality.com
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Folder under OpenSource/mountpoint-s3-csi-driver/ (main, or a release tag such as 2.2.0)"
+        required: true
+        type: string
+      environment:
+        description: "documentation (public) or documentation-internal"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://${{ vars.DOCUMENTATION_WEBSITE }}/OpenSource/mountpoint-s3-csi-driver/${{ steps.version.outputs.version }}/
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Build the documentation site
+        working-directory: website
+        run: |
+          npm ci
+          npm run build
+
+      # A release tag publishes to its major.minor folder (2.2.0 -> 2.2), like gh-pages.
+      - name: Resolve the version folder
+        id: version
+        run: |
+          VERSION=$(echo "${{ inputs.version }}" | sed -E 's/^v?([0-9]+\.[0-9]+).*$/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.DOCUMENTATION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          cp .github/scripts/documentation_ssh_config ~/.ssh/config
+          chmod 600 ~/.ssh/id_rsa ~/.ssh/config
+
+      - name: Publish
+        run: .github/scripts/publish-docs-portal.sh
+        env:
+          DOCS_VERSION: ${{ steps.version.outputs.version }}
+          DOCUMENTATION_SSH_USER: ${{ vars.DOCUMENTATION_SSH_USER }}
+          DOCUMENTATION_SITE_PATH: ${{ vars.SITE_PATH }}
+          DOCUMENTATION_WEBSITE_FILE_OWNER: ${{ vars.DOCUMENTATION_WEBSITE_FILE_OWNER }}

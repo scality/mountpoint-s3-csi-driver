@@ -43,3 +43,14 @@ jobs:
       # Dead internal links fail the build (markdown.link.checkDeadLinks).
       - name: Build
         run: npm run build
+
+  # Merges into main refresh the internal portal: OpenSource/mountpoint-s3-csi-driver/main/.
+  publish-internal:
+    name: Publish to documentation-internal
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/docs-portal.yaml
+    with:
+      version: main
+      environment: documentation-internal
+    secrets: inherit

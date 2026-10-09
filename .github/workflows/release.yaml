@@ -50,7 +50,7 @@ jobs:
         run: |
           # Extract major.minor from tag (e.g., 1.0.0 -> 1.0, 1.1.1 -> 1.1)
           VERSION=$(echo "${{ inputs.tag }}" | sed -E 's/^([0-9]+\.[0-9]+).*$/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Publishing documentation for version: $VERSION (from tag: ${{ inputs.tag }})"
 
       # Same gh-pages layout as before: one folder per major.minor, a latest
@@ -111,6 +111,15 @@ jobs:
             git commit -m "Deploy ${{ github.sha }} to $VERSION (latest) with rspress"
             git push origin gh-pages
           fi
+
+  # Public portal: OpenSource/mountpoint-s3-csi-driver/<major.minor>/. Not a
+  # dependency of the other jobs, so a portal outage does not block a release.
+  publish-portal-docs:
+    uses: ./.github/workflows/docs-portal.yaml
+    with:
+      version: ${{ inputs.tag }}
+      environment: documentation
+    secrets: inherit
 
   prod-container-with-docker:
     needs: [publish-versioned-docs]
