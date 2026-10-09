@@ -45,6 +45,14 @@ jobs:
           npm ci
           npm run build
 
+      # Published to documentation.scality.com by the portal repository.
+      - name: Upload the documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: website/doc_build
+          retention-days: 7
+
       - name: Extract major.minor version
         id: version
         run: |
@@ -112,14 +120,34 @@ jobs:
             git push origin gh-pages
           fi
 
-  # Public portal: OpenSource/mountpoint-s3-csi-driver/<major.minor>/. Not a
+  # Public portal (documentation.scality.com/OpenSource/mountpoint-s3-csi-driver/<major.minor>/),
+  # published by the portal repository from the artifact uploaded above. Not a
   # dependency of the other jobs, so a portal outage does not block a release.
   publish-portal-docs:
-    uses: ./.github/workflows/docs-portal.yaml
-    with:
-      version: ${{ inputs.tag }}
-      environment: documentation
-    secrets: inherit
+    needs: [publish-versioned-docs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token to trigger the portal workflow
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.ACTIONS_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: documentation.scality.com
+          permission-actions: write
+
+      - name: Trigger the portal publish
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: ${{ inputs.tag }}
+        run: >-
+          gh workflow run publish-oss-docs.yaml
+          --repo scality/documentation.scality.com
+          -f project=mountpoint-s3-csi-driver
+          -f site=external
+          -f "version=$TAG"
+          -f run_id=${{ github.run_id }}
 
   prod-container-with-docker:
     needs: [publish-versioned-docs]

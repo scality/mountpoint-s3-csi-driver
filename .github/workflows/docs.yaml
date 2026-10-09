@@ -44,13 +44,40 @@ jobs:
       - name: Build
         run: npm run build
 
-  # Merges into main refresh the internal portal: OpenSource/mountpoint-s3-csi-driver/main/.
+      - name: Upload the documentation artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: website/doc_build
+          retention-days: 7
+
+  # A merge into main refreshes the internal portal
+  # (documentation-internal.scality.com/OpenSource/mountpoint-s3-csi-driver/main/).
+  # The portal repository publishes it; this repository holds no server credentials.
   publish-internal:
     name: Publish to documentation-internal
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/docs-portal.yaml
-    with:
-      version: main
-      environment: documentation-internal
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token to trigger the portal workflow
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.ACTIONS_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: documentation.scality.com
+          permission-actions: write
+
+      - name: Trigger the portal publish
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: >-
+          gh workflow run publish-oss-docs.yaml
+          --repo scality/documentation.scality.com
+          -f project=mountpoint-s3-csi-driver
+          -f site=internal
+          -f version=main
+          -f run_id=${{ github.run_id }}
