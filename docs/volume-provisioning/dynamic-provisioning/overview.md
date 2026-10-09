@@ -1,7 +1,10 @@
 # Dynamic Provisioning
 
-!!! note "Automated Bucket Creation"
-    With dynamic provisioning, S3 buckets are created automatically when PersistentVolumeClaims are created, eliminating the need for pre-existing buckets.
+:::note Automated Bucket Creation
+
+With dynamic provisioning, S3 buckets are created automatically when PersistentVolumeClaims are created, eliminating the need for pre-existing buckets.
+
+:::
 
 Dynamic provisioning enables on-demand creation of S3 buckets and PersistentVolumes through Kubernetes' native storage provisioning system.
 When a PersistentVolumeClaim (PVC) references a StorageClass with the Scality S3 CSI provisioner, the system automatically creates both the S3 bucket and corresponding PersistentVolume (PV).
@@ -156,10 +159,13 @@ Controlled by the `reclaimPolicy`:
 reclaimPolicy: Delete  # or Retain
 ```
 
-!!! warning "S3 Bucket Deletion Behavior"
-    When using `reclaimPolicy: Delete`, S3 bucket deletion only occurs if the bucket is completely empty.
-    If the bucket contains any objects, the bucket will be retained as a safety mechanism to prevent accidental data loss.
-    Kubernetes resources (PVC, PV) will be successfully deleted, but the actual bucket remains in S3 storage.
+:::warning S3 Bucket Deletion Behavior
+
+When using `reclaimPolicy: Delete`, S3 bucket deletion only occurs if the bucket is completely empty.
+If the bucket contains any objects, the bucket will be retained as a safety mechanism to prevent accidental data loss.
+Kubernetes resources (PVC, PV) will be successfully deleted, but the actual bucket remains in S3 storage.
+
+:::
 
 ## Mount Options
 
@@ -176,9 +182,12 @@ Dynamic provisioning supports two authentication modes:
 
 2. **Driver-level Authentication**: Omit both secret parameters to use driver-level credentials for all operations
 
-!!! important "Both secrets must be configured together when using secret-based authentication"
-    The controller cannot detect if only `node-publish-secret` is configured (CSI specification limitation),
-    so configuring only one secret will result in driver-level credentials being used.
+:::warning Both secrets must be configured together when using secret-based authentication
+
+The controller cannot detect if only `node-publish-secret` is configured (CSI specification limitation),
+so configuring only one secret will result in driver-level credentials being used.
+
+:::
 
 See the [Credential Management Guide](../../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md) for detailed configuration and examples.
 

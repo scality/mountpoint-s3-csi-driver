@@ -4,14 +4,20 @@ This guide provides instructions for completely removing the Scality CSI Driver 
 
 ## Before You Begin
 
-!!! warning "Data Persistence"
-    - Uninstalling the CSI driver does **not** delete data in S3 buckets
-    - Existing PersistentVolumes with `Retain` policy will preserve bucket data
-    - Kubernetes pod applications using S3 buckets as volumes will still be able to access their data after the driver is uninstalled deleted as the driver is responsible for mounting S3 when the pod starts.
-    - If the driver is re-installed, pods which lost access to S3 will be able to access their data again.
+:::warning Data Persistence
 
-!!! danger "Access to Data"
-    If the driver is uninstalled while applications are still using S3 volumes, those applications will lose access to their to S3 if the kubernetes pods are deleted. This is due to orphaned FUSE processes.
+- Uninstalling the CSI driver does **not** delete data in S3 buckets
+- Existing PersistentVolumes with `Retain` policy will preserve bucket data
+- Kubernetes pod applications using S3 buckets as volumes will still be able to access their data after the driver is uninstalled deleted as the driver is responsible for mounting S3 when the pod starts.
+- If the driver is re-installed, pods which lost access to S3 will be able to access their data again.
+
+:::
+
+:::danger Access to Data
+
+If the driver is uninstalled while applications are still using S3 volumes, those applications will lose access to their to S3 if the kubernetes pods are deleted. This is due to orphaned FUSE processes.
+
+:::
 
 ## Uninstallation Steps
 
@@ -48,8 +54,11 @@ kubectl get pv -o json | jq -r '.items[] | select(.spec.csi.driver == "s3.csi.sc
 
 ### Step 3: Remove MountpointS3PodAttachment CRDs and Mounter Pods (v2.0+)
 
-!!! info "v2.0 Cleanup"
-    Version 2.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.
+:::info v2.0 Cleanup
+
+Version 2.0 introduces MountpointS3PodAttachment CRD instances and mounter pods that must be cleaned up before uninstalling.
+
+:::
 
 Delete all MountpointS3PodAttachment CRD instances:
 
@@ -121,8 +130,11 @@ kubectl delete namespace mount-s3
 
 ### Step 5: Remove CRD Definitions (v2.0)
 
-!!! warning "CRD Removal"
-    Helm v3 does **not** automatically delete CRDs on uninstall. CRDs must be manually removed if they are no longer needed.
+:::warning CRD Removal
+
+Helm v3 does **not** automatically delete CRDs on uninstall. CRDs must be manually removed if they are no longer needed.
+
+:::
 
 Remove the MountpointS3PodAttachment CRD definition:
 

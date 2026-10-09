@@ -16,21 +16,24 @@ The Scality CSI Driver for S3 supports two methods for creating and managing per
 
 ## Getting Started
 
-!!! tip "Quick Navigation"
-    **Static Provisioning:**
+:::tip Quick Navigation
 
-    - [Overview & Examples](static-provisioning/overview.md) - Basic concepts and step-by-step examples
-    - [Credentials Management](../architecture/ring-s3-credentials-management/static-provisioning-credentials-management.md) - Driver-level vs volume-level authentication
+**Static Provisioning:**
 
-    **Dynamic Provisioning:**
+- [Overview & Examples](static-provisioning/overview.md) - Basic concepts and step-by-step examples
+- [Credentials Management](../architecture/ring-s3-credentials-management/static-provisioning-credentials-management.md) - Driver-level vs volume-level authentication
 
-    - [Overview & Examples](dynamic-provisioning/overview.md) - StorageClass setup and workflows
-    - [Credentials Management](../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md) - Template-based and fixed authentication methods
+**Dynamic Provisioning:**
 
-    **Common Configuration:**
+- [Overview & Examples](dynamic-provisioning/overview.md) - StorageClass setup and workflows
+- [Credentials Management](../architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management.md) - Template-based and fixed authentication methods
 
-    - [Mount Options Reference](mount-options.md) - Customization options for both provisioning methods
-    - [TLS Configuration](../driver-deployment/tls-configuration.md) - Custom CA certificate support for HTTPS S3 endpoints
+**Common Configuration:**
+
+- [Mount Options Reference](mount-options.md) - Customization options for both provisioning methods
+- [TLS Configuration](../driver-deployment/tls-configuration.md) - Custom CA certificate support for HTTPS S3 endpoints
+
+:::
 
 ### Quick Start: Static Provisioning
 

@@ -92,4 +92,4 @@ kubectl delete pv s3-region-override-pv
 
 ## Download YAML
 
-[📁 override-region.yaml](assets/override-region.yaml)
+[📁 override-region.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/override-region.yaml)

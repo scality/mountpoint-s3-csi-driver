@@ -113,4 +113,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 debug-logging.yaml](assets/debug-logging.yaml)
+[📁 debug-logging.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/debug-logging.yaml)

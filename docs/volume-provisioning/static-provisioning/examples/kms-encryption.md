@@ -97,4 +97,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 kms_sse.yaml](assets/kms_sse.yaml)
+[📁 kms_sse.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/kms_sse.yaml)

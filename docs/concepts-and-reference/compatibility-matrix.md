@@ -2,8 +2,11 @@
 
 This page documents version compatibility between the Scality CSI Driver for S3, Kubernetes, and related components.
 
-!!! note
-    This compatibility matrix is updated as new versions are tested.
+:::note
+
+This compatibility matrix is updated as new versions are tested.
+
+:::
 
 ## S3 API Compatibility
 

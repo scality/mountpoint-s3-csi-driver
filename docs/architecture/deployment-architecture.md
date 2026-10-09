@@ -3,8 +3,6 @@
 This document illustrates the deployment topology of the Scality CSI Driver for S3, showing how components are distributed across a Kubernetes cluster.
 The architecture differs between static and dynamic provisioning modes.
 
-<div align="center">
-
 ```mermaid
 graph TB
     subgraph cluster["Kubernetes Cluster"]
@@ -103,8 +101,6 @@ graph TB
     %% Styling for clarity without colors
     classDef optional stroke-dasharray: 5 5
 ```
-
-</div>
 
 ## Deployment Components
 

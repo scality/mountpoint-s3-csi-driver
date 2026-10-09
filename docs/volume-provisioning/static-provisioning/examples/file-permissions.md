@@ -118,4 +118,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 file-permissions.yaml](assets/file-permissions.yaml)
+[📁 file-permissions.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/file-permissions.yaml)

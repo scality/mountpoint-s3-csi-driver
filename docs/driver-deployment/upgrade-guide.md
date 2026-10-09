@@ -2,10 +2,13 @@
 
 This guide provides instructions for upgrading the Scality CSI Driver for S3 from version 1.2.0 to 2.0.
 
-!!! info "Version Compatibility"
-    This upgrade guide is specifically for upgrading from **v1.2.0 to v2.0**.
-    **Upgrading from earlier versions**: Versions earlier than v1.2.0 must first be upgraded to v1.2.0 before proceeding with this guide.
-    Follow the standard upgrade procedure to reach v1.2.0, then use this guide to upgrade to v2.0.
+:::info Version Compatibility
+
+This upgrade guide is specifically for upgrading from **v1.2.0 to v2.0**.
+**Upgrading from earlier versions**: Versions earlier than v1.2.0 must first be upgraded to v1.2.0 before proceeding with this guide.
+Follow the standard upgrade procedure to reach v1.2.0, then use this guide to upgrade to v2.0.
+
+:::
 
 ## Prerequisites
 
@@ -37,9 +40,12 @@ Check the [Release Notes](../release-notes.md) for version-specific changes and 
 
 **Step 4. Install/Update CRDs (Required for v2.0):**
 
-!!! warning "CRD Installation Required"
-    Version 2.0 introduces the `MountpointS3PodAttachment` CRD for tracking volume attachments.
-    Helm v3 does not automatically update CRDs on upgrades, so you **must** install/update CRDs manually before upgrading.
+:::warning CRD Installation Required
+
+Version 2.0 introduces the `MountpointS3PodAttachment` CRD for tracking volume attachments.
+Helm v3 does not automatically update CRDs on upgrades, so you **must** install/update CRDs manually before upgrading.
+
+:::
 
 Install CRDs using kustomize (recommended):
 
@@ -65,13 +71,19 @@ kubectl get crd mountpoints3podattachments.s3.csi.scality.com
 
 ### Step 1: Ensure Running v1.2.0
 
-!!! warning "Prerequisite Version Required"
-    Before upgrading to v2.0, the driver must be running version 1.2.0. If already on v1.2.0, skip to [Upgrading to v2.0](#upgrading-to-v20).
+:::warning Prerequisite Version Required
+
+Before upgrading to v2.0, the driver must be running version 1.2.0. If already on v1.2.0, skip to [Upgrading to v2.0](#upgrading-to-v20).
+
+:::
 
 If running a version earlier than v1.2.0, upgrade to v1.2.0 first:
 
-!!! important "Version Specification Required"
-    The Helm chart repository will default to the latest released version. Version 1.2.0 must be explicitly specified in the upgrade command.
+:::warning Version Specification Required
+
+The Helm chart repository will default to the latest released version. Version 1.2.0 must be explicitly specified in the upgrade command.
+
+:::
 
 ```bash
 helm upgrade scality-mountpoint-s3-csi-driver \
@@ -102,12 +114,15 @@ helm upgrade scality-mountpoint-s3-csi-driver \
 
 ## Upgrading to v2.0
 
-!!! warning "Important Notes for v2.0 Upgrade"
-    - **Pod Restart Impact**: If any application pods using the S3 buckets as filesystems are restarted during the upgrade, they will lose access to the buckets.
-    Once the upgrade is complete, the application pods will automatically regain access.
-    - **Mounter Strategy Change**: Version 2.0 changes the default mounter from systemd to pod-based mounter. Existing systemd mounts will continue working until pods restart.
-    - **Automatic Transition**: When application pods restart after the upgrade, mounts will automatically transition to the new pod-based mounter with zero downtime.
-    - **Mount-s3 Namespace**: The new pod mounter creates pods in the `mount-s3` namespace. This namespace is automatically created on first mount.
+:::warning Important Notes for v2.0 Upgrade
+
+- **Pod Restart Impact**: If any application pods using the S3 buckets as filesystems are restarted during the upgrade, they will lose access to the buckets.
+Once the upgrade is complete, the application pods will automatically regain access.
+- **Mounter Strategy Change**: Version 2.0 changes the default mounter from systemd to pod-based mounter. Existing systemd mounts will continue working until pods restart.
+- **Automatic Transition**: When application pods restart after the upgrade, mounts will automatically transition to the new pod-based mounter with zero downtime.
+- **Mount-s3 Namespace**: The new pod mounter creates pods in the `mount-s3` namespace. This namespace is automatically created on first mount.
+
+:::
 
 Choose one of the following upgrade options:
 
@@ -185,9 +200,12 @@ kubectl get s3pa -A
 
 ## Rollback (If Needed)
 
-!!! warning
-    If any application pods using the S3 buckets as filesystems are restarted during the rollback they will lose access to the buckets.
-    Once the rollback is complete, the application pods will automatically regain access to the buckets.
+:::warning
+
+If any application pods using the S3 buckets as filesystems are restarted during the rollback they will lose access to the buckets.
+Once the rollback is complete, the application pods will automatically regain access to the buckets.
+
+:::
 
 If issues occur after upgrade, rollback to the previous version using the following steps:
 

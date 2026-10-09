@@ -96,4 +96,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 non_root.yaml](assets/non_root.yaml)
+[📁 non_root.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/non_root.yaml)

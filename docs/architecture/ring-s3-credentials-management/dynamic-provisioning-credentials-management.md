@@ -4,8 +4,6 @@ This document details how credentials flow through the Scality CSI Driver for S3
 supporting driver-level (global), storage-class-level (per-StorageClass), and template-based (per-PVC)
 authentication methods.
 
-<div align="center">
-
 ```mermaid
 graph TB
     subgraph credentials["Credential Sources"]
@@ -42,8 +40,6 @@ graph TB
 
 ```
 
-</div>
-
 There are 3 ways to manage credentials:
 
 1. **Driver-Level Authentication** - Global kubernetes secret containing credentials configured during driver installation
@@ -59,8 +55,11 @@ Default key names are:
 - `secret_access_key` for Secret Access Key
 - `session_token` (optional) for Session Token
 
-!!! Note
-    Use `stringData` (not `data`) because the Scality CSI driver for S3 expects plain text credential. Secret security is controlled by Kubernetes RBAC permissions.
+:::note
+
+Use `stringData` (not `data`) because the Scality CSI driver for S3 expects plain text credential. Secret security is controlled by Kubernetes RBAC permissions.
+
+:::
 
 ```yaml title="Kubernetes Secret with RING S3 credentials"
 apiVersion: v1
@@ -123,13 +122,19 @@ For dynamic provisioning, credentials are used at two different stages:
 - **Provisioner Secrets** (`csi.storage.k8s.io/provisioner-secret-*`) - Used by CSI Controller during bucket creation (CreateVolume RPC). Requires administrative permissions to create/delete S3 buckets.
 - **Node-Publish Secrets** (`csi.storage.k8s.io/node-publish-secret-*`) - Used by CSI Node during volume mounting (NodePublishVolume RPC). Requires read/write access to bucket contents.
 
-!!! tip "Security Best Practice"
-    Use different credentials for provisioner (admin) and node-publish (user) operations to implement principle of least privilege.
+:::tip Security Best Practice
 
-!!! important "Secret Configuration Requirement"
-    **Both `provisioner-secret` and `node-publish-secret` must be configured together** when using secret-based authentication for dynamic provisioning.
-    The controller uses `provisioner-secret` presence to determine if secret-based authentication is enabled
-    (it cannot directly detect `node-publish-secret` due to CSI specification limitations).
+Use different credentials for provisioner (admin) and node-publish (user) operations to implement principle of least privilege.
+
+:::
+
+:::warning Secret Configuration Requirement
+
+**Both `provisioner-secret` and `node-publish-secret` must be configured together** when using secret-based authentication for dynamic provisioning.
+The controller uses `provisioner-secret` presence to determine if secret-based authentication is enabled
+(it cannot directly detect `node-publish-secret` due to CSI specification limitations).
+
+:::
 
 **Technical Background:**
 
@@ -214,9 +219,12 @@ stringData:
 Template-based authentication allows dynamic secret selection per PVC using template variables.
 The external-provisioner resolves these templates before calling the CSI driver.
 
-!!! warning "Template Resolution Timing"
-    Templates are resolved by Kubernetes external-provisioner, **not** by the CSI driver. Secrets must exist when templates are evaluated during provisioning.
-    The only exception is `${pv.name}` template, as for dynamic provisioning, the PV name is supplied by the CSI driver. In such case, the secret must be created after the PV is created.
+:::warning Template Resolution Timing
+
+Templates are resolved by Kubernetes external-provisioner, **not** by the CSI driver. Secrets must exist when templates are evaluated during provisioning.
+The only exception is `${pv.name}` template, as for dynamic provisioning, the PV name is supplied by the CSI driver. In such case, the secret must be created after the PV is created.
+
+:::
 
 ### Supported Template Variables
 
@@ -236,11 +244,14 @@ The external-provisioner resolves these templates before calling the CSI driver.
 | `csi.storage.k8s.io/node-publish-secret-name` | Secret name for mounting S3 bucket | `${pv.name}`, `${pvc.name}`, `${pvc.namespace}`, `${pvc.annotations['key']}` |
 | `csi.storage.k8s.io/node-publish-secret-namespace` | Secret namespace for mounting S3 bucket | `${pv.name}`, `${pvc.namespace}` |
 
-!!! note "Key Limitations & Best Practices per [CSI specification](https://kubernetes-csi.github.io/docs/secrets-and-credentials-storage-class.html)"
-    - **Annotations** (`${pvc.annotations['key']}`) are **ONLY** supported for `node-publish-secret-name`, **NOT** for provisioner secrets
-    - PV names follow predictable pattern: `pvc-<PVC-UID>`
-    - Templates can be mixed with static text (e.g., `${pvc.name}-admin`)
-    - For `${pv.name}` templates: Consider using `volumeBindingMode: WaitForFirstConsumer` to allow time for secret creation after PVC UID is known
+:::note Key Limitations & Best Practices per [CSI specification](https://kubernetes-csi.github.io/docs/secrets-and-credentials-storage-class.html)
+
+- **Annotations** (`${pvc.annotations['key']}`) are **ONLY** supported for `node-publish-secret-name`, **NOT** for provisioner secrets
+- PV names follow predictable pattern: `pvc-<PVC-UID>`
+- Templates can be mixed with static text (e.g., `${pvc.name}-admin`)
+- For `${pv.name}` templates: Consider using `volumeBindingMode: WaitForFirstConsumer` to allow time for secret creation after PVC UID is known
+
+:::
 
 ### Example 1: Per-PVC Credentials using PVC Name
 
@@ -286,8 +297,11 @@ spec:
 
 ### Example 2: Team-Based Credentials using Annotations
 
-!!! warning "Annotation Limitation"
-    Annotations (`${pvc.annotations['key']}`) are **ONLY** supported in `node-publish-secret-name`. For provisioner secrets, use fixed names or other template variables.
+:::warning Annotation Limitation
+
+Annotations (`${pvc.annotations['key']}`) are **ONLY** supported in `node-publish-secret-name`. For provisioner secrets, use fixed names or other template variables.
+
+:::
 
 ```yaml title="StorageClass using PVC annotations for node-publish secrets only"
 apiVersion: storage.k8s.io/v1

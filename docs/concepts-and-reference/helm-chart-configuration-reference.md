@@ -23,10 +23,12 @@ These parameters configure the overall behavior of the CSI driver components.
 ## S3 Global Configuration
 
 
-!!! important "Required Configuration"
-    The S3 endpoint URL must be configured for the CSI driver to function. Use the global `s3.endpointUrl` and `s3.region` settings,
-    which are used by both node and controller components for dynamic provisioning.
+:::warning Required Configuration
 
+The S3 endpoint URL must be configured for the CSI driver to function. Use the global `s3.endpointUrl` and `s3.region` settings,
+which are used by both node and controller components for dynamic provisioning.
+
+:::
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -36,9 +38,11 @@ These parameters configure the overall behavior of the CSI driver components.
 ### Legacy Values (Backward Compatibility)
 
 
-!!! warning "Deprecated Configuration"
-    The following legacy Helm values are supported for backward compatibility with earlier versions. **Use the new `s3.*` values for new installations.** Legacy values may be removed in a future release.
+:::warning Deprecated Configuration
 
+The following legacy Helm values are supported for backward compatibility with earlier versions. **Use the new `s3.*` values for new installations.** Legacy values may be removed in a future release.
+
+:::
 
 | Legacy Value | New Value | Behavior |
 |--------------|-----------|----------|
@@ -57,13 +61,15 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 ## S3 Credentials Secret Configuration
 
 
-!!! important "Security Note"
-    The Helm chart **does not create secrets automatically**. A Kubernetes Secret containing S3 credentials must be created before installing the chart. The secret must contain the following keys:
+:::warning Security Note
 
-    - `access_key_id`: S3 Access Key ID.
-    - `secret_access_key`: S3 Secret Access Key.
-    - `session_token` (optional): S3 Session Token, if using temporary credentials.
+The Helm chart **does not create secrets automatically**. A Kubernetes Secret containing S3 credentials must be created before installing the chart. The secret must contain the following keys:
 
+- `access_key_id`: S3 Access Key ID.
+- `secret_access_key`: S3 Secret Access Key.
+- `session_token` (optional): S3 Session Token, if using temporary credentials.
+
+:::
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -75,16 +81,18 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 ## Node Plugin Configuration
 
 
-!!! note "SELinux Context Note"
-    The `node.seLinuxOptions.*` parameters define the SELinux security context for the CSI driver containers.
-    These settings are applied to CSI Node DaemonSet containers and allow the containers to interact with systemd and manage mount points in SELinux-enforced environments.
-    **Only the default SELinux values are tested and supported. Custom SELinux configurations are not supported.** The default values are:
+:::note SELinux Context Note
 
-    - `user`: `system_u`
-    - `type`: `super_t`
-    - `role`: `system_r`
-    - `level`: `s0`
+The `node.seLinuxOptions.*` parameters define the SELinux security context for the CSI driver containers.
+These settings are applied to CSI Node DaemonSet containers and allow the containers to interact with systemd and manage mount points in SELinux-enforced environments.
+**Only the default SELinux values are tested and supported. Custom SELinux configurations are not supported.** The default values are:
 
+- `user`: `system_u`
+- `type`: `super_t`
+- `role`: `system_r`
+- `level`: `s0`
+
+:::
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -126,10 +134,12 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 ## Controller Plugin Configuration (Dynamic Provisioning)
 
 
-!!! note "Dynamic Provisioning"
-    The controller component is always deployed and provides dynamic provisioning capabilities.
-    It automatically creates and deletes S3 buckets based on PersistentVolumeClaim requests that reference a StorageClass with the CSI driver.
+:::note Dynamic Provisioning
 
+The controller component is always deployed and provides dynamic provisioning capabilities.
+It automatically creates and deletes S3 buckets based on PersistentVolumeClaim requests that reference a StorageClass with the CSI driver.
+
+:::
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -139,9 +149,11 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 ## Mountpoint Pod Configuration (v2.0)
 
 
-!!! info "Pod Mounter Strategy"
-    Version 2.0 uses pod-based mounter as the default strategy. Mounter pods are created in the `mount-s3` namespace to handle S3 mount operations with improved isolation and resource management.
+:::info Pod Mounter Strategy
 
+Version 2.0 uses pod-based mounter as the default strategy. Mounter pods are created in the `mount-s3` namespace to handle S3 mount operations with improved isolation and resource management.
+
+:::
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|
@@ -156,10 +168,13 @@ value: {{ coalesce .Values.node.s3EndpointUrl .Values.s3.endpointUrl | quote }}
 ## TLS Configuration
 
 
-!!! info "Custom CA Certificates"
-    When your S3 endpoint uses TLS with a private or internal CA, configure the `tls.*` parameters to inject the CA certificate.
-    **Recommended:** Use `tls.caCertData` with `--set-file` so Helm creates the ConfigMap in both namespaces automatically.
-    See the [TLS Configuration Guide](../driver-deployment/tls-configuration.md) for setup instructions.
+:::info Custom CA Certificates
+
+When your S3 endpoint uses TLS with a private or internal CA, configure the `tls.*` parameters to inject the CA certificate.
+**Recommended:** Use `tls.caCertData` with `--set-file` so Helm creates the ConfigMap in both namespaces automatically.
+See the [TLS Configuration Guide](../driver-deployment/tls-configuration.md) for setup instructions.
+
+:::
 
 | Parameter                                            | Description                                                                                                                                        | Default                                                | Required                    |
 |------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|-----------------------------|

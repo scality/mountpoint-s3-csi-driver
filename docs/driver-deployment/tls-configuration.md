@@ -39,8 +39,11 @@ This single command:
 - Creates the same ConfigMap in the mounter pod namespace (`mount-s3`)
 - Configures the controller and mounter pods to use the CA certificate
 
-!!! important "Key Name"
-    The ConfigMap key is automatically set to `ca-bundle.crt`, which is the key the driver expects.
+:::warning Key Name
+
+The ConfigMap key is automatically set to `ca-bundle.crt`, which is the key the driver expects.
+
+:::
 
 ### Step 2: Verify
 
@@ -80,14 +83,17 @@ If you cannot pass the certificate data via Helm values (e.g., policy restrictio
 you can create the ConfigMaps manually. In this mode, set only `tls.caCertConfigMap`
 without `tls.caCertData`.
 
-!!! info "Why Two Namespaces?"
-    The CA certificate ConfigMap must exist in **two** namespaces because the controller and
-    mounter pods run in separate namespaces:
+:::info Why Two Namespaces?
 
-    1. **Controller namespace** (e.g., `kube-system`) — mounted by the `s3-csi-controller` for
-       AWS SDK S3 API calls (bucket creation/deletion during dynamic provisioning).
-    2. **Mounter pod namespace** (e.g., `mount-s3`) — mounted by mounter pod init containers
-       that inject the CA into the `mount-s3` trust store.
+The CA certificate ConfigMap must exist in **two** namespaces because the controller and
+mounter pods run in separate namespaces:
+
+1. **Controller namespace** (e.g., `kube-system`) — mounted by the `s3-csi-controller` for
+   AWS SDK S3 API calls (bucket creation/deletion during dynamic provisioning).
+2. **Mounter pod namespace** (e.g., `mount-s3`) — mounted by mounter pod init containers
+   that inject the CA into the `mount-s3` trust store.
+
+:::
 
 ### Step 1: Create the CA Certificate ConfigMap in the Controller Namespace
 
@@ -97,8 +103,11 @@ kubectl create configmap s3-ca-cert \
   -n kube-system
 ```
 
-!!! important "Key Name"
-    The ConfigMap key **must** be `ca-bundle.crt`. This is the key the driver expects.
+:::warning Key Name
+
+The ConfigMap key **must** be `ca-bundle.crt`. This is the key the driver expects.
+
+:::
 
 ### Step 2: Install or Upgrade the Helm Chart
 
@@ -120,10 +129,13 @@ kubectl create configmap s3-ca-cert \
   -n mount-s3
 ```
 
-!!! warning "Namespace Ordering"
-    Do **not** attempt to create the ConfigMap in the `mount-s3` namespace before the Helm install —
-    the namespace does not exist yet. If a ConfigMap is missing from either namespace, the
-    respective pod will be stuck in `ContainerCreating` with a `configmap not found` event.
+:::warning Namespace Ordering
+
+Do **not** attempt to create the ConfigMap in the `mount-s3` namespace before the Helm install —
+the namespace does not exist yet. If a ConfigMap is missing from either namespace, the
+respective pod will be stuck in `ContainerCreating` with a `configmap not found` event.
+
+:::
 
 ### Switching from Manual to Helm-Managed Mode
 

@@ -38,16 +38,19 @@ The installation process consists of:
 
 - Set the secret access key. Replace `YOUR_SECRET_ACCESS_KEY` with the actual secret access key.
 
-    !!! note
-        To avoid storing sensitive credentials in your shell history, history can be temporarily disabled before running commands with sensitive information:
+    :::note
 
-        ```bash
-        set +o history # temporarily turn off history
+    To avoid storing sensitive credentials in your shell history, history can be temporarily disabled before running commands with sensitive information:
 
-        # export SECRET_ACCESS_KEY=
+    ```bash
+    set +o history # temporarily turn off history
 
-        set -o history # turn it back on
-        ```
+    # export SECRET_ACCESS_KEY=
+
+    set -o history # turn it back on
+    ```
+
+    :::
 
     ```bash
     export SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
@@ -76,8 +79,11 @@ kubectl create secret generic ${SECRET_NAME} \
   --namespace ${NAMESPACE}
 ```
 
-!!! warning "Temporary Credentials"
-    The driver does not communicate with RING S3 Connector's STS service. If session tokens are used, the credentials will not be refreshed automatically.
+:::warning Temporary Credentials
+
+The driver does not communicate with RING S3 Connector's STS service. If session tokens are used, the credentials will not be refreshed automatically.
+
+:::
 
 OR with session token (if needed):
 
@@ -97,9 +103,12 @@ Choose one of the following installation options:
 
 ### Option A: Minimal Installation
 
-!!! note "S3 Endpoint URL"
-    For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
-    Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
+:::note S3 Endpoint URL
+
+For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
+Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
+
+:::
 
 **Set the S3 endpoint URL:**
 
@@ -223,9 +232,12 @@ kubectl get crd mountpoints3podattachments.s3.csi.scality.com
 
 Expected output: The CRD should be present with status `Ready`.
 
-!!! info "CRD Installation"
-    For fresh installs, Helm v3 automatically installs CRDs from the chart's `crds/` directory.
-    For upgrades from v1.x to v2.0, CRDs must be installed manually before upgrading. See the [Upgrade Guide](upgrade-guide.md) for details.
+:::info CRD Installation
+
+For fresh installs, Helm v3 automatically installs CRDs from the chart's `crds/` directory.
+For upgrades from v1.x to v2.0, CRDs must be installed manually before upgrading. See the [Upgrade Guide](upgrade-guide.md) for details.
+
+:::
 
 ### Check Driver Logs (Optional)
 
@@ -244,14 +256,20 @@ Listening for connections on address: &net.UnixAddr{Name:"/csi/csi.sock", Net:"u
 NodeGetInfo: called with args {}
 ```
 
-!!! note "Mounter Strategy"
-    Version 2.0 uses pod-based mounter by default. The mounter pods will be created in the `mount-s3` namespace when volumes are first mounted.
+:::note Mounter Strategy
+
+Version 2.0 uses pod-based mounter by default. The mounter pods will be created in the `mount-s3` namespace when volumes are first mounted.
+
+:::
 
 ## Uninstallation
 
-!!! note "If Volumes Were Provisioned"
-    If any applications (Kubernetes pods) were using PersistentVolumes or PersistentVolumeClaims provisioned using the S3 CSI driver,
-    follow the complete [uninstallation guide](uninstallation.md) to properly clean up all resources.
+:::note If Volumes Were Provisioned
+
+If any applications (Kubernetes pods) were using PersistentVolumes or PersistentVolumeClaims provisioned using the S3 CSI driver,
+follow the complete [uninstallation guide](uninstallation.md) to properly clean up all resources.
+
+:::
 
 If no volumes were provisioned, you can uninstall the driver with these simple steps:
 

@@ -69,10 +69,13 @@ mountOptions:
   - allow-other
 ```
 
-!!! warning "Single Secret Configuration Not Supported"
-    Configuring only `provisioner-secret` OR only `node-publish-secret` is **not recommended** and may not work as expected.
-    The controller uses `provisioner-secret` presence to determine if secret-based authentication is enabled (CSI spec limitation).
-    Always configure both secrets together, pointing to the same Secret if you don't need separate admin/user credentials.
+:::warning Single Secret Configuration Not Supported
+
+Configuring only `provisioner-secret` OR only `node-publish-secret` is **not recommended** and may not work as expected.
+The controller uses `provisioner-secret` presence to determine if secret-based authentication is enabled (CSI spec limitation).
+Always configure both secrets together, pointing to the same Secret if you don't need separate admin/user credentials.
+
+:::
 
 ```yaml title="No secrets - Driver level secrets will be used for CreateBucket, DeleteBucket and mount operations"
 apiVersion: storage.k8s.io/v1

@@ -39,18 +39,21 @@ Container images for the Scality CSI Driver for S3 are hosted on GHCR:
 
 Review [release notes](release-notes.md) for overview of changes and the [releases page](https://github.com/scality/mountpoint-s3-csi-driver/releases) for complete changelog details.
 
-??? note "Previous Images"
-    | Driver Version | Image URL                                                                 |
-    |---------------|----------------------------------------------------------------------------|
-    | 2.1.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.1.1`                           |
-    | 2.1.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.1.0`                           |
-    | 2.0.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.1`                           |
-    | 2.0.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.0`                           |
-    | 1.2.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0`                           |
-    | 1.1.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.1.1`                           |
-    | 1.1.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.1.0`                           |
-    | 1.0.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.1`                           |
-    | 1.0.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.0`                           |
+:::details Previous Images
+
+| Driver Version | Image URL                                                                 |
+|---------------|----------------------------------------------------------------------------|
+| 2.1.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.1.1`                           |
+| 2.1.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.1.0`                           |
+| 2.0.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.1`                           |
+| 2.0.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:2.0.0`                           |
+| 1.2.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.2.0`                           |
+| 1.1.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.1.1`                           |
+| 1.1.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.1.0`                           |
+| 1.0.1         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.1`                           |
+| 1.0.0         | `ghcr.io/scality/mountpoint-s3-csi-driver:1.0.0`                           |
+
+:::
 
 ## Support and Community
 

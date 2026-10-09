@@ -6,22 +6,28 @@ This guide provides a fast way to deploy the Scality CSI Driver for S3 using Hel
 
 Before starting, ensure all requirements outlined in the **[Prerequisites](prerequisites.md)** guide are met.
 
-!!! warning "For Testing Only"
-    The quick start guide is intended for testing purposes only. The installation uses default values including:
+:::warning For Testing Only
 
-    - Kubernetes Namespace for driver installation: `default`
-    - Kubernetes S3 Credentials Secret name: `s3-secret`
-    - Default S3 Region (can be overridden at volume level): `us-east-1`
+The quick start guide is intended for testing purposes only. The installation uses default values including:
 
-    For production deployments and to customize these values or use a different namespace, see the [installation guide](installation-guide.md).
+- Kubernetes Namespace for driver installation: `default`
+- Kubernetes S3 Credentials Secret name: `s3-secret`
+- Default S3 Region (can be overridden at volume level): `us-east-1`
+
+For production deployments and to customize these values or use a different namespace, see the [installation guide](installation-guide.md).
+
+:::
 
 ## Installation
 
 **Step 1. Set configuration variables:**
 
-!!! note "S3 Endpoint URL"
-    For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
-    Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
+:::note S3 Endpoint URL
+
+For S3 endpoint URL, port number can be added if needed; example: `http://s3.example.com:8000`
+Port number can be omitted for default port `80` for HTTP or `443` for HTTPS
+
+:::
 
 Replace these values with actual S3 endpoint and credentials.
 
@@ -77,14 +83,20 @@ Verify CRD installation:
 kubectl get crd mountpoints3podattachments.s3.csi.scality.com
 ```
 
-!!! info "v2.0 Features"
-    Version 2.0 introduces the MountpointS3PodAttachment CRD and pod-based mounter. The `mount-s3` namespace will be automatically created when volumes are first mounted.
+:::info v2.0 Features
+
+Version 2.0 introduces the MountpointS3PodAttachment CRD and pod-based mounter. The `mount-s3` namespace will be automatically created when volumes are first mounted.
+
+:::
 
 ## Uninstallation
 
-!!! note "If Volumes Were Provisioned"
-    If any applications (Kubernetes pods) were using PersistentVolumes or PersistentVolumeClaims provisioned using the S3 CSI driver,
-    follow the complete [uninstallation guide](uninstallation.md) to properly clean up all resources.
+:::note If Volumes Were Provisioned
+
+If any applications (Kubernetes pods) were using PersistentVolumes or PersistentVolumeClaims provisioned using the S3 CSI driver,
+follow the complete [uninstallation guide](uninstallation.md) to properly clean up all resources.
+
+:::
 
 For a quick start installation with no volumes provisioned, the driver can uninstall the driver with these simple steps:
 

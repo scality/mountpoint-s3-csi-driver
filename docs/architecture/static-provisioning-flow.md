@@ -2,8 +2,6 @@
 
 This document details the complete lifecycle of statically provisioned volumes in the Scality CSI Driver for S3, from PersistentVolume creation to application file access.
 
-<div align="center">
-
 ```mermaid
 sequenceDiagram
     participant Admin as Kubernetes Administrator
@@ -82,8 +80,6 @@ sequenceDiagram
     MPPod->>MPPod: Unmount FUSE filesystem
     Reconciler->>K8s: Delete CRD (if no remaining Mountpoint Pods)
 ```
-
-</div>
 
 ## Phase Flow Summary
 

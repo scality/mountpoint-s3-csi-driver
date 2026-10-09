@@ -130,4 +130,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 bucket-prefix.yaml](assets/bucket-prefix.yaml)
+[📁 bucket-prefix.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/bucket-prefix.yaml)

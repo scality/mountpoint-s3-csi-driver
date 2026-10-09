@@ -110,4 +110,4 @@ kubectl delete pv s3-pv
 
 ## Download YAML
 
-[📁 static_provisioning_with_local_cache.yaml](assets/local_cache.yaml)
+[📁 static_provisioning_with_local_cache.yaml](https://github.com/scality/mountpoint-s3-csi-driver/blob/main/docs/volume-provisioning/static-provisioning/examples/assets/local_cache.yaml)

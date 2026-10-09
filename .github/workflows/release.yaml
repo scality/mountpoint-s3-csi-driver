@@ -30,58 +30,82 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
         with:
-          python-version: 3.x
-          cache: pip
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Ensure mike is installed
-        run: mike --version
-
-      - name: Configure git for Mike
+      # The build is portable: the same files work under <major.minor>/
+      # and under the latest symlink.
+      - name: Build the documentation site
+        working-directory: website
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          npm ci
+          npm run build
 
       - name: Extract major.minor version
         id: version
         run: |
           # Extract major.minor from tag (e.g., 1.0.0 -> 1.0, 1.1.1 -> 1.1)
-          # This ensures the dropdown shows "1.1" not "1.1.1"
           VERSION=$(echo "${{ inputs.tag }}" | sed -E 's/^([0-9]+\.[0-9]+).*$/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing documentation for version: $VERSION (from tag: ${{ inputs.tag }})"
-          echo "MkDocs dropdown will show: $VERSION"
 
-      - name: Deploy versioned documentation with Mike
+      # Same gh-pages layout as before: one folder per major.minor, a latest
+      # symlink, versions.json (read by the older MkDocs versions' selector)
+      # and a root redirect to the default version.
+      - name: Publish to gh-pages
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Fetch the gh-pages branch
-          git fetch origin gh-pages:gh-pages || true
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git fetch origin gh-pages
+          git worktree add -B gh-pages "$RUNNER_TEMP/gh-pages" origin/gh-pages
+          cd "$RUNNER_TEMP/gh-pages"
 
-          # Deploy the new version as latest
-          # The version identifier and title both use major.minor format (e.g., "1.1")
-          # This ensures URLs like /1.1/ and dropdown shows "1.1" not "1.1.1"
-          echo "Deploying version ${{ steps.version.outputs.version }} as latest"
+          rm -rf "$VERSION"
+          cp -R "$GITHUB_WORKSPACE/website/doc_build" "$VERSION"
+          ln -sfn "$VERSION" latest
 
-          # Check if version already exists to avoid duplicate error
-          if mike list --branch=gh-pages | grep -q "^${{ steps.version.outputs.version }}"; then
-            echo "Version ${{ steps.version.outputs.version }} already exists, updating it"
-            mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
-          else
-            echo "Creating new version ${{ steps.version.outputs.version }}"
-            mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
-          fi
+          python3 - <<'EOF'
+          import json, os
+          version = os.environ["VERSION"]
+          entries = json.load(open("versions.json")) if os.path.exists("versions.json") else []
+          entries = [e for e in entries if e["version"] != version]
+          for e in entries:
+              e["aliases"] = [a for a in e.get("aliases", []) if a != "latest"]
+          entries.append({"version": version, "title": version, "aliases": ["latest"]})
+          entries.sort(key=lambda e: [int(p) for p in e["version"].split(".")], reverse=True)
+          json.dump(entries, open("versions.json", "w"), indent=2)
+          EOF
 
-          # Set this version as the default (updates root redirect)
-          echo "Setting ${{ steps.version.outputs.version }} as default"
-          mike set-default ${{ steps.version.outputs.version }} --push --branch=gh-pages
+          cat > index.html <<EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Redirecting</title>
+            <noscript>
+              <meta http-equiv="refresh" content="1; url=$VERSION/" />
+            </noscript>
+            <script>
+              window.location.replace(
+                "$VERSION/" + window.location.search + window.location.hash
+              );
+            </script>
+          </head>
+          <body>
+            Redirecting to <a href="$VERSION/">$VERSION/</a>...
+          </body>
+          </html>
+          EOF
 
-      - name: List deployed versions
-        run: mike list --branch=gh-pages
+          git add -A
+          git commit -m "Deploy ${{ github.sha }} to $VERSION (latest) with rspress"
+          git push origin gh-pages
 
   prod-container-with-docker:
     needs: [publish-versioned-docs]

@@ -10,8 +10,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - '*.md'
-      - 'mkdocs.yml'
-      - 'requirements.txt'
+      - 'website/**'
       - '.lychee.toml'
       - '.markdownlint.yaml'
 
