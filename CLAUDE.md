@@ -68,8 +68,8 @@ Credentials are loaded from `tests/e2e/integration_config.json`. Mage auto-detec
 ### Documentation
 
 ```bash
-make docs                             # Build (strict) + serve MkDocs site
-make docs-clean                       # Remove site/ build artifacts
+make docs                             # Build (dead links fail) + serve the rspress site
+make docs-clean                       # Remove website/doc_build and the build cache
 ```
 
 ## Architecture
@@ -155,4 +155,4 @@ Located at `charts/scality-mountpoint-s3-csi-driver/`. Key templates: `node.yaml
 
 ## Mermaid Diagrams
 
-Do not add `<br/>` tags in Mermaid diagrams — MkDocs does not honor them.
+Do not add `<br/>` tags in Mermaid diagrams — keep them to plain labels.

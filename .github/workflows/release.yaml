@@ -30,58 +30,124 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
         with:
-          python-version: 3.x
-          cache: pip
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Ensure mike is installed
-        run: mike --version
-
-      - name: Configure git for Mike
+      # The build is portable: the same files work under <major.minor>/
+      # and under the latest symlink.
+      - name: Build the documentation site
+        working-directory: website
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          npm ci
+          npm run build
+
+      # Published to documentation.scality.com by the portal repository.
+      - name: Upload the documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: website/doc_build
+          retention-days: 7
 
       - name: Extract major.minor version
         id: version
         run: |
           # Extract major.minor from tag (e.g., 1.0.0 -> 1.0, 1.1.1 -> 1.1)
-          # This ensures the dropdown shows "1.1" not "1.1.1"
           VERSION=$(echo "${{ inputs.tag }}" | sed -E 's/^([0-9]+\.[0-9]+).*$/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Publishing documentation for version: $VERSION (from tag: ${{ inputs.tag }})"
-          echo "MkDocs dropdown will show: $VERSION"
 
-      - name: Deploy versioned documentation with Mike
+      # Same gh-pages layout as before: one folder per major.minor, a latest
+      # symlink, versions.json (read by the older MkDocs versions' selector)
+      # and a root redirect to the default version.
+      - name: Publish to gh-pages
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Fetch the gh-pages branch
-          git fetch origin gh-pages:gh-pages || true
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git fetch origin gh-pages
+          git worktree add -B gh-pages "$RUNNER_TEMP/gh-pages" origin/gh-pages
+          cd "$RUNNER_TEMP/gh-pages"
 
-          # Deploy the new version as latest
-          # The version identifier and title both use major.minor format (e.g., "1.1")
-          # This ensures URLs like /1.1/ and dropdown shows "1.1" not "1.1.1"
-          echo "Deploying version ${{ steps.version.outputs.version }} as latest"
+          rm -rf "$VERSION"
+          cp -R "$GITHUB_WORKSPACE/website/doc_build" "$VERSION"
+          ln -sfn "$VERSION" latest
 
-          # Check if version already exists to avoid duplicate error
-          if mike list --branch=gh-pages | grep -q "^${{ steps.version.outputs.version }}"; then
-            echo "Version ${{ steps.version.outputs.version }} already exists, updating it"
-            mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
+          python3 - <<'EOF'
+          import json, os
+          version = os.environ["VERSION"]
+          entries = json.load(open("versions.json")) if os.path.exists("versions.json") else []
+          entries = [e for e in entries if e["version"] != version]
+          for e in entries:
+              e["aliases"] = [a for a in e.get("aliases", []) if a != "latest"]
+          entries.append({"version": version, "title": version, "aliases": ["latest"]})
+          entries.sort(key=lambda e: [int(p) for p in e["version"].split(".")], reverse=True)
+          json.dump(entries, open("versions.json", "w"), indent=2)
+          EOF
+
+          cat > index.html <<EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Redirecting</title>
+            <noscript>
+              <meta http-equiv="refresh" content="1; url=$VERSION/" />
+            </noscript>
+            <script>
+              window.location.replace(
+                "$VERSION/" + window.location.search + window.location.hash
+              );
+            </script>
+          </head>
+          <body>
+            Redirecting to <a href="$VERSION/">$VERSION/</a>...
+          </body>
+          </html>
+          EOF
+
+          git add -A
+          # A re-run of the same release rebuilds identical files.
+          if git diff --cached --quiet; then
+            echo "No documentation changes to publish"
           else
-            echo "Creating new version ${{ steps.version.outputs.version }}"
-            mike deploy ${{ steps.version.outputs.version }} latest --title="${{ steps.version.outputs.version }}" --update-aliases --push
+            git commit -m "Deploy ${{ github.sha }} to $VERSION (latest) with rspress"
+            git push origin gh-pages
           fi
 
-          # Set this version as the default (updates root redirect)
-          echo "Setting ${{ steps.version.outputs.version }} as default"
-          mike set-default ${{ steps.version.outputs.version }} --push --branch=gh-pages
+  # Public portal (documentation.scality.com/OpenSource/mountpoint-s3-csi-driver/<major.minor>/),
+  # published by the portal repository from the artifact uploaded above. Not a
+  # dependency of the other jobs, so a portal outage does not block a release.
+  publish-portal-docs:
+    needs: [publish-versioned-docs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token to trigger the portal workflow
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.ACTIONS_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: documentation.scality.com
+          permission-actions: write
 
-      - name: List deployed versions
-        run: mike list --branch=gh-pages
+      - name: Trigger the portal publish
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: ${{ inputs.tag }}
+        run: >-
+          gh workflow run publish-oss-docs.yaml
+          --repo scality/documentation.scality.com
+          -f project=mountpoint-s3-csi-driver
+          -f site=external
+          -f "version=$TAG"
+          -f run_id=${{ github.run_id }}
 
   prod-container-with-docker:
     needs: [publish-versioned-docs]

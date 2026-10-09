@@ -18,3 +18,5 @@ coverage.out
 # E2E test artifacts
 logs-for-e2e-tests/
 artifacts/
+website/node_modules/
+website/doc_build/

@@ -2,8 +2,6 @@
 
 The Scality CSI Driver for S3 enables Kubernetes applications to use Scality RING S3 buckets as persistent volumes through the [Container Storage Interface (CSI) specification](https://github.com/container-storage-interface/spec/blob/master/spec.md).
 
-<div align="center">
-
 ```mermaid
 graph TB
 
@@ -46,8 +44,6 @@ graph TB
     App -->|"File I/O via bind mount"| MountpointPod
 
 ```
-
-</div>
 
 ## Core Components
 

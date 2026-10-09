@@ -15,6 +15,7 @@ repos:
     hooks:
       - id: codespell
         args: ["--skip=*.sum,*.mod", "--ignore-words-list=shs"]
+        exclude: package-lock\.json$
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.45.0
@@ -28,6 +29,7 @@ repos:
     hooks:
       - id: lychee
         args: [--config, .lychee.toml]
+        exclude: package-lock\.json$
 
   - repo: local
     hooks:
@@ -52,8 +54,8 @@ repos:
       # Matches CI formatting checks exactly to prevent CI failures
       #
       # REQUIRED: Install formatting tools locally (run once):
-      # go install golang.org/x/tools/cmd/goimports@latest  # Organizes imports
-      # go install mvdan.cc/gofumpt@latest                  # Stricter gofmt
+      # go install golang.org/x/tools/cmd/goimports@v0.49.0  # Organizes imports
+      # go install mvdan.cc/gofumpt@v0.11.0                  # Stricter gofmt
       # gofmt comes with Go by default                      # Basic formatting
       #
       # To fix formatting issues manually:
@@ -94,10 +96,4 @@ repos:
         entry: helm lint charts/scality-mountpoint-s3-csi-driver
         language: system
         files: ^charts/
-        pass_filenames: false
-      - id: mkdocs-build
-        name: mkdocs build
-        entry: bash -c 'source .venv/bin/activate 2>/dev/null || true; mkdocs build --strict'
-        language: system
-        files: ^(mkdocs\.yml|docs/.*)$
         pass_filenames: false

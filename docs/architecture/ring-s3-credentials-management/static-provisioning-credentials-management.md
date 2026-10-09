@@ -2,8 +2,6 @@
 
 This document details how credentials flow through the Scality CSI Driver for S3 for static provisioning, supporting both driver-level (global) and volume-level (per-volume) authentication methods.
 
-<div align="center">
-
 ```mermaid
 graph LR
     subgraph driver["Driver-Level Credentials (Default)"]
@@ -32,8 +30,6 @@ graph LR
     MP -->|"Authenticated requests"| S3
 ```
 
-</div>
-
 There are 2 ways to manage credentials:
 
 1. **Driver-Level Authentication** - Global kubernetes secret containing credentials configured during driver installation
@@ -48,8 +44,11 @@ Default key names are:
 - `secret_access_key` for Secret Access Key
 - `session_token` (optional) for Session Token
 
-!!! Note
-    Use `stringData` (not `data`) because the Scality CSI driver for S3 expects plain text credential. Secret security is controlled by Kubernetes RBAC permissions.
+:::note
+
+Use `stringData` (not `data`) because the Scality CSI driver for S3 expects plain text credential. Secret security is controlled by Kubernetes RBAC permissions.
+
+:::
 
 ```yaml title="Kubernetes Secret with RING S3 credentials"
 apiVersion: v1

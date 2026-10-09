@@ -102,13 +102,13 @@ validate-helm:
 
 .PHONY: docs
 docs:
-	@echo "Building documentation and starting server (strict mode)..."
-	source $(venv) && mkdocs build --strict && mkdocs serve
+	@echo "Building the documentation and starting the dev server..."
+	cd website && npm ci && npm run build && npm run dev
 
 .PHONY: docs-clean
 docs-clean:
 	@echo "Cleaning documentation build artifacts..."
-	rm -rf site/
+	rm -rf website/doc_build website/node_modules/.cache
 
 # Run controller tests with envtest.
 .PHONY: controller-integration-test

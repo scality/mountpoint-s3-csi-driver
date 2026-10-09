@@ -128,4 +128,4 @@ kubectl delete secret s3-credentials
 
 ## Download YAML
 
-[📁 secret_authentication.yaml](assets/secret_authentication.yaml){:download}
+[📁 secret_authentication.yaml](assets/secret_authentication.yaml)

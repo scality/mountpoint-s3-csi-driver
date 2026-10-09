@@ -1,7 +1,10 @@
 # Static Provisioning
 
-!!! note "Bucket Pre-Creation Required"
-    For static provisioning, the S3 bucket must be pre-created and bucket name must be provided in the PV specification.
+:::note Bucket Pre-Creation Required
+
+For static provisioning, the S3 bucket must be pre-created and bucket name must be provided in the PV specification.
+
+:::
 
 Static provisioning allows using an existing S3 bucket as a persistent volume in a Kubernetes cluster. The S3 bucket must be pre-created and the PersistentVolume (PV) resource manually defined.
 

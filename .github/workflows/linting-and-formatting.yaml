@@ -42,8 +42,10 @@ jobs:
         tar -xzf lychee.tar.gz
         sudo mv lychee /usr/local/bin/lychee
         lychee --version
-        go install golang.org/x/tools/cmd/goimports@latest
-        go install mvdan.cc/gofumpt@latest
+        # Pinned to the latest releases that build with the go.mod Go version
+        # (GOTOOLCHAIN=local); @latest started requiring a newer Go.
+        go install golang.org/x/tools/cmd/goimports@v0.49.0
+        go install mvdan.cc/gofumpt@v0.11.0
 
     - name: Run ${{ matrix.test }}
       run: make ${{ matrix.test }}

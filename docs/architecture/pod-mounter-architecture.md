@@ -8,8 +8,6 @@ The Pod Mounter architecture replaces the systemd-based mounting approach used i
 Kubernetes-native solution using dedicated Mountpoint Pods. This approach provides better isolation,
 resource management, and volume sharing capabilities.
 
-<div align="center">
-
 ```mermaid
 graph TB
     subgraph Node["Kubernetes Node"]
@@ -51,8 +49,6 @@ graph TB
     Source1 -.->|"shared mount"| App2
     Source2 -.->|"shared mount"| App3
 ```
-
-</div>
 
 ## Source/Bind Mount Architecture
 

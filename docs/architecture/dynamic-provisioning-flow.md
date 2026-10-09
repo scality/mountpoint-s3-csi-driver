@@ -2,8 +2,6 @@
 
 This document details the complete lifecycle of dynamically provisioned volumes in the Scality CSI Driver for S3, from StorageClass creation to application file access and eventual cleanup.
 
-<div align="center">
-
 ```mermaid
 sequenceDiagram
     participant Admin as Kubernetes Administrator
@@ -123,8 +121,6 @@ sequenceDiagram
         note right of S3: Bucket and data preserved
     end
 ```
-
-</div>
 
 ## Phase Flow Summary
 

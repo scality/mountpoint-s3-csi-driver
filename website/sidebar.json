@@ -1,0 +1,233 @@
+[
+  {
+    "text": "Home",
+    "link": "/"
+  },
+  {
+    "text": "Architecture",
+    "collapsible": true,
+    "collapsed": true,
+    "items": [
+      {
+        "text": "System Overview",
+        "link": "/architecture/system-overview"
+      },
+      {
+        "text": "Deployment Architecture",
+        "link": "/architecture/deployment-architecture"
+      },
+      {
+        "text": "Pod Mounter Architecture",
+        "link": "/architecture/pod-mounter-architecture"
+      },
+      {
+        "text": "Static Provisioning Flow",
+        "link": "/architecture/static-provisioning-flow"
+      },
+      {
+        "text": "Dynamic Provisioning Flow",
+        "link": "/architecture/dynamic-provisioning-flow"
+      },
+      {
+        "text": "RING S3 Credential management",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Static Provisioning",
+            "link": "/architecture/ring-s3-credentials-management/static-provisioning-credentials-management"
+          },
+          {
+            "text": "Dynamic Provisioning",
+            "link": "/architecture/ring-s3-credentials-management/dynamic-provisioning-credentials-management"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Driver Deployment",
+    "collapsible": true,
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Prerequisites",
+        "link": "/driver-deployment/prerequisites"
+      },
+      {
+        "text": "Quick Start",
+        "link": "/driver-deployment/quick-start"
+      },
+      {
+        "text": "Installation Guide",
+        "link": "/driver-deployment/installation-guide"
+      },
+      {
+        "text": "Upgrade Guide",
+        "link": "/driver-deployment/upgrade-guide"
+      },
+      {
+        "text": "Node Startup Taint",
+        "link": "/driver-deployment/node-startup-taint"
+      },
+      {
+        "text": "TLS Configuration",
+        "link": "/driver-deployment/tls-configuration"
+      },
+      {
+        "text": "Uninstallation",
+        "link": "/driver-deployment/uninstallation"
+      }
+    ]
+  },
+  {
+    "text": "Volume Provisioning",
+    "collapsible": true,
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/volume-provisioning/"
+      },
+      {
+        "text": "Mount Options Reference",
+        "link": "/volume-provisioning/mount-options"
+      },
+      {
+        "text": "Static Provisioning",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Overview",
+            "link": "/volume-provisioning/static-provisioning/overview"
+          },
+          {
+            "text": "Examples",
+            "collapsible": true,
+            "collapsed": true,
+            "items": [
+              {
+                "text": "Basic Static Provisioning",
+                "link": "/volume-provisioning/static-provisioning/examples/basic-static-provisioning"
+              },
+              {
+                "text": "Bucket Prefix Mounting",
+                "link": "/volume-provisioning/static-provisioning/examples/bucket-prefix"
+              },
+              {
+                "text": "Override S3 Region",
+                "link": "/volume-provisioning/static-provisioning/examples/override-region"
+              },
+              {
+                "text": "Secret-Based Authentication",
+                "link": "/volume-provisioning/static-provisioning/examples/secret-authentication"
+              },
+              {
+                "text": "Multiple Pods Sharing Volume",
+                "link": "/volume-provisioning/static-provisioning/examples/multiple-pods-shared-volume"
+              },
+              {
+                "text": "Multiple Buckets in One Pod",
+                "link": "/volume-provisioning/static-provisioning/examples/multiple-buckets"
+              },
+              {
+                "text": "Non-Root User Access",
+                "link": "/volume-provisioning/static-provisioning/examples/non-root-user"
+              },
+              {
+                "text": "Local Cache",
+                "link": "/volume-provisioning/static-provisioning/examples/local-cache"
+              },
+              {
+                "text": "Advanced Local Caching",
+                "link": "/volume-provisioning/static-provisioning/examples/advanced-local-caching"
+              },
+              {
+                "text": "KMS Server-Side Encryption",
+                "link": "/volume-provisioning/static-provisioning/examples/kms-encryption"
+              },
+              {
+                "text": "Retry Configuration",
+                "link": "/volume-provisioning/static-provisioning/examples/retry-configuration"
+              },
+              {
+                "text": "Debug Logging",
+                "link": "/volume-provisioning/static-provisioning/examples/debug-logging"
+              },
+              {
+                "text": "File and Directory Permissions",
+                "link": "/volume-provisioning/static-provisioning/examples/file-permissions"
+              },
+              {
+                "text": "Allow Root Access",
+                "link": "/volume-provisioning/static-provisioning/examples/allow-root"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Dynamic Provisioning",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Overview",
+            "link": "/volume-provisioning/dynamic-provisioning/overview"
+          },
+          {
+            "text": "StorageClass Reference and Usage Examples",
+            "link": "/volume-provisioning/dynamic-provisioning/storageclass-reference-and-usage-examples"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Concepts and Reference",
+    "collapsible": true,
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Helm Chart Configuration Reference",
+        "link": "/concepts-and-reference/helm-chart-configuration-reference"
+      },
+      {
+        "text": "CRD Reference",
+        "link": "/architecture/crd-reference"
+      },
+      {
+        "text": "Filesystem Semantics",
+        "link": "/concepts-and-reference/filesystem-semantics"
+      }
+    ]
+  },
+  {
+    "text": "Operations",
+    "collapsible": true,
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Troubleshooting",
+        "link": "/troubleshooting"
+      },
+      {
+        "text": "Administrator and User Guide",
+        "link": "/admin-user-guide"
+      }
+    ]
+  },
+  {
+    "text": "Compatibility Matrix",
+    "link": "/concepts-and-reference/compatibility-matrix"
+  },
+  {
+    "text": "Release Notes",
+    "link": "/release-notes"
+  },
+  {
+    "text": "Glossary",
+    "link": "/glossary"
+  }
+]

@@ -178,10 +178,13 @@ spec:
     # ...
 ```
 
-!!! warning "Cache Path Uniqueness"
-    The path specified for `cache` (e.g., `/mnt/s3_cache_vol_abc`) **must be unique on each node for every volume that uses caching**.
-    If multiple S3 volumes on the same node attempt to use the same cache path, it will lead to undefined behavior and potential data corruption.
-    The CSI driver does not automatically manage the uniqueness or lifecycle of these host cache paths beyond passing the option to Mountpoint.
-    Node-level disk space and permissions for the cache path are also your responsibility.
+:::warning Cache Path Uniqueness
+
+The path specified for `cache` (e.g., `/mnt/s3_cache_vol_abc`) **must be unique on each node for every volume that uses caching**.
+If multiple S3 volumes on the same node attempt to use the same cache path, it will lead to undefined behavior and potential data corruption.
+The CSI driver does not automatically manage the uniqueness or lifecycle of these host cache paths beyond passing the option to Mountpoint.
+Node-level disk space and permissions for the cache path are also your responsibility.
+
+:::
 
 For guidance on filesystem behavior and permissions, see the [Filesystem Semantics](../concepts-and-reference/filesystem-semantics.md) page
