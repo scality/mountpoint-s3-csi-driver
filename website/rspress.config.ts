@@ -24,7 +24,7 @@ export default defineConfig({
     socialLinks: [{ icon: 'github', mode: 'link', content: repo }],
     editLink: { docRepoBaseUrl: `${repo}/edit/main/docs/` },
     footer: {
-      message: `Copyright © 2025 Scality, Inc. Licensed under the <a href="${repo}/blob/main/LICENSE">Apache License 2.0</a>`,
+      message: `Licensed under the <a href="${repo}/blob/main/LICENSE">Apache License 2.0</a>`,
     },
   },
 });
