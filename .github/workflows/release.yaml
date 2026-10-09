@@ -104,8 +104,13 @@ jobs:
           EOF
 
           git add -A
-          git commit -m "Deploy ${{ github.sha }} to $VERSION (latest) with rspress"
-          git push origin gh-pages
+          # A re-run of the same release rebuilds identical files.
+          if git diff --cached --quiet; then
+            echo "No documentation changes to publish"
+          else
+            git commit -m "Deploy ${{ github.sha }} to $VERSION (latest) with rspress"
+            git push origin gh-pages
+          fi
 
   prod-container-with-docker:
     needs: [publish-versioned-docs]

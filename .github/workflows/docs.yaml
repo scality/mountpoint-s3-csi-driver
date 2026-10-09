@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'docs/**'
+      - 'website/**'
+      - '.github/workflows/docs.yaml'
   pull_request:
     branches:
       - '**'
